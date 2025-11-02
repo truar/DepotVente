@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "webapp": "pnpm --filter=frontend dev"
+    "webapp": "pnpm --filter=frontend"
   },
   "keywords": [],
   "author": "",
