@@ -9,38 +9,65 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DymoRouteImport } from './routes/dymo'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DepotVenteIndexRouteImport } from './routes/depot-vente/index'
 
+const DymoRoute = DymoRouteImport.update({
+  id: '/dymo',
+  path: '/dymo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DepotVenteIndexRoute = DepotVenteIndexRouteImport.update({
+  id: '/depot-vente/',
+  path: '/depot-vente/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dymo': typeof DymoRoute
+  '/depot-vente': typeof DepotVenteIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dymo': typeof DymoRoute
+  '/depot-vente': typeof DepotVenteIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dymo': typeof DymoRoute
+  '/depot-vente/': typeof DepotVenteIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dymo' | '/depot-vente'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dymo' | '/depot-vente'
+  id: '__root__' | '/' | '/dymo' | '/depot-vente/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DymoRoute: typeof DymoRoute
+  DepotVenteIndexRoute: typeof DepotVenteIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/dymo': {
+      id: '/dymo'
+      path: '/dymo'
+      fullPath: '/dymo'
+      preLoaderRoute: typeof DymoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/depot-vente/': {
+      id: '/depot-vente/'
+      path: '/depot-vente'
+      fullPath: '/depot-vente'
+      preLoaderRoute: typeof DepotVenteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DymoRoute: DymoRoute,
+  DepotVenteIndexRoute: DepotVenteIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

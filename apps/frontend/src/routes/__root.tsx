@@ -1,11 +1,15 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { Footer } from '@/components/Footer.tsx'
 
 export const Route = createRootRoute({
   component: () => (
     <>
-      <Outlet />
+      <div className="relative flex min-h-screen w-full flex-col bg-gradient-to-br from-green-50 to-blue-50">
+        <Outlet />
+        <Footer />
+      </div>
       <TanStackDevtools
         config={{
           position: 'bottom-right',
