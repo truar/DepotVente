@@ -1,12 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-
-export const supabase = createClient(
-  import.meta.env.VITE_PUBLIC_SUPABASE_URL!, // e.g. https://xyzcompany.supabase.co
-  import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY!, // anon key for browsers
-  // optional options object here
-)
+import { db } from '@/supabase-client.ts'
 
 export const Route = createFileRoute('/admin/')({
   component: Admin,
@@ -16,7 +10,7 @@ export function Admin() {
   const [notes, setNotes] = useState<any[] | null>(null)
   useEffect(() => {
     async function fetchNotes() {
-      const { data: notes } = await supabase.from('notes').select()
+      const notes = await db.notes.find().exec()
       setNotes(notes)
     }
     fetchNotes()
