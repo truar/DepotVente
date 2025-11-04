@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { db } from '@/supabase-client.ts'
+import { db } from '@/db-client.ts'
 
 export const Route = createFileRoute('/admin/')({
   component: Admin,
