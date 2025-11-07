@@ -36,6 +36,35 @@ type DepotFormType = {
   articles: ArticleFormType[]
 }
 
+function generateArticleCode(
+  depotCount: number,
+  articleIndex: number,
+  workstation: string,
+) {
+  // Get the current year as a string
+  const year = new Date().getFullYear().toString()
+
+  // Parse the workstation as an integer (default to 0 if invalid)
+  const workstationInt = parseInt(workstation, 10) || 0
+
+  // Calculate the second part as the sum of workstation and articleIndex
+  const secondPart = workstationInt + depotCount
+
+  // Generate the alphabetical representation of the articleIndex
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  let alphaPart = ''
+  let alphaIndex = articleIndex
+
+  // Convert the articleIndex into "Excel-style" column representation
+  do {
+    alphaPart = alphabet[alphaIndex % 26] + alphaPart
+    alphaIndex = Math.floor(alphaIndex / 26)
+  } while (alphaIndex > 0)
+
+  // Combine all parts into the final code
+  return `${year}-${secondPart}-${alphaPart}`
+}
+
 export function DepotVendeurFormPage() {
   const [workstation] = useWorkstation()
   const { register, control, handleSubmit, setValue, reset } =
@@ -68,10 +97,17 @@ export function DepotVendeurFormPage() {
       workstation: workstation ?? '0000',
     })
 
+    const depotCount = await db.depots.count()
+
     await db.articles.bulkAdd(
-      data.articles.map((article) => ({
+      data.articles.map((article, index) => ({
         id: v4(),
         depotId,
+        articleCode: generateArticleCode(
+          depotCount,
+          index,
+          workstation ?? '0000',
+        ),
         price: article.price,
         description: article.description,
         brand: article.brand,

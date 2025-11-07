@@ -16,6 +16,7 @@ interface Article {
   color: string
   model: string
   workstation: string
+  articleCode: string
 }
 interface User {
   id: string
@@ -41,9 +42,9 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 
 // Schema declaration:
 db.version(1).stores({
-  users: '++id, lastName, firstName, phoneNumber', // primary key "id" (for the runtime!)
-  depots: '++id, workstation, userId',
-  articles: '++id, price, description, brand, type, size, color, model',
+  users: '++id', // primary key "id" (for the runtime!)
+  depots: '++id',
+  articles: '++id, depotId, articleCode',
 })
 
 export type { Depot, User }
