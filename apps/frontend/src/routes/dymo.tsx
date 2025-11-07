@@ -7,5 +7,11 @@ export const Route = createFileRoute('/dymo')({
 
 function DymoHealthCheckPage() {
   const dymo = useDymo()
-  return <div>DYMO Enabled: {dymo.isEnabled ? 'Yes' : 'No'}</div>
+  return (
+    <>
+      <div>DYMO Enabled: {dymo.isEnabled ? 'Yes' : 'No'}</div>
+      <div>DYMO Printers: {JSON.stringify(dymo.getPrinters(), null, 2)}</div>
+      <button onClick={() => dymo.print()}>Print</button>
+    </>
+  )
 }

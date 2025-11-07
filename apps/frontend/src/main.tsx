@@ -6,10 +6,6 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
-import { addRxPlugin } from 'rxdb/plugins/core'
-import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
-
-addRxPlugin(RxDBDevModePlugin)
 
 // Create a new router instance
 const router = createRouter({
