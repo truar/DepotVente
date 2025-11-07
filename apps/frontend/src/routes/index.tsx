@@ -1,18 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useLocalStorage } from '@/hooks/useLocalStorage.ts'
+import { useWorkstation } from '@/hooks/useWorkstation.ts'
 
 export const Route = createFileRoute('/')({
   component: App,
 })
 
 export function App() {
-  const [identifier, setIdentifier] = useLocalStorage<string>('identifier', '')
+  const [workstation, setWorkstation] = useWorkstation()
   const [error, setError] = useState<string | undefined>(undefined)
   const navigate = useNavigate()
 
   const handleSubmit = async () => {
-    if (!identifier?.trim()) {
+    if (!workstation?.trim()) {
       setError('Identifiant non valide.')
       return
     }
@@ -54,9 +54,9 @@ export function App() {
               </p>
               <input
                 type="text"
-                value={identifier}
+                value={workstation}
                 onChange={(e) => {
-                  setIdentifier(e.target.value)
+                  setWorkstation(e.target.value)
                   setError(undefined)
                 }}
                 onKeyPress={handleKeyPress}

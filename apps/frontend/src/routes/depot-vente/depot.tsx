@@ -1,10 +1,22 @@
 import { useFieldArray, useForm } from 'react-hook-form'
 import { LogOut, Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useCallback } from 'react'
+import { fakerFR as faker } from '@faker-js/faker'
+import { db } from '@/db.ts'
+import { v4 } from 'uuid'
+import { useWorkstation } from '@/hooks/useWorkstation.ts'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: DepotVendeurFormPage,
 })
+
+enum TypeEnum {
+  Chaussures = 'Chaussures',
+  Skis = 'Skis',
+  Batons = 'Bâtons',
+  Snowboard = 'Snowboard',
+}
 
 type ArticleFormType = {
   price: number
@@ -25,23 +37,53 @@ type DepotFormType = {
 }
 
 export function DepotVendeurFormPage() {
-  const { register, control, handleSubmit } = useForm<DepotFormType>({
-    defaultValues: {
-      lastName: '',
-      firstName: '',
-      phoneNumber: '',
-      cotisationPayee: false,
-      articles: [],
-    },
-  })
+  const [workstation] = useWorkstation()
+  const { register, control, handleSubmit, setValue, reset } =
+    useForm<DepotFormType>({
+      defaultValues: {
+        lastName: '',
+        firstName: '',
+        phoneNumber: '',
+        cotisationPayee: false,
+        articles: [],
+      },
+    })
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'articles',
   })
 
-  const onSubmit = (data: DepotFormType) => {
-    console.log(data)
+  const onSubmit = async (data: DepotFormType) => {
+    const userId = await db.users.add({
+      id: v4(),
+      lastName: data.lastName,
+      firstName: data.firstName,
+      phoneNumber: data.phoneNumber,
+    })
+
+    const depotId = await db.depots.add({
+      id: v4(),
+      userId,
+      workstation: workstation ?? '0000',
+    })
+
+    await db.articles.bulkAdd(
+      data.articles.map((article) => ({
+        id: v4(),
+        depotId,
+        price: article.price,
+        description: article.description,
+        brand: article.brand,
+        type: article.type,
+        size: article.size,
+        color: article.color,
+        model: article.model,
+        workstation: workstation ?? '0000',
+      })),
+    )
+
+    reset()
   }
 
   const addArticle = () => {
@@ -55,6 +97,25 @@ export function DepotVendeurFormPage() {
       model: '',
     })
   }
+
+  const generateFakeVente = useCallback(() => {
+    setValue('lastName', faker.person.lastName())
+    setValue('firstName', faker.person.firstName())
+    setValue('phoneNumber', faker.phone.number({ style: 'national' }))
+    const nbArticles = Math.floor(Math.random() * 10) + 1
+    setValue(
+      'articles',
+      Array.from({ length: nbArticles }).map(() => ({
+        price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
+        description: faker.lorem.words({ min: 1, max: 4 }),
+        brand: faker.commerce.department(),
+        type: faker.helpers.enumValue(TypeEnum),
+        size: faker.number.int({ min: 1, max: 180 }) + '',
+        color: faker.color.human(),
+        model: faker.commerce.productName(),
+      })),
+    )
+  }, [setValue])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -274,6 +335,13 @@ export function DepotVendeurFormPage() {
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                className="px-6 py-3 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
+                onClick={generateFakeVente}
+              >
+                Générer une fausse vente
+              </button>
               <button
                 type="button"
                 className="px-6 py-3 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
