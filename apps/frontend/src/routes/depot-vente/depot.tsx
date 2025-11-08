@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: DepotVendeurFormPage,
@@ -209,7 +210,7 @@ export function DepotVendeurFormPage() {
                   Liste des articles déposés
                 </h3>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-scroll">
                   <table className="w-full table-fixed">
                     <thead>
                       <tr className="border-b border-gray-200">
