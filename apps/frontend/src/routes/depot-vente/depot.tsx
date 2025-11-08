@@ -1,54 +1,20 @@
 import { useFieldArray, useForm } from 'react-hook-form'
 import { LogOut, Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
-import { db } from '@/db.ts'
-import { v4 } from 'uuid'
+import { type DepotFormType, TypeEnum } from '@/types/depot.ts'
+import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
+import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: DepotVendeurFormPage,
 })
 
-enum TypeEnum {
-  Chaussures = 'Chaussures',
-  Skis = 'Skis',
-  Batons = 'Bâtons',
-  Snowboard = 'Snowboard',
-}
-
-type ArticleFormType = {
-  price: number
-  description: string
-  brand: string
-  type: string
-  size: string
-  color: string
-  model: string
-}
-
-type DepotFormType = {
-  lastName: string
-  firstName: string
-  phoneNumber: string
-  cotisationPayee: boolean
-  articles: ArticleFormType[]
-}
-
-function generateArticleCode(
-  depotCount: number,
-  articleIndex: number,
-  workstation: string,
-) {
+function generateArticleCode(depotIndex: number, articleIndex: number) {
   // Get the current year as a string
   const year = new Date().getFullYear().toString()
-
-  // Parse the workstation as an integer (default to 0 if invalid)
-  const workstationInt = parseInt(workstation, 10) || 0
-
-  // Calculate the second part as the sum of workstation and articleIndex
-  const secondPart = workstationInt + depotCount
 
   // Generate the alphabetical representation of the articleIndex
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -62,14 +28,27 @@ function generateArticleCode(
   } while (alphaIndex > 0)
 
   // Combine all parts into the final code
-  return `${year}-${secondPart}-${alphaPart}`
+  return `${year}-${depotIndex}-${alphaPart}`
 }
 
 export function DepotVendeurFormPage() {
+  const createDepotMutation = useCreateDepot()
+  const depotDb = useDepotDb()
+  const [depotCurrentIndex, setDepotCurrentIndex] = useState<number>()
   const [workstation] = useWorkstation()
+  useEffect(() => {
+    async function getNextDepotIndex() {
+      const count = await depotDb.getCount()
+      setDepotCurrentIndex(workstation + count + 1)
+    }
+
+    getNextDepotIndex()
+  }, [depotDb])
+
   const { register, control, handleSubmit, setValue, reset } =
     useForm<DepotFormType>({
       defaultValues: {
+        depotIndex: depotCurrentIndex,
         lastName: '',
         firstName: '',
         phoneNumber: '',
@@ -84,45 +63,12 @@ export function DepotVendeurFormPage() {
   })
 
   const onSubmit = async (data: DepotFormType) => {
-    const userId = await db.users.add({
-      id: v4(),
-      lastName: data.lastName,
-      firstName: data.firstName,
-      phoneNumber: data.phoneNumber,
-    })
-
-    const depotId = await db.depots.add({
-      id: v4(),
-      userId,
-      workstation: workstation ?? '0000',
-    })
-
-    const depotCount = await db.depots.count()
-
-    await db.articles.bulkAdd(
-      data.articles.map((article, index) => ({
-        id: v4(),
-        depotId,
-        articleCode: generateArticleCode(
-          depotCount,
-          index,
-          workstation ?? '0000',
-        ),
-        price: article.price,
-        description: article.description,
-        brand: article.brand,
-        type: article.type,
-        size: article.size,
-        color: article.color,
-        model: article.model,
-        workstation: workstation ?? '0000',
-      })),
-    )
-
+    await createDepotMutation.mutate(data)
     reset()
   }
 
-  const addArticle = () => {
+  const addArticle = useCallback(() => {
+    if (!depotCurrentIndex) return
     append({
       price: 0,
       description: '',
@@ -131,10 +77,13 @@ export function DepotVendeurFormPage() {
       size: '',
       color: '',
       model: '',
+      articleCode: generateArticleCode(depotCurrentIndex, fields.length),
     })
-  }
+  }, [depotCurrentIndex])
 
   const generateFakeVente = useCallback(() => {
+    if (!depotCurrentIndex) return
+
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
@@ -149,9 +98,14 @@ export function DepotVendeurFormPage() {
         size: faker.number.int({ min: 1, max: 180 }) + '',
         color: faker.color.human(),
         model: faker.commerce.productName(),
+        articleCode: generateArticleCode(depotCurrentIndex, fields.length),
       })),
     )
-  }, [setValue])
+  }, [depotCurrentIndex, setValue])
+
+  if (!depotCurrentIndex) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">

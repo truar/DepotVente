@@ -2,8 +2,9 @@ import Dexie, { type EntityTable } from 'dexie'
 
 interface Depot {
   id: string
-  workstation: string
+  workstation: number
   userId: string
+  depotIndex: number
 }
 interface Article {
   id: string
@@ -15,7 +16,7 @@ interface Article {
   size: string
   color: string
   model: string
-  workstation: string
+  workstation: number
   articleCode: string
 }
 interface User {
@@ -43,7 +44,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   users: '++id', // primary key "id" (for the runtime!)
-  depots: '++id',
+  depots: '++id, workstation',
   articles: '++id, depotId, articleCode',
 })
 

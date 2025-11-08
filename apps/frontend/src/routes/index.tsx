@@ -8,15 +8,16 @@ export const Route = createFileRoute('/')({
 
 export function App() {
   const [workstation, setWorkstation] = useWorkstation()
+  const [localWorkstation, setLocalWorkstation] = useState<string>('')
   const [error, setError] = useState<string | undefined>(undefined)
   const navigate = useNavigate()
 
   const handleSubmit = async () => {
-    if (!workstation?.trim()) {
+    if (!workstation) {
       setError('Identifiant non valide.')
       return
     }
-
+    setWorkstation(parseInt(localWorkstation))
     setError(undefined)
     await navigate({
       to: '/depot-vente',
@@ -54,9 +55,9 @@ export function App() {
               </p>
               <input
                 type="text"
-                value={workstation}
+                value={localWorkstation}
                 onChange={(e) => {
-                  setWorkstation(e.target.value)
+                  setLocalWorkstation(e.target.value)
                   setError(undefined)
                 }}
                 onKeyPress={handleKeyPress}
