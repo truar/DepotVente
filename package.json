@@ -4,10 +4,32 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "frontend": "pnpm --filter=frontend"
+    "dev": "pnpm run --parallel --filter './apps/*' dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build": "pnpm --filter database db:generate && pnpm run --filter './apps/*' build",
+    "db:generate": "pnpm --filter database db:generate",
+    "db:migrate": "pnpm --filter database db:migrate",
+    "db:studio": "pnpm --filter database db:studio",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build -d",
+    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker compose logs -f",
+    "docker:clean": "docker compose down -v"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.20.0"
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "zod-prisma-types": "^3.3.5"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
 }

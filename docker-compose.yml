@@ -1,0 +1,52 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cmr_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cmr_user
+      POSTGRES_PASSWORD: cmr_password
+      POSTGRES_DB: cmr_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cmr_user -d cmr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend (Fastify + Prisma)
+  backend:
+    build:
+      context: .
+      target: backend-prod
+    container_name: cmr_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://cmr_user:cmr_password@postgres:5432/cmr_db?schema=public
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: .
+      target: frontend-prod
+    container_name: cmr_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local

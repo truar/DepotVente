@@ -1,0 +1,105 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cmr_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cmr_user
+      POSTGRES_PASSWORD: cmr_password
+      POSTGRES_DB: cmr_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cmr_user -d cmr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend (Fastify + Prisma) - Dev mode
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-dev
+    container_name: cmr_backend_dev
+    restart: unless-stopped
+    ports:
+      - "4000:3000"
+    environment:
+      DATABASE_URL: postgresql://cmr_user:cmr_password@postgres:5432/cmr_db?schema=public
+      PORT: 3000
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount package files to detect dependency changes
+      - ./package.json:/app/package.json:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      # Mount package.json files for all packages
+      - ./apps/backend/package.json:/app/apps/backend/package.json:ro
+      - ./packages/database/package.json:/app/packages/database/package.json:ro
+      - ./packages/types/package.json:/app/packages/types/package.json:ro
+      # Mount source code
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./packages/database/src:/app/packages/database/src
+      - ./packages/database/prisma:/app/packages/database/prisma
+      - ./packages/types/src:/app/packages/types/src
+      # Use named volumes for node_modules to persist between runs
+      - backend_node_modules:/app/node_modules
+      - backend_app_node_modules:/app/apps/backend/node_modules
+      - backend_db_node_modules:/app/packages/database/node_modules
+      - backend_types_node_modules:/app/packages/types/node_modules
+    command: sh -c "pnpm install && pnpm --filter database db:generate && pnpm --filter backend dev"
+
+  # Frontend (React + Vite) - Dev mode
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-dev
+    container_name: cmr_frontend_dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    depends_on:
+      - backend
+    volumes:
+      # Mount package files to detect dependency changes
+      - ./package.json:/app/package.json:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      # Mount package.json files for all packages
+      - ./apps/frontend/package.json:/app/apps/frontend/package.json:ro
+      - ./packages/types/package.json:/app/packages/types/package.json:ro
+      # Mount source code
+      - ./apps/frontend/src:/app/apps/frontend/src
+      - ./apps/frontend/public:/app/apps/frontend/public
+      - ./apps/frontend/index.html:/app/apps/frontend/index.html
+      - ./apps/frontend/vite.config.ts:/app/apps/frontend/vite.config.ts
+      - ./apps/frontend/tsconfig.json:/app/apps/frontend/tsconfig.json
+      - ./packages/types/src:/app/packages/types/src
+      # Use named volumes for node_modules to persist between runs
+      - frontend_node_modules:/app/node_modules
+      - frontend_app_node_modules:/app/apps/frontend/node_modules
+      - frontend_types_node_modules:/app/packages/types/node_modules
+    command: sh -c "pnpm install && pnpm --filter frontend dev"
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  # Backend node_modules volumes
+  backend_node_modules:
+  backend_app_node_modules:
+  backend_db_node_modules:
+  backend_types_node_modules:
+  # Frontend node_modules volumes
+  frontend_node_modules:
+  frontend_app_node_modules:
+  frontend_types_node_modules:
