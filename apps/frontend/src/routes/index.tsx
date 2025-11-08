@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { Button } from '@/components/ui/button.tsx'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -75,18 +76,9 @@ export function App() {
             </label>
 
             <div className="flex pt-6">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="flex w-full min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-12 px-5
-                      bg-green-500 hover:bg-green-600
-                      text-white text-base font-bold
-                      transition-all duration-200
-                      focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2
-                      shadow-md hover:shadow-lg"
-              >
-                <span className="truncate">Connexion</span>
-              </button>
+              <Button type="button" onClick={handleSubmit}>
+                Connexion
+              </Button>
             </div>
           </div>
         </div>
