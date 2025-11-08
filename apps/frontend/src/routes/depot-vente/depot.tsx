@@ -1,7 +1,7 @@
 import { useFieldArray, useForm } from 'react-hook-form'
 import { Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { type DepotFormType, TypeEnum } from '@/types/depot.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: DepotVendeurFormPage,
@@ -71,8 +70,9 @@ export function DepotVendeurFormPage() {
   const onSubmit = async (data: DepotFormType) => {
     await createDepotMutation.mutate(data)
     reset()
+    setCountArticle(0)
   }
-
+  const [countArticle, setCountArticle] = useState(0)
   const addArticle = useCallback(() => {
     if (!depotCurrentIndex) return
     append({
@@ -83,9 +83,10 @@ export function DepotVendeurFormPage() {
       size: '',
       color: '',
       model: '',
-      articleCode: generateArticleCode(depotCurrentIndex, fields.length),
+      articleCode: generateArticleCode(depotCurrentIndex, countArticle),
     })
-  }, [depotCurrentIndex])
+    setCountArticle(countArticle + 1)
+  }, [depotCurrentIndex, countArticle])
 
   const generateFakeVente = useCallback(() => {
     if (!depotCurrentIndex) return
@@ -215,6 +216,9 @@ export function DepotVendeurFormPage() {
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+                          Code
+                        </th>
+                        <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                           Type
                         </th>
                         <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
@@ -244,7 +248,18 @@ export function DepotVendeurFormPage() {
                       {fields.map((field, index) => (
                         <tr key={field.id} className="border-b border-gray-100">
                           <td className="py-1 px-1">
-                            <Select {...register(`articles.${index}.type`)}>
+                            <input
+                              type="text"
+                              readOnly={true}
+                              {...register(`articles.${index}.articleCode`)}
+                              className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+                            />
+                          </td>
+                          <td className="py-1 px-1">
+                            <Select
+                              name={`articles.${index}.type`}
+                              value={field.type}
+                            >
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Type" />
                               </SelectTrigger>
@@ -351,6 +366,7 @@ export function DepotVendeurFormPage() {
               </button>
               <button
                 type="button"
+                onClick={() => reset()}
                 className="px-6 py-3 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
               >
                 Annuler
