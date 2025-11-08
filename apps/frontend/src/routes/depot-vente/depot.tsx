@@ -1,7 +1,7 @@
 import { useFieldArray, useForm } from 'react-hook-form'
 import { Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { type DepotFormType, TypeEnum } from '@/types/depot.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
@@ -44,16 +44,11 @@ function generateArticleCode(depotIndex: number, articleIndex: number) {
 export function DepotVendeurFormPage() {
   const createDepotMutation = useCreateDepot()
   const depotDb = useDepotDb()
-  const [depotCurrentIndex, setDepotCurrentIndex] = useState<number>()
   const [workstation] = useWorkstation()
-  useEffect(() => {
-    async function getNextDepotIndex() {
-      const count = await depotDb.getCount()
-      setDepotCurrentIndex(workstation + count + 1)
-    }
-
-    getNextDepotIndex()
-  }, [])
+  const currentDepotCount = depotDb.getCount()
+  const depotCurrentIndex = currentDepotCount
+    ? workstation + currentDepotCount + 1
+    : 0
 
   const { register, control, handleSubmit, setValue, reset } =
     useForm<DepotFormType>({
@@ -122,7 +117,7 @@ export function DepotVendeurFormPage() {
       {/* Main Content */}
       <main className="px-6 py-8">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto">
             <h2 className="text-4xl font-bold text-gray-800 mb-8">
               Enregistrer un nouveau dépôt vendeur
             </h2>
@@ -306,7 +301,7 @@ export function DepotVendeurFormPage() {
                               <input
                                 type="number"
                                 {...register(`articles.${index}.price`)}
-                                className="w-20 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
                               />
                               <span className="text-sm text-gray-600">€</span>
                             </div>
