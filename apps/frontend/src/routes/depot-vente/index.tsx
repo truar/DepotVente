@@ -36,9 +36,7 @@ export function RouteComponent() {
             <h3 className="text-2xl font-bold text-gray-800 mb-3">
               Mode Dépôt
             </h3>
-            <p className="text-gray-600">
-              Enregistrer de nouveaux articles et gérer les déposants.
-            </p>
+            <p className="text-gray-600">Enregistrer de nouveaux articles.</p>
           </button>
 
           {/* Mode Vente Card */}
@@ -51,9 +49,7 @@ export function RouteComponent() {
             <h3 className="text-2xl font-bold text-gray-800 mb-3">
               Mode Vente
             </h3>
-            <p className="text-gray-600">
-              Accéder à la caisse et consulter l'historique des ventes.
-            </p>
+            <p className="text-gray-600">Accéder à la caisse.</p>
           </button>
         </div>
       </div>

@@ -5,5 +5,5 @@ export function useWorkstation(): [number, (value: number) => void] {
     'workstation',
     0,
   )
-  return [workstation ?? 0, setWorkstation]
+  return [workstation, setWorkstation]
 }

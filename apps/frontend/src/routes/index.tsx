@@ -61,7 +61,7 @@ export function App() {
           <CardContent>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Numéro du poste</Label>
+                <Label htmlFor="workstation">Numéro du poste</Label>
                 <Input
                   id="workstation"
                   type="text"
