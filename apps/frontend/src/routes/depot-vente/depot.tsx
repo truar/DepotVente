@@ -43,7 +43,7 @@ export function DepotVendeurFormPage() {
     }
 
     getNextDepotIndex()
-  }, [depotDb])
+  }, [])
 
   const { register, control, handleSubmit, setValue, reset } =
     useForm<DepotFormType>({
@@ -90,7 +90,7 @@ export function DepotVendeurFormPage() {
     const nbArticles = Math.floor(Math.random() * 10) + 1
     setValue(
       'articles',
-      Array.from({ length: nbArticles }).map(() => ({
+      Array.from({ length: nbArticles }).map((_, index) => ({
         price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
         description: faker.lorem.words({ min: 1, max: 4 }),
         brand: faker.commerce.department(),
@@ -98,7 +98,7 @@ export function DepotVendeurFormPage() {
         size: faker.number.int({ min: 1, max: 180 }) + '',
         color: faker.color.human(),
         model: faker.commerce.productName(),
-        articleCode: generateArticleCode(depotCurrentIndex, fields.length),
+        articleCode: generateArticleCode(depotCurrentIndex, index),
       })),
     )
   }, [depotCurrentIndex, setValue])
