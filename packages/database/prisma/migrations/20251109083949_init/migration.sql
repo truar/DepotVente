@@ -52,6 +52,7 @@ CREATE TABLE "users" (
     "last_name" TEXT NOT NULL,
     "first_name" TEXT NOT NULL,
     "phone_number" TEXT,
+    "password" TEXT,
     "email" TEXT,
     "city" TEXT,
     "postal_code" TEXT,

@@ -10,6 +10,7 @@
     "build": "pnpm --filter database db:generate && pnpm run --filter './apps/*' build",
     "db:generate": "pnpm --filter database db:generate",
     "db:migrate": "pnpm --filter database db:migrate",
+    "db:reset": "pnpm --filter database db:reset",
     "db:studio": "pnpm --filter database db:studio",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",

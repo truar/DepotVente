@@ -93,6 +93,7 @@ model User {
   lastName    String  @map("last_name")
   firstName   String  @map("first_name")
   phoneNumber String? @map("phone_number")
+  password    String?
   email       String?
   city        String?
   postalCode  String? @map("postal_code")
