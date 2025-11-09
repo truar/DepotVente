@@ -15,6 +15,10 @@ type CheckEnvironmentResult = {
   isWebServicePresent: boolean
 }
 
+type ILabel = {
+  print: (printerName: string) => void
+}
+
 declare global {
   interface Window {
     dymo: {
@@ -22,12 +26,15 @@ declare global {
         framework: {
           getPrinters: () => PrinterInfo[]
           checkEnvironment: () => CheckEnvironmentResult
+          trace: number
+          init: () => void
+          openLabelXml: (xml: string) => ILabel
         }
       }
     }
   }
 }
 
-window.dymo = window.dymo || {}
+window.dymo = window.dymo
 
 export {}

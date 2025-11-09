@@ -1,4 +1,4 @@
-import { useFieldArray, useForm } from 'react-hook-form'
+import { type FieldArrayWithId, useFieldArray, useForm } from 'react-hook-form'
 import { Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useDymo } from '@/hooks/useDymo.ts'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: DepotVendeurFormPage,
@@ -43,12 +45,11 @@ function generateArticleCode(depotIndex: number, articleIndex: number) {
 
 export function DepotVendeurFormPage() {
   const createDepotMutation = useCreateDepot()
+  const dymo = useDymo()
   const depotDb = useDepotDb()
   const [workstation] = useWorkstation()
-  const currentDepotCount = depotDb.getCount()
-  const depotCurrentIndex = currentDepotCount
-    ? workstation + currentDepotCount + 1
-    : 0
+  const currentDepotCount = useLiveQuery(() => depotDb.getCount()) ?? 0
+  const depotCurrentIndex = workstation + currentDepotCount + 1
 
   const { register, control, handleSubmit, setValue, reset } =
     useForm<DepotFormType>({
@@ -75,6 +76,7 @@ export function DepotVendeurFormPage() {
   const [countArticle, setCountArticle] = useState(0)
   const addArticle = useCallback(() => {
     if (!depotCurrentIndex) return
+    const articleCode = generateArticleCode(depotCurrentIndex, countArticle)
     append({
       price: 0,
       description: '',
@@ -83,7 +85,8 @@ export function DepotVendeurFormPage() {
       size: '',
       color: '',
       model: '',
-      articleCode: generateArticleCode(depotCurrentIndex, countArticle),
+      articleCode,
+      shortArticleCode: articleCode.substring(5),
     })
     setCountArticle(countArticle + 1)
   }, [depotCurrentIndex, countArticle])
@@ -97,22 +100,42 @@ export function DepotVendeurFormPage() {
     const nbArticles = Math.floor(Math.random() * 10) + 1
     setValue(
       'articles',
-      Array.from({ length: nbArticles }).map((_, index) => ({
-        price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
-        description: faker.lorem.words({ min: 1, max: 4 }),
-        brand: faker.commerce.department(),
-        type: faker.helpers.enumValue(TypeEnum),
-        size: faker.number.int({ min: 1, max: 180 }) + '',
-        color: faker.color.human(),
-        model: faker.commerce.productName(),
-        articleCode: generateArticleCode(depotCurrentIndex, index),
-      })),
+      Array.from({ length: nbArticles }).map((_, index) => {
+        const articleCode = generateArticleCode(depotCurrentIndex, index)
+        return {
+          price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
+          description: faker.lorem.words({ min: 1, max: 4 }),
+          brand: faker.commerce.department(),
+          type: faker.helpers.enumValue(TypeEnum),
+          size: faker.number.int({ min: 1, max: 180 }) + '',
+          color: faker.color.human(),
+          model: faker.commerce.productName(),
+          articleCode,
+          shortArticleCode: articleCode.substring(5),
+        }
+      }),
     )
   }, [depotCurrentIndex, setValue])
 
   if (!depotCurrentIndex) {
     return null
   }
+
+  const printDymo = useCallback(
+    (field: FieldArrayWithId<DepotFormType, 'articles', 'id'>) => {
+      dymo.print({
+        color: field.color,
+        brand: field.brand,
+        size: field.size,
+        category: field.type,
+        code: field.articleCode,
+        price: `${field.price}`,
+        shortCode: field.articleCode.substring(5),
+        shortDescription: field.description,
+      })
+    },
+    [dymo],
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -251,7 +274,9 @@ export function DepotVendeurFormPage() {
                             <input
                               type="text"
                               readOnly={true}
-                              {...register(`articles.${index}.articleCode`)}
+                              {...register(
+                                `articles.${index}.shortArticleCode`,
+                              )}
                               className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
                             />
                           </td>
@@ -325,6 +350,7 @@ export function DepotVendeurFormPage() {
                           <td className="py-1 px-1">
                             <div className="flex items-center gap-2">
                               <button
+                                onClick={() => printDymo(field)}
                                 type="button"
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                               >

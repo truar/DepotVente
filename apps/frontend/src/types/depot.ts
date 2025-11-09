@@ -14,6 +14,7 @@ export type ArticleFormType = {
   color: string
   model: string
   articleCode: string
+  shortArticleCode: string
 }
 
 export type DepotFormType = {
