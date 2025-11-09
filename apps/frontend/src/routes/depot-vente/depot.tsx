@@ -1,7 +1,7 @@
 import { type FieldArrayWithId, useFieldArray, useForm } from 'react-hook-form'
 import { Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { type DepotFormType, TypeEnum } from '@/types/depot.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
@@ -136,12 +136,15 @@ export function DepotVendeurFormPage() {
     },
     [dymo],
   )
+  const checkKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Enter') e.preventDefault()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Main Content */}
       <main className="px-6 py-8">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
           <div className="mx-auto">
             <h2 className="text-4xl font-bold text-gray-800 mb-8">
               Enregistrer un nouveau dépôt vendeur
