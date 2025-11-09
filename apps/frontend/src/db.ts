@@ -1,12 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-interface Depot {
+export interface Depot {
   id: string
   workstation: number
   userId: string
   depotIndex: number
 }
-interface Article {
+
+export interface Article {
   id: string
   depotId: string
   price: number
@@ -18,8 +19,11 @@ interface Article {
   model: string
   workstation: number
   articleCode: string
+  year: number
+  depotIndex: number
+  articleIndex: string
 }
-interface User {
+export interface User {
   id: string
   lastName: string
   firstName: string
@@ -48,5 +52,4 @@ db.version(1).stores({
   articles: '++id, depotId, articleCode',
 })
 
-export type { Depot, User }
 export { db }

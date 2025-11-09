@@ -29,10 +29,7 @@ export const Route = createFileRoute('/depot-vente/depot')({
   ),
 })
 
-function generateArticleCode(depotIndex: number, articleIndex: number) {
-  // Get the current year as a string
-  const year = new Date().getFullYear().toString()
-
+function generateArticleIndex(articleIndex: number) {
   // Generate the alphabetical representation of the articleIndex
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let alphaPart = ''
@@ -43,9 +40,16 @@ function generateArticleCode(depotIndex: number, articleIndex: number) {
     alphaPart = alphabet[alphaIndex % 26] + alphaPart
     alphaIndex = Math.floor(alphaIndex / 26)
   } while (alphaIndex > 0)
+  return alphaPart
+}
 
+function generateArticleCode(
+  year: number,
+  depotIndex: number,
+  articleIndex: string,
+) {
   // Combine all parts into the final code
-  return `${year}-${depotIndex}-${alphaPart}`
+  return `${year} ${depotIndex}${articleIndex}`
 }
 
 export function DepotVendeurFormPage() {
@@ -53,7 +57,7 @@ export function DepotVendeurFormPage() {
   const dymo = useDymo()
   const depotDb = useDepotDb()
   const [workstation] = useWorkstation()
-  const currentDepotCount = useLiveQuery(() => depotDb.getCount()) ?? 0
+  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
   const depotCurrentIndex = workstation + currentDepotCount + 1
 
   const { register, control, handleSubmit, setValue, reset } =
@@ -81,7 +85,13 @@ export function DepotVendeurFormPage() {
   const [countArticle, setCountArticle] = useState(0)
   const addArticle = useCallback(() => {
     if (!depotCurrentIndex) return
-    const articleCode = generateArticleCode(depotCurrentIndex, countArticle)
+    const year = new Date().getFullYear()
+    const articleIndex = generateArticleIndex(countArticle)
+    const articleCode = generateArticleCode(
+      year,
+      depotCurrentIndex,
+      articleIndex,
+    )
     append({
       price: 0,
       description: '',
@@ -91,7 +101,10 @@ export function DepotVendeurFormPage() {
       color: '',
       model: '',
       articleCode,
-      shortArticleCode: articleCode.substring(5),
+      year,
+      depotIndex: depotCurrentIndex,
+      articleIndex,
+      shortArticleCode: `${depotCurrentIndex} ${articleIndex}`,
     })
     setCountArticle(countArticle + 1)
   }, [depotCurrentIndex, countArticle])
@@ -106,7 +119,13 @@ export function DepotVendeurFormPage() {
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
-        const articleCode = generateArticleCode(depotCurrentIndex, index)
+        const year = new Date().getFullYear()
+        const articleIndex = generateArticleIndex(index)
+        const articleCode = generateArticleCode(
+          year,
+          depotCurrentIndex,
+          articleIndex,
+        )
         return {
           price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
           description: faker.lorem.words({ min: 1, max: 4 }),
@@ -116,10 +135,14 @@ export function DepotVendeurFormPage() {
           color: faker.color.human(),
           model: faker.commerce.productName(),
           articleCode,
-          shortArticleCode: articleCode.substring(5),
+          year,
+          depotIndex: depotCurrentIndex,
+          articleIndex,
+          shortArticleCode: `${depotCurrentIndex} ${articleIndex}`,
         }
       }),
     )
+    setCountArticle(nbArticles)
   }, [depotCurrentIndex, setValue])
 
   if (!depotCurrentIndex) {
