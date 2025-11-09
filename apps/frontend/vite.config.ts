@@ -12,6 +12,9 @@ export default defineConfig({
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
+      generatedRouteTree: './src/routeTree.gen.ts',
+      // Désactiver le watcher pour éviter les erreurs EXDEV dans Docker
+      disableLogging: false,
     }),
     viteReact(),
     tailwindcss(),
@@ -22,8 +25,12 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     watch: {
-      usePolling: true
-    }
+      usePolling: true,
+      interval: 100,
+    },
+    hmr: {
+      overlay: true,
+    },
   },
   resolve: {
     alias: {

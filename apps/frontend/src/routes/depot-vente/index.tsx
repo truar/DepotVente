@@ -1,8 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Package, ShoppingCart } from 'lucide-react'
+import PublicLayout from '@/components/PublicLayout'
 
 export const Route = createFileRoute('/depot-vente/')({
-  component: RouteComponent,
+  component: () => (
+    <PublicLayout>
+      <RouteComponent />
+    </PublicLayout>
+  ),
 })
 
 export function RouteComponent() {

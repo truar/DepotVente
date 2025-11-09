@@ -19,9 +19,14 @@ import {
 } from '@/components/ui/select'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
+import PublicLayout from '@/components/PublicLayout'
 
 export const Route = createFileRoute('/depot-vente/depot')({
-  component: DepotVendeurFormPage,
+  component: () => (
+    <PublicLayout>
+      <DepotVendeurFormPage />
+    </PublicLayout>
+  ),
 })
 
 function generateArticleCode(depotIndex: number, articleIndex: number) {
@@ -141,11 +146,9 @@ export function DepotVendeurFormPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Main Content */}
-      <main className="px-6 py-8">
-        <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
-          <div className="mx-auto">
+    <main className="flex-1 px-6 py-8">
+      <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
+        <div className="mx-auto">
             <h2 className="text-4xl font-bold text-gray-800 mb-8">
               Enregistrer un nouveau dépôt vendeur
             </h2>
@@ -410,6 +413,5 @@ export function DepotVendeurFormPage() {
           </div>
         </form>
       </main>
-    </div>
   )
 }

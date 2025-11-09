@@ -6,6 +6,17 @@ import "dotenv/config";
 import jwt from "@fastify/jwt";
 import bcrypt from "bcrypt";
 import { User } from "../../../packages/types/src/generated";
+
+// Étendre le type FastifyInstance pour inclure notre decorator
+declare module "fastify" {
+  interface FastifyInstance {
+    authenticate: (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => Promise<void>;
+  }
+}
+
 const fastify = Fastify({
   logger: true,
 });
@@ -43,7 +54,7 @@ fastify.post("/signin", async (req, reply) => {
   const { email, password } = req.body as { email: string; password: string };
   const user = await prisma.user.findFirst({
     where: {
-      email: { equals: email , not: null},
+      email: { equals: email, not: null },
       password: { not: null },
     },
   });
@@ -61,6 +72,19 @@ fastify.post("/signin", async (req, reply) => {
   });
   reply.send({ token });
 });
+
+fastify.post(
+  "/logout",
+  {
+    onRequest: [fastify.authenticate],
+  },
+  async (request, reply) => {
+    // Pour l'instant, on retourne simplement un succès
+    // Plus tard, on pourra ajouter une blacklist de tokens ici
+    reply.code(200);
+    return { message: "Logged out successfully" };
+  }
+);
 
 // Health check
 fastify.get("/api/health", async () => {

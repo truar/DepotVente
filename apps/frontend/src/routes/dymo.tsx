@@ -1,8 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDymo } from '@/hooks/useDymo.ts'
+import PublicLayout from '@/components/PublicLayout'
 
 export const Route = createFileRoute('/dymo')({
-  component: DymoHealthCheckPage,
+  component: () => (
+    <PublicLayout>
+      <DymoHealthCheckPage />
+    </PublicLayout>
+  ),
 })
 
 function DymoHealthCheckPage() {

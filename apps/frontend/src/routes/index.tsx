@@ -12,9 +12,14 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input.tsx'
 import { Label } from '@/components/ui/label.tsx'
+import PublicLayout from '@/components/PublicLayout'
 
 export const Route = createFileRoute('/')({
-  component: App,
+  component: () => (
+    <PublicLayout>
+      <App />
+    </PublicLayout>
+  ),
 })
 
 export function App() {

@@ -1,17 +1,11 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { Footer } from '@/components/Footer.tsx'
-import Header from '@/components/Header.tsx'
 
 export const Route = createRootRoute({
   component: () => (
     <>
-      <div className="relative flex min-h-screen w-full flex-col bg-gradient-to-br from-green-50 to-blue-50">
-        <Header />
-        <Outlet />
-        <Footer />
-      </div>
+      <Outlet />
       <TanStackDevtools
         config={{
           position: 'bottom-right',
@@ -24,5 +18,19 @@ export const Route = createRootRoute({
         ]}
       />
     </>
+  ),
+  notFoundComponent: () => (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="text-center">
+        <h1 className="text-6xl font-bold text-gray-800 mb-4">404</h1>
+        <p className="text-xl text-gray-600 mb-8">Page non trouvée</p>
+        <Link
+          to="/"
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block"
+        >
+          Retour à l'accueil
+        </Link>
+      </div>
+    </div>
   ),
 })
