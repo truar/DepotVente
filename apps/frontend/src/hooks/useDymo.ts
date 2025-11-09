@@ -3,7 +3,7 @@ export type ArticlePrintParam = {
   shortCode: string
   color: string
   price: string
-  shortDescription: string
+  model: string
   brand: string
   category: string
   size: string
@@ -29,6 +29,7 @@ export function useDymo() {
   }
 
   const print = (param: ArticlePrintParam) => {
+    console.log(param)
     const droppedArticleLabelXml =
       '<?xml version="1.0" encoding="utf-8"?>\n' +
       '<DesktopLabel Version="1">\n' +
@@ -418,7 +419,7 @@ export function useDymo() {
       '            <IsVertical>False</IsVertical>\n' +
       '            <LineTextSpan>\n' +
       '              <TextSpan>\n' +
-      '                <Text>{shortDescription}</Text>\n' +
+      '                <Text>{model}</Text>\n' +
       '                <FontInfo>\n' +
       '                  <FontName>Helvetica</FontName>\n' +
       '                  <FontSize>8.7</FontSize>\n' +

@@ -11,18 +11,19 @@ export interface Article {
   id: string
   depotId: string
   price: number
-  description: string
-  brand: string
   type: string
+  discipline: string
+  brand: string
+  model: string
   size: string
   color: string
-  model: string
   workstation: number
   articleCode: string
   year: number
   depotIndex: number
   articleIndex: string
 }
+
 export interface User {
   id: string
   lastName: string

@@ -94,7 +94,7 @@ export function DepotVendeurFormPage() {
     )
     append({
       price: 0,
-      description: '',
+      discipline: '',
       brand: '',
       type: '',
       size: '',
@@ -128,7 +128,7 @@ export function DepotVendeurFormPage() {
         )
         return {
           price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
-          description: faker.lorem.words({ min: 1, max: 4 }),
+          discipline: faker.lorem.words({ min: 1, max: 4 }),
           brand: faker.commerce.department(),
           type: faker.helpers.enumValue(TypeEnum),
           size: faker.number.int({ min: 1, max: 180 }) + '',
@@ -158,8 +158,8 @@ export function DepotVendeurFormPage() {
         category: field.type,
         code: field.articleCode,
         price: `${field.price}`,
-        shortCode: field.articleCode.substring(5),
-        shortDescription: field.description,
+        shortCode: field.shortArticleCode,
+        model: field.model,
       })
     },
     [dymo],
@@ -286,7 +286,7 @@ export function DepotVendeurFormPage() {
                           Couleur
                         </th>
                         <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                          Descriptif
+                          Discipline
                         </th>
                         <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                           Prix
@@ -362,7 +362,7 @@ export function DepotVendeurFormPage() {
                           <td className="py-1 px-1">
                             <input
                               type="text"
-                              {...register(`articles.${index}.description`)}
+                              {...register(`articles.${index}.discipline`)}
                               className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
                             />
                           </td>

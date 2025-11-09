@@ -7,7 +7,7 @@ export enum TypeEnum {
 
 export type ArticleFormType = {
   price: number
-  description: string
+  discipline: string
   brand: string
   type: string
   size: string

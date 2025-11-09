@@ -35,7 +35,7 @@ export function useCreateDepot() {
           depotId,
           articleCode: articleForm.articleCode,
           price: articleForm.price,
-          description: articleForm.description,
+          discipline: articleForm.discipline,
           brand: articleForm.brand,
           type: articleForm.type,
           size: articleForm.size,
