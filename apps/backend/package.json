@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "script:create-user": "tsx src/scripts/create-user.ts",
+    "script:create-sales": "tsx src/scripts/create-sales.ts",
+    "script:simulate": "tsx src/scripts/simulate-sales.ts"
   },
   "dependencies": {
     "@cmr-apps/types": "workspace:*",
@@ -15,11 +18,13 @@
     "bcrypt": "^6.0.0",
     "database": "workspace:*",
     "dotenv": "^16.4.7",
-    "fastify": "^5.2.0"
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   }

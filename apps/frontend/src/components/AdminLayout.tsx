@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboard', to: '/admin' },
     { icon: Users, label: 'Utilisateurs', to: '/admin/users' },
     { icon: Package, label: 'Dépôts', to: '/admin/depots' },
-    { icon: ShoppingCart, label: 'Ventes', to: '/admin/ventes' },
+    { icon: ShoppingCart, label: 'Ventes', to: '/admin/sales' },
     { icon: Settings, label: 'Paramètres', to: '/admin/settings' },
   ]
 

@@ -237,3 +237,8 @@ model Article {
   @@index([deletedAt])
   @@map("articles")
 }
+
+// Note: Les triggers PostgreSQL doivent être créés via une migration SQL
+// Voir le fichier de migration pour les détails des triggers:
+// - notify_stats_changed() : notifie sur le canal 'stats_changed'
+// - notify_sales_changed() : notifie sur le canal 'sales_changed'

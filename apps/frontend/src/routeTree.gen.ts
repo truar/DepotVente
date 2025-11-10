@@ -14,9 +14,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DepotVenteIndexRouteImport } from './routes/depot-vente/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as DepotVenteDepotRouteImport } from './routes/depot-vente/depot'
-import { Route as AdminVentesRouteImport } from './routes/admin/ventes'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminSalesRouteImport } from './routes/admin/sales'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminDepotsRouteImport } from './routes/admin/depots'
 
@@ -45,11 +45,6 @@ const DepotVenteDepotRoute = DepotVenteDepotRouteImport.update({
   path: '/depot-vente/depot',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminVentesRoute = AdminVentesRouteImport.update({
-  id: '/admin/ventes',
-  path: '/admin/ventes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -58,6 +53,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSalesRoute = AdminSalesRouteImport.update({
+  id: '/admin/sales',
+  path: '/admin/sales',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -76,9 +76,9 @@ export interface FileRoutesByFullPath {
   '/dymo': typeof DymoRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sales': typeof AdminSalesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/admin/ventes': typeof AdminVentesRoute
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin': typeof AdminIndexRoute
   '/depot-vente': typeof DepotVenteIndexRoute
@@ -88,9 +88,9 @@ export interface FileRoutesByTo {
   '/dymo': typeof DymoRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sales': typeof AdminSalesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/admin/ventes': typeof AdminVentesRoute
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin': typeof AdminIndexRoute
   '/depot-vente': typeof DepotVenteIndexRoute
@@ -101,9 +101,9 @@ export interface FileRoutesById {
   '/dymo': typeof DymoRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sales': typeof AdminSalesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/admin/ventes': typeof AdminVentesRoute
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin/': typeof AdminIndexRoute
   '/depot-vente/': typeof DepotVenteIndexRoute
@@ -115,9 +115,9 @@ export interface FileRouteTypes {
     | '/dymo'
     | '/admin/depots'
     | '/admin/login'
+    | '/admin/sales'
     | '/admin/settings'
     | '/admin/users'
-    | '/admin/ventes'
     | '/depot-vente/depot'
     | '/admin'
     | '/depot-vente'
@@ -127,9 +127,9 @@ export interface FileRouteTypes {
     | '/dymo'
     | '/admin/depots'
     | '/admin/login'
+    | '/admin/sales'
     | '/admin/settings'
     | '/admin/users'
-    | '/admin/ventes'
     | '/depot-vente/depot'
     | '/admin'
     | '/depot-vente'
@@ -139,9 +139,9 @@ export interface FileRouteTypes {
     | '/dymo'
     | '/admin/depots'
     | '/admin/login'
+    | '/admin/sales'
     | '/admin/settings'
     | '/admin/users'
-    | '/admin/ventes'
     | '/depot-vente/depot'
     | '/admin/'
     | '/depot-vente/'
@@ -152,9 +152,9 @@ export interface RootRouteChildren {
   DymoRoute: typeof DymoRoute
   AdminDepotsRoute: typeof AdminDepotsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminSalesRoute: typeof AdminSalesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
-  AdminVentesRoute: typeof AdminVentesRoute
   DepotVenteDepotRoute: typeof DepotVenteDepotRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DepotVenteIndexRoute: typeof DepotVenteIndexRoute
@@ -197,13 +197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepotVenteDepotRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/ventes': {
-      id: '/admin/ventes'
-      path: '/admin/ventes'
-      fullPath: '/admin/ventes'
-      preLoaderRoute: typeof AdminVentesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/users': {
       id: '/admin/users'
       path: '/admin/users'
@@ -216,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/sales': {
+      id: '/admin/sales'
+      path: '/admin/sales'
+      fullPath: '/admin/sales'
+      preLoaderRoute: typeof AdminSalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -240,9 +240,9 @@ const rootRouteChildren: RootRouteChildren = {
   DymoRoute: DymoRoute,
   AdminDepotsRoute: AdminDepotsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminSalesRoute: AdminSalesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
-  AdminVentesRoute: AdminVentesRoute,
   DepotVenteDepotRoute: DepotVenteDepotRoute,
   AdminIndexRoute: AdminIndexRoute,
   DepotVenteIndexRoute: DepotVenteIndexRoute,
