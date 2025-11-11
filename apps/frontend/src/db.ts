@@ -1,56 +1,91 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-export interface Depot {
+export type Workstation = {
   id: string
-  workstation: number
-  userId: string
-  depotIndex: number
+  incrementStart: number
+  name: string
 }
 
-export interface Article {
+export type Deposit = {
   id: string
-  depotId: string
+  contributionStatus: string
+  eventId: string
+  sellerId: string
+  workstationId: string
+  depositIndex: number
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
+export type Article = {
+  id: string
   price: number
-  type: string
+  category: string
   discipline: string
   brand: string
   model: string
   size: string
   color: string
-  workstation: number
-  articleCode: string
+  code: string
   year: number
-  depotIndex: number
+  depositIndex: number
   articleIndex: string
+  eventId: string
+  depositId: string
+  saleId: string | null
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
 }
 
-export interface User {
+export type Contact = {
   id: string
   lastName: string
   firstName: string
   phoneNumber: string
+  city: string | null
+  postalCode: string | null
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
+export type OutboxOperation = {
+  id: string // UUID
+  timestamp: number // When operation was created
+  collection: string // e.g., 'users', 'products'
+  operation: 'create' | 'update' | 'delete'
+  recordId: string // ID of the record being synced
+  data: any // The actual data to sync
+  retryCount: number
+  lastAttempt?: number
+  error?: string
+  status: 'pending' | 'syncing' | 'failed'
 }
 
 const db = new Dexie('DepotVenteDatabase') as Dexie & {
-  users: EntityTable<
-    User,
+  contacts: EntityTable<
+    Contact,
     'id' // primary key "id" (for the typings only)
   >
-  depots: EntityTable<
-    Depot,
+  deposits: EntityTable<
+    Deposit,
     'id' // primary key "id" (for the typings only)
   >
   articles: EntityTable<
     Article,
     'id' // primary key "id" (for the typings only)
   >
+  outbox: EntityTable<OutboxOperation, 'id'>
 }
 
 // Schema declaration:
 db.version(1).stores({
-  users: '++id', // primary key "id" (for the runtime!)
-  depots: '++id, workstation',
-  articles: '++id, depotId, articleCode',
+  contacts: '++id',
+  deposits: '++id, workstation',
+  articles: '++id, depotId, code',
+  outbox: '++id, timestamp, status, collection',
 })
 
 export { db }

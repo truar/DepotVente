@@ -1,15 +1,24 @@
-import { db, type Depot } from '@/db.ts'
+import { db, type Deposit } from '@/db.ts'
 import { useWorkstation } from './useWorkstation'
+import { syncService } from '@/sync-service.ts'
 
 export function useDepotDb() {
   const [workstation] = useWorkstation()
 
   function count() {
-    return db.depots.where({ workstation }).count()
+    return db.deposits.where({ workstation }).count()
   }
 
-  function upsert(depot: Depot) {
-    return db.depots.put(depot)
+  async function upsert(depot: Deposit) {
+    const depotId = await db.deposits.put(depot)
+    // Add to outbox for syncing
+    await syncService.addToOutbox(
+      'depots',
+      'create', // or 'create' based on your logic
+      depot.id,
+      depot,
+    )
+    return depotId
   }
   return { upsert, count }
 }

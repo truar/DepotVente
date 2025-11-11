@@ -1,9 +1,12 @@
 import { useLocalStorage } from '@/hooks/useLocalStorage.ts'
+import type { Workstation } from '@/db.ts'
 
-export function useWorkstation(): [number, (value: number) => void] {
-  const [workstation, setWorkstation] = useLocalStorage<number>(
-    'workstation',
-    0,
-  )
+export function useWorkstation(): [
+  Workstation | undefined,
+  (value: Workstation | undefined) => void,
+] {
+  const [workstation, setWorkstation] = useLocalStorage<
+    Workstation | undefined
+  >('workstation', undefined)
   return [workstation, setWorkstation]
 }

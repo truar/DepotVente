@@ -6,6 +6,9 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
+import { syncService } from '@/sync-service.ts'
+
+syncService.startSync()
 
 // Create a new router instance
 const router = createRouter({
