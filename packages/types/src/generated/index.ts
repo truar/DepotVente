@@ -36,21 +36,17 @@ export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted','ReadCo
 
 export const EventScalarFieldEnumSchema = z.enum(['id','name','year','description','startDate','endDate','isActive','createdAt','updatedAt','deletedAt']);
 
-export const CheckoutScalarFieldEnumSchema = z.enum(['id','name','initialCash','currentCash','eventId','createdAt','updatedAt','deletedAt']);
-
 export const WorkstationScalarFieldEnumSchema = z.enum(['id','eventId','name','increment_start','createdAt','updatedAt','deletedAt']);
 
 export const UserScalarFieldEnumSchema = z.enum(['id','email','password','createdAt','updatedAt','deletedAt']);
 
 export const ContactScalarFieldEnumSchema = z.enum(['id','lastName','firstName','phoneNumber','city','postalCode','createdAt','updatedAt','deletedAt']);
 
-export const DepositScalarFieldEnumSchema = z.enum(['id','eventId','sellerId','workstationId','contributionStatus','status','createdAt','updatedAt','deletedAt','userId']);
+export const DepositScalarFieldEnumSchema = z.enum(['id','eventId','sellerId','workstationId','contributionStatus','depositIndex','createdAt','updatedAt','deletedAt','userId']);
 
-export const SaleScalarFieldEnumSchema = z.enum(['id','eventId','buyerId','workstationId','checkoutId','cardAmount','cashAmount','checkAmount','totalAmount','postalCode','saleAt','createdAt','updatedAt','deletedAt','userId']);
+export const SaleScalarFieldEnumSchema = z.enum(['id','eventId','buyerId','workstationId','cardAmount','cashAmount','checkAmount','totalAmount','postalCode','saleAt','createdAt','updatedAt','deletedAt','userId']);
 
-export const CashTransactionScalarFieldEnumSchema = z.enum(['id','saleId','cashReceived','cashGiven','createdAt','updatedAt','deletedAt']);
-
-export const ArticleScalarFieldEnumSchema = z.enum(['id','discipline','categorie','brand','description','color','size','price','code','depositId','saleId','createdAt','updatedAt','deletedAt']);
+export const ArticleScalarFieldEnumSchema = z.enum(['id','price','category','discipline','brand','model','size','color','code','year','depositIndex','articleIndex','eventId','depositId','saleId','createdAt','updatedAt','deletedAt']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -61,10 +57,6 @@ export const NullsOrderSchema = z.enum(['first','last']);
 export const ContributionStatusSchema = z.enum(['PAYER','A_PAYER','GRATUIT']);
 
 export type ContributionStatusType = `${z.infer<typeof ContributionStatusSchema>}`
-
-export const DepotStatusSchema = z.enum(['PRE_DEPOT','VALIDE','EN_ATTENTE']);
-
-export type DepotStatusType = `${z.infer<typeof DepotStatusSchema>}`
 
 /////////////////////////////////////////
 // MODELS
@@ -88,23 +80,6 @@ export const EventSchema = z.object({
 })
 
 export type Event = z.infer<typeof EventSchema>
-
-/////////////////////////////////////////
-// CHECKOUT SCHEMA
-/////////////////////////////////////////
-
-export const CheckoutSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  initialCash: z.instanceof(Prisma.Decimal, { message: "Field 'initialCash' must be a Decimal. Location: ['Models', 'Checkout']"}),
-  currentCash: z.instanceof(Prisma.Decimal, { message: "Field 'currentCash' must be a Decimal. Location: ['Models', 'Checkout']"}),
-  eventId: z.string(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  deletedAt: z.coerce.date().nullable(),
-})
-
-export type Checkout = z.infer<typeof CheckoutSchema>
 
 /////////////////////////////////////////
 // WORKSTATION SCHEMA
@@ -161,11 +136,11 @@ export type Contact = z.infer<typeof ContactSchema>
 
 export const DepositSchema = z.object({
   contributionStatus: ContributionStatusSchema,
-  status: DepotStatusSchema,
   id: z.uuid(),
   eventId: z.string(),
   sellerId: z.string(),
   workstationId: z.string(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().nullable(),
@@ -183,7 +158,6 @@ export const SaleSchema = z.object({
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cardAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
   cashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cashAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
   checkAmount: z.instanceof(Prisma.Decimal, { message: "Field 'checkAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
@@ -199,35 +173,23 @@ export const SaleSchema = z.object({
 export type Sale = z.infer<typeof SaleSchema>
 
 /////////////////////////////////////////
-// CASH TRANSACTION SCHEMA
-/////////////////////////////////////////
-
-export const CashTransactionSchema = z.object({
-  id: z.uuid(),
-  saleId: z.string(),
-  cashReceived: z.instanceof(Prisma.Decimal, { message: "Field 'cashReceived' must be a Decimal. Location: ['Models', 'CashTransaction']"}),
-  cashGiven: z.instanceof(Prisma.Decimal, { message: "Field 'cashGiven' must be a Decimal. Location: ['Models', 'CashTransaction']"}),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  deletedAt: z.coerce.date().nullable(),
-})
-
-export type CashTransaction = z.infer<typeof CashTransactionSchema>
-
-/////////////////////////////////////////
 // ARTICLE SCHEMA
 /////////////////////////////////////////
 
 export const ArticleSchema = z.object({
   id: z.uuid(),
-  discipline: z.string().nullable(),
-  categorie: z.string().nullable(),
-  brand: z.string().nullable(),
-  description: z.string().nullable(),
-  color: z.string().nullable(),
-  size: z.string().nullable(),
   price: z.instanceof(Prisma.Decimal, { message: "Field 'price' must be a Decimal. Location: ['Models', 'Article']"}).nullable(),
-  code: z.string().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().nullable(),
   depositId: z.string().nullable(),
   saleId: z.string().nullable(),
   createdAt: z.coerce.date(),
@@ -248,7 +210,7 @@ export const EventIncludeSchema: z.ZodType<Prisma.EventInclude> = z.object({
   sales: z.union([z.boolean(),z.lazy(() => SaleFindManyArgsSchema)]).optional(),
   deposits: z.union([z.boolean(),z.lazy(() => DepositFindManyArgsSchema)]).optional(),
   workstations: z.union([z.boolean(),z.lazy(() => WorkstationFindManyArgsSchema)]).optional(),
-  checkouts: z.union([z.boolean(),z.lazy(() => CheckoutFindManyArgsSchema)]).optional(),
+  articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => EventCountOutputTypeArgsSchema)]).optional(),
 }).strict();
 
@@ -265,7 +227,7 @@ export const EventCountOutputTypeSelectSchema: z.ZodType<Prisma.EventCountOutput
   sales: z.boolean().optional(),
   deposits: z.boolean().optional(),
   workstations: z.boolean().optional(),
-  checkouts: z.boolean().optional(),
+  articles: z.boolean().optional(),
 }).strict();
 
 export const EventSelectSchema: z.ZodType<Prisma.EventSelect> = z.object({
@@ -282,44 +244,8 @@ export const EventSelectSchema: z.ZodType<Prisma.EventSelect> = z.object({
   sales: z.union([z.boolean(),z.lazy(() => SaleFindManyArgsSchema)]).optional(),
   deposits: z.union([z.boolean(),z.lazy(() => DepositFindManyArgsSchema)]).optional(),
   workstations: z.union([z.boolean(),z.lazy(() => WorkstationFindManyArgsSchema)]).optional(),
-  checkouts: z.union([z.boolean(),z.lazy(() => CheckoutFindManyArgsSchema)]).optional(),
+  articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => EventCountOutputTypeArgsSchema)]).optional(),
-}).strict()
-
-// CHECKOUT
-//------------------------------------------------------
-
-export const CheckoutIncludeSchema: z.ZodType<Prisma.CheckoutInclude> = z.object({
-  event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
-  sales: z.union([z.boolean(),z.lazy(() => SaleFindManyArgsSchema)]).optional(),
-  _count: z.union([z.boolean(),z.lazy(() => CheckoutCountOutputTypeArgsSchema)]).optional(),
-}).strict();
-
-export const CheckoutArgsSchema: z.ZodType<Prisma.CheckoutDefaultArgs> = z.object({
-  select: z.lazy(() => CheckoutSelectSchema).optional(),
-  include: z.lazy(() => CheckoutIncludeSchema).optional(),
-}).strict();
-
-export const CheckoutCountOutputTypeArgsSchema: z.ZodType<Prisma.CheckoutCountOutputTypeDefaultArgs> = z.object({
-  select: z.lazy(() => CheckoutCountOutputTypeSelectSchema).nullish(),
-}).strict();
-
-export const CheckoutCountOutputTypeSelectSchema: z.ZodType<Prisma.CheckoutCountOutputTypeSelect> = z.object({
-  sales: z.boolean().optional(),
-}).strict();
-
-export const CheckoutSelectSchema: z.ZodType<Prisma.CheckoutSelect> = z.object({
-  id: z.boolean().optional(),
-  name: z.boolean().optional(),
-  initialCash: z.boolean().optional(),
-  currentCash: z.boolean().optional(),
-  eventId: z.boolean().optional(),
-  createdAt: z.boolean().optional(),
-  updatedAt: z.boolean().optional(),
-  deletedAt: z.boolean().optional(),
-  event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
-  sales: z.union([z.boolean(),z.lazy(() => SaleFindManyArgsSchema)]).optional(),
-  _count: z.union([z.boolean(),z.lazy(() => CheckoutCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
 // WORKSTATION
@@ -464,7 +390,7 @@ export const DepositSelectSchema: z.ZodType<Prisma.DepositSelect> = z.object({
   sellerId: z.boolean().optional(),
   workstationId: z.boolean().optional(),
   contributionStatus: z.boolean().optional(),
-  status: z.boolean().optional(),
+  depositIndex: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   deletedAt: z.boolean().optional(),
@@ -484,9 +410,7 @@ export const SaleIncludeSchema: z.ZodType<Prisma.SaleInclude> = z.object({
   event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
   buyer: z.union([z.boolean(),z.lazy(() => ContactArgsSchema)]).optional(),
   workstation: z.union([z.boolean(),z.lazy(() => WorkstationArgsSchema)]).optional(),
-  checkout: z.union([z.boolean(),z.lazy(() => CheckoutArgsSchema)]).optional(),
   articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
-  cashTransactions: z.union([z.boolean(),z.lazy(() => CashTransactionFindManyArgsSchema)]).optional(),
   user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SaleCountOutputTypeArgsSchema)]).optional(),
 }).strict();
@@ -502,7 +426,6 @@ export const SaleCountOutputTypeArgsSchema: z.ZodType<Prisma.SaleCountOutputType
 
 export const SaleCountOutputTypeSelectSchema: z.ZodType<Prisma.SaleCountOutputTypeSelect> = z.object({
   articles: z.boolean().optional(),
-  cashTransactions: z.boolean().optional(),
 }).strict();
 
 export const SaleSelectSchema: z.ZodType<Prisma.SaleSelect> = z.object({
@@ -510,7 +433,6 @@ export const SaleSelectSchema: z.ZodType<Prisma.SaleSelect> = z.object({
   eventId: z.boolean().optional(),
   buyerId: z.boolean().optional(),
   workstationId: z.boolean().optional(),
-  checkoutId: z.boolean().optional(),
   cardAmount: z.boolean().optional(),
   cashAmount: z.boolean().optional(),
   checkAmount: z.boolean().optional(),
@@ -524,40 +446,16 @@ export const SaleSelectSchema: z.ZodType<Prisma.SaleSelect> = z.object({
   event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
   buyer: z.union([z.boolean(),z.lazy(() => ContactArgsSchema)]).optional(),
   workstation: z.union([z.boolean(),z.lazy(() => WorkstationArgsSchema)]).optional(),
-  checkout: z.union([z.boolean(),z.lazy(() => CheckoutArgsSchema)]).optional(),
   articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
-  cashTransactions: z.union([z.boolean(),z.lazy(() => CashTransactionFindManyArgsSchema)]).optional(),
   user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SaleCountOutputTypeArgsSchema)]).optional(),
-}).strict()
-
-// CASH TRANSACTION
-//------------------------------------------------------
-
-export const CashTransactionIncludeSchema: z.ZodType<Prisma.CashTransactionInclude> = z.object({
-  sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
-}).strict();
-
-export const CashTransactionArgsSchema: z.ZodType<Prisma.CashTransactionDefaultArgs> = z.object({
-  select: z.lazy(() => CashTransactionSelectSchema).optional(),
-  include: z.lazy(() => CashTransactionIncludeSchema).optional(),
-}).strict();
-
-export const CashTransactionSelectSchema: z.ZodType<Prisma.CashTransactionSelect> = z.object({
-  id: z.boolean().optional(),
-  saleId: z.boolean().optional(),
-  cashReceived: z.boolean().optional(),
-  cashGiven: z.boolean().optional(),
-  createdAt: z.boolean().optional(),
-  updatedAt: z.boolean().optional(),
-  deletedAt: z.boolean().optional(),
-  sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
 }).strict()
 
 // ARTICLE
 //------------------------------------------------------
 
 export const ArticleIncludeSchema: z.ZodType<Prisma.ArticleInclude> = z.object({
+  event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
   deposit: z.union([z.boolean(),z.lazy(() => DepositArgsSchema)]).optional(),
   sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
 }).strict();
@@ -569,19 +467,24 @@ export const ArticleArgsSchema: z.ZodType<Prisma.ArticleDefaultArgs> = z.object(
 
 export const ArticleSelectSchema: z.ZodType<Prisma.ArticleSelect> = z.object({
   id: z.boolean().optional(),
-  discipline: z.boolean().optional(),
-  categorie: z.boolean().optional(),
-  brand: z.boolean().optional(),
-  description: z.boolean().optional(),
-  color: z.boolean().optional(),
-  size: z.boolean().optional(),
   price: z.boolean().optional(),
+  category: z.boolean().optional(),
+  discipline: z.boolean().optional(),
+  brand: z.boolean().optional(),
+  model: z.boolean().optional(),
+  size: z.boolean().optional(),
+  color: z.boolean().optional(),
   code: z.boolean().optional(),
+  year: z.boolean().optional(),
+  depositIndex: z.boolean().optional(),
+  articleIndex: z.boolean().optional(),
+  eventId: z.boolean().optional(),
   depositId: z.boolean().optional(),
   saleId: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   deletedAt: z.boolean().optional(),
+  event: z.union([z.boolean(),z.lazy(() => EventArgsSchema)]).optional(),
   deposit: z.union([z.boolean(),z.lazy(() => DepositArgsSchema)]).optional(),
   sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
 }).strict()
@@ -608,7 +511,7 @@ export const EventWhereInputSchema: z.ZodType<Prisma.EventWhereInput> = z.strict
   sales: z.lazy(() => SaleListRelationFilterSchema).optional(),
   deposits: z.lazy(() => DepositListRelationFilterSchema).optional(),
   workstations: z.lazy(() => WorkstationListRelationFilterSchema).optional(),
-  checkouts: z.lazy(() => CheckoutListRelationFilterSchema).optional(),
+  articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
 });
 
 export const EventOrderByWithRelationInputSchema: z.ZodType<Prisma.EventOrderByWithRelationInput> = z.strictObject({
@@ -625,7 +528,7 @@ export const EventOrderByWithRelationInputSchema: z.ZodType<Prisma.EventOrderByW
   sales: z.lazy(() => SaleOrderByRelationAggregateInputSchema).optional(),
   deposits: z.lazy(() => DepositOrderByRelationAggregateInputSchema).optional(),
   workstations: z.lazy(() => WorkstationOrderByRelationAggregateInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutOrderByRelationAggregateInputSchema).optional(),
+  articles: z.lazy(() => ArticleOrderByRelationAggregateInputSchema).optional(),
 });
 
 export const EventWhereUniqueInputSchema: z.ZodType<Prisma.EventWhereUniqueInput> = z.object({
@@ -648,7 +551,7 @@ export const EventWhereUniqueInputSchema: z.ZodType<Prisma.EventWhereUniqueInput
   sales: z.lazy(() => SaleListRelationFilterSchema).optional(),
   deposits: z.lazy(() => DepositListRelationFilterSchema).optional(),
   workstations: z.lazy(() => WorkstationListRelationFilterSchema).optional(),
-  checkouts: z.lazy(() => CheckoutListRelationFilterSchema).optional(),
+  articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
 }));
 
 export const EventOrderByWithAggregationInputSchema: z.ZodType<Prisma.EventOrderByWithAggregationInput> = z.strictObject({
@@ -680,94 +583,6 @@ export const EventScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.EventSc
   startDate: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
   endDate: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
   isActive: z.union([ z.lazy(() => BoolWithAggregatesFilterSchema), z.boolean() ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
-});
-
-export const CheckoutWhereInputSchema: z.ZodType<Prisma.CheckoutWhereInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CheckoutWhereInputSchema), z.lazy(() => CheckoutWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CheckoutWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CheckoutWhereInputSchema), z.lazy(() => CheckoutWhereInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
-  initialCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  currentCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-  event: z.union([ z.lazy(() => EventScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional(),
-  sales: z.lazy(() => SaleListRelationFilterSchema).optional(),
-});
-
-export const CheckoutOrderByWithRelationInputSchema: z.ZodType<Prisma.CheckoutOrderByWithRelationInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  name: z.lazy(() => SortOrderSchema).optional(),
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-  eventId: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  event: z.lazy(() => EventOrderByWithRelationInputSchema).optional(),
-  sales: z.lazy(() => SaleOrderByRelationAggregateInputSchema).optional(),
-});
-
-export const CheckoutWhereUniqueInputSchema: z.ZodType<Prisma.CheckoutWhereUniqueInput> = z.union([
-  z.object({
-    id: z.uuid(),
-    eventId_name: z.lazy(() => CheckoutEventIdNameCompoundUniqueInputSchema),
-  }),
-  z.object({
-    id: z.uuid(),
-  }),
-  z.object({
-    eventId_name: z.lazy(() => CheckoutEventIdNameCompoundUniqueInputSchema),
-  }),
-])
-.and(z.strictObject({
-  id: z.uuid().optional(),
-  eventId_name: z.lazy(() => CheckoutEventIdNameCompoundUniqueInputSchema).optional(),
-  AND: z.union([ z.lazy(() => CheckoutWhereInputSchema), z.lazy(() => CheckoutWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CheckoutWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CheckoutWhereInputSchema), z.lazy(() => CheckoutWhereInputSchema).array() ]).optional(),
-  name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
-  initialCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  currentCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-  event: z.union([ z.lazy(() => EventScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional(),
-  sales: z.lazy(() => SaleListRelationFilterSchema).optional(),
-}));
-
-export const CheckoutOrderByWithAggregationInputSchema: z.ZodType<Prisma.CheckoutOrderByWithAggregationInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  name: z.lazy(() => SortOrderSchema).optional(),
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-  eventId: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  _count: z.lazy(() => CheckoutCountOrderByAggregateInputSchema).optional(),
-  _avg: z.lazy(() => CheckoutAvgOrderByAggregateInputSchema).optional(),
-  _max: z.lazy(() => CheckoutMaxOrderByAggregateInputSchema).optional(),
-  _min: z.lazy(() => CheckoutMinOrderByAggregateInputSchema).optional(),
-  _sum: z.lazy(() => CheckoutSumOrderByAggregateInputSchema).optional(),
-});
-
-export const CheckoutScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.CheckoutScalarWhereWithAggregatesInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CheckoutScalarWhereWithAggregatesInputSchema), z.lazy(() => CheckoutScalarWhereWithAggregatesInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CheckoutScalarWhereWithAggregatesInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CheckoutScalarWhereWithAggregatesInputSchema), z.lazy(() => CheckoutScalarWhereWithAggregatesInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  name: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
-  initialCash: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  currentCash: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  eventId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1015,7 +830,7 @@ export const DepositWhereInputSchema: z.ZodType<Prisma.DepositWhereInput> = z.st
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
-  status: z.union([ z.lazy(() => EnumDepotStatusFilterSchema), z.lazy(() => DepotStatusSchema) ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1033,7 +848,7 @@ export const DepositOrderByWithRelationInputSchema: z.ZodType<Prisma.DepositOrde
   sellerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
   contributionStatus: z.lazy(() => SortOrderSchema).optional(),
-  status: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
@@ -1057,7 +872,7 @@ export const DepositWhereUniqueInputSchema: z.ZodType<Prisma.DepositWhereUniqueI
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
-  status: z.union([ z.lazy(() => EnumDepotStatusFilterSchema), z.lazy(() => DepotStatusSchema) ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1075,14 +890,16 @@ export const DepositOrderByWithAggregationInputSchema: z.ZodType<Prisma.DepositO
   sellerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
   contributionStatus: z.lazy(() => SortOrderSchema).optional(),
-  status: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   userId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => DepositCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => DepositAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => DepositMaxOrderByAggregateInputSchema).optional(),
   _min: z.lazy(() => DepositMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => DepositSumOrderByAggregateInputSchema).optional(),
 });
 
 export const DepositScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.DepositScalarWhereWithAggregatesInput> = z.strictObject({
@@ -1094,7 +911,7 @@ export const DepositScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Depos
   sellerId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   contributionStatus: z.union([ z.lazy(() => EnumContributionStatusWithAggregatesFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
-  status: z.union([ z.lazy(() => EnumDepotStatusWithAggregatesFilterSchema), z.lazy(() => DepotStatusSchema) ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1109,7 +926,6 @@ export const SaleWhereInputSchema: z.ZodType<Prisma.SaleWhereInput> = z.strictOb
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   buyerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  checkoutId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -1123,9 +939,7 @@ export const SaleWhereInputSchema: z.ZodType<Prisma.SaleWhereInput> = z.strictOb
   event: z.union([ z.lazy(() => EventScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional(),
   buyer: z.union([ z.lazy(() => ContactScalarRelationFilterSchema), z.lazy(() => ContactWhereInputSchema) ]).optional(),
   workstation: z.union([ z.lazy(() => WorkstationScalarRelationFilterSchema), z.lazy(() => WorkstationWhereInputSchema) ]).optional(),
-  checkout: z.union([ z.lazy(() => CheckoutScalarRelationFilterSchema), z.lazy(() => CheckoutWhereInputSchema) ]).optional(),
   articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionListRelationFilterSchema).optional(),
   user: z.union([ z.lazy(() => UserNullableScalarRelationFilterSchema), z.lazy(() => UserWhereInputSchema) ]).optional().nullable(),
 });
 
@@ -1134,7 +948,6 @@ export const SaleOrderByWithRelationInputSchema: z.ZodType<Prisma.SaleOrderByWit
   eventId: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
-  checkoutId: z.lazy(() => SortOrderSchema).optional(),
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
@@ -1148,9 +961,7 @@ export const SaleOrderByWithRelationInputSchema: z.ZodType<Prisma.SaleOrderByWit
   event: z.lazy(() => EventOrderByWithRelationInputSchema).optional(),
   buyer: z.lazy(() => ContactOrderByWithRelationInputSchema).optional(),
   workstation: z.lazy(() => WorkstationOrderByWithRelationInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutOrderByWithRelationInputSchema).optional(),
   articles: z.lazy(() => ArticleOrderByRelationAggregateInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionOrderByRelationAggregateInputSchema).optional(),
   user: z.lazy(() => UserOrderByWithRelationInputSchema).optional(),
 });
 
@@ -1165,7 +976,6 @@ export const SaleWhereUniqueInputSchema: z.ZodType<Prisma.SaleWhereUniqueInput> 
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   buyerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  checkoutId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -1179,9 +989,7 @@ export const SaleWhereUniqueInputSchema: z.ZodType<Prisma.SaleWhereUniqueInput> 
   event: z.union([ z.lazy(() => EventScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional(),
   buyer: z.union([ z.lazy(() => ContactScalarRelationFilterSchema), z.lazy(() => ContactWhereInputSchema) ]).optional(),
   workstation: z.union([ z.lazy(() => WorkstationScalarRelationFilterSchema), z.lazy(() => WorkstationWhereInputSchema) ]).optional(),
-  checkout: z.union([ z.lazy(() => CheckoutScalarRelationFilterSchema), z.lazy(() => CheckoutWhereInputSchema) ]).optional(),
   articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionListRelationFilterSchema).optional(),
   user: z.union([ z.lazy(() => UserNullableScalarRelationFilterSchema), z.lazy(() => UserWhereInputSchema) ]).optional().nullable(),
 }));
 
@@ -1190,7 +998,6 @@ export const SaleOrderByWithAggregationInputSchema: z.ZodType<Prisma.SaleOrderBy
   eventId: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
-  checkoutId: z.lazy(() => SortOrderSchema).optional(),
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
@@ -1216,7 +1023,6 @@ export const SaleScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.SaleScal
   eventId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   buyerId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  checkoutId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   cardAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -1229,113 +1035,53 @@ export const SaleScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.SaleScal
   userId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
 });
 
-export const CashTransactionWhereInputSchema: z.ZodType<Prisma.CashTransactionWhereInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CashTransactionWhereInputSchema), z.lazy(() => CashTransactionWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CashTransactionWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CashTransactionWhereInputSchema), z.lazy(() => CashTransactionWhereInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  cashReceived: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  cashGiven: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-  sale: z.union([ z.lazy(() => SaleScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional(),
-});
-
-export const CashTransactionOrderByWithRelationInputSchema: z.ZodType<Prisma.CashTransactionOrderByWithRelationInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  saleId: z.lazy(() => SortOrderSchema).optional(),
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  sale: z.lazy(() => SaleOrderByWithRelationInputSchema).optional(),
-});
-
-export const CashTransactionWhereUniqueInputSchema: z.ZodType<Prisma.CashTransactionWhereUniqueInput> = z.object({
-  id: z.uuid(),
-})
-.and(z.strictObject({
-  id: z.uuid().optional(),
-  AND: z.union([ z.lazy(() => CashTransactionWhereInputSchema), z.lazy(() => CashTransactionWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CashTransactionWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CashTransactionWhereInputSchema), z.lazy(() => CashTransactionWhereInputSchema).array() ]).optional(),
-  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  cashReceived: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  cashGiven: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-  sale: z.union([ z.lazy(() => SaleScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional(),
-}));
-
-export const CashTransactionOrderByWithAggregationInputSchema: z.ZodType<Prisma.CashTransactionOrderByWithAggregationInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  saleId: z.lazy(() => SortOrderSchema).optional(),
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  _count: z.lazy(() => CashTransactionCountOrderByAggregateInputSchema).optional(),
-  _avg: z.lazy(() => CashTransactionAvgOrderByAggregateInputSchema).optional(),
-  _max: z.lazy(() => CashTransactionMaxOrderByAggregateInputSchema).optional(),
-  _min: z.lazy(() => CashTransactionMinOrderByAggregateInputSchema).optional(),
-  _sum: z.lazy(() => CashTransactionSumOrderByAggregateInputSchema).optional(),
-});
-
-export const CashTransactionScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.CashTransactionScalarWhereWithAggregatesInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CashTransactionScalarWhereWithAggregatesInputSchema), z.lazy(() => CashTransactionScalarWhereWithAggregatesInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CashTransactionScalarWhereWithAggregatesInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CashTransactionScalarWhereWithAggregatesInputSchema), z.lazy(() => CashTransactionScalarWhereWithAggregatesInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  saleId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  cashReceived: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  cashGiven: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
-});
-
 export const ArticleWhereInputSchema: z.ZodType<Prisma.ArticleWhereInput> = z.strictObject({
   AND: z.union([ z.lazy(() => ArticleWhereInputSchema), z.lazy(() => ArticleWhereInputSchema).array() ]).optional(),
   OR: z.lazy(() => ArticleWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => ArticleWhereInputSchema), z.lazy(() => ArticleWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  discipline: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  categorie: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  brand: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  description: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  color: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  size: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   price: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
-  code: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  category: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  discipline: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  brand: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  model: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  size: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  color: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  code: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  year: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  articleIndex: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  eventId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   depositId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+  event: z.union([ z.lazy(() => EventNullableScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional().nullable(),
   deposit: z.union([ z.lazy(() => DepositNullableScalarRelationFilterSchema), z.lazy(() => DepositWhereInputSchema) ]).optional().nullable(),
   sale: z.union([ z.lazy(() => SaleNullableScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional().nullable(),
 });
 
 export const ArticleOrderByWithRelationInputSchema: z.ZodType<Prisma.ArticleOrderByWithRelationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
-  discipline: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  categorie: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  brand: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  description: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  color: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  size: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   price: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  code: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  category: z.lazy(() => SortOrderSchema).optional(),
+  discipline: z.lazy(() => SortOrderSchema).optional(),
+  brand: z.lazy(() => SortOrderSchema).optional(),
+  model: z.lazy(() => SortOrderSchema).optional(),
+  size: z.lazy(() => SortOrderSchema).optional(),
+  color: z.lazy(() => SortOrderSchema).optional(),
+  code: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
+  articleIndex: z.lazy(() => SortOrderSchema).optional(),
+  eventId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   depositId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   saleId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  event: z.lazy(() => EventOrderByWithRelationInputSchema).optional(),
   deposit: z.lazy(() => DepositOrderByWithRelationInputSchema).optional(),
   sale: z.lazy(() => SaleOrderByWithRelationInputSchema).optional(),
 });
@@ -1358,32 +1104,41 @@ export const ArticleWhereUniqueInputSchema: z.ZodType<Prisma.ArticleWhereUniqueI
   AND: z.union([ z.lazy(() => ArticleWhereInputSchema), z.lazy(() => ArticleWhereInputSchema).array() ]).optional(),
   OR: z.lazy(() => ArticleWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => ArticleWhereInputSchema), z.lazy(() => ArticleWhereInputSchema).array() ]).optional(),
-  discipline: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  categorie: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  brand: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  description: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  color: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  size: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   price: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
+  category: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  discipline: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  brand: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  model: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  size: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  color: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  year: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
+  articleIndex: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  eventId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   depositId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+  event: z.union([ z.lazy(() => EventNullableScalarRelationFilterSchema), z.lazy(() => EventWhereInputSchema) ]).optional().nullable(),
   deposit: z.union([ z.lazy(() => DepositNullableScalarRelationFilterSchema), z.lazy(() => DepositWhereInputSchema) ]).optional().nullable(),
   sale: z.union([ z.lazy(() => SaleNullableScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional().nullable(),
 }));
 
 export const ArticleOrderByWithAggregationInputSchema: z.ZodType<Prisma.ArticleOrderByWithAggregationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
-  discipline: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  categorie: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  brand: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  description: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  color: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  size: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   price: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
-  code: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  category: z.lazy(() => SortOrderSchema).optional(),
+  discipline: z.lazy(() => SortOrderSchema).optional(),
+  brand: z.lazy(() => SortOrderSchema).optional(),
+  model: z.lazy(() => SortOrderSchema).optional(),
+  size: z.lazy(() => SortOrderSchema).optional(),
+  color: z.lazy(() => SortOrderSchema).optional(),
+  code: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
+  articleIndex: z.lazy(() => SortOrderSchema).optional(),
+  eventId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   depositId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   saleId: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
@@ -1401,14 +1156,18 @@ export const ArticleScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Artic
   OR: z.lazy(() => ArticleScalarWhereWithAggregatesInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => ArticleScalarWhereWithAggregatesInputSchema), z.lazy(() => ArticleScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  discipline: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
-  categorie: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
-  brand: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
-  description: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
-  color: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
-  size: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   price: z.union([ z.lazy(() => DecimalNullableWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
-  code: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
+  category: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  discipline: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  brand: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  model: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  size: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  color: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  code: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  year: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
+  articleIndex: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  eventId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   depositId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   saleId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
@@ -1430,7 +1189,7 @@ export const EventCreateInputSchema: z.ZodType<Prisma.EventCreateInput> = z.stri
   sales: z.lazy(() => SaleCreateNestedManyWithoutEventInputSchema).optional(),
   deposits: z.lazy(() => DepositCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventUncheckedCreateInputSchema: z.ZodType<Prisma.EventUncheckedCreateInput> = z.strictObject({
@@ -1447,7 +1206,7 @@ export const EventUncheckedCreateInputSchema: z.ZodType<Prisma.EventUncheckedCre
   sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
   deposits: z.lazy(() => DepositUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventUpdateInputSchema: z.ZodType<Prisma.EventUpdateInput> = z.strictObject({
@@ -1464,7 +1223,7 @@ export const EventUpdateInputSchema: z.ZodType<Prisma.EventUpdateInput> = z.stri
   sales: z.lazy(() => SaleUpdateManyWithoutEventNestedInputSchema).optional(),
   deposits: z.lazy(() => DepositUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const EventUncheckedUpdateInputSchema: z.ZodType<Prisma.EventUncheckedUpdateInput> = z.strictObject({
@@ -1481,7 +1240,7 @@ export const EventUncheckedUpdateInputSchema: z.ZodType<Prisma.EventUncheckedUpd
   sales: z.lazy(() => SaleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
   deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const EventCreateManyInputSchema: z.ZodType<Prisma.EventCreateManyInput> = z.strictObject({
@@ -1518,86 +1277,6 @@ export const EventUncheckedUpdateManyInputSchema: z.ZodType<Prisma.EventUnchecke
   startDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   isActive: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CheckoutCreateInputSchema: z.ZodType<Prisma.CheckoutCreateInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  event: z.lazy(() => EventCreateNestedOneWithoutCheckoutsInputSchema),
-  sales: z.lazy(() => SaleCreateNestedManyWithoutCheckoutInputSchema).optional(),
-});
-
-export const CheckoutUncheckedCreateInputSchema: z.ZodType<Prisma.CheckoutUncheckedCreateInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  eventId: z.string(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutCheckoutInputSchema).optional(),
-});
-
-export const CheckoutUpdateInputSchema: z.ZodType<Prisma.CheckoutUpdateInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  event: z.lazy(() => EventUpdateOneRequiredWithoutCheckoutsNestedInputSchema).optional(),
-  sales: z.lazy(() => SaleUpdateManyWithoutCheckoutNestedInputSchema).optional(),
-});
-
-export const CheckoutUncheckedUpdateInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedUpdateManyWithoutCheckoutNestedInputSchema).optional(),
-});
-
-export const CheckoutCreateManyInputSchema: z.ZodType<Prisma.CheckoutCreateManyInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  eventId: z.string(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CheckoutUpdateManyMutationInputSchema: z.ZodType<Prisma.CheckoutUpdateManyMutationInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CheckoutUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateManyInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1846,7 +1525,7 @@ export const ContactUncheckedUpdateManyInputSchema: z.ZodType<Prisma.ContactUnch
 export const DepositCreateInputSchema: z.ZodType<Prisma.DepositCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1863,7 +1542,7 @@ export const DepositUncheckedCreateInputSchema: z.ZodType<Prisma.DepositUnchecke
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1874,7 +1553,7 @@ export const DepositUncheckedCreateInputSchema: z.ZodType<Prisma.DepositUnchecke
 export const DepositUpdateInputSchema: z.ZodType<Prisma.DepositUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1891,7 +1570,7 @@ export const DepositUncheckedUpdateInputSchema: z.ZodType<Prisma.DepositUnchecke
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1905,7 +1584,7 @@ export const DepositCreateManyInputSchema: z.ZodType<Prisma.DepositCreateManyInp
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1915,7 +1594,7 @@ export const DepositCreateManyInputSchema: z.ZodType<Prisma.DepositCreateManyInp
 export const DepositUpdateManyMutationInputSchema: z.ZodType<Prisma.DepositUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1927,7 +1606,7 @@ export const DepositUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DepositUnch
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1948,9 +1627,7 @@ export const SaleCreateInputSchema: z.ZodType<Prisma.SaleCreateInput> = z.strict
   event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
   workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
 });
 
@@ -1959,7 +1636,6 @@ export const SaleUncheckedCreateInputSchema: z.ZodType<Prisma.SaleUncheckedCreat
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -1971,7 +1647,6 @@ export const SaleUncheckedCreateInputSchema: z.ZodType<Prisma.SaleUncheckedCreat
   deletedAt: z.coerce.date().optional().nullable(),
   userId: z.string().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUpdateInputSchema: z.ZodType<Prisma.SaleUpdateInput> = z.strictObject({
@@ -1988,9 +1663,7 @@ export const SaleUpdateInputSchema: z.ZodType<Prisma.SaleUpdateInput> = z.strict
   event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
   user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
 });
 
@@ -1999,7 +1672,6 @@ export const SaleUncheckedUpdateInputSchema: z.ZodType<Prisma.SaleUncheckedUpdat
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2011,7 +1683,6 @@ export const SaleUncheckedUpdateInputSchema: z.ZodType<Prisma.SaleUncheckedUpdat
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleCreateManyInputSchema: z.ZodType<Prisma.SaleCreateManyInput> = z.strictObject({
@@ -2019,7 +1690,6 @@ export const SaleCreateManyInputSchema: z.ZodType<Prisma.SaleCreateManyInput> = 
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -2050,7 +1720,6 @@ export const SaleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.SaleUncheckedU
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2063,102 +1732,41 @@ export const SaleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.SaleUncheckedU
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
-export const CashTransactionCreateInputSchema: z.ZodType<Prisma.CashTransactionCreateInput> = z.strictObject({
-  id: z.uuid().optional(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  sale: z.lazy(() => SaleCreateNestedOneWithoutCashTransactionsInputSchema),
-});
-
-export const CashTransactionUncheckedCreateInputSchema: z.ZodType<Prisma.CashTransactionUncheckedCreateInput> = z.strictObject({
-  id: z.uuid().optional(),
-  saleId: z.string(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CashTransactionUpdateInputSchema: z.ZodType<Prisma.CashTransactionUpdateInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sale: z.lazy(() => SaleUpdateOneRequiredWithoutCashTransactionsNestedInputSchema).optional(),
-});
-
-export const CashTransactionUncheckedUpdateInputSchema: z.ZodType<Prisma.CashTransactionUncheckedUpdateInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  saleId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CashTransactionCreateManyInputSchema: z.ZodType<Prisma.CashTransactionCreateManyInput> = z.strictObject({
-  id: z.uuid().optional(),
-  saleId: z.string(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CashTransactionUpdateManyMutationInputSchema: z.ZodType<Prisma.CashTransactionUpdateManyMutationInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CashTransactionUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CashTransactionUncheckedUpdateManyInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  saleId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
 export const ArticleCreateInputSchema: z.ZodType<Prisma.ArticleCreateInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
+  event: z.lazy(() => EventCreateNestedOneWithoutArticlesInputSchema).optional(),
   deposit: z.lazy(() => DepositCreateNestedOneWithoutArticlesInputSchema).optional(),
   sale: z.lazy(() => SaleCreateNestedOneWithoutArticlesInputSchema).optional(),
 });
 
 export const ArticleUncheckedCreateInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   depositId: z.string().optional().nullable(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
@@ -2168,31 +1776,39 @@ export const ArticleUncheckedCreateInputSchema: z.ZodType<Prisma.ArticleUnchecke
 
 export const ArticleUpdateInputSchema: z.ZodType<Prisma.ArticleUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  event: z.lazy(() => EventUpdateOneWithoutArticlesNestedInputSchema).optional(),
   deposit: z.lazy(() => DepositUpdateOneWithoutArticlesNestedInputSchema).optional(),
   sale: z.lazy(() => SaleUpdateOneWithoutArticlesNestedInputSchema).optional(),
 });
 
 export const ArticleUncheckedUpdateInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2202,14 +1818,18 @@ export const ArticleUncheckedUpdateInputSchema: z.ZodType<Prisma.ArticleUnchecke
 
 export const ArticleCreateManyInputSchema: z.ZodType<Prisma.ArticleCreateManyInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   depositId: z.string().optional().nullable(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
@@ -2219,14 +1839,17 @@ export const ArticleCreateManyInputSchema: z.ZodType<Prisma.ArticleCreateManyInp
 
 export const ArticleUpdateManyMutationInputSchema: z.ZodType<Prisma.ArticleUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2234,14 +1857,18 @@ export const ArticleUpdateManyMutationInputSchema: z.ZodType<Prisma.ArticleUpdat
 
 export const ArticleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2347,10 +1974,10 @@ export const WorkstationListRelationFilterSchema: z.ZodType<Prisma.WorkstationLi
   none: z.lazy(() => WorkstationWhereInputSchema).optional(),
 });
 
-export const CheckoutListRelationFilterSchema: z.ZodType<Prisma.CheckoutListRelationFilter> = z.strictObject({
-  every: z.lazy(() => CheckoutWhereInputSchema).optional(),
-  some: z.lazy(() => CheckoutWhereInputSchema).optional(),
-  none: z.lazy(() => CheckoutWhereInputSchema).optional(),
+export const ArticleListRelationFilterSchema: z.ZodType<Prisma.ArticleListRelationFilter> = z.strictObject({
+  every: z.lazy(() => ArticleWhereInputSchema).optional(),
+  some: z.lazy(() => ArticleWhereInputSchema).optional(),
+  none: z.lazy(() => ArticleWhereInputSchema).optional(),
 });
 
 export const SortOrderInputSchema: z.ZodType<Prisma.SortOrderInput> = z.strictObject({
@@ -2370,7 +1997,7 @@ export const WorkstationOrderByRelationAggregateInputSchema: z.ZodType<Prisma.Wo
   _count: z.lazy(() => SortOrderSchema).optional(),
 });
 
-export const CheckoutOrderByRelationAggregateInputSchema: z.ZodType<Prisma.CheckoutOrderByRelationAggregateInput> = z.strictObject({
+export const ArticleOrderByRelationAggregateInputSchema: z.ZodType<Prisma.ArticleOrderByRelationAggregateInput> = z.strictObject({
   _count: z.lazy(() => SortOrderSchema).optional(),
 });
 
@@ -2524,84 +2151,9 @@ export const DateTimeWithAggregatesFilterSchema: z.ZodType<Prisma.DateTimeWithAg
   _max: z.lazy(() => NestedDateTimeFilterSchema).optional(),
 });
 
-export const DecimalFilterSchema: z.ZodType<Prisma.DecimalFilter> = z.strictObject({
-  equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
-  notIn: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
-  lt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  lte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalFilterSchema) ]).optional(),
-});
-
 export const EventScalarRelationFilterSchema: z.ZodType<Prisma.EventScalarRelationFilter> = z.strictObject({
   is: z.lazy(() => EventWhereInputSchema).optional(),
   isNot: z.lazy(() => EventWhereInputSchema).optional(),
-});
-
-export const CheckoutEventIdNameCompoundUniqueInputSchema: z.ZodType<Prisma.CheckoutEventIdNameCompoundUniqueInput> = z.strictObject({
-  eventId: z.string(),
-  name: z.string(),
-});
-
-export const CheckoutCountOrderByAggregateInputSchema: z.ZodType<Prisma.CheckoutCountOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  name: z.lazy(() => SortOrderSchema).optional(),
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-  eventId: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CheckoutAvgOrderByAggregateInputSchema: z.ZodType<Prisma.CheckoutAvgOrderByAggregateInput> = z.strictObject({
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CheckoutMaxOrderByAggregateInputSchema: z.ZodType<Prisma.CheckoutMaxOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  name: z.lazy(() => SortOrderSchema).optional(),
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-  eventId: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CheckoutMinOrderByAggregateInputSchema: z.ZodType<Prisma.CheckoutMinOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  name: z.lazy(() => SortOrderSchema).optional(),
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-  eventId: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CheckoutSumOrderByAggregateInputSchema: z.ZodType<Prisma.CheckoutSumOrderByAggregateInput> = z.strictObject({
-  initialCash: z.lazy(() => SortOrderSchema).optional(),
-  currentCash: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const DecimalWithAggregatesFilterSchema: z.ZodType<Prisma.DecimalWithAggregatesFilter> = z.strictObject({
-  equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
-  notIn: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
-  lt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  lte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _avg: z.lazy(() => NestedDecimalFilterSchema).optional(),
-  _sum: z.lazy(() => NestedDecimalFilterSchema).optional(),
-  _min: z.lazy(() => NestedDecimalFilterSchema).optional(),
-  _max: z.lazy(() => NestedDecimalFilterSchema).optional(),
 });
 
 export const WorkstationEventIdNameCompoundUniqueInputSchema: z.ZodType<Prisma.WorkstationEventIdNameCompoundUniqueInput> = z.strictObject({
@@ -2717,13 +2269,6 @@ export const EnumContributionStatusFilterSchema: z.ZodType<Prisma.EnumContributi
   not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusFilterSchema) ]).optional(),
 });
 
-export const EnumDepotStatusFilterSchema: z.ZodType<Prisma.EnumDepotStatusFilter> = z.strictObject({
-  equals: z.lazy(() => DepotStatusSchema).optional(),
-  in: z.lazy(() => DepotStatusSchema).array().optional(),
-  notIn: z.lazy(() => DepotStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => NestedEnumDepotStatusFilterSchema) ]).optional(),
-});
-
 export const UuidNullableFilterSchema: z.ZodType<Prisma.UuidNullableFilter> = z.strictObject({
   equals: z.string().optional().nullable(),
   in: z.string().array().optional().nullable(),
@@ -2746,19 +2291,9 @@ export const WorkstationScalarRelationFilterSchema: z.ZodType<Prisma.Workstation
   isNot: z.lazy(() => WorkstationWhereInputSchema).optional(),
 });
 
-export const ArticleListRelationFilterSchema: z.ZodType<Prisma.ArticleListRelationFilter> = z.strictObject({
-  every: z.lazy(() => ArticleWhereInputSchema).optional(),
-  some: z.lazy(() => ArticleWhereInputSchema).optional(),
-  none: z.lazy(() => ArticleWhereInputSchema).optional(),
-});
-
 export const UserNullableScalarRelationFilterSchema: z.ZodType<Prisma.UserNullableScalarRelationFilter> = z.strictObject({
   is: z.lazy(() => UserWhereInputSchema).optional().nullable(),
   isNot: z.lazy(() => UserWhereInputSchema).optional().nullable(),
-});
-
-export const ArticleOrderByRelationAggregateInputSchema: z.ZodType<Prisma.ArticleOrderByRelationAggregateInput> = z.strictObject({
-  _count: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const DepositCountOrderByAggregateInputSchema: z.ZodType<Prisma.DepositCountOrderByAggregateInput> = z.strictObject({
@@ -2767,11 +2302,15 @@ export const DepositCountOrderByAggregateInputSchema: z.ZodType<Prisma.DepositCo
   sellerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
   contributionStatus: z.lazy(() => SortOrderSchema).optional(),
-  status: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const DepositAvgOrderByAggregateInputSchema: z.ZodType<Prisma.DepositAvgOrderByAggregateInput> = z.strictObject({
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const DepositMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DepositMaxOrderByAggregateInput> = z.strictObject({
@@ -2780,7 +2319,7 @@ export const DepositMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DepositMaxO
   sellerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
   contributionStatus: z.lazy(() => SortOrderSchema).optional(),
-  status: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
@@ -2793,11 +2332,15 @@ export const DepositMinOrderByAggregateInputSchema: z.ZodType<Prisma.DepositMinO
   sellerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
   contributionStatus: z.lazy(() => SortOrderSchema).optional(),
-  status: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const DepositSumOrderByAggregateInputSchema: z.ZodType<Prisma.DepositSumOrderByAggregateInput> = z.strictObject({
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const EnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.EnumContributionStatusWithAggregatesFilter> = z.strictObject({
@@ -2808,16 +2351,6 @@ export const EnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.
   _count: z.lazy(() => NestedIntFilterSchema).optional(),
   _min: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
   _max: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-});
-
-export const EnumDepotStatusWithAggregatesFilterSchema: z.ZodType<Prisma.EnumDepotStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => DepotStatusSchema).optional(),
-  in: z.lazy(() => DepotStatusSchema).array().optional(),
-  notIn: z.lazy(() => DepotStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => NestedEnumDepotStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumDepotStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumDepotStatusFilterSchema).optional(),
 });
 
 export const UuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.UuidNullableWithAggregatesFilter> = z.strictObject({
@@ -2835,19 +2368,15 @@ export const UuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.UuidNullab
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
 });
 
-export const CheckoutScalarRelationFilterSchema: z.ZodType<Prisma.CheckoutScalarRelationFilter> = z.strictObject({
-  is: z.lazy(() => CheckoutWhereInputSchema).optional(),
-  isNot: z.lazy(() => CheckoutWhereInputSchema).optional(),
-});
-
-export const CashTransactionListRelationFilterSchema: z.ZodType<Prisma.CashTransactionListRelationFilter> = z.strictObject({
-  every: z.lazy(() => CashTransactionWhereInputSchema).optional(),
-  some: z.lazy(() => CashTransactionWhereInputSchema).optional(),
-  none: z.lazy(() => CashTransactionWhereInputSchema).optional(),
-});
-
-export const CashTransactionOrderByRelationAggregateInputSchema: z.ZodType<Prisma.CashTransactionOrderByRelationAggregateInput> = z.strictObject({
-  _count: z.lazy(() => SortOrderSchema).optional(),
+export const DecimalFilterSchema: z.ZodType<Prisma.DecimalFilter> = z.strictObject({
+  equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
+  notIn: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
+  lt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  lte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalFilterSchema) ]).optional(),
 });
 
 export const SaleCountOrderByAggregateInputSchema: z.ZodType<Prisma.SaleCountOrderByAggregateInput> = z.strictObject({
@@ -2855,7 +2384,6 @@ export const SaleCountOrderByAggregateInputSchema: z.ZodType<Prisma.SaleCountOrd
   eventId: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
-  checkoutId: z.lazy(() => SortOrderSchema).optional(),
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
@@ -2880,7 +2408,6 @@ export const SaleMaxOrderByAggregateInputSchema: z.ZodType<Prisma.SaleMaxOrderBy
   eventId: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
-  checkoutId: z.lazy(() => SortOrderSchema).optional(),
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
@@ -2898,7 +2425,6 @@ export const SaleMinOrderByAggregateInputSchema: z.ZodType<Prisma.SaleMinOrderBy
   eventId: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
   workstationId: z.lazy(() => SortOrderSchema).optional(),
-  checkoutId: z.lazy(() => SortOrderSchema).optional(),
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
@@ -2918,49 +2444,20 @@ export const SaleSumOrderByAggregateInputSchema: z.ZodType<Prisma.SaleSumOrderBy
   totalAmount: z.lazy(() => SortOrderSchema).optional(),
 });
 
-export const SaleScalarRelationFilterSchema: z.ZodType<Prisma.SaleScalarRelationFilter> = z.strictObject({
-  is: z.lazy(() => SaleWhereInputSchema).optional(),
-  isNot: z.lazy(() => SaleWhereInputSchema).optional(),
-});
-
-export const CashTransactionCountOrderByAggregateInputSchema: z.ZodType<Prisma.CashTransactionCountOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  saleId: z.lazy(() => SortOrderSchema).optional(),
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CashTransactionAvgOrderByAggregateInputSchema: z.ZodType<Prisma.CashTransactionAvgOrderByAggregateInput> = z.strictObject({
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CashTransactionMaxOrderByAggregateInputSchema: z.ZodType<Prisma.CashTransactionMaxOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  saleId: z.lazy(() => SortOrderSchema).optional(),
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CashTransactionMinOrderByAggregateInputSchema: z.ZodType<Prisma.CashTransactionMinOrderByAggregateInput> = z.strictObject({
-  id: z.lazy(() => SortOrderSchema).optional(),
-  saleId: z.lazy(() => SortOrderSchema).optional(),
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
-  createdAt: z.lazy(() => SortOrderSchema).optional(),
-  updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  deletedAt: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const CashTransactionSumOrderByAggregateInputSchema: z.ZodType<Prisma.CashTransactionSumOrderByAggregateInput> = z.strictObject({
-  cashReceived: z.lazy(() => SortOrderSchema).optional(),
-  cashGiven: z.lazy(() => SortOrderSchema).optional(),
+export const DecimalWithAggregatesFilterSchema: z.ZodType<Prisma.DecimalWithAggregatesFilter> = z.strictObject({
+  equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
+  notIn: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
+  lt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  lte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalWithAggregatesFilterSchema) ]).optional(),
+  _count: z.lazy(() => NestedIntFilterSchema).optional(),
+  _avg: z.lazy(() => NestedDecimalFilterSchema).optional(),
+  _sum: z.lazy(() => NestedDecimalFilterSchema).optional(),
+  _min: z.lazy(() => NestedDecimalFilterSchema).optional(),
+  _max: z.lazy(() => NestedDecimalFilterSchema).optional(),
 });
 
 export const DecimalNullableFilterSchema: z.ZodType<Prisma.DecimalNullableFilter> = z.strictObject({
@@ -2972,6 +2469,11 @@ export const DecimalNullableFilterSchema: z.ZodType<Prisma.DecimalNullableFilter
   gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalNullableFilterSchema) ]).optional().nullable(),
+});
+
+export const EventNullableScalarRelationFilterSchema: z.ZodType<Prisma.EventNullableScalarRelationFilter> = z.strictObject({
+  is: z.lazy(() => EventWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => EventWhereInputSchema).optional().nullable(),
 });
 
 export const DepositNullableScalarRelationFilterSchema: z.ZodType<Prisma.DepositNullableScalarRelationFilter> = z.strictObject({
@@ -2986,14 +2488,18 @@ export const SaleNullableScalarRelationFilterSchema: z.ZodType<Prisma.SaleNullab
 
 export const ArticleCountOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleCountOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
-  discipline: z.lazy(() => SortOrderSchema).optional(),
-  categorie: z.lazy(() => SortOrderSchema).optional(),
-  brand: z.lazy(() => SortOrderSchema).optional(),
-  description: z.lazy(() => SortOrderSchema).optional(),
-  color: z.lazy(() => SortOrderSchema).optional(),
-  size: z.lazy(() => SortOrderSchema).optional(),
   price: z.lazy(() => SortOrderSchema).optional(),
+  category: z.lazy(() => SortOrderSchema).optional(),
+  discipline: z.lazy(() => SortOrderSchema).optional(),
+  brand: z.lazy(() => SortOrderSchema).optional(),
+  model: z.lazy(() => SortOrderSchema).optional(),
+  size: z.lazy(() => SortOrderSchema).optional(),
+  color: z.lazy(() => SortOrderSchema).optional(),
   code: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
+  articleIndex: z.lazy(() => SortOrderSchema).optional(),
+  eventId: z.lazy(() => SortOrderSchema).optional(),
   depositId: z.lazy(() => SortOrderSchema).optional(),
   saleId: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3003,18 +2509,24 @@ export const ArticleCountOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleCo
 
 export const ArticleAvgOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleAvgOrderByAggregateInput> = z.strictObject({
   price: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const ArticleMaxOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleMaxOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
-  discipline: z.lazy(() => SortOrderSchema).optional(),
-  categorie: z.lazy(() => SortOrderSchema).optional(),
-  brand: z.lazy(() => SortOrderSchema).optional(),
-  description: z.lazy(() => SortOrderSchema).optional(),
-  color: z.lazy(() => SortOrderSchema).optional(),
-  size: z.lazy(() => SortOrderSchema).optional(),
   price: z.lazy(() => SortOrderSchema).optional(),
+  category: z.lazy(() => SortOrderSchema).optional(),
+  discipline: z.lazy(() => SortOrderSchema).optional(),
+  brand: z.lazy(() => SortOrderSchema).optional(),
+  model: z.lazy(() => SortOrderSchema).optional(),
+  size: z.lazy(() => SortOrderSchema).optional(),
+  color: z.lazy(() => SortOrderSchema).optional(),
   code: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
+  articleIndex: z.lazy(() => SortOrderSchema).optional(),
+  eventId: z.lazy(() => SortOrderSchema).optional(),
   depositId: z.lazy(() => SortOrderSchema).optional(),
   saleId: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3024,14 +2536,18 @@ export const ArticleMaxOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleMaxO
 
 export const ArticleMinOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleMinOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
-  discipline: z.lazy(() => SortOrderSchema).optional(),
-  categorie: z.lazy(() => SortOrderSchema).optional(),
-  brand: z.lazy(() => SortOrderSchema).optional(),
-  description: z.lazy(() => SortOrderSchema).optional(),
-  color: z.lazy(() => SortOrderSchema).optional(),
-  size: z.lazy(() => SortOrderSchema).optional(),
   price: z.lazy(() => SortOrderSchema).optional(),
+  category: z.lazy(() => SortOrderSchema).optional(),
+  discipline: z.lazy(() => SortOrderSchema).optional(),
+  brand: z.lazy(() => SortOrderSchema).optional(),
+  model: z.lazy(() => SortOrderSchema).optional(),
+  size: z.lazy(() => SortOrderSchema).optional(),
+  color: z.lazy(() => SortOrderSchema).optional(),
   code: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
+  articleIndex: z.lazy(() => SortOrderSchema).optional(),
+  eventId: z.lazy(() => SortOrderSchema).optional(),
   depositId: z.lazy(() => SortOrderSchema).optional(),
   saleId: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3041,6 +2557,8 @@ export const ArticleMinOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleMinO
 
 export const ArticleSumOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleSumOrderByAggregateInput> = z.strictObject({
   price: z.lazy(() => SortOrderSchema).optional(),
+  year: z.lazy(() => SortOrderSchema).optional(),
+  depositIndex: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const DecimalNullableWithAggregatesFilterSchema: z.ZodType<Prisma.DecimalNullableWithAggregatesFilter> = z.strictObject({
@@ -3080,11 +2598,11 @@ export const WorkstationCreateNestedManyWithoutEventInputSchema: z.ZodType<Prism
   connect: z.union([ z.lazy(() => WorkstationWhereUniqueInputSchema), z.lazy(() => WorkstationWhereUniqueInputSchema).array() ]).optional(),
 });
 
-export const CheckoutCreateNestedManyWithoutEventInputSchema: z.ZodType<Prisma.CheckoutCreateNestedManyWithoutEventInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutCreateWithoutEventInputSchema).array(), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema), z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CheckoutCreateManyEventInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
+export const ArticleCreateNestedManyWithoutEventInputSchema: z.ZodType<Prisma.ArticleCreateNestedManyWithoutEventInput> = z.strictObject({
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleCreateWithoutEventInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ArticleCreateManyEventInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
 });
 
 export const SaleUncheckedCreateNestedManyWithoutEventInputSchema: z.ZodType<Prisma.SaleUncheckedCreateNestedManyWithoutEventInput> = z.strictObject({
@@ -3108,11 +2626,11 @@ export const WorkstationUncheckedCreateNestedManyWithoutEventInputSchema: z.ZodT
   connect: z.union([ z.lazy(() => WorkstationWhereUniqueInputSchema), z.lazy(() => WorkstationWhereUniqueInputSchema).array() ]).optional(),
 });
 
-export const CheckoutUncheckedCreateNestedManyWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUncheckedCreateNestedManyWithoutEventInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutCreateWithoutEventInputSchema).array(), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema), z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CheckoutCreateManyEventInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
+export const ArticleUncheckedCreateNestedManyWithoutEventInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateNestedManyWithoutEventInput> = z.strictObject({
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleCreateWithoutEventInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ArticleCreateManyEventInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
 });
 
 export const StringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.StringFieldUpdateOperationsInput> = z.strictObject({
@@ -3185,18 +2703,18 @@ export const WorkstationUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prism
   deleteMany: z.union([ z.lazy(() => WorkstationScalarWhereInputSchema), z.lazy(() => WorkstationScalarWhereInputSchema).array() ]).optional(),
 });
 
-export const CheckoutUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prisma.CheckoutUpdateManyWithoutEventNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutCreateWithoutEventInputSchema).array(), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema), z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => CheckoutUpsertWithWhereUniqueWithoutEventInputSchema), z.lazy(() => CheckoutUpsertWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CheckoutCreateManyEventInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => CheckoutUpdateWithWhereUniqueWithoutEventInputSchema), z.lazy(() => CheckoutUpdateWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => CheckoutUpdateManyWithWhereWithoutEventInputSchema), z.lazy(() => CheckoutUpdateManyWithWhereWithoutEventInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => CheckoutScalarWhereInputSchema), z.lazy(() => CheckoutScalarWhereInputSchema).array() ]).optional(),
+export const ArticleUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prisma.ArticleUpdateManyWithoutEventNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleCreateWithoutEventInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ArticleUpsertWithWhereUniqueWithoutEventInputSchema), z.lazy(() => ArticleUpsertWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ArticleCreateManyEventInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ArticleUpdateWithWhereUniqueWithoutEventInputSchema), z.lazy(() => ArticleUpdateWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ArticleUpdateManyWithWhereWithoutEventInputSchema), z.lazy(() => ArticleUpdateManyWithWhereWithoutEventInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutEventNestedInput> = z.strictObject({
@@ -3241,82 +2759,18 @@ export const WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema: z.ZodT
   deleteMany: z.union([ z.lazy(() => WorkstationScalarWhereInputSchema), z.lazy(() => WorkstationScalarWhereInputSchema).array() ]).optional(),
 });
 
-export const CheckoutUncheckedUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateManyWithoutEventNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutCreateWithoutEventInputSchema).array(), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema), z.lazy(() => CheckoutCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => CheckoutUpsertWithWhereUniqueWithoutEventInputSchema), z.lazy(() => CheckoutUpsertWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CheckoutCreateManyEventInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => CheckoutWhereUniqueInputSchema), z.lazy(() => CheckoutWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => CheckoutUpdateWithWhereUniqueWithoutEventInputSchema), z.lazy(() => CheckoutUpdateWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => CheckoutUpdateManyWithWhereWithoutEventInputSchema), z.lazy(() => CheckoutUpdateManyWithWhereWithoutEventInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => CheckoutScalarWhereInputSchema), z.lazy(() => CheckoutScalarWhereInputSchema).array() ]).optional(),
-});
-
-export const EventCreateNestedOneWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventCreateNestedOneWithoutCheckoutsInput> = z.strictObject({
-  create: z.union([ z.lazy(() => EventCreateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedCreateWithoutCheckoutsInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => EventCreateOrConnectWithoutCheckoutsInputSchema).optional(),
-  connect: z.lazy(() => EventWhereUniqueInputSchema).optional(),
-});
-
-export const SaleCreateNestedManyWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleCreateNestedManyWithoutCheckoutInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleCreateWithoutCheckoutInputSchema).array(), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema), z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => SaleCreateManyCheckoutInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-});
-
-export const SaleUncheckedCreateNestedManyWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUncheckedCreateNestedManyWithoutCheckoutInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleCreateWithoutCheckoutInputSchema).array(), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema), z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => SaleCreateManyCheckoutInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-});
-
-export const DecimalFieldUpdateOperationsInputSchema: z.ZodType<Prisma.DecimalFieldUpdateOperationsInput> = z.strictObject({
-  set: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  increment: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  decrement: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  multiply: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  divide: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-});
-
-export const EventUpdateOneRequiredWithoutCheckoutsNestedInputSchema: z.ZodType<Prisma.EventUpdateOneRequiredWithoutCheckoutsNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => EventCreateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedCreateWithoutCheckoutsInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => EventCreateOrConnectWithoutCheckoutsInputSchema).optional(),
-  upsert: z.lazy(() => EventUpsertWithoutCheckoutsInputSchema).optional(),
-  connect: z.lazy(() => EventWhereUniqueInputSchema).optional(),
-  update: z.union([ z.lazy(() => EventUpdateToOneWithWhereWithoutCheckoutsInputSchema), z.lazy(() => EventUpdateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedUpdateWithoutCheckoutsInputSchema) ]).optional(),
-});
-
-export const SaleUpdateManyWithoutCheckoutNestedInputSchema: z.ZodType<Prisma.SaleUpdateManyWithoutCheckoutNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleCreateWithoutCheckoutInputSchema).array(), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema), z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => SaleUpsertWithWhereUniqueWithoutCheckoutInputSchema), z.lazy(() => SaleUpsertWithWhereUniqueWithoutCheckoutInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => SaleCreateManyCheckoutInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => SaleUpdateWithWhereUniqueWithoutCheckoutInputSchema), z.lazy(() => SaleUpdateWithWhereUniqueWithoutCheckoutInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => SaleUpdateManyWithWhereWithoutCheckoutInputSchema), z.lazy(() => SaleUpdateManyWithWhereWithoutCheckoutInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => SaleScalarWhereInputSchema), z.lazy(() => SaleScalarWhereInputSchema).array() ]).optional(),
-});
-
-export const SaleUncheckedUpdateManyWithoutCheckoutNestedInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutCheckoutNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleCreateWithoutCheckoutInputSchema).array(), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema), z.lazy(() => SaleCreateOrConnectWithoutCheckoutInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => SaleUpsertWithWhereUniqueWithoutCheckoutInputSchema), z.lazy(() => SaleUpsertWithWhereUniqueWithoutCheckoutInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => SaleCreateManyCheckoutInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => SaleWhereUniqueInputSchema), z.lazy(() => SaleWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => SaleUpdateWithWhereUniqueWithoutCheckoutInputSchema), z.lazy(() => SaleUpdateWithWhereUniqueWithoutCheckoutInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => SaleUpdateManyWithWhereWithoutCheckoutInputSchema), z.lazy(() => SaleUpdateManyWithWhereWithoutCheckoutInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => SaleScalarWhereInputSchema), z.lazy(() => SaleScalarWhereInputSchema).array() ]).optional(),
+export const ArticleUncheckedUpdateManyWithoutEventNestedInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyWithoutEventNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleCreateWithoutEventInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutEventInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ArticleUpsertWithWhereUniqueWithoutEventInputSchema), z.lazy(() => ArticleUpsertWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ArticleCreateManyEventInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ArticleUpdateWithWhereUniqueWithoutEventInputSchema), z.lazy(() => ArticleUpdateWithWhereUniqueWithoutEventInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ArticleUpdateManyWithWhereWithoutEventInputSchema), z.lazy(() => ArticleUpdateManyWithWhereWithoutEventInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
 });
 
 export const EventCreateNestedOneWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventCreateNestedOneWithoutWorkstationsInput> = z.strictObject({
@@ -3627,10 +3081,6 @@ export const EnumContributionStatusFieldUpdateOperationsInputSchema: z.ZodType<P
   set: z.lazy(() => ContributionStatusSchema).optional(),
 });
 
-export const EnumDepotStatusFieldUpdateOperationsInputSchema: z.ZodType<Prisma.EnumDepotStatusFieldUpdateOperationsInput> = z.strictObject({
-  set: z.lazy(() => DepotStatusSchema).optional(),
-});
-
 export const EventUpdateOneRequiredWithoutDepositsNestedInputSchema: z.ZodType<Prisma.EventUpdateOneRequiredWithoutDepositsNestedInput> = z.strictObject({
   create: z.union([ z.lazy(() => EventCreateWithoutDepositsInputSchema), z.lazy(() => EventUncheckedCreateWithoutDepositsInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => EventCreateOrConnectWithoutDepositsInputSchema).optional(),
@@ -3711,24 +3161,11 @@ export const WorkstationCreateNestedOneWithoutSalesInputSchema: z.ZodType<Prisma
   connect: z.lazy(() => WorkstationWhereUniqueInputSchema).optional(),
 });
 
-export const CheckoutCreateNestedOneWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutCreateNestedOneWithoutSalesInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutSalesInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => CheckoutCreateOrConnectWithoutSalesInputSchema).optional(),
-  connect: z.lazy(() => CheckoutWhereUniqueInputSchema).optional(),
-});
-
 export const ArticleCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.ArticleCreateNestedManyWithoutSaleInput> = z.strictObject({
   create: z.union([ z.lazy(() => ArticleCreateWithoutSaleInputSchema), z.lazy(() => ArticleCreateWithoutSaleInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
   createMany: z.lazy(() => ArticleCreateManySaleInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
-});
-
-export const CashTransactionCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionCreateNestedManyWithoutSaleInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateWithoutSaleInputSchema).array(), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CashTransactionCreateManySaleInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
 });
 
 export const UserCreateNestedOneWithoutSalesInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutSalesInput> = z.strictObject({
@@ -3744,11 +3181,12 @@ export const ArticleUncheckedCreateNestedManyWithoutSaleInputSchema: z.ZodType<P
   connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
 });
 
-export const CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUncheckedCreateNestedManyWithoutSaleInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateWithoutSaleInputSchema).array(), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CashTransactionCreateManySaleInputEnvelopeSchema).optional(),
-  connect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
+export const DecimalFieldUpdateOperationsInputSchema: z.ZodType<Prisma.DecimalFieldUpdateOperationsInput> = z.strictObject({
+  set: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  increment: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  decrement: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  multiply: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  divide: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
 });
 
 export const EventUpdateOneRequiredWithoutSalesNestedInputSchema: z.ZodType<Prisma.EventUpdateOneRequiredWithoutSalesNestedInput> = z.strictObject({
@@ -3775,14 +3213,6 @@ export const WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema: z.ZodTyp
   update: z.union([ z.lazy(() => WorkstationUpdateToOneWithWhereWithoutSalesInputSchema), z.lazy(() => WorkstationUpdateWithoutSalesInputSchema), z.lazy(() => WorkstationUncheckedUpdateWithoutSalesInputSchema) ]).optional(),
 });
 
-export const CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema: z.ZodType<Prisma.CheckoutUpdateOneRequiredWithoutSalesNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutSalesInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => CheckoutCreateOrConnectWithoutSalesInputSchema).optional(),
-  upsert: z.lazy(() => CheckoutUpsertWithoutSalesInputSchema).optional(),
-  connect: z.lazy(() => CheckoutWhereUniqueInputSchema).optional(),
-  update: z.union([ z.lazy(() => CheckoutUpdateToOneWithWhereWithoutSalesInputSchema), z.lazy(() => CheckoutUpdateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedUpdateWithoutSalesInputSchema) ]).optional(),
-});
-
 export const ArticleUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.ArticleUpdateManyWithoutSaleNestedInput> = z.strictObject({
   create: z.union([ z.lazy(() => ArticleCreateWithoutSaleInputSchema), z.lazy(() => ArticleCreateWithoutSaleInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
@@ -3795,20 +3225,6 @@ export const ArticleUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.Art
   update: z.union([ z.lazy(() => ArticleUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => ArticleUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => ArticleUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => ArticleUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
-});
-
-export const CashTransactionUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.CashTransactionUpdateManyWithoutSaleNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateWithoutSaleInputSchema).array(), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => CashTransactionUpsertWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => CashTransactionUpsertWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CashTransactionCreateManySaleInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => CashTransactionUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => CashTransactionUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => CashTransactionUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => CashTransactionUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => CashTransactionScalarWhereInputSchema), z.lazy(() => CashTransactionScalarWhereInputSchema).array() ]).optional(),
 });
 
 export const UserUpdateOneWithoutSalesNestedInputSchema: z.ZodType<Prisma.UserUpdateOneWithoutSalesNestedInput> = z.strictObject({
@@ -3835,32 +3251,10 @@ export const ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema: z.ZodType<P
   deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
 });
 
-export const CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.CashTransactionUncheckedUpdateManyWithoutSaleNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateWithoutSaleInputSchema).array(), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
-  connectOrCreate: z.union([ z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema), z.lazy(() => CashTransactionCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
-  upsert: z.union([ z.lazy(() => CashTransactionUpsertWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => CashTransactionUpsertWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
-  createMany: z.lazy(() => CashTransactionCreateManySaleInputEnvelopeSchema).optional(),
-  set: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  disconnect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  delete: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  connect: z.union([ z.lazy(() => CashTransactionWhereUniqueInputSchema), z.lazy(() => CashTransactionWhereUniqueInputSchema).array() ]).optional(),
-  update: z.union([ z.lazy(() => CashTransactionUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => CashTransactionUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
-  updateMany: z.union([ z.lazy(() => CashTransactionUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => CashTransactionUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
-  deleteMany: z.union([ z.lazy(() => CashTransactionScalarWhereInputSchema), z.lazy(() => CashTransactionScalarWhereInputSchema).array() ]).optional(),
-});
-
-export const SaleCreateNestedOneWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleCreateNestedOneWithoutCashTransactionsInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCashTransactionsInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => SaleCreateOrConnectWithoutCashTransactionsInputSchema).optional(),
-  connect: z.lazy(() => SaleWhereUniqueInputSchema).optional(),
-});
-
-export const SaleUpdateOneRequiredWithoutCashTransactionsNestedInputSchema: z.ZodType<Prisma.SaleUpdateOneRequiredWithoutCashTransactionsNestedInput> = z.strictObject({
-  create: z.union([ z.lazy(() => SaleCreateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCashTransactionsInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => SaleCreateOrConnectWithoutCashTransactionsInputSchema).optional(),
-  upsert: z.lazy(() => SaleUpsertWithoutCashTransactionsInputSchema).optional(),
-  connect: z.lazy(() => SaleWhereUniqueInputSchema).optional(),
-  update: z.union([ z.lazy(() => SaleUpdateToOneWithWhereWithoutCashTransactionsInputSchema), z.lazy(() => SaleUpdateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutCashTransactionsInputSchema) ]).optional(),
+export const EventCreateNestedOneWithoutArticlesInputSchema: z.ZodType<Prisma.EventCreateNestedOneWithoutArticlesInput> = z.strictObject({
+  create: z.union([ z.lazy(() => EventCreateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedCreateWithoutArticlesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => EventCreateOrConnectWithoutArticlesInputSchema).optional(),
+  connect: z.lazy(() => EventWhereUniqueInputSchema).optional(),
 });
 
 export const DepositCreateNestedOneWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCreateNestedOneWithoutArticlesInput> = z.strictObject({
@@ -3881,6 +3275,16 @@ export const NullableDecimalFieldUpdateOperationsInputSchema: z.ZodType<Prisma.N
   decrement: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   multiply: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   divide: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+});
+
+export const EventUpdateOneWithoutArticlesNestedInputSchema: z.ZodType<Prisma.EventUpdateOneWithoutArticlesNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => EventCreateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedCreateWithoutArticlesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => EventCreateOrConnectWithoutArticlesInputSchema).optional(),
+  upsert: z.lazy(() => EventUpsertWithoutArticlesInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => EventWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => EventWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => EventWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => EventUpdateToOneWithWhereWithoutArticlesInputSchema), z.lazy(() => EventUpdateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedUpdateWithoutArticlesInputSchema) ]).optional(),
 });
 
 export const DepositUpdateOneWithoutArticlesNestedInputSchema: z.ZodType<Prisma.DepositUpdateOneWithoutArticlesNestedInput> = z.strictObject({
@@ -4102,6 +3506,48 @@ export const NestedDateTimeWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDa
   _max: z.lazy(() => NestedDateTimeFilterSchema).optional(),
 });
 
+export const NestedEnumContributionStatusFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusFilter> = z.strictObject({
+  equals: z.lazy(() => ContributionStatusSchema).optional(),
+  in: z.lazy(() => ContributionStatusSchema).array().optional(),
+  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
+  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusFilterSchema) ]).optional(),
+});
+
+export const NestedUuidNullableFilterSchema: z.ZodType<Prisma.NestedUuidNullableFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedUuidNullableFilterSchema) ]).optional().nullable(),
+});
+
+export const NestedEnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusWithAggregatesFilter> = z.strictObject({
+  equals: z.lazy(() => ContributionStatusSchema).optional(),
+  in: z.lazy(() => ContributionStatusSchema).array().optional(),
+  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
+  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusWithAggregatesFilterSchema) ]).optional(),
+  _count: z.lazy(() => NestedIntFilterSchema).optional(),
+  _min: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
+  _max: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
+});
+
+export const NestedUuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedUuidNullableWithAggregatesFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedUuidNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+});
+
 export const NestedDecimalFilterSchema: z.ZodType<Prisma.NestedDecimalFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
@@ -4127,65 +3573,6 @@ export const NestedDecimalWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDec
   _sum: z.lazy(() => NestedDecimalFilterSchema).optional(),
   _min: z.lazy(() => NestedDecimalFilterSchema).optional(),
   _max: z.lazy(() => NestedDecimalFilterSchema).optional(),
-});
-
-export const NestedEnumContributionStatusFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusFilterSchema) ]).optional(),
-});
-
-export const NestedEnumDepotStatusFilterSchema: z.ZodType<Prisma.NestedEnumDepotStatusFilter> = z.strictObject({
-  equals: z.lazy(() => DepotStatusSchema).optional(),
-  in: z.lazy(() => DepotStatusSchema).array().optional(),
-  notIn: z.lazy(() => DepotStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => NestedEnumDepotStatusFilterSchema) ]).optional(),
-});
-
-export const NestedUuidNullableFilterSchema: z.ZodType<Prisma.NestedUuidNullableFilter> = z.strictObject({
-  equals: z.string().optional().nullable(),
-  in: z.string().array().optional().nullable(),
-  notIn: z.string().array().optional().nullable(),
-  lt: z.string().optional(),
-  lte: z.string().optional(),
-  gt: z.string().optional(),
-  gte: z.string().optional(),
-  not: z.union([ z.string(),z.lazy(() => NestedUuidNullableFilterSchema) ]).optional().nullable(),
-});
-
-export const NestedEnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-});
-
-export const NestedEnumDepotStatusWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumDepotStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => DepotStatusSchema).optional(),
-  in: z.lazy(() => DepotStatusSchema).array().optional(),
-  notIn: z.lazy(() => DepotStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => NestedEnumDepotStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumDepotStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumDepotStatusFilterSchema).optional(),
-});
-
-export const NestedUuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedUuidNullableWithAggregatesFilter> = z.strictObject({
-  equals: z.string().optional().nullable(),
-  in: z.string().array().optional().nullable(),
-  notIn: z.string().array().optional().nullable(),
-  lt: z.string().optional(),
-  lte: z.string().optional(),
-  gt: z.string().optional(),
-  gte: z.string().optional(),
-  not: z.union([ z.string(),z.lazy(() => NestedUuidNullableWithAggregatesFilterSchema) ]).optional().nullable(),
-  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
-  _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
 });
 
 export const NestedDecimalNullableFilterSchema: z.ZodType<Prisma.NestedDecimalNullableFilter> = z.strictObject({
@@ -4228,9 +3615,7 @@ export const SaleCreateWithoutEventInputSchema: z.ZodType<Prisma.SaleCreateWitho
   deletedAt: z.coerce.date().optional().nullable(),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
   workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
 });
 
@@ -4238,7 +3623,6 @@ export const SaleUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.SaleUn
   id: z.uuid().optional(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -4250,7 +3634,6 @@ export const SaleUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.SaleUn
   deletedAt: z.coerce.date().optional().nullable(),
   userId: z.string().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutEventInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutEventInput> = z.strictObject({
@@ -4266,7 +3649,7 @@ export const SaleCreateManyEventInputEnvelopeSchema: z.ZodType<Prisma.SaleCreate
 export const DepositCreateWithoutEventInputSchema: z.ZodType<Prisma.DepositCreateWithoutEventInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4281,7 +3664,7 @@ export const DepositUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.Dep
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4331,35 +3714,53 @@ export const WorkstationCreateManyEventInputEnvelopeSchema: z.ZodType<Prisma.Wor
   skipDuplicates: z.boolean().optional(),
 });
 
-export const CheckoutCreateWithoutEventInputSchema: z.ZodType<Prisma.CheckoutCreateWithoutEventInput> = z.strictObject({
+export const ArticleCreateWithoutEventInputSchema: z.ZodType<Prisma.ArticleCreateWithoutEventInput> = z.strictObject({
   id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
-  sales: z.lazy(() => SaleCreateNestedManyWithoutCheckoutInputSchema).optional(),
+  deposit: z.lazy(() => DepositCreateNestedOneWithoutArticlesInputSchema).optional(),
+  sale: z.lazy(() => SaleCreateNestedOneWithoutArticlesInputSchema).optional(),
 });
 
-export const CheckoutUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUncheckedCreateWithoutEventInput> = z.strictObject({
+export const ArticleUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateWithoutEventInput> = z.strictObject({
   id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  depositId: z.string().optional().nullable(),
+  saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutCheckoutInputSchema).optional(),
 });
 
-export const CheckoutCreateOrConnectWithoutEventInputSchema: z.ZodType<Prisma.CheckoutCreateOrConnectWithoutEventInput> = z.strictObject({
-  where: z.lazy(() => CheckoutWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema) ]),
+export const ArticleCreateOrConnectWithoutEventInputSchema: z.ZodType<Prisma.ArticleCreateOrConnectWithoutEventInput> = z.strictObject({
+  where: z.lazy(() => ArticleWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema) ]),
 });
 
-export const CheckoutCreateManyEventInputEnvelopeSchema: z.ZodType<Prisma.CheckoutCreateManyEventInputEnvelope> = z.strictObject({
-  data: z.union([ z.lazy(() => CheckoutCreateManyEventInputSchema), z.lazy(() => CheckoutCreateManyEventInputSchema).array() ]),
+export const ArticleCreateManyEventInputEnvelopeSchema: z.ZodType<Prisma.ArticleCreateManyEventInputEnvelope> = z.strictObject({
+  data: z.union([ z.lazy(() => ArticleCreateManyEventInputSchema), z.lazy(() => ArticleCreateManyEventInputSchema).array() ]),
   skipDuplicates: z.boolean().optional(),
 });
 
@@ -4387,7 +3788,6 @@ export const SaleScalarWhereInputSchema: z.ZodType<Prisma.SaleScalarWhereInput> 
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   buyerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  checkoutId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -4425,7 +3825,7 @@ export const DepositScalarWhereInputSchema: z.ZodType<Prisma.DepositScalarWhereI
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   workstationId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
-  status: z.union([ z.lazy(() => EnumDepotStatusFilterSchema), z.lazy(() => DepotStatusSchema) ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -4461,178 +3861,44 @@ export const WorkstationScalarWhereInputSchema: z.ZodType<Prisma.WorkstationScal
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
 });
 
-export const CheckoutUpsertWithWhereUniqueWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUpsertWithWhereUniqueWithoutEventInput> = z.strictObject({
-  where: z.lazy(() => CheckoutWhereUniqueInputSchema),
-  update: z.union([ z.lazy(() => CheckoutUpdateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedUpdateWithoutEventInputSchema) ]),
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutEventInputSchema) ]),
+export const ArticleUpsertWithWhereUniqueWithoutEventInputSchema: z.ZodType<Prisma.ArticleUpsertWithWhereUniqueWithoutEventInput> = z.strictObject({
+  where: z.lazy(() => ArticleWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => ArticleUpdateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedUpdateWithoutEventInputSchema) ]),
+  create: z.union([ z.lazy(() => ArticleCreateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutEventInputSchema) ]),
 });
 
-export const CheckoutUpdateWithWhereUniqueWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUpdateWithWhereUniqueWithoutEventInput> = z.strictObject({
-  where: z.lazy(() => CheckoutWhereUniqueInputSchema),
-  data: z.union([ z.lazy(() => CheckoutUpdateWithoutEventInputSchema), z.lazy(() => CheckoutUncheckedUpdateWithoutEventInputSchema) ]),
+export const ArticleUpdateWithWhereUniqueWithoutEventInputSchema: z.ZodType<Prisma.ArticleUpdateWithWhereUniqueWithoutEventInput> = z.strictObject({
+  where: z.lazy(() => ArticleWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => ArticleUpdateWithoutEventInputSchema), z.lazy(() => ArticleUncheckedUpdateWithoutEventInputSchema) ]),
 });
 
-export const CheckoutUpdateManyWithWhereWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUpdateManyWithWhereWithoutEventInput> = z.strictObject({
-  where: z.lazy(() => CheckoutScalarWhereInputSchema),
-  data: z.union([ z.lazy(() => CheckoutUpdateManyMutationInputSchema), z.lazy(() => CheckoutUncheckedUpdateManyWithoutEventInputSchema) ]),
+export const ArticleUpdateManyWithWhereWithoutEventInputSchema: z.ZodType<Prisma.ArticleUpdateManyWithWhereWithoutEventInput> = z.strictObject({
+  where: z.lazy(() => ArticleScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => ArticleUpdateManyMutationInputSchema), z.lazy(() => ArticleUncheckedUpdateManyWithoutEventInputSchema) ]),
 });
 
-export const CheckoutScalarWhereInputSchema: z.ZodType<Prisma.CheckoutScalarWhereInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CheckoutScalarWhereInputSchema), z.lazy(() => CheckoutScalarWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CheckoutScalarWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CheckoutScalarWhereInputSchema), z.lazy(() => CheckoutScalarWhereInputSchema).array() ]).optional(),
+export const ArticleScalarWhereInputSchema: z.ZodType<Prisma.ArticleScalarWhereInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => ArticleScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
-  initialCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  currentCash: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  price: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
+  category: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  discipline: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  brand: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  model: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  size: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  color: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  code: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  year: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  articleIndex: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  eventId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  depositId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-});
-
-export const EventCreateWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventCreateWithoutCheckoutsInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  year: z.number().int(),
-  description: z.string().optional().nullable(),
-  startDate: z.coerce.date().optional().nullable(),
-  endDate: z.coerce.date().optional().nullable(),
-  isActive: z.boolean().optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  sales: z.lazy(() => SaleCreateNestedManyWithoutEventInputSchema).optional(),
-  deposits: z.lazy(() => DepositCreateNestedManyWithoutEventInputSchema).optional(),
-  workstations: z.lazy(() => WorkstationCreateNestedManyWithoutEventInputSchema).optional(),
-});
-
-export const EventUncheckedCreateWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventUncheckedCreateWithoutCheckoutsInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  year: z.number().int(),
-  description: z.string().optional().nullable(),
-  startDate: z.coerce.date().optional().nullable(),
-  endDate: z.coerce.date().optional().nullable(),
-  isActive: z.boolean().optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  deposits: z.lazy(() => DepositUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  workstations: z.lazy(() => WorkstationUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-});
-
-export const EventCreateOrConnectWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventCreateOrConnectWithoutCheckoutsInput> = z.strictObject({
-  where: z.lazy(() => EventWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => EventCreateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedCreateWithoutCheckoutsInputSchema) ]),
-});
-
-export const SaleCreateWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleCreateWithoutCheckoutInput> = z.strictObject({
-  id: z.uuid().optional(),
-  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  totalAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  postalCode: z.string().optional().nullable(),
-  saleAt: z.coerce.date().optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
-  buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
-  workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
-});
-
-export const SaleUncheckedCreateWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutCheckoutInput> = z.strictObject({
-  id: z.uuid().optional(),
-  eventId: z.string(),
-  buyerId: z.string(),
-  workstationId: z.string(),
-  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  totalAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  postalCode: z.string().optional().nullable(),
-  saleAt: z.coerce.date().optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  userId: z.string().optional().nullable(),
-  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-});
-
-export const SaleCreateOrConnectWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutCheckoutInput> = z.strictObject({
-  where: z.lazy(() => SaleWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema) ]),
-});
-
-export const SaleCreateManyCheckoutInputEnvelopeSchema: z.ZodType<Prisma.SaleCreateManyCheckoutInputEnvelope> = z.strictObject({
-  data: z.union([ z.lazy(() => SaleCreateManyCheckoutInputSchema), z.lazy(() => SaleCreateManyCheckoutInputSchema).array() ]),
-  skipDuplicates: z.boolean().optional(),
-});
-
-export const EventUpsertWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventUpsertWithoutCheckoutsInput> = z.strictObject({
-  update: z.union([ z.lazy(() => EventUpdateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedUpdateWithoutCheckoutsInputSchema) ]),
-  create: z.union([ z.lazy(() => EventCreateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedCreateWithoutCheckoutsInputSchema) ]),
-  where: z.lazy(() => EventWhereInputSchema).optional(),
-});
-
-export const EventUpdateToOneWithWhereWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventUpdateToOneWithWhereWithoutCheckoutsInput> = z.strictObject({
-  where: z.lazy(() => EventWhereInputSchema).optional(),
-  data: z.union([ z.lazy(() => EventUpdateWithoutCheckoutsInputSchema), z.lazy(() => EventUncheckedUpdateWithoutCheckoutsInputSchema) ]),
-});
-
-export const EventUpdateWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventUpdateWithoutCheckoutsInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  startDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  endDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  isActive: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sales: z.lazy(() => SaleUpdateManyWithoutEventNestedInputSchema).optional(),
-  deposits: z.lazy(() => DepositUpdateManyWithoutEventNestedInputSchema).optional(),
-  workstations: z.lazy(() => WorkstationUpdateManyWithoutEventNestedInputSchema).optional(),
-});
-
-export const EventUncheckedUpdateWithoutCheckoutsInputSchema: z.ZodType<Prisma.EventUncheckedUpdateWithoutCheckoutsInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  startDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  endDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  isActive: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  workstations: z.lazy(() => WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-});
-
-export const SaleUpsertWithWhereUniqueWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUpsertWithWhereUniqueWithoutCheckoutInput> = z.strictObject({
-  where: z.lazy(() => SaleWhereUniqueInputSchema),
-  update: z.union([ z.lazy(() => SaleUpdateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutCheckoutInputSchema) ]),
-  create: z.union([ z.lazy(() => SaleCreateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCheckoutInputSchema) ]),
-});
-
-export const SaleUpdateWithWhereUniqueWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUpdateWithWhereUniqueWithoutCheckoutInput> = z.strictObject({
-  where: z.lazy(() => SaleWhereUniqueInputSchema),
-  data: z.union([ z.lazy(() => SaleUpdateWithoutCheckoutInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutCheckoutInputSchema) ]),
-});
-
-export const SaleUpdateManyWithWhereWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUpdateManyWithWhereWithoutCheckoutInput> = z.strictObject({
-  where: z.lazy(() => SaleScalarWhereInputSchema),
-  data: z.union([ z.lazy(() => SaleUpdateManyMutationInputSchema), z.lazy(() => SaleUncheckedUpdateManyWithoutCheckoutInputSchema) ]),
 });
 
 export const EventCreateWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventCreateWithoutWorkstationsInput> = z.strictObject({
@@ -4648,7 +3914,7 @@ export const EventCreateWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventCr
   deletedAt: z.coerce.date().optional().nullable(),
   sales: z.lazy(() => SaleCreateNestedManyWithoutEventInputSchema).optional(),
   deposits: z.lazy(() => DepositCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventUncheckedCreateWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventUncheckedCreateWithoutWorkstationsInput> = z.strictObject({
@@ -4664,7 +3930,7 @@ export const EventUncheckedCreateWithoutWorkstationsInputSchema: z.ZodType<Prism
   deletedAt: z.coerce.date().optional().nullable(),
   sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
   deposits: z.lazy(() => DepositUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventCreateOrConnectWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventCreateOrConnectWithoutWorkstationsInput> = z.strictObject({
@@ -4685,9 +3951,7 @@ export const SaleCreateWithoutWorkstationInputSchema: z.ZodType<Prisma.SaleCreat
   deletedAt: z.coerce.date().optional().nullable(),
   event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
 });
 
@@ -4695,7 +3959,6 @@ export const SaleUncheckedCreateWithoutWorkstationInputSchema: z.ZodType<Prisma.
   id: z.uuid().optional(),
   eventId: z.string(),
   buyerId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -4707,7 +3970,6 @@ export const SaleUncheckedCreateWithoutWorkstationInputSchema: z.ZodType<Prisma.
   deletedAt: z.coerce.date().optional().nullable(),
   userId: z.string().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutWorkstationInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutWorkstationInput> = z.strictObject({
@@ -4723,7 +3985,7 @@ export const SaleCreateManyWorkstationInputEnvelopeSchema: z.ZodType<Prisma.Sale
 export const DepositCreateWithoutWorkstationInputSchema: z.ZodType<Prisma.DepositCreateWithoutWorkstationInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4738,7 +4000,7 @@ export const DepositUncheckedCreateWithoutWorkstationInputSchema: z.ZodType<Pris
   eventId: z.string(),
   sellerId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4780,7 +4042,7 @@ export const EventUpdateWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventUp
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sales: z.lazy(() => SaleUpdateManyWithoutEventNestedInputSchema).optional(),
   deposits: z.lazy(() => DepositUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const EventUncheckedUpdateWithoutWorkstationsInputSchema: z.ZodType<Prisma.EventUncheckedUpdateWithoutWorkstationsInput> = z.strictObject({
@@ -4796,7 +4058,7 @@ export const EventUncheckedUpdateWithoutWorkstationsInputSchema: z.ZodType<Prism
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sales: z.lazy(() => SaleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
   deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const SaleUpsertWithWhereUniqueWithoutWorkstationInputSchema: z.ZodType<Prisma.SaleUpsertWithWhereUniqueWithoutWorkstationInput> = z.strictObject({
@@ -4845,9 +4107,7 @@ export const SaleCreateWithoutUserInputSchema: z.ZodType<Prisma.SaleCreateWithou
   event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
   workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutUserInput> = z.strictObject({
@@ -4855,7 +4115,6 @@ export const SaleUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.SaleUnc
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -4866,7 +4125,6 @@ export const SaleUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.SaleUnc
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutUserInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutUserInput> = z.strictObject({
@@ -4882,7 +4140,7 @@ export const SaleCreateManyUserInputEnvelopeSchema: z.ZodType<Prisma.SaleCreateM
 export const DepositCreateWithoutUserInputSchema: z.ZodType<Prisma.DepositCreateWithoutUserInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4898,7 +4156,7 @@ export const DepositUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.Depo
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4960,9 +4218,7 @@ export const SaleCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleCreateWitho
   deletedAt: z.coerce.date().optional().nullable(),
   event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
   workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
 });
 
@@ -4970,7 +4226,6 @@ export const SaleUncheckedCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   id: z.uuid().optional(),
   eventId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -4982,7 +4237,6 @@ export const SaleUncheckedCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   deletedAt: z.coerce.date().optional().nullable(),
   userId: z.string().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutBuyerInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutBuyerInput> = z.strictObject({
@@ -4998,7 +4252,7 @@ export const SaleCreateManyBuyerInputEnvelopeSchema: z.ZodType<Prisma.SaleCreate
 export const DepositCreateWithoutSellerInputSchema: z.ZodType<Prisma.DepositCreateWithoutSellerInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5013,7 +4267,7 @@ export const DepositUncheckedCreateWithoutSellerInputSchema: z.ZodType<Prisma.De
   eventId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5076,7 +4330,7 @@ export const EventCreateWithoutDepositsInputSchema: z.ZodType<Prisma.EventCreate
   deletedAt: z.coerce.date().optional().nullable(),
   sales: z.lazy(() => SaleCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventUncheckedCreateWithoutDepositsInputSchema: z.ZodType<Prisma.EventUncheckedCreateWithoutDepositsInput> = z.strictObject({
@@ -5092,7 +4346,7 @@ export const EventUncheckedCreateWithoutDepositsInputSchema: z.ZodType<Prisma.Ev
   deletedAt: z.coerce.date().optional().nullable(),
   sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventCreateOrConnectWithoutDepositsInputSchema: z.ZodType<Prisma.EventCreateOrConnectWithoutDepositsInput> = z.strictObject({
@@ -5160,30 +4414,38 @@ export const WorkstationCreateOrConnectWithoutDepositsInputSchema: z.ZodType<Pri
 
 export const ArticleCreateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleCreateWithoutDepositInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
+  event: z.lazy(() => EventCreateNestedOneWithoutArticlesInputSchema).optional(),
   sale: z.lazy(() => SaleCreateNestedOneWithoutArticlesInputSchema).optional(),
 });
 
 export const ArticleUncheckedCreateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateWithoutDepositInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5249,7 +4511,7 @@ export const EventUpdateWithoutDepositsInputSchema: z.ZodType<Prisma.EventUpdate
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sales: z.lazy(() => SaleUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const EventUncheckedUpdateWithoutDepositsInputSchema: z.ZodType<Prisma.EventUncheckedUpdateWithoutDepositsInput> = z.strictObject({
@@ -5265,7 +4527,7 @@ export const EventUncheckedUpdateWithoutDepositsInputSchema: z.ZodType<Prisma.Ev
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sales: z.lazy(() => SaleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const ContactUpsertWithoutDepotsInputSchema: z.ZodType<Prisma.ContactUpsertWithoutDepotsInput> = z.strictObject({
@@ -5354,26 +4616,6 @@ export const ArticleUpdateManyWithWhereWithoutDepositInputSchema: z.ZodType<Pris
   data: z.union([ z.lazy(() => ArticleUpdateManyMutationInputSchema), z.lazy(() => ArticleUncheckedUpdateManyWithoutDepositInputSchema) ]),
 });
 
-export const ArticleScalarWhereInputSchema: z.ZodType<Prisma.ArticleScalarWhereInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => ArticleScalarWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  discipline: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  categorie: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  brand: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  description: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  color: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  size: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  price: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
-  code: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
-  depositId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
-  saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
-});
-
 export const UserUpsertWithoutDepotsInputSchema: z.ZodType<Prisma.UserUpsertWithoutDepotsInput> = z.strictObject({
   update: z.union([ z.lazy(() => UserUpdateWithoutDepotsInputSchema), z.lazy(() => UserUncheckedUpdateWithoutDepotsInputSchema) ]),
   create: z.union([ z.lazy(() => UserCreateWithoutDepotsInputSchema), z.lazy(() => UserUncheckedCreateWithoutDepotsInputSchema) ]),
@@ -5418,7 +4660,7 @@ export const EventCreateWithoutSalesInputSchema: z.ZodType<Prisma.EventCreateWit
   deletedAt: z.coerce.date().optional().nullable(),
   deposits: z.lazy(() => DepositCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventUncheckedCreateWithoutSalesInputSchema: z.ZodType<Prisma.EventUncheckedCreateWithoutSalesInput> = z.strictObject({
@@ -5434,7 +4676,7 @@ export const EventUncheckedCreateWithoutSalesInputSchema: z.ZodType<Prisma.Event
   deletedAt: z.coerce.date().optional().nullable(),
   deposits: z.lazy(() => DepositUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
 export const EventCreateOrConnectWithoutSalesInputSchema: z.ZodType<Prisma.EventCreateOrConnectWithoutSalesInput> = z.strictObject({
@@ -5500,59 +4742,40 @@ export const WorkstationCreateOrConnectWithoutSalesInputSchema: z.ZodType<Prisma
   create: z.union([ z.lazy(() => WorkstationCreateWithoutSalesInputSchema), z.lazy(() => WorkstationUncheckedCreateWithoutSalesInputSchema) ]),
 });
 
-export const CheckoutCreateWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutCreateWithoutSalesInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  event: z.lazy(() => EventCreateNestedOneWithoutCheckoutsInputSchema),
-});
-
-export const CheckoutUncheckedCreateWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutUncheckedCreateWithoutSalesInput> = z.strictObject({
-  id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  eventId: z.string(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CheckoutCreateOrConnectWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutCreateOrConnectWithoutSalesInput> = z.strictObject({
-  where: z.lazy(() => CheckoutWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutSalesInputSchema) ]),
-});
-
 export const ArticleCreateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleCreateWithoutSaleInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
+  event: z.lazy(() => EventCreateNestedOneWithoutArticlesInputSchema).optional(),
   deposit: z.lazy(() => DepositCreateNestedOneWithoutArticlesInputSchema).optional(),
 });
 
 export const ArticleUncheckedCreateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateWithoutSaleInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   depositId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5566,34 +4789,6 @@ export const ArticleCreateOrConnectWithoutSaleInputSchema: z.ZodType<Prisma.Arti
 
 export const ArticleCreateManySaleInputEnvelopeSchema: z.ZodType<Prisma.ArticleCreateManySaleInputEnvelope> = z.strictObject({
   data: z.union([ z.lazy(() => ArticleCreateManySaleInputSchema), z.lazy(() => ArticleCreateManySaleInputSchema).array() ]),
-  skipDuplicates: z.boolean().optional(),
-});
-
-export const CashTransactionCreateWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionCreateWithoutSaleInput> = z.strictObject({
-  id: z.uuid().optional(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CashTransactionUncheckedCreateWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUncheckedCreateWithoutSaleInput> = z.strictObject({
-  id: z.uuid().optional(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CashTransactionCreateOrConnectWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionCreateOrConnectWithoutSaleInput> = z.strictObject({
-  where: z.lazy(() => CashTransactionWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema) ]),
-});
-
-export const CashTransactionCreateManySaleInputEnvelopeSchema: z.ZodType<Prisma.CashTransactionCreateManySaleInputEnvelope> = z.strictObject({
-  data: z.union([ z.lazy(() => CashTransactionCreateManySaleInputSchema), z.lazy(() => CashTransactionCreateManySaleInputSchema).array() ]),
   skipDuplicates: z.boolean().optional(),
 });
 
@@ -5646,7 +4841,7 @@ export const EventUpdateWithoutSalesInputSchema: z.ZodType<Prisma.EventUpdateWit
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   deposits: z.lazy(() => DepositUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const EventUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma.EventUncheckedUpdateWithoutSalesInput> = z.strictObject({
@@ -5662,7 +4857,7 @@ export const EventUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma.Event
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
   workstations: z.lazy(() => WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
-  checkouts: z.lazy(() => CheckoutUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const ContactUpsertWithoutSalesInputSchema: z.ZodType<Prisma.ContactUpsertWithoutSalesInput> = z.strictObject({
@@ -5735,39 +4930,6 @@ export const WorkstationUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma
   deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutWorkstationNestedInputSchema).optional(),
 });
 
-export const CheckoutUpsertWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutUpsertWithoutSalesInput> = z.strictObject({
-  update: z.union([ z.lazy(() => CheckoutUpdateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedUpdateWithoutSalesInputSchema) ]),
-  create: z.union([ z.lazy(() => CheckoutCreateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedCreateWithoutSalesInputSchema) ]),
-  where: z.lazy(() => CheckoutWhereInputSchema).optional(),
-});
-
-export const CheckoutUpdateToOneWithWhereWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutUpdateToOneWithWhereWithoutSalesInput> = z.strictObject({
-  where: z.lazy(() => CheckoutWhereInputSchema).optional(),
-  data: z.union([ z.lazy(() => CheckoutUpdateWithoutSalesInputSchema), z.lazy(() => CheckoutUncheckedUpdateWithoutSalesInputSchema) ]),
-});
-
-export const CheckoutUpdateWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutUpdateWithoutSalesInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  event: z.lazy(() => EventUpdateOneRequiredWithoutCheckoutsNestedInputSchema).optional(),
-});
-
-export const CheckoutUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateWithoutSalesInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
 export const ArticleUpsertWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpsertWithWhereUniqueWithoutSaleInput> = z.strictObject({
   where: z.lazy(() => ArticleWhereUniqueInputSchema),
   update: z.union([ z.lazy(() => ArticleUpdateWithoutSaleInputSchema), z.lazy(() => ArticleUncheckedUpdateWithoutSaleInputSchema) ]),
@@ -5782,35 +4944,6 @@ export const ArticleUpdateWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prism
 export const ArticleUpdateManyWithWhereWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpdateManyWithWhereWithoutSaleInput> = z.strictObject({
   where: z.lazy(() => ArticleScalarWhereInputSchema),
   data: z.union([ z.lazy(() => ArticleUpdateManyMutationInputSchema), z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleInputSchema) ]),
-});
-
-export const CashTransactionUpsertWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUpsertWithWhereUniqueWithoutSaleInput> = z.strictObject({
-  where: z.lazy(() => CashTransactionWhereUniqueInputSchema),
-  update: z.union([ z.lazy(() => CashTransactionUpdateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedUpdateWithoutSaleInputSchema) ]),
-  create: z.union([ z.lazy(() => CashTransactionCreateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedCreateWithoutSaleInputSchema) ]),
-});
-
-export const CashTransactionUpdateWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUpdateWithWhereUniqueWithoutSaleInput> = z.strictObject({
-  where: z.lazy(() => CashTransactionWhereUniqueInputSchema),
-  data: z.union([ z.lazy(() => CashTransactionUpdateWithoutSaleInputSchema), z.lazy(() => CashTransactionUncheckedUpdateWithoutSaleInputSchema) ]),
-});
-
-export const CashTransactionUpdateManyWithWhereWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUpdateManyWithWhereWithoutSaleInput> = z.strictObject({
-  where: z.lazy(() => CashTransactionScalarWhereInputSchema),
-  data: z.union([ z.lazy(() => CashTransactionUpdateManyMutationInputSchema), z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleInputSchema) ]),
-});
-
-export const CashTransactionScalarWhereInputSchema: z.ZodType<Prisma.CashTransactionScalarWhereInput> = z.strictObject({
-  AND: z.union([ z.lazy(() => CashTransactionScalarWhereInputSchema), z.lazy(() => CashTransactionScalarWhereInputSchema).array() ]).optional(),
-  OR: z.lazy(() => CashTransactionScalarWhereInputSchema).array().optional(),
-  NOT: z.union([ z.lazy(() => CashTransactionScalarWhereInputSchema), z.lazy(() => CashTransactionScalarWhereInputSchema).array() ]).optional(),
-  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  cashReceived: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  cashGiven: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
-  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
 });
 
 export const UserUpsertWithoutSalesInputSchema: z.ZodType<Prisma.UserUpsertWithoutSalesInput> = z.strictObject({
@@ -5844,102 +4977,47 @@ export const UserUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma.UserUn
   depots: z.lazy(() => DepositUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
 });
 
-export const SaleCreateWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleCreateWithoutCashTransactionsInput> = z.strictObject({
+export const EventCreateWithoutArticlesInputSchema: z.ZodType<Prisma.EventCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
-  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  totalAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  postalCode: z.string().optional().nullable(),
-  saleAt: z.coerce.date().optional(),
+  name: z.string(),
+  year: z.number().int(),
+  description: z.string().optional().nullable(),
+  startDate: z.coerce.date().optional().nullable(),
+  endDate: z.coerce.date().optional().nullable(),
+  isActive: z.boolean().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
-  event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
-  buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
-  workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
-  articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
+  sales: z.lazy(() => SaleCreateNestedManyWithoutEventInputSchema).optional(),
+  deposits: z.lazy(() => DepositCreateNestedManyWithoutEventInputSchema).optional(),
+  workstations: z.lazy(() => WorkstationCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
-export const SaleUncheckedCreateWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutCashTransactionsInput> = z.strictObject({
+export const EventUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.EventUncheckedCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
-  eventId: z.string(),
-  buyerId: z.string(),
-  workstationId: z.string(),
-  checkoutId: z.string(),
-  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  totalAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  postalCode: z.string().optional().nullable(),
-  saleAt: z.coerce.date().optional(),
+  name: z.string(),
+  year: z.number().int(),
+  description: z.string().optional().nullable(),
+  startDate: z.coerce.date().optional().nullable(),
+  endDate: z.coerce.date().optional().nullable(),
+  isActive: z.boolean().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
-  userId: z.string().optional().nullable(),
-  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
+  sales: z.lazy(() => SaleUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  deposits: z.lazy(() => DepositUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
+  workstations: z.lazy(() => WorkstationUncheckedCreateNestedManyWithoutEventInputSchema).optional(),
 });
 
-export const SaleCreateOrConnectWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutCashTransactionsInput> = z.strictObject({
-  where: z.lazy(() => SaleWhereUniqueInputSchema),
-  create: z.union([ z.lazy(() => SaleCreateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCashTransactionsInputSchema) ]),
-});
-
-export const SaleUpsertWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleUpsertWithoutCashTransactionsInput> = z.strictObject({
-  update: z.union([ z.lazy(() => SaleUpdateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutCashTransactionsInputSchema) ]),
-  create: z.union([ z.lazy(() => SaleCreateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutCashTransactionsInputSchema) ]),
-  where: z.lazy(() => SaleWhereInputSchema).optional(),
-});
-
-export const SaleUpdateToOneWithWhereWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleUpdateToOneWithWhereWithoutCashTransactionsInput> = z.strictObject({
-  where: z.lazy(() => SaleWhereInputSchema).optional(),
-  data: z.union([ z.lazy(() => SaleUpdateWithoutCashTransactionsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutCashTransactionsInputSchema) ]),
-});
-
-export const SaleUpdateWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleUpdateWithoutCashTransactionsInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  totalAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  postalCode: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  saleAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
-});
-
-export const SaleUncheckedUpdateWithoutCashTransactionsInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutCashTransactionsInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  totalAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  postalCode: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  saleAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
+export const EventCreateOrConnectWithoutArticlesInputSchema: z.ZodType<Prisma.EventCreateOrConnectWithoutArticlesInput> = z.strictObject({
+  where: z.lazy(() => EventWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => EventCreateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedCreateWithoutArticlesInputSchema) ]),
 });
 
 export const DepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5955,7 +5033,7 @@ export const DepositUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5981,8 +5059,6 @@ export const SaleCreateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleCreateWi
   event: z.lazy(() => EventCreateNestedOneWithoutSalesInputSchema),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
   workstation: z.lazy(() => WorkstationCreateNestedOneWithoutSalesInputSchema),
-  checkout: z.lazy(() => CheckoutCreateNestedOneWithoutSalesInputSchema),
-  cashTransactions: z.lazy(() => CashTransactionCreateNestedManyWithoutSaleInputSchema).optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutSalesInputSchema).optional(),
 });
 
@@ -5991,7 +5067,6 @@ export const SaleUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -6002,12 +5077,54 @@ export const SaleUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   userId: z.string().optional().nullable(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutArticlesInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutArticlesInput> = z.strictObject({
   where: z.lazy(() => SaleWhereUniqueInputSchema),
   create: z.union([ z.lazy(() => SaleCreateWithoutArticlesInputSchema), z.lazy(() => SaleUncheckedCreateWithoutArticlesInputSchema) ]),
+});
+
+export const EventUpsertWithoutArticlesInputSchema: z.ZodType<Prisma.EventUpsertWithoutArticlesInput> = z.strictObject({
+  update: z.union([ z.lazy(() => EventUpdateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedUpdateWithoutArticlesInputSchema) ]),
+  create: z.union([ z.lazy(() => EventCreateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedCreateWithoutArticlesInputSchema) ]),
+  where: z.lazy(() => EventWhereInputSchema).optional(),
+});
+
+export const EventUpdateToOneWithWhereWithoutArticlesInputSchema: z.ZodType<Prisma.EventUpdateToOneWithWhereWithoutArticlesInput> = z.strictObject({
+  where: z.lazy(() => EventWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => EventUpdateWithoutArticlesInputSchema), z.lazy(() => EventUncheckedUpdateWithoutArticlesInputSchema) ]),
+});
+
+export const EventUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.EventUpdateWithoutArticlesInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  startDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  endDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  isActive: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  sales: z.lazy(() => SaleUpdateManyWithoutEventNestedInputSchema).optional(),
+  deposits: z.lazy(() => DepositUpdateManyWithoutEventNestedInputSchema).optional(),
+  workstations: z.lazy(() => WorkstationUpdateManyWithoutEventNestedInputSchema).optional(),
+});
+
+export const EventUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.EventUncheckedUpdateWithoutArticlesInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  startDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  endDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  isActive: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  sales: z.lazy(() => SaleUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  deposits: z.lazy(() => DepositUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
+  workstations: z.lazy(() => WorkstationUncheckedUpdateManyWithoutEventNestedInputSchema).optional(),
 });
 
 export const DepositUpsertWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUpsertWithoutArticlesInput> = z.strictObject({
@@ -6024,7 +5141,7 @@ export const DepositUpdateToOneWithWhereWithoutArticlesInputSchema: z.ZodType<Pr
 export const DepositUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUpdateWithoutArticlesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6040,7 +5157,7 @@ export const DepositUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6072,8 +5189,6 @@ export const SaleUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleUpdateWi
   event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
   user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
 });
 
@@ -6082,7 +5197,6 @@ export const SaleUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6093,14 +5207,12 @@ export const SaleUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleCreateManyEventInputSchema: z.ZodType<Prisma.SaleCreateManyEventInput> = z.strictObject({
   id: z.uuid().optional(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -6118,7 +5230,7 @@ export const DepositCreateManyEventInputSchema: z.ZodType<Prisma.DepositCreateMa
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6134,11 +5246,21 @@ export const WorkstationCreateManyEventInputSchema: z.ZodType<Prisma.Workstation
   deletedAt: z.coerce.date().optional().nullable(),
 });
 
-export const CheckoutCreateManyEventInputSchema: z.ZodType<Prisma.CheckoutCreateManyEventInput> = z.strictObject({
+export const ArticleCreateManyEventInputSchema: z.ZodType<Prisma.ArticleCreateManyEventInput> = z.strictObject({
   id: z.uuid().optional(),
-  name: z.string(),
-  initialCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  currentCash: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  depositId: z.string().optional().nullable(),
+  saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6157,9 +5279,7 @@ export const SaleUpdateWithoutEventInputSchema: z.ZodType<Prisma.SaleUpdateWitho
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
   user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
 });
 
@@ -6167,7 +5287,6 @@ export const SaleUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.SaleUn
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6179,14 +5298,12 @@ export const SaleUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.SaleUn
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6202,7 +5319,7 @@ export const SaleUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma.Sa
 export const DepositUpdateWithoutEventInputSchema: z.ZodType<Prisma.DepositUpdateWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6217,7 +5334,7 @@ export const DepositUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.Dep
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6230,7 +5347,7 @@ export const DepositUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6268,115 +5385,70 @@ export const WorkstationUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Pr
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
-export const CheckoutUpdateWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUpdateWithoutEventInput> = z.strictObject({
+export const ArticleUpdateWithoutEventInputSchema: z.ZodType<Prisma.ArticleUpdateWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sales: z.lazy(() => SaleUpdateManyWithoutCheckoutNestedInputSchema).optional(),
+  deposit: z.lazy(() => DepositUpdateOneWithoutArticlesNestedInputSchema).optional(),
+  sale: z.lazy(() => SaleUpdateOneWithoutArticlesNestedInputSchema).optional(),
 });
 
-export const CheckoutUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateWithoutEventInput> = z.strictObject({
+export const ArticleUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  sales: z.lazy(() => SaleUncheckedUpdateManyWithoutCheckoutNestedInputSchema).optional(),
 });
 
-export const CheckoutUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma.CheckoutUncheckedUpdateManyWithoutEventInput> = z.strictObject({
+export const ArticleUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  initialCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  currentCash: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const SaleCreateManyCheckoutInputSchema: z.ZodType<Prisma.SaleCreateManyCheckoutInput> = z.strictObject({
-  id: z.uuid().optional(),
-  eventId: z.string(),
-  buyerId: z.string(),
-  workstationId: z.string(),
-  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  totalAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  postalCode: z.string().optional().nullable(),
-  saleAt: z.coerce.date().optional(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-  userId: z.string().optional().nullable(),
-});
-
-export const SaleUpdateWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUpdateWithoutCheckoutInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  totalAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  postalCode: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  saleAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
-});
-
-export const SaleUncheckedUpdateWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutCheckoutInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  totalAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  postalCode: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  saleAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-});
-
-export const SaleUncheckedUpdateManyWithoutCheckoutInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutCheckoutInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  totalAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  postalCode: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  saleAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
 export const SaleCreateManyWorkstationInputSchema: z.ZodType<Prisma.SaleCreateManyWorkstationInput> = z.strictObject({
   id: z.uuid().optional(),
   eventId: z.string(),
   buyerId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -6394,7 +5466,7 @@ export const DepositCreateManyWorkstationInputSchema: z.ZodType<Prisma.DepositCr
   eventId: z.string(),
   sellerId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6414,9 +5486,7 @@ export const SaleUpdateWithoutWorkstationInputSchema: z.ZodType<Prisma.SaleUpdat
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
   user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
 });
 
@@ -6424,7 +5494,6 @@ export const SaleUncheckedUpdateWithoutWorkstationInputSchema: z.ZodType<Prisma.
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6436,14 +5505,12 @@ export const SaleUncheckedUpdateWithoutWorkstationInputSchema: z.ZodType<Prisma.
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutWorkstationInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutWorkstationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6459,7 +5526,7 @@ export const SaleUncheckedUpdateManyWithoutWorkstationInputSchema: z.ZodType<Pri
 export const DepositUpdateWithoutWorkstationInputSchema: z.ZodType<Prisma.DepositUpdateWithoutWorkstationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6474,7 +5541,7 @@ export const DepositUncheckedUpdateWithoutWorkstationInputSchema: z.ZodType<Pris
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6487,7 +5554,7 @@ export const DepositUncheckedUpdateManyWithoutWorkstationInputSchema: z.ZodType<
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6499,7 +5566,6 @@ export const SaleCreateManyUserInputSchema: z.ZodType<Prisma.SaleCreateManyUserI
   eventId: z.string(),
   buyerId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -6517,7 +5583,7 @@ export const DepositCreateManyUserInputSchema: z.ZodType<Prisma.DepositCreateMan
   sellerId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6537,9 +5603,7 @@ export const SaleUpdateWithoutUserInputSchema: z.ZodType<Prisma.SaleUpdateWithou
   event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutUserInput> = z.strictObject({
@@ -6547,7 +5611,6 @@ export const SaleUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.SaleUnc
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6558,7 +5621,6 @@ export const SaleUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.SaleUnc
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutUserInput> = z.strictObject({
@@ -6566,7 +5628,6 @@ export const SaleUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.Sal
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6581,7 +5642,7 @@ export const SaleUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.Sal
 export const DepositUpdateWithoutUserInputSchema: z.ZodType<Prisma.DepositUpdateWithoutUserInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6597,7 +5658,7 @@ export const DepositUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.Depo
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6610,7 +5671,7 @@ export const DepositUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6620,7 +5681,6 @@ export const SaleCreateManyBuyerInputSchema: z.ZodType<Prisma.SaleCreateManyBuye
   id: z.uuid().optional(),
   eventId: z.string(),
   workstationId: z.string(),
-  checkoutId: z.string(),
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -6638,7 +5698,7 @@ export const DepositCreateManySellerInputSchema: z.ZodType<Prisma.DepositCreateM
   eventId: z.string(),
   workstationId: z.string(),
   contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
-  status: z.lazy(() => DepotStatusSchema).optional(),
+  depositIndex: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6658,9 +5718,7 @@ export const SaleUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUpdateWitho
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   event: z.lazy(() => EventUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   workstation: z.lazy(() => WorkstationUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
-  checkout: z.lazy(() => CheckoutUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUpdateManyWithoutSaleNestedInputSchema).optional(),
   user: z.lazy(() => UserUpdateOneWithoutSalesNestedInputSchema).optional(),
 });
 
@@ -6668,7 +5726,6 @@ export const SaleUncheckedUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6680,14 +5737,12 @@ export const SaleUncheckedUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   userId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
-  cashTransactions: z.lazy(() => CashTransactionUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutBuyerInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  checkoutId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6703,7 +5758,7 @@ export const SaleUncheckedUpdateManyWithoutBuyerInputSchema: z.ZodType<Prisma.Sa
 export const DepositUpdateWithoutSellerInputSchema: z.ZodType<Prisma.DepositUpdateWithoutSellerInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6718,7 +5773,7 @@ export const DepositUncheckedUpdateWithoutSellerInputSchema: z.ZodType<Prisma.De
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6731,7 +5786,7 @@ export const DepositUncheckedUpdateManyWithoutSellerInputSchema: z.ZodType<Prism
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   workstationId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => DepotStatusSchema), z.lazy(() => EnumDepotStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6740,14 +5795,18 @@ export const DepositUncheckedUpdateManyWithoutSellerInputSchema: z.ZodType<Prism
 
 export const ArticleCreateManyDepositInputSchema: z.ZodType<Prisma.ArticleCreateManyDepositInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -6756,30 +5815,38 @@ export const ArticleCreateManyDepositInputSchema: z.ZodType<Prisma.ArticleCreate
 
 export const ArticleUpdateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleUpdateWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  event: z.lazy(() => EventUpdateOneWithoutArticlesNestedInputSchema).optional(),
   sale: z.lazy(() => SaleUpdateOneWithoutArticlesNestedInputSchema).optional(),
 });
 
 export const ArticleUncheckedUpdateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6788,14 +5855,18 @@ export const ArticleUncheckedUpdateWithoutDepositInputSchema: z.ZodType<Prisma.A
 
 export const ArticleUncheckedUpdateManyWithoutDepositInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6804,24 +5875,19 @@ export const ArticleUncheckedUpdateManyWithoutDepositInputSchema: z.ZodType<Pris
 
 export const ArticleCreateManySaleInputSchema: z.ZodType<Prisma.ArticleCreateManySaleInput> = z.strictObject({
   id: z.uuid().optional(),
-  discipline: z.string().optional().nullable(),
-  categorie: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  color: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   price: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
-  code: z.string().optional().nullable(),
+  category: z.string(),
+  discipline: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  size: z.string(),
+  color: z.string(),
+  code: z.string(),
+  year: z.number().int(),
+  depositIndex: z.number().int(),
+  articleIndex: z.string(),
+  eventId: z.string().optional().nullable(),
   depositId: z.string().optional().nullable(),
-  createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  deletedAt: z.coerce.date().optional().nullable(),
-});
-
-export const CashTransactionCreateManySaleInputSchema: z.ZodType<Prisma.CashTransactionCreateManySaleInput> = z.strictObject({
-  id: z.uuid().optional(),
-  cashReceived: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
-  cashGiven: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -6829,30 +5895,38 @@ export const CashTransactionCreateManySaleInputSchema: z.ZodType<Prisma.CashTran
 
 export const ArticleUpdateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpdateWithoutSaleInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  event: z.lazy(() => EventUpdateOneWithoutArticlesNestedInputSchema).optional(),
   deposit: z.lazy(() => DepositUpdateOneWithoutArticlesNestedInputSchema).optional(),
 });
 
 export const ArticleUncheckedUpdateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateWithoutSaleInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6861,42 +5935,19 @@ export const ArticleUncheckedUpdateWithoutSaleInputSchema: z.ZodType<Prisma.Arti
 
 export const ArticleUncheckedUpdateManyWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyWithoutSaleInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  discipline: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  categorie: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  brand: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  color: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  size: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  code: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  category: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  discipline: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  brand: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  model: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  size: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  color: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  code: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  year: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  articleIndex: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  eventId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   depositId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CashTransactionUpdateWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUpdateWithoutSaleInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CashTransactionUncheckedUpdateWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUncheckedUpdateWithoutSaleInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
-  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-});
-
-export const CashTransactionUncheckedUpdateManyWithoutSaleInputSchema: z.ZodType<Prisma.CashTransactionUncheckedUpdateManyWithoutSaleInput> = z.strictObject({
-  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  cashReceived: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  cashGiven: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -6966,68 +6017,6 @@ export const EventFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.EventFindUniqueO
   select: EventSelectSchema.optional(),
   include: EventIncludeSchema.optional(),
   where: EventWhereUniqueInputSchema, 
-}).strict();
-
-export const CheckoutFindFirstArgsSchema: z.ZodType<Prisma.CheckoutFindFirstArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereInputSchema.optional(), 
-  orderBy: z.union([ CheckoutOrderByWithRelationInputSchema.array(), CheckoutOrderByWithRelationInputSchema ]).optional(),
-  cursor: CheckoutWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CheckoutScalarFieldEnumSchema, CheckoutScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CheckoutFindFirstOrThrowArgsSchema: z.ZodType<Prisma.CheckoutFindFirstOrThrowArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereInputSchema.optional(), 
-  orderBy: z.union([ CheckoutOrderByWithRelationInputSchema.array(), CheckoutOrderByWithRelationInputSchema ]).optional(),
-  cursor: CheckoutWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CheckoutScalarFieldEnumSchema, CheckoutScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CheckoutFindManyArgsSchema: z.ZodType<Prisma.CheckoutFindManyArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereInputSchema.optional(), 
-  orderBy: z.union([ CheckoutOrderByWithRelationInputSchema.array(), CheckoutOrderByWithRelationInputSchema ]).optional(),
-  cursor: CheckoutWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CheckoutScalarFieldEnumSchema, CheckoutScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CheckoutAggregateArgsSchema: z.ZodType<Prisma.CheckoutAggregateArgs> = z.object({
-  where: CheckoutWhereInputSchema.optional(), 
-  orderBy: z.union([ CheckoutOrderByWithRelationInputSchema.array(), CheckoutOrderByWithRelationInputSchema ]).optional(),
-  cursor: CheckoutWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-}).strict();
-
-export const CheckoutGroupByArgsSchema: z.ZodType<Prisma.CheckoutGroupByArgs> = z.object({
-  where: CheckoutWhereInputSchema.optional(), 
-  orderBy: z.union([ CheckoutOrderByWithAggregationInputSchema.array(), CheckoutOrderByWithAggregationInputSchema ]).optional(),
-  by: CheckoutScalarFieldEnumSchema.array(), 
-  having: CheckoutScalarWhereWithAggregatesInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-}).strict();
-
-export const CheckoutFindUniqueArgsSchema: z.ZodType<Prisma.CheckoutFindUniqueArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereUniqueInputSchema, 
-}).strict();
-
-export const CheckoutFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.CheckoutFindUniqueOrThrowArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereUniqueInputSchema, 
 }).strict();
 
 export const WorkstationFindFirstArgsSchema: z.ZodType<Prisma.WorkstationFindFirstArgs> = z.object({
@@ -7340,68 +6329,6 @@ export const SaleFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.SaleFindUniqueOrT
   where: SaleWhereUniqueInputSchema, 
 }).strict();
 
-export const CashTransactionFindFirstArgsSchema: z.ZodType<Prisma.CashTransactionFindFirstArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereInputSchema.optional(), 
-  orderBy: z.union([ CashTransactionOrderByWithRelationInputSchema.array(), CashTransactionOrderByWithRelationInputSchema ]).optional(),
-  cursor: CashTransactionWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CashTransactionScalarFieldEnumSchema, CashTransactionScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CashTransactionFindFirstOrThrowArgsSchema: z.ZodType<Prisma.CashTransactionFindFirstOrThrowArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereInputSchema.optional(), 
-  orderBy: z.union([ CashTransactionOrderByWithRelationInputSchema.array(), CashTransactionOrderByWithRelationInputSchema ]).optional(),
-  cursor: CashTransactionWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CashTransactionScalarFieldEnumSchema, CashTransactionScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CashTransactionFindManyArgsSchema: z.ZodType<Prisma.CashTransactionFindManyArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereInputSchema.optional(), 
-  orderBy: z.union([ CashTransactionOrderByWithRelationInputSchema.array(), CashTransactionOrderByWithRelationInputSchema ]).optional(),
-  cursor: CashTransactionWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-  distinct: z.union([ CashTransactionScalarFieldEnumSchema, CashTransactionScalarFieldEnumSchema.array() ]).optional(),
-}).strict();
-
-export const CashTransactionAggregateArgsSchema: z.ZodType<Prisma.CashTransactionAggregateArgs> = z.object({
-  where: CashTransactionWhereInputSchema.optional(), 
-  orderBy: z.union([ CashTransactionOrderByWithRelationInputSchema.array(), CashTransactionOrderByWithRelationInputSchema ]).optional(),
-  cursor: CashTransactionWhereUniqueInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-}).strict();
-
-export const CashTransactionGroupByArgsSchema: z.ZodType<Prisma.CashTransactionGroupByArgs> = z.object({
-  where: CashTransactionWhereInputSchema.optional(), 
-  orderBy: z.union([ CashTransactionOrderByWithAggregationInputSchema.array(), CashTransactionOrderByWithAggregationInputSchema ]).optional(),
-  by: CashTransactionScalarFieldEnumSchema.array(), 
-  having: CashTransactionScalarWhereWithAggregatesInputSchema.optional(), 
-  take: z.number().optional(),
-  skip: z.number().optional(),
-}).strict();
-
-export const CashTransactionFindUniqueArgsSchema: z.ZodType<Prisma.CashTransactionFindUniqueArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereUniqueInputSchema, 
-}).strict();
-
-export const CashTransactionFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.CashTransactionFindUniqueOrThrowArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereUniqueInputSchema, 
-}).strict();
-
 export const ArticleFindFirstArgsSchema: z.ZodType<Prisma.ArticleFindFirstArgs> = z.object({
   select: ArticleSelectSchema.optional(),
   include: ArticleIncludeSchema.optional(),
@@ -7515,60 +6442,6 @@ export const EventUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.EventUpdateMan
 
 export const EventDeleteManyArgsSchema: z.ZodType<Prisma.EventDeleteManyArgs> = z.object({
   where: EventWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CheckoutCreateArgsSchema: z.ZodType<Prisma.CheckoutCreateArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  data: z.union([ CheckoutCreateInputSchema, CheckoutUncheckedCreateInputSchema ]),
-}).strict();
-
-export const CheckoutUpsertArgsSchema: z.ZodType<Prisma.CheckoutUpsertArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereUniqueInputSchema, 
-  create: z.union([ CheckoutCreateInputSchema, CheckoutUncheckedCreateInputSchema ]),
-  update: z.union([ CheckoutUpdateInputSchema, CheckoutUncheckedUpdateInputSchema ]),
-}).strict();
-
-export const CheckoutCreateManyArgsSchema: z.ZodType<Prisma.CheckoutCreateManyArgs> = z.object({
-  data: z.union([ CheckoutCreateManyInputSchema, CheckoutCreateManyInputSchema.array() ]),
-  skipDuplicates: z.boolean().optional(),
-}).strict();
-
-export const CheckoutCreateManyAndReturnArgsSchema: z.ZodType<Prisma.CheckoutCreateManyAndReturnArgs> = z.object({
-  data: z.union([ CheckoutCreateManyInputSchema, CheckoutCreateManyInputSchema.array() ]),
-  skipDuplicates: z.boolean().optional(),
-}).strict();
-
-export const CheckoutDeleteArgsSchema: z.ZodType<Prisma.CheckoutDeleteArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  where: CheckoutWhereUniqueInputSchema, 
-}).strict();
-
-export const CheckoutUpdateArgsSchema: z.ZodType<Prisma.CheckoutUpdateArgs> = z.object({
-  select: CheckoutSelectSchema.optional(),
-  include: CheckoutIncludeSchema.optional(),
-  data: z.union([ CheckoutUpdateInputSchema, CheckoutUncheckedUpdateInputSchema ]),
-  where: CheckoutWhereUniqueInputSchema, 
-}).strict();
-
-export const CheckoutUpdateManyArgsSchema: z.ZodType<Prisma.CheckoutUpdateManyArgs> = z.object({
-  data: z.union([ CheckoutUpdateManyMutationInputSchema, CheckoutUncheckedUpdateManyInputSchema ]),
-  where: CheckoutWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CheckoutUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.CheckoutUpdateManyAndReturnArgs> = z.object({
-  data: z.union([ CheckoutUpdateManyMutationInputSchema, CheckoutUncheckedUpdateManyInputSchema ]),
-  where: CheckoutWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CheckoutDeleteManyArgsSchema: z.ZodType<Prisma.CheckoutDeleteManyArgs> = z.object({
-  where: CheckoutWhereInputSchema.optional(), 
   limit: z.number().optional(),
 }).strict();
 
@@ -7839,60 +6712,6 @@ export const SaleUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.SaleUpdateManyA
 
 export const SaleDeleteManyArgsSchema: z.ZodType<Prisma.SaleDeleteManyArgs> = z.object({
   where: SaleWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CashTransactionCreateArgsSchema: z.ZodType<Prisma.CashTransactionCreateArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  data: z.union([ CashTransactionCreateInputSchema, CashTransactionUncheckedCreateInputSchema ]),
-}).strict();
-
-export const CashTransactionUpsertArgsSchema: z.ZodType<Prisma.CashTransactionUpsertArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereUniqueInputSchema, 
-  create: z.union([ CashTransactionCreateInputSchema, CashTransactionUncheckedCreateInputSchema ]),
-  update: z.union([ CashTransactionUpdateInputSchema, CashTransactionUncheckedUpdateInputSchema ]),
-}).strict();
-
-export const CashTransactionCreateManyArgsSchema: z.ZodType<Prisma.CashTransactionCreateManyArgs> = z.object({
-  data: z.union([ CashTransactionCreateManyInputSchema, CashTransactionCreateManyInputSchema.array() ]),
-  skipDuplicates: z.boolean().optional(),
-}).strict();
-
-export const CashTransactionCreateManyAndReturnArgsSchema: z.ZodType<Prisma.CashTransactionCreateManyAndReturnArgs> = z.object({
-  data: z.union([ CashTransactionCreateManyInputSchema, CashTransactionCreateManyInputSchema.array() ]),
-  skipDuplicates: z.boolean().optional(),
-}).strict();
-
-export const CashTransactionDeleteArgsSchema: z.ZodType<Prisma.CashTransactionDeleteArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  where: CashTransactionWhereUniqueInputSchema, 
-}).strict();
-
-export const CashTransactionUpdateArgsSchema: z.ZodType<Prisma.CashTransactionUpdateArgs> = z.object({
-  select: CashTransactionSelectSchema.optional(),
-  include: CashTransactionIncludeSchema.optional(),
-  data: z.union([ CashTransactionUpdateInputSchema, CashTransactionUncheckedUpdateInputSchema ]),
-  where: CashTransactionWhereUniqueInputSchema, 
-}).strict();
-
-export const CashTransactionUpdateManyArgsSchema: z.ZodType<Prisma.CashTransactionUpdateManyArgs> = z.object({
-  data: z.union([ CashTransactionUpdateManyMutationInputSchema, CashTransactionUncheckedUpdateManyInputSchema ]),
-  where: CashTransactionWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CashTransactionUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.CashTransactionUpdateManyAndReturnArgs> = z.object({
-  data: z.union([ CashTransactionUpdateManyMutationInputSchema, CashTransactionUncheckedUpdateManyInputSchema ]),
-  where: CashTransactionWhereInputSchema.optional(), 
-  limit: z.number().optional(),
-}).strict();
-
-export const CashTransactionDeleteManyArgsSchema: z.ZodType<Prisma.CashTransactionDeleteManyArgs> = z.object({
-  where: CashTransactionWhereInputSchema.optional(), 
   limit: z.number().optional(),
 }).strict();
 

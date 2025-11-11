@@ -32,36 +32,15 @@ model Event {
   sales        Sale[]
   deposits     Deposit[]
   workstations Workstation[]
-  checkouts    Checkout[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  articles  Article[]
 
   @@index([updatedAt])
   @@index([deletedAt])
   @@map("events")
-}
-
-model Checkout {
-  id          String  @id @default(uuid()) @db.Uuid
-  name        String
-  initialCash Decimal @default(0) @map("initial_cash") @db.Decimal(10, 2) // Initial cash amount
-  currentCash Decimal @default(0) @map("current_cash") @db.Decimal(10, 2) // Current cash amount
-  eventId     String  @map("event_id") @db.Uuid
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  // Relations
-  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  sales Sale[]
-
-  @@unique([eventId, name])
-  @@index([updatedAt])
-  @@index([deletedAt])
-  @@map("checkouts")
 }
 
 // Workstations - Cash register stations
@@ -134,9 +113,7 @@ model Deposit {
   sellerId           String             @map("seller_id") @db.Uuid
   workstationId      String             @map("workstation_id") @db.Uuid
   contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
-
-  // Workflow du dépôt
-  status DepotStatus @default(PRE_DEPOT)
+  depositIndex       Int                @map("depot_index")
 
   // Relations
   event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -161,19 +138,12 @@ enum ContributionStatus {
   GRATUIT
 }
 
-enum DepotStatus {
-  PRE_DEPOT // Pré-dépôt (en cours de saisie)
-  VALIDE // Validé (complet et accepté)
-  EN_ATTENTE // En attente (besoin d'action)
-}
-
 // Sales - Ventes
 model Sale {
   id            String @id @default(uuid()) @db.Uuid
   eventId       String @map("event_id") @db.Uuid
   buyerId       String @map("buyer_id") @db.Uuid
   workstationId String @map("workstation_id") @db.Uuid
-  checkoutId    String @map("checkout_id") @db.Uuid
 
   // Montants des différents moyens de paiement
   cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
@@ -185,12 +155,10 @@ model Sale {
   postalCode  String? @map("postal_code") // Code postal du client
 
   // Relations
-  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  buyer            Contact           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  workstation      Workstation       @relation(fields: [workstationId], references: [id])
-  checkout         Checkout          @relation(fields: [checkoutId], references: [id])
-  articles         Article[]
-  cashTransactions CashTransaction[]
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  buyer       Contact     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  workstation Workstation @relation(fields: [workstationId], references: [id])
+  articles    Article[]
 
   saleAt    DateTime  @default(now()) @map("sale_at")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -204,46 +172,30 @@ model Sale {
   @@map("sales")
 }
 
-// CashTransactions - Détails des transactions cash (argent reçu et rendu)
-model CashTransaction {
-  id     String @id @default(uuid()) @db.Uuid
-  saleId String @map("sale_id") @db.Uuid
-
-  // Montants
-  cashReceived Decimal @map("cash_received") @db.Decimal(10, 2) // Argent reçu du client
-  cashGiven    Decimal @map("cash_given") @db.Decimal(10, 2) // Monnaie rendue
-
-  // Relations
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  @@index([updatedAt])
-  @@index([deletedAt])
-  @@map("cash_transactions")
-}
-
 // Articles
 model Article {
   id String @id @default(uuid()) @db.Uuid
 
   // Informations article
-  discipline  String?
-  categorie   String?
-  brand       String?
-  description String?
-  color       String?
-  size        String?
-  price       Decimal? @db.Decimal(10, 2)
-  code        String?  @unique // Code-barres
+  price        Decimal? @db.Decimal(10, 2)
+  category     String
+  discipline   String
+  brand        String
+  model        String
+  size         String
+  color        String
+  code         String   @unique // Code-barres
+  year         Int
+  depositIndex Int
+  articleIndex String
 
+  eventId   String? @map("event_id") @db.Uuid
   // Un article appartient forcément à un dépot
   depositId String? @map("deposit_id") @db.Uuid
   // Un article vendu appartient forcément à une vente
   saleId    String? @map("sale_id") @db.Uuid
 
+  event   Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
   deposit Deposit? @relation(fields: [depositId], references: [id], onDelete: SetNull)
   sale    Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
 
@@ -252,6 +204,7 @@ model Article {
   deletedAt DateTime? @map("deleted_at")
 
   @@index([code])
+  @@index([eventId])
   @@index([depositId])
   @@index([saleId])
   @@index([updatedAt])
