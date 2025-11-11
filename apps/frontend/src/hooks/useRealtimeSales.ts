@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PaginatedSales } from '@cmr-apps/types'
+import type { PaginatedResponse, Sale } from '@cmr-apps/types'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Hook pour recevoir les ventes en temps réel via Server-Sent Events (SSE)
  */
 export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
-  const [sales, setSales] = useState<PaginatedSales | null>(null)
+  const [sales, setSales] = useState<PaginatedResponse<Sale> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -109,7 +109,7 @@ export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
 
         console.error('SSE connection error:', err)
         setError(
-          err instanceof Error ? err.message : 'Erreur de connexion temps réel'
+          err instanceof Error ? err.message : 'Erreur de connexion temps réel',
         )
         setIsConnected(false)
         setLoading(false)
