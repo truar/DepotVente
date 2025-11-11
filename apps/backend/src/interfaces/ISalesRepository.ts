@@ -1,13 +1,11 @@
-import { Sale } from "../../../../packages/types/src/generated";
-
-export type PaginatedSales = {
-  sales: Sale[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+import {
+  PaginatedResponse,
+  SaleWithRelations,
+  UpdateSaleInput
+} from "@cmr-apps/types";
 
 export interface ISalesRepository {
-  findAll(page: number, pageSize: number): Promise<PaginatedSales>;
-
+  findAll(page: number, pageSize: number): Promise<PaginatedResponse<SaleWithRelations>>;
+  findById(id: string): Promise<SaleWithRelations | null>;
+  update(id: string, data: UpdateSaleInput): Promise<SaleWithRelations>;
 }

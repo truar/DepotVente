@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 
 import type { Sale } from '../../../../../packages/database/generated/client'
 import AdminLayout from '@/components/AdminLayout'
@@ -32,7 +32,6 @@ function SalesPage() {
     pageSize,
   )
 
-  console.log('🔍 SalesPage state:', { sales, loading, error, isConnected })
 
   const toggleRow = (saleId: string) => {
     setExpandedRows((prev) => {
@@ -60,11 +59,6 @@ function SalesPage() {
     }
   }
 
-  const handleEdit = (sale: Sale) => {
-    // TODO: Ouvrir un modal ou naviguer vers une page d'édition
-    console.log('Edit sale:', sale)
-    alert("Fonctionnalité d'édition à implémenter")
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('fr-FR', {
@@ -118,7 +112,7 @@ function SalesPage() {
         </div>
       </div>
 
-      {!sales || sales.sales.length === 0 ? (
+      {!sales || sales.data.length === 0 ? (
         <div className="bg-white shadow-md rounded-lg p-8 text-center text-gray-500">
           Aucune vente trouvée
         </div>
@@ -156,7 +150,7 @@ function SalesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sales.sales.map((sale) => (
+                {sales.data.map((sale) => (
                   <>
                     <tr key={sale.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -179,36 +173,38 @@ function SalesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(sale.totalAmount)}
+                          {formatCurrency(Number(sale.totalAmount))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(sale.cardAmount)}
+                          {formatCurrency(Number(sale.cardAmount))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(sale.cashAmount)}
+                          {formatCurrency(Number(sale.cashAmount))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(sale.checkAmount)}
+                          {formatCurrency(Number(sale.checkAmount))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {formatDate(sale.saleAt)}
+                          {formatDate(sale.saleAt.toString())}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(sale)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        <Link
+                          to="/admin/sales/$saleId/edit"
+                          params={{ saleId: sale.id }}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
                         >
                           Modifier
-                        </button>
+                        </Link>
+
                         <button
                           onClick={() => handleDelete(sale.id)}
                           className="text-red-600 hover:text-red-900"
@@ -251,7 +247,7 @@ function SalesPage() {
                                       {item.size}
                                     </td>
                                     <td className="px-4 py-2 text-sm text-gray-900 text-right">
-                                      {formatCurrency(item.price)}
+                                      {formatCurrency(Number(item.price))}
                                     </td>
                                   </tr>
                                 ))}

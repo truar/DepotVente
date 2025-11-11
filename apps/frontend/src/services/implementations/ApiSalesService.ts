@@ -1,9 +1,5 @@
-import type {
-  PaginatedSales,
-  SaleWithItems,
-  CreateSaleDTO,
-  UpdateSaleDTO,
-} from '@cmr-apps/types'
+import { useAuthStore } from '@/stores/authStore'
+import type { PaginatedResponse, SaleWithRelations, UpdateSaleInput } from '@cmr-apps/types'
 
 export class ApiSalesService {
   private baseURL: string
@@ -14,9 +10,10 @@ export class ApiSalesService {
 
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
   ): Promise<T> {
-    const token = localStorage.getItem('token')
+    // Utiliser getState() pour accéder au store en dehors d'un composant React
+    const token = useAuthStore.getState().token
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       ...options,
@@ -34,25 +31,18 @@ export class ApiSalesService {
     return response.json()
   }
 
-  async getSales(page = 1, pageSize = 50): Promise<PaginatedSales> {
-    return this.request<PaginatedSales>(
-      `/api/admin/sales?page=${page}&pageSize=${pageSize}`
+  async getSales(page = 1, pageSize = 50): Promise<PaginatedResponse<SaleWithRelations>> {
+    return this.request<PaginatedResponse<SaleWithRelations>>(
+      `/api/admin/sales?page=${page}&pageSize=${pageSize}`,
     )
   }
 
-  async getSaleById(id: string): Promise<SaleWithItems> {
-    return this.request<SaleWithItems>(`/api/admin/sales/${id}`)
+  async getSaleById(id: string): Promise<SaleWithRelations> {
+    return this.request<SaleWithRelations>(`/api/admin/sales/${id}`)
   }
 
-  async createSale(data: CreateSaleDTO): Promise<SaleWithItems> {
-    return this.request<SaleWithItems>('/api/admin/sales', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateSale(id: string, data: UpdateSaleDTO): Promise<SaleWithItems> {
-    return this.request<SaleWithItems>(`/api/admin/sales/${id}`, {
+  async updateSale(id: string, data: UpdateSaleInput): Promise<SaleWithRelations> {
+    return this.request<SaleWithRelations>(`/api/admin/sales/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })

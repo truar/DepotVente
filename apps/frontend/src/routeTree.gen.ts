@@ -19,6 +19,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminSalesRouteImport } from './routes/admin/sales'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminDepotsRouteImport } from './routes/admin/depots'
+import { Route as AdminSalesSaleIdEditRouteImport } from './routes/admin/sales_.$saleId.edit'
 
 const DymoRoute = DymoRouteImport.update({
   id: '/dymo',
@@ -70,6 +71,11 @@ const AdminDepotsRoute = AdminDepotsRouteImport.update({
   path: '/admin/depots',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSalesSaleIdEditRoute = AdminSalesSaleIdEditRouteImport.update({
+  id: '/admin/sales_/$saleId/edit',
+  path: '/admin/sales/$saleId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin': typeof AdminIndexRoute
   '/depot-vente': typeof DepotVenteIndexRoute
+  '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin': typeof AdminIndexRoute
   '/depot-vente': typeof DepotVenteIndexRoute
+  '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/depot-vente/depot': typeof DepotVenteDepotRoute
   '/admin/': typeof AdminIndexRoute
   '/depot-vente/': typeof DepotVenteIndexRoute
+  '/admin/sales_/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/depot-vente/depot'
     | '/admin'
     | '/depot-vente'
+    | '/admin/sales/$saleId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/depot-vente/depot'
     | '/admin'
     | '/depot-vente'
+    | '/admin/sales/$saleId/edit'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/depot-vente/depot'
     | '/admin/'
     | '/depot-vente/'
+    | '/admin/sales_/$saleId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   DepotVenteDepotRoute: typeof DepotVenteDepotRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DepotVenteIndexRoute: typeof DepotVenteIndexRoute
+  AdminSalesSaleIdEditRoute: typeof AdminSalesSaleIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDepotsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/sales_/$saleId/edit': {
+      id: '/admin/sales_/$saleId/edit'
+      path: '/admin/sales/$saleId/edit'
+      fullPath: '/admin/sales/$saleId/edit'
+      preLoaderRoute: typeof AdminSalesSaleIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +266,7 @@ const rootRouteChildren: RootRouteChildren = {
   DepotVenteDepotRoute: DepotVenteDepotRoute,
   AdminIndexRoute: AdminIndexRoute,
   DepotVenteIndexRoute: DepotVenteIndexRoute,
+  AdminSalesSaleIdEditRoute: AdminSalesSaleIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

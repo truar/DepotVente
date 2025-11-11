@@ -1,31 +1,24 @@
+import { PaginatedResponse, UpdateSaleInput } from "@cmr-apps/types";
 import type {
   ISalesRepository,
-  PaginatedSales,
-  SaleWithItems,
-  CreateSaleDTO,
-  UpdateSaleDTO,
 } from "../interfaces/ISalesRepository";
+import { Sale } from "../../../../packages/types/src/generated";
+import { salesEmitter } from "../events/SalesEmitter";
 
 export class SalesService {
   constructor(private salesRepository: ISalesRepository) {}
 
-  async getSales(page: number = 1, pageSize: number = 50): Promise<PaginatedSales> {
+  async getSales(page: number = 1, pageSize: number = 50): Promise<PaginatedResponse<Sale>> {
     return this.salesRepository.findAll(page, pageSize);
   }
 
-  async getSaleById(id: string): Promise<SaleWithItems | null> {
+  async findById(id: string): Promise<Sale | null> {
     return this.salesRepository.findById(id);
   }
 
-  async createSale(data: CreateSaleDTO): Promise<SaleWithItems> {
-    return this.salesRepository.create(data);
-  }
-
-  async updateSale(id: string, data: UpdateSaleDTO): Promise<SaleWithItems> {
-    return this.salesRepository.update(id, data);
-  }
-
-  async deleteSale(id: string): Promise<void> {
-    return this.salesRepository.delete(id);
+  async updateSale(id: string, data: UpdateSaleInput): Promise<Sale> {
+    const sale = await this.salesRepository.update(id, data);
+    salesEmitter.notifySalesChanged();
+    return sale;
   }
 }

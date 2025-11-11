@@ -4,6 +4,26 @@
 // Export generated Zod schemas (auto-generated from Prisma schema)
 export * from './generated'
 
+// Re-import generated types for composition
+import type {
+  Sale as GeneratedSale,
+  Article as GeneratedArticle,
+  Workstation as GeneratedWorkstation,
+  Deposit as GeneratedDeposit
+} from './generated'
+
+// Types with relations (for API responses with nested data)
+export type SaleWithRelations = GeneratedSale & {
+  articles: GeneratedArticle[];
+  workstation: GeneratedWorkstation;
+}
+
+export type DepositWithRelations = GeneratedDeposit & {
+  articles: GeneratedArticle[];
+  workstation: GeneratedWorkstation;
+  user: User;
+}
+
 // User types
 export interface User {
   id: string
@@ -87,13 +107,18 @@ export interface Sale {
   id: string
   userId?: string | null
   workstationId: string
+  cashAmount?: number | null
+  cardAmount?: number | null
+  checkAmount?: number | null
   totalAmount: number
   createdAt: Date
   deletedAt?: Date | null
 }
 
-export type CreateSaleInput = Pick<Sale, 'workstationId' | 'totalAmount'> & {
-  userId?: string
+export type UpdateSaleInput = {
+  cashAmount?: number | null
+  cardAmount?: number | null
+  checkAmount?: number | null
 }
 
 // CashTransaction types
@@ -119,21 +144,35 @@ export type CreateCashTransactionInput = Pick<
 
 // Article types
 export interface Article {
-  id: string
-  eventId: string
-  name: string
-  price: number
-  barcode?: string | null
-  createdAt: Date
-  updatedAt: Date
-  deletedAt?: Date | null
+  id: string;
+  price: number;
+  discipline: string | null;
+  categorie: string | null;
+  code?: string | null;
+  description?: string | null;
+  color?: string | null;
+  size?: string | null;
+  depositId?: string | null;
+  deposit?: Deposit | null;
+  saleId?: string | null;
+  sale?: Sale | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
 }
 
-export type CreateArticleInput = Pick<Article, 'eventId' | 'name' | 'price'> & {
-  barcode?: string
+export type CreateArticleInput = Pick<Article, 'price'> & {
+  discipline?: string | null;
+  categorie?: string | null;
+  brand?: string | null;
+  description?: string | null;
+  color?: string | null;
+  size?: string | null;
+  code?: string | null;
+  depositId?: string | null;
 }
 
-export type UpdateArticleInput = Partial<Omit<CreateArticleInput, 'eventId'>>
+export type UpdateArticleInput = Partial<CreateArticleInput>
 
 // API Response types
 export interface ApiResponse<T> {
@@ -147,4 +186,5 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   pageSize: number
+  totalPages: number
 }

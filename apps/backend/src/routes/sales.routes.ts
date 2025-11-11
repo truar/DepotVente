@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { SalesService } from "../services/SalesService";
 import { PrismaSalesRepository } from "../repositories/PrismaSalesRepository";
 import { salesEmitter } from "../events/SalesEmitter";
-import type { CreateSaleDTO, UpdateSaleDTO } from "../interfaces/ISalesRepository";
+import type { UpdateSaleInput } from "@cmr-apps/types";
 
 const salesRepository = new PrismaSalesRepository();
 const salesService = new SalesService(salesRepository);
@@ -94,7 +94,7 @@ export async function salesRoutes(fastify: FastifyInstance) {
       onRequest: [fastify.authenticate],
     },
     async (request: FastifyRequest<{ Params: { id: string } }>) => {
-      const sale = await salesService.getSaleById(request.params.id);
+      const sale = await salesService.findById(request.params.id);
       if (!sale) {
         return { error: "Sale not found" };
       }
@@ -102,30 +102,16 @@ export async function salesRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // POST /api/admin/sales - Créer une vente
-  fastify.post(
-    "/api/admin/sales",
-    {
-      onRequest: [fastify.authenticate],
-    },
-    async (request: FastifyRequest<{ Body: CreateSaleDTO }>) => {
-      const sale = await salesService.createSale(request.body);
-      return sale;
-    }
-  );
-
   // PUT /api/admin/sales/:id - Modifier une vente
-  fastify.put(
+  fastify.put<{
+    Params: { id: string };
+    Body: UpdateSaleInput;
+  }>(
     "/api/admin/sales/:id",
     {
       onRequest: [fastify.authenticate],
     },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: UpdateSaleDTO;
-      }>
-    ) => {
+    async (request) => {
       const sale = await salesService.updateSale(
         request.params.id,
         request.body

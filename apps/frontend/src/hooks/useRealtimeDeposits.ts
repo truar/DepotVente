@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PaginatedResponse, SaleWithRelations } from '@cmr-apps/types'
+import type { DepositWithRelations, PaginatedResponse } from '@cmr-apps/types'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * Hook pour recevoir les ventes en temps réel via Server-Sent Events (SSE)
+ * Hook pour recevoir les dépôts en temps réel via Server-Sent Events (SSE)
  */
-export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
-  const [sales, setSales] =
-    useState<PaginatedResponse<SaleWithRelations> | null>(null)
+export function useRealtimeDeposits(page: number = 1, pageSize: number = 50) {
+  const [deposits, setDeposits] = useState<PaginatedResponse<DepositWithRelations> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -27,7 +26,7 @@ export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
     isUnmountedRef.current = false
 
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-    const url = `${apiUrl}/api/admin/sales/stream?page=${page}&pageSize=${pageSize}`
+    const url = `${apiUrl}/api/admin/deposits/stream?page=${page}&pageSize=${pageSize}`
 
     const connectSSE = async (retryCount = 0) => {
       if (isUnmountedRef.current) return
@@ -85,8 +84,8 @@ export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6))
-                console.log('📊 Sales data received:', data)
-                setSales(data)
+                console.log('📊 Deposits data received:', data)
+                setDeposits(data)
               } catch (err) {
                 console.error('Error parsing SSE data:', err, 'Line was:', line)
               }
@@ -110,7 +109,7 @@ export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
 
         console.error('SSE connection error:', err)
         setError(
-          err instanceof Error ? err.message : 'Erreur de connexion temps réel',
+          err instanceof Error ? err.message : 'Erreur de connexion temps réel'
         )
         setIsConnected(false)
         setLoading(false)
@@ -150,5 +149,5 @@ export function useRealtimeSales(page: number = 1, pageSize: number = 50) {
     }
   }, [token, page, pageSize])
 
-  return { sales, loading, error, isConnected }
+  return { deposits, loading, error, isConnected }
 }

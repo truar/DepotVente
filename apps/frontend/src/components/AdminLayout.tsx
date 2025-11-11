@@ -1,16 +1,16 @@
 import { Link } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore'
 import {
   LayoutDashboard,
-  Users,
-  Package,
-  ShoppingCart,
-  Settings,
   LogOut,
   Menu,
+  Package,
+  Settings,
+  ShoppingCart,
+  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from './ui/button'
+import { useAuthStore } from '@/stores/authStore'
 
 interface AdminLayoutProps {
   children: React.ReactNode
