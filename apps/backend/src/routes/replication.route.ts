@@ -26,7 +26,7 @@ export async function replicationRoutes(fastify: FastifyInstance) {
       let depositData = data as DepositUncheckedCreateInput
       await depositRepository.create({
         id: depositData.id,
-        contributionStatus: depositData.contributionStatus? 'PAYER' : 'A_PAYER',
+        contributionStatus: depositData.contributionStatus,
         createdAt: depositData.createdAt,
         updatedAt:depositData.updatedAt,
         depositIndex: depositData.depositIndex,
