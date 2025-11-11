@@ -39,7 +39,7 @@ export function useCreateDepot() {
           id: v4(),
           sellerId: contactId,
           workstationId: workstation.id,
-          contributionStatus: data.cotisationPayee ? 'PAYER' : 'A PAYER',
+          contributionStatus: data.cotisationPayee ? 'PAYER' : 'A_PAYER',
           eventId: workstation.eventId,
           depositIndex: depotIndex,
           createdAt: currentDate,
