@@ -1,8 +1,13 @@
 import { db, type Article } from '@/db.ts'
+import { syncService } from '@/sync-service.ts'
 
 export function useArticleDb() {
-  function batchUpsert(articles: Article[]) {
-    return db.articles.bulkPut(articles)
+  async function batchUpsert(articles: Article[]) {
+    db.articles.bulkPut(articles)
+
+    for (const article of articles) {
+      await syncService.addToOutbox('articles', 'create', article.id, article)
+    }
   }
   return { batchUpsert }
 }

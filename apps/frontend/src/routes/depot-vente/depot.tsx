@@ -30,17 +30,16 @@ export const Route = createFileRoute('/depot-vente/depot')({
 })
 
 function generateArticleIndex(articleIndex: number) {
-  // Generate the alphabetical representation of the articleIndex
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  let alphaPart = ''
-  let alphaIndex = articleIndex
+  let result = ''
+  let index = articleIndex
 
-  // Convert the articleIndex into "Excel-style" column representation
-  do {
-    alphaPart = alphabet[alphaIndex % 26] + alphaPart
-    alphaIndex = Math.floor(alphaIndex / 26)
-  } while (alphaIndex > 0)
-  return alphaPart
+  while (index >= 0) {
+    result = alphabet[index % 26] + result
+    index = Math.floor(index / 26) - 1
+  }
+
+  return result
 }
 
 function generateArticleCode(
@@ -116,7 +115,7 @@ export function DepotVendeurFormPage() {
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
-    const nbArticles = Math.floor(Math.random() * 10) + 1
+    const nbArticles = Math.floor(Math.random() * 20) + 1
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
