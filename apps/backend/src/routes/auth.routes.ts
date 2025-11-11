@@ -21,11 +21,12 @@ export async function authRoutes(fastify: FastifyInstance) {
       return { error: "Invalid credentials" };
     }
 
-    const token = await fastify.jwt.sign({
+    const token = fastify.jwt.sign({
       payload: { id: user.id },
     });
 
     reply.send({ token });
+    return reply
   });
 
   // Get current user (protected)
@@ -34,7 +35,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     {
       onRequest: [fastify.authenticate],
     },
-    async function (request, reply) {
+    async function (request) {
       return request.user;
     }
   );
@@ -45,7 +46,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     {
       onRequest: [fastify.authenticate],
     },
-    async (request, reply) => {
+    async (_request, reply) => {
       // Pour l'instant, on retourne simplement un succès
       // Plus tard, on pourra ajouter une blacklist de tokens ici
       reply.code(200);
