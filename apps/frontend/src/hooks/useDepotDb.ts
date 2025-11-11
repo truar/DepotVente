@@ -6,14 +6,15 @@ export function useDepotDb() {
   const [workstation] = useWorkstation()
 
   function count() {
-    return db.deposits.where({ workstation }).count()
+    if (!workstation) return Promise.resolve(0)
+    return db.deposits.where({ workstationId: workstation?.id }).count()
   }
 
   async function upsert(depot: Deposit) {
     const depotId = await db.deposits.put(depot)
     // Add to outbox for syncing
     await syncService.addToOutbox(
-      'depots',
+      'deposits',
       'create', // or 'create' based on your logic
       depot.id,
       depot,

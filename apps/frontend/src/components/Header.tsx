@@ -18,7 +18,7 @@ export default function Header() {
       ) : (
         <HeaderSuccessStatus text={'App Online'} />
       )}
-      <HeaderNeutralStatus text={`Numéro de poste: ${workstation}`} />
+      <HeaderNeutralStatus text={`Numéro de poste: ${workstation?.name}`} />
     </header>
   )
 }

@@ -1,21 +1,22 @@
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
-import cors from "@fastify/cors";
-import { prisma } from "database";
-import "dotenv/config";
-import jwt from "@fastify/jwt";
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
+import cors from '@fastify/cors';
+import { prisma } from 'database';
+import 'dotenv/config';
+import jwt from '@fastify/jwt';
 
 // Import des routes
-import { authRoutes } from "./routes/auth.routes";
-import { userRoutes } from "./routes/user.routes";
-import { adminRoutes } from "./routes/admin.routes";
-import { sseRoutes } from "./routes/sse.routes";
-import { salesRoutes } from "./routes/sales.routes";
+import { authRoutes } from './routes/auth.routes';
+import { userRoutes } from './routes/user.routes';
+import { adminRoutes } from './routes/admin.routes';
+import { sseRoutes } from './routes/sse.routes';
+import { salesRoutes } from './routes/sales.routes';
 
 // Import du database listener
-import { dbListener } from "./events/DatabaseListener";
+import { dbListener } from './events/DatabaseListener';
+import { replicationRoutes } from './routes/replication.route';
 
 // Étendre le type FastifyInstance pour inclure notre decorator
-declare module "fastify" {
+declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (
       request: FastifyRequest,
@@ -35,12 +36,12 @@ await fastify.register(cors, {
 
 // Register JWT
 await fastify.register(jwt, {
-  secret: "supersecret",
+  secret: 'supersecret',
 });
 
 // Decorator d'authentification
 fastify.decorate(
-  "authenticate",
+  'authenticate',
   async function (request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify();
@@ -51,8 +52,8 @@ fastify.decorate(
 );
 
 // Health check
-fastify.get("/api/health", async () => {
-  return { status: "ok", timestamp: new Date().toISOString() };
+fastify.get('/api/health', async () => {
+  return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
 // Register routes
@@ -61,9 +62,10 @@ await fastify.register(userRoutes);
 await fastify.register(adminRoutes);
 await fastify.register(sseRoutes);
 await fastify.register(salesRoutes);
+await fastify.register(replicationRoutes);
 
 // Graceful shutdown
-const signals = ["SIGINT", "SIGTERM"];
+const signals = ['SIGINT', 'SIGTERM'];
 signals.forEach((signal) => {
   process.on(signal, async () => {
     await dbListener.stop();
@@ -77,14 +79,14 @@ signals.forEach((signal) => {
 try {
   await dbListener.start();
 } catch (err) {
-  fastify.log.error(err, "Failed to start database listener");
+  fastify.log.error(err, 'Failed to start database listener');
 }
 
 // Start server
 try {
   await fastify.listen({
-    host: "0.0.0.0",
-    port: parseInt(process.env.PORT || "3000"),
+    host: '0.0.0.0',
+    port: parseInt(process.env.PORT || '3000'),
   });
 } catch (err) {
   fastify.log.error(err);

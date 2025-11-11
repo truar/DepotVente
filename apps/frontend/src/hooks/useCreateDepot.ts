@@ -5,17 +5,14 @@ import type { DepotFormType } from '@/types/depot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useContactDb } from './useContactDb.ts'
 import { useArticleDb } from '@/hooks/useArticleDb.ts'
-import { useEventId } from '@/hooks/useEventId.ts'
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
-  const [eventId] = useEventId()
   const depotDb = useDepotDb()
   const contactDb = useContactDb()
   const articleDb = useArticleDb()
   async function mutate(data: DepotFormType) {
     if (workstation === undefined) throw new Error('Workstation is undefined')
-    if (eventId === undefined) throw new Error('EventId is undefined')
     await db.transaction(
       'rw',
       db.articles,
@@ -43,7 +40,7 @@ export function useCreateDepot() {
           sellerId: contactId,
           workstationId: workstation.id,
           contributionStatus: data.cotisationPayee ? 'PAYER' : 'A PAYER',
-          eventId: eventId,
+          eventId: workstation.eventId,
           depositIndex: depotIndex,
           createdAt: currentDate,
           updatedAt: currentDate,
@@ -67,7 +64,7 @@ export function useCreateDepot() {
             depositIndex: depotIndex,
             articleIndex: articleForm.articleIndex,
             workstationId: workstation.id,
-            eventId,
+            eventId: workstation.eventId,
             createdAt: currentDate,
             updatedAt: currentDate,
             deletedAt: null,

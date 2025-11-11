@@ -48,7 +48,7 @@ model Workstation {
   id              String @id @default(uuid()) @db.Uuid
   eventId         String @map("event_id") @db.Uuid
   name            String // Ex: "Station 1"
-  increment_start Int // Ex: 1000
+  incrementStart Int @map("increment_start")// Ex: 1000
 
   // Relations
   event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
