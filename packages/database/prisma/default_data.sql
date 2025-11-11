@@ -1,0 +1,2 @@
+insert into events (id, name, year, start_date, end_date, is_active, created_at, updated_at) values ('ccdcb1b7-f699-4ad0-8d23-2a6d53a91911', 'test 2025', 2025, '2025-11-10T00:00:00+0100', '2025-11-11T23:59:00+0100', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+insert into workstations (id, event_id, name, increment_start, created_at, updated_at) values ('02dc21ca-ce63-4f42-8f8a-924cda28ef5f', 'ccdcb1b7-f699-4ad0-8d23-2a6d53a91911', 'Poste 1000', 1000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

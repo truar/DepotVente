@@ -38,7 +38,7 @@ export const EventScalarFieldEnumSchema = z.enum(['id','name','year','descriptio
 
 export const CheckoutScalarFieldEnumSchema = z.enum(['id','name','initialCash','currentCash','eventId','createdAt','updatedAt','deletedAt']);
 
-export const WorkstationScalarFieldEnumSchema = z.enum(['id','eventId','name','createdAt','updatedAt','deletedAt']);
+export const WorkstationScalarFieldEnumSchema = z.enum(['id','eventId','name','increment_start','createdAt','updatedAt','deletedAt']);
 
 export const UserScalarFieldEnumSchema = z.enum(['id','lastName','firstName','phoneNumber','password','email','city','postalCode','createdAt','updatedAt','deletedAt']);
 
@@ -112,6 +112,7 @@ export const WorkstationSchema = z.object({
   id: z.uuid(),
   eventId: z.string(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().nullable(),
@@ -332,6 +333,7 @@ export const WorkstationSelectSchema: z.ZodType<Prisma.WorkstationSelect> = z.ob
   id: z.boolean().optional(),
   eventId: z.boolean().optional(),
   name: z.boolean().optional(),
+  increment_start: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   deletedAt: z.boolean().optional(),
@@ -722,6 +724,7 @@ export const WorkstationWhereInputSchema: z.ZodType<Prisma.WorkstationWhereInput
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  increment_start: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -734,6 +737,7 @@ export const WorkstationOrderByWithRelationInputSchema: z.ZodType<Prisma.Worksta
   id: z.lazy(() => SortOrderSchema).optional(),
   eventId: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
@@ -762,6 +766,7 @@ export const WorkstationWhereUniqueInputSchema: z.ZodType<Prisma.WorkstationWher
   NOT: z.union([ z.lazy(() => WorkstationWhereInputSchema), z.lazy(() => WorkstationWhereInputSchema).array() ]).optional(),
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  increment_start: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -774,12 +779,15 @@ export const WorkstationOrderByWithAggregationInputSchema: z.ZodType<Prisma.Work
   id: z.lazy(() => SortOrderSchema).optional(),
   eventId: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => WorkstationCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => WorkstationAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => WorkstationMaxOrderByAggregateInputSchema).optional(),
   _min: z.lazy(() => WorkstationMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => WorkstationSumOrderByAggregateInputSchema).optional(),
 });
 
 export const WorkstationScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.WorkstationScalarWhereWithAggregatesInput> = z.strictObject({
@@ -789,6 +797,7 @@ export const WorkstationScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.W
   id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   eventId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   name: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  increment_start: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1469,6 +1478,7 @@ export const CheckoutUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CheckoutUn
 export const WorkstationCreateInputSchema: z.ZodType<Prisma.WorkstationCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1481,6 +1491,7 @@ export const WorkstationUncheckedCreateInputSchema: z.ZodType<Prisma.Workstation
   id: z.uuid().optional(),
   eventId: z.string(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1491,6 +1502,7 @@ export const WorkstationUncheckedCreateInputSchema: z.ZodType<Prisma.Workstation
 export const WorkstationUpdateInputSchema: z.ZodType<Prisma.WorkstationUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1503,6 +1515,7 @@ export const WorkstationUncheckedUpdateInputSchema: z.ZodType<Prisma.Workstation
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1514,6 +1527,7 @@ export const WorkstationCreateManyInputSchema: z.ZodType<Prisma.WorkstationCreat
   id: z.uuid().optional(),
   eventId: z.string(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -1522,6 +1536,7 @@ export const WorkstationCreateManyInputSchema: z.ZodType<Prisma.WorkstationCreat
 export const WorkstationUpdateManyMutationInputSchema: z.ZodType<Prisma.WorkstationUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1531,6 +1546,7 @@ export const WorkstationUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Worksta
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2400,15 +2416,21 @@ export const WorkstationCountOrderByAggregateInputSchema: z.ZodType<Prisma.Works
   id: z.lazy(() => SortOrderSchema).optional(),
   eventId: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const WorkstationAvgOrderByAggregateInputSchema: z.ZodType<Prisma.WorkstationAvgOrderByAggregateInput> = z.strictObject({
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const WorkstationMaxOrderByAggregateInputSchema: z.ZodType<Prisma.WorkstationMaxOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   eventId: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
@@ -2418,9 +2440,14 @@ export const WorkstationMinOrderByAggregateInputSchema: z.ZodType<Prisma.Worksta
   id: z.lazy(() => SortOrderSchema).optional(),
   eventId: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const WorkstationSumOrderByAggregateInputSchema: z.ZodType<Prisma.WorkstationSumOrderByAggregateInput> = z.strictObject({
+  increment_start: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const UserCountOrderByAggregateInputSchema: z.ZodType<Prisma.UserCountOrderByAggregateInput> = z.strictObject({
@@ -3926,6 +3953,7 @@ export const DepositCreateManyEventInputEnvelopeSchema: z.ZodType<Prisma.Deposit
 export const WorkstationCreateWithoutEventInputSchema: z.ZodType<Prisma.WorkstationCreateWithoutEventInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -3936,6 +3964,7 @@ export const WorkstationCreateWithoutEventInputSchema: z.ZodType<Prisma.Workstat
 export const WorkstationUncheckedCreateWithoutEventInputSchema: z.ZodType<Prisma.WorkstationUncheckedCreateWithoutEventInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4075,6 +4104,7 @@ export const WorkstationScalarWhereInputSchema: z.ZodType<Prisma.WorkstationScal
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   eventId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  increment_start: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -4631,6 +4661,7 @@ export const UserCreateOrConnectWithoutDepotsInputSchema: z.ZodType<Prisma.UserC
 export const WorkstationCreateWithoutDepositsInputSchema: z.ZodType<Prisma.WorkstationCreateWithoutDepositsInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4642,6 +4673,7 @@ export const WorkstationUncheckedCreateWithoutDepositsInputSchema: z.ZodType<Pri
   id: z.uuid().optional(),
   eventId: z.string(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4793,6 +4825,7 @@ export const WorkstationUpdateToOneWithWhereWithoutDepositsInputSchema: z.ZodTyp
 export const WorkstationUpdateWithoutDepositsInputSchema: z.ZodType<Prisma.WorkstationUpdateWithoutDepositsInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -4804,6 +4837,7 @@ export const WorkstationUncheckedUpdateWithoutDepositsInputSchema: z.ZodType<Pri
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -4921,6 +4955,7 @@ export const UserCreateOrConnectWithoutSalesInputSchema: z.ZodType<Prisma.UserCr
 export const WorkstationCreateWithoutSalesInputSchema: z.ZodType<Prisma.WorkstationCreateWithoutSalesInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4932,6 +4967,7 @@ export const WorkstationUncheckedCreateWithoutSalesInputSchema: z.ZodType<Prisma
   id: z.uuid().optional(),
   eventId: z.string(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5138,6 +5174,7 @@ export const WorkstationUpdateToOneWithWhereWithoutSalesInputSchema: z.ZodType<P
 export const WorkstationUpdateWithoutSalesInputSchema: z.ZodType<Prisma.WorkstationUpdateWithoutSalesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5149,6 +5186,7 @@ export const WorkstationUncheckedUpdateWithoutSalesInputSchema: z.ZodType<Prisma
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   eventId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5503,6 +5541,7 @@ export const DepositCreateManyEventInputSchema: z.ZodType<Prisma.DepositCreateMa
 export const WorkstationCreateManyEventInputSchema: z.ZodType<Prisma.WorkstationCreateManyEventInput> = z.strictObject({
   id: z.uuid().optional(),
   name: z.string(),
+  increment_start: z.number().int(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -5608,6 +5647,7 @@ export const DepositUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma
 export const WorkstationUpdateWithoutEventInputSchema: z.ZodType<Prisma.WorkstationUpdateWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5618,6 +5658,7 @@ export const WorkstationUpdateWithoutEventInputSchema: z.ZodType<Prisma.Workstat
 export const WorkstationUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma.WorkstationUncheckedUpdateWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5628,6 +5669,7 @@ export const WorkstationUncheckedUpdateWithoutEventInputSchema: z.ZodType<Prisma
 export const WorkstationUncheckedUpdateManyWithoutEventInputSchema: z.ZodType<Prisma.WorkstationUncheckedUpdateManyWithoutEventInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  increment_start: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
