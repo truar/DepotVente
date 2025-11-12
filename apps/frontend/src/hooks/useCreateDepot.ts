@@ -62,7 +62,6 @@ export function useCreateDepot() {
             year: articleForm.year,
             depositIndex: depotIndex,
             articleIndex: articleForm.articleIndex,
-            workstationId: workstation.id,
             createdAt: currentDate,
             updatedAt: currentDate,
             deletedAt: null,

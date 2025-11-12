@@ -7,7 +7,9 @@ export function useDepotDb() {
 
   function count() {
     if (!workstation) return Promise.resolve(0)
-    return db.deposits.where({ workstationId: workstation?.id }).count()
+    return db.deposits
+      .where({ incrementStart: workstation?.incrementStart })
+      .count()
   }
 
   async function upsert(depot: Deposit) {
