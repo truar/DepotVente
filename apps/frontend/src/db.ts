@@ -4,15 +4,13 @@ export type Workstation = {
   id: string
   incrementStart: number
   name: string
-  eventId: string
 }
 
 export type Deposit = {
   id: string
   contributionStatus: string
-  eventId: string
   sellerId: string
-  workstationId: string
+  incrementStart: number
   depositIndex: number
   createdAt: Date
   updatedAt: Date
@@ -32,7 +30,6 @@ export type Article = {
   year: number
   depositIndex: number
   articleIndex: string
-  eventId: string
   depositId: string
   saleId: string | null
   createdAt: Date
@@ -84,7 +81,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   contacts: '++id',
-  deposits: '++id, workstationId',
+  deposits: '++id, incrementStart',
   articles: '++id, depotId, code',
   outbox: '++id, timestamp, status, collection',
 })
