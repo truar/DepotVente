@@ -61,11 +61,18 @@ model Contact {
 
 // Deposit
 model Deposit {
-  id                 String             @id @default(uuid()) @db.Uuid
-  sellerId           String             @map("seller_id") @db.Uuid
-  contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
-  depositIndex       Int                @map("depot_index")
-  incrementStart     Int                @map("increment_start")
+  id                   String             @id @default(uuid()) @db.Uuid
+  sellerId             String             @map("seller_id") @db.Uuid
+  contributionStatus   ContributionStatus @default(A_PAYER) @map("contribution_status")
+  depositIndex         Int                @map("depot_index")
+  incrementStart       Int                @map("increment_start")
+  dropWorkstationId    Int                @map("deposit_workstation_id")
+
+  collectWorkstationId Int?               @map("collect_workstation_id")
+  collectedAt          DateTime?          @map("collected_at")
+  paymentAmount        Decimal?           @map("payment_amount") @db.Decimal(6,2)
+  chequeNumber         String?            @map("cheque_number")
+  signature            String?
 
   // Relations
   seller   Contact   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
@@ -83,7 +90,7 @@ model Deposit {
 }
 
 enum ContributionStatus {
-  PAYER
+  PAYEE
   A_PAYER
   GRATUIT
 }
