@@ -2,22 +2,18 @@
 import { Deposit, prisma } from 'database';
 import * as fs from 'fs';
 import * as path from 'path';
+import { dirname } from 'path';
 import 'dotenv/config';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const ID_FICHE = 0
 const N_FICHE = 1
 const NOM = 2
 const ADRESSE = 3
 const COTISATION = 4
 const POSTE = 5
-const ANNÉE = 6
-const PRÉNOM = 7
-const REGLEMENT = 7
 const MONTANT_REGLEMENT = 9
 const N_CH = 10
 const HEURE = 11
@@ -25,12 +21,8 @@ const POSTE_RETOUR = 12
 const SIGNATURE = 13
 const HEURE_RETOUR = 14
 const TEL_VENDEUR = 15
-const TRANSFERT = 16
-const CONNAISSANCE = 17
-const ID_FICHE_PRE_DEPOT = 18
 
 const VENDEUR = 0
-const ID_ARTICLE = 1
 const IDENTIFIANT_ARTICLE = 2
 const ID_MATERIEL = 3
 const ID_MARQUE = 4
@@ -40,17 +32,6 @@ const COULEUR = 8
 const TAILLE = 9
 const PRIX = 10
 const DATE = 11
-const GARANTIE = 12
-const INDICE = 13
-const MODÈLE = 14
-const PRIX_PÉRI = 15
-const CONTROLE = 16
-const RECEPTOK = 17
-const INVENDOK = 18
-const HEURERECEPT = 19
-const HEUREINVEND = 20
-const POSTERECEPT = 21
-const POSTEINVEND = 22
 
 
 interface DepositData {
