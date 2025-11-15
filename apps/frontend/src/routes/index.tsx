@@ -1,7 +1,8 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { Package, ShoppingCart } from 'lucide-react'
+import { BaggageClaim, Boxes, ShoppingCart } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
+import type { ReactNode } from 'react'
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {
@@ -36,37 +37,51 @@ export function RouteComponent() {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {/* Mode Dépôt Card */}
-          <button
-            onClick={() => navigate({ to: '/deposits/add' })}
-            className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200"
-          >
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                <Package className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              Mode Dépôt
-            </h3>
-            <p className="text-gray-600">Enregistrer de nouveaux articles.</p>
-          </button>
-
-          {/* Mode Vente Card */}
-          <button className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                <ShoppingCart className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              Mode Vente
-            </h3>
-            <p className="text-gray-600">Accéder à la caisse.</p>
-          </button>
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <ClickableCard
+            onClick={() => navigate({ to: '/deposits' })}
+            icon={<Boxes className="w-8 h-8 text-green-600" />}
+            title="Dépôt"
+            description="Gérer les dépots"
+          />
+          <ClickableCard
+            onClick={() => {}}
+            icon={<ShoppingCart className="w-8 h-8 text-green-600" />}
+            title="Ventes"
+            description="Gérer les ventes"
+          />
+          <ClickableCard
+            onClick={() => {}}
+            icon={<BaggageClaim className="w-8 h-8 text-green-600" />}
+            title="Retours"
+            description="Gérer les retours"
+          />
         </div>
       </div>
     </main>
+  )
+}
+
+type ClickableCardProps = {
+  onClick: () => void
+  icon: ReactNode
+  title: string
+  description?: string
+}
+function ClickableCard(props: ClickableCardProps) {
+  const { onClick, icon, title, description } = props
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200 cursor-pointer"
+    >
+      <div className="flex justify-center mb-6">
+        <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+          {icon}
+        </div>
+      </div>
+      <h3 className="text-2xl font-bold text-gray-800 mb-3">{title}</h3>
+      {description ?? <p className="text-foreground">{description}</p>}
+    </button>
   )
 }

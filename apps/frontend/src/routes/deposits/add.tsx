@@ -5,8 +5,8 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { Plus, Printer, Trash2 } from 'lucide-react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { ChevronLeft, Plus, Printer, Trash2 } from 'lucide-react'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
@@ -143,69 +143,67 @@ export function DepositFormPage() {
   }, [])
 
   return (
-    <main className="flex-1 px-6 py-8">
+    <main className="flex-1 p-6">
+      <Button variant="link" className="cursor-pointer">
+        <ChevronLeft />
+        <Link to={'..'}>Retour au menu</Link>
+      </Button>
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
-          <div className="mx-auto">
-            <h2 className="text-4xl font-bold text-gray-800 mb-8">
-              Enregistrer un nouveau dépôt vendeur
-            </h2>
+          <h2 className="text-4xl font-bold text-gray-800 mb-8">
+            Enregistrer un nouveau dépôt vendeur
+          </h2>
 
-            <div className="flex gap-6 flex-col">
-              <div className="flex gap-8">
-                <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-5">
-                    Informations du Dépot
-                  </h3>
+          <div className="flex gap-6 flex-col">
+            <div className="flex gap-8">
+              <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800 mb-5">
+                  Informations du Dépot
+                </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="grid gap-2">
-                      <Label htmlFor="workstation">Numéro de poste</Label>
-                      <Input
-                        readOnly={true}
-                        id="workstation"
-                        type="text"
-                        value={workstation.incrementStart}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="depotIndex">Dépot</Label>
-                      <Input
-                        readOnly={true}
-                        id="depotIndex"
-                        type="text"
-                        value={depotCurrentIndex}
-                      />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="workstation">Numéro de poste</Label>
+                    <Input
+                      readOnly={true}
+                      id="workstation"
+                      type="text"
+                      value={workstation.incrementStart}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="depotIndex">Dépot</Label>
+                    <Input
+                      readOnly={true}
+                      id="depotIndex"
+                      type="text"
+                      value={depotCurrentIndex}
+                    />
                   </div>
                 </div>
-
-                <SellerInformationForm />
               </div>
-              <ArticleForm
-                onArticleAdd={() => setCountArticle(countArticle + 1)}
-                articleCount={countArticle}
-                depotIndex={depotCurrentIndex}
-              />
-            </div>
 
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                onClick={generateFakeVente}
-                variant="secondary"
-              >
-                Générer une fausse vente
-              </Button>
-              <Button
-                type="button"
-                onClick={() => reset()}
-                variant="destructive"
-              >
-                Annuler
-              </Button>
-              <Button type="submit">Valider et enregistrer le dépôt</Button>
+              <SellerInformationForm />
             </div>
+            <ArticleForm
+              onArticleAdd={() => setCountArticle(countArticle + 1)}
+              articleCount={countArticle}
+              depotIndex={depotCurrentIndex}
+            />
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              onClick={generateFakeVente}
+              variant="secondary"
+            >
+              Générer une fausse vente
+            </Button>
+            <Button type="button" onClick={() => reset()} variant="destructive">
+              Annuler
+            </Button>
+            <Button type="submit">Valider et enregistrer le dépôt</Button>
           </div>
         </form>
       </FormProvider>
