@@ -27,17 +27,14 @@ export type DepositWithRelations = GeneratedDeposit & {
 // User types
 export interface User {
   id: string
-  lastName: string
-  firstName: string
-  email?: string | null
+  email: string
+  password: string
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
 }
 
-export type CreateUserInput = Pick<User, 'firstName' | 'lastName'> & {
-  email?: string
-}
+export type CreateUserInput = Pick<User, 'email' | 'password'>
 
 export type UpdateUserInput = Partial<CreateUserInput>
 

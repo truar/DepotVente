@@ -1,10 +1,24 @@
 import { useIsAppOffline } from '@/hooks/useIsAppOffline.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useDymoHealthCheck } from '@/hooks/useDymoHealthCheck.ts'
+import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button.tsx'
+import { useAuthStore } from '@/stores/authStore.ts'
+import { useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 export default function Header() {
   const dymo = useDymoHealthCheck()
   const isAppOffline = useIsAppOffline()
+  const authStore = useAuthStore()
+  const navigate = useNavigate()
+  const logout = useCallback(async () => {
+    await authStore.logout()
+    await navigate({
+      to: '/login',
+    })
+  }, [navigate, authStore])
+
   const [workstation] = useWorkstation()
   return (
     <header className="flex items-center text-white shadow-lg">
@@ -19,6 +33,10 @@ export default function Header() {
         <HeaderSuccessStatus text={'App Online'} />
       )}
       <HeaderNeutralStatus text={`Numéro de poste: ${workstation?.name}`} />
+      <Button onClick={logout} className="gap-3">
+        <LogOut size={20} />
+        <span>Déconnexion</span>
+      </Button>
     </header>
   )
 }

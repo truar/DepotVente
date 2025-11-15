@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as DymoRouteImport } from './routes/dymo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DepotVenteIndexRouteImport } from './routes/depot-vente/index'
@@ -21,6 +22,11 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminDepotsRouteImport } from './routes/admin/depots'
 import { Route as AdminSalesSaleIdEditRouteImport } from './routes/admin/sales_.$saleId.edit'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DymoRoute = DymoRouteImport.update({
   id: '/dymo',
   path: '/dymo',
@@ -80,6 +86,7 @@ const AdminSalesSaleIdEditRoute = AdminSalesSaleIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
+  '/login': typeof LoginRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sales': typeof AdminSalesRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
+  '/login': typeof LoginRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sales': typeof AdminSalesRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
+  '/login': typeof LoginRoute
   '/admin/depots': typeof AdminDepotsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sales': typeof AdminSalesRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dymo'
+    | '/login'
     | '/admin/depots'
     | '/admin/login'
     | '/admin/sales'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dymo'
+    | '/login'
     | '/admin/depots'
     | '/admin/login'
     | '/admin/sales'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dymo'
+    | '/login'
     | '/admin/depots'
     | '/admin/login'
     | '/admin/sales'
@@ -162,6 +174,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DymoRoute: typeof DymoRoute
+  LoginRoute: typeof LoginRoute
   AdminDepotsRoute: typeof AdminDepotsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSalesRoute: typeof AdminSalesRoute
@@ -175,6 +188,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dymo': {
       id: '/dymo'
       path: '/dymo'
@@ -258,6 +278,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DymoRoute: DymoRoute,
+  LoginRoute: LoginRoute,
   AdminDepotsRoute: AdminDepotsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSalesRoute: AdminSalesRoute,

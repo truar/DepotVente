@@ -75,9 +75,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-4 border-t">
           {isSidebarOpen && user && (
             <div className="mb-3 p-2">
-              <p className="text-sm font-medium text-gray-800">
-                {user.firstName} {user.lastName}
-              </p>
               <p className="text-xs text-gray-500">{user.email}</p>
             </div>
           )}

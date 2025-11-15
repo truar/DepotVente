@@ -4,33 +4,19 @@ import bcrypt from "bcrypt";
 import "dotenv/config";
 
 interface CreateUserArgs {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phoneNumber?: string;
-  password?: string;
-  city?: string;
-  postalCode?: string;
+  email: string;
+  password: string;
 }
 
 async function createUser(args: CreateUserArgs) {
   try {
-    // Hash password if provided
-    let hashedPassword: string | undefined;
-    if (args.password) {
-      hashedPassword = await bcrypt.hash(args.password, 10);
-    }
+    const hashedPassword = await bcrypt.hash(args.password, 10);
 
     // Create user
     const user = await prisma.user.create({
       data: {
-        firstName: args.firstName,
-        lastName: args.lastName,
         email: args.email,
-        phoneNumber: args.phoneNumber,
         password: hashedPassword,
-        city: args.city,
-        postalCode: args.postalCode,
       },
     });
 
@@ -57,21 +43,14 @@ function parseArgs(): CreateUserArgs {
     params[key] = value;
   }
 
-  if (!params.firstName || !params.lastName) {
+  if (!params.email || !params.password) {
     console.error("❌ Missing required parameters: firstName and lastName");
     console.log("\nUsage:");
-    console.log("  pnpm create-user --firstName John --lastName Doe [options]");
+    console.log("  pnpm create-user --email john@example.com --password secret123");
     console.log("\nRequired:");
-    console.log("  --firstName    First name");
-    console.log("  --lastName     Last name");
-    console.log("\nOptional:");
     console.log("  --email        Email address");
-    console.log("  --phoneNumber  Phone number");
     console.log("  --password     Password (will be hashed)");
-    console.log("  --city         City");
-    console.log("  --postalCode   Postal code");
     console.log("\nExample:");
-    console.log('  pnpm create-user --firstName John --lastName Doe --email john@example.com --password secret123');
     process.exit(1);
   }
 

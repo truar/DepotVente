@@ -1,94 +1,72 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import { Button } from '@/components/ui/button.tsx'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input.tsx'
-import { Label } from '@/components/ui/label.tsx'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { Package, ShoppingCart } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
+import { useAuthStore } from '@/stores/authStore.ts'
 
 export const Route = createFileRoute('/')({
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      throw redirect({
+        to: '/login',
+      })
+    }
+  },
   component: () => (
     <PublicLayout>
-      <App />
+      <RouteComponent />
     </PublicLayout>
   ),
 })
 
-export function App() {
-  const [, setWorkstation] = useWorkstation()
-  const [localWorkstation, setLocalWorkstation] = useState<string>('')
-  const [error, setError] = useState<string | undefined>(undefined)
+export function RouteComponent() {
   const navigate = useNavigate()
 
-  const handleSubmit = async () => {
-    if (!localWorkstation) {
-      setError('Identifiant non valide.')
-      return
-    }
-    setWorkstation(parseInt(localWorkstation))
-    setError(undefined)
-    await navigate({
-      to: '/depot-vente',
-    })
-  }
-
-  const handleKeyPress = (e: any) => {
-    if (e.key === 'Enter') {
-      handleSubmit()
-    }
-  }
-
   return (
-    <div className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="flex w-full max-w-md flex-col items-center">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="text-green-600 text-4xl">📦</div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Gestion Dépot/Vente
-          </h1>
+    <main className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="max-w-5xl w-full">
+        {/* Title Section */}
+        <div className="text-center mb-12">
+          <h2 className="text-5xl font-bold text-gray-800 mb-4">
+            Que souhaitez-vous faire ?
+          </h2>
+          <p className="text-xl text-gray-600">
+            Choisissez votre mode de travail pour commencer.
+          </p>
         </div>
 
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Bienvenue</CardTitle>
-            <CardDescription>
-              Veuillez entrer l'identifiant du poste pour continuer.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="workstation">Numéro du poste</Label>
-                <Input
-                  id="workstation"
-                  type="text"
-                  required
-                  value={localWorkstation}
-                  onChange={(e) => {
-                    setLocalWorkstation(e.target.value)
-                    setError(undefined)
-                  }}
-                  onKeyUp={handleKeyPress}
-                />
-                {error && <p className="text-red-500 text-sm pt-2">{error}</p>}
+        {/* Cards Grid */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
+          {/* Mode Dépôt Card */}
+          <button
+            onClick={() => navigate({ to: '/depot-vente/depot' })}
+            className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200"
+          >
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                <Package className="w-8 h-8 text-green-600" />
               </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex-col gap-2">
-            <Button type="submit" className="w-full" onClick={handleSubmit}>
-              Connexion
-            </Button>
-          </CardFooter>
-        </Card>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">
+              Mode Dépôt
+            </h3>
+            <p className="text-gray-600">Enregistrer de nouveaux articles.</p>
+          </button>
+
+          {/* Mode Vente Card */}
+          <button className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                <ShoppingCart className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">
+              Mode Vente
+            </h3>
+            <p className="text-gray-600">Accéder à la caisse.</p>
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   )
 }
