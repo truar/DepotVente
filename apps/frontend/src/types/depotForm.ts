@@ -8,7 +8,7 @@ export enum TypeEnum {
 }
 
 export const ArticleSchema = z.object({
-  price: z.number(),
+  price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
   discipline: z.string(),
   brand: z.string(),
   type: z.enum(TypeEnum),
@@ -26,11 +26,13 @@ export type ArticleFormType = z.infer<typeof ArticleSchema>
 
 export const DepotSchema = z.object({
   depotIndex: z.number(),
-  lastName: z.string(),
-  firstName: z.string(),
-  phoneNumber: z.string(),
+  lastName: z.string().nonempty({ message: 'Le nom est requis' }),
+  firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
+  phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   cotisationPayee: z.boolean(),
-  articles: z.array(ArticleSchema),
+  articles: z
+    .array(ArticleSchema)
+    .nonempty({ message: 'Au moins un article est requis' }),
 })
 
 export type DepotFormType = z.infer<typeof DepotSchema>

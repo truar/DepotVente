@@ -11,6 +11,7 @@ export type Deposit = {
   contributionStatus: string
   sellerId: string
   incrementStart: number
+  dropWorkstationId: number
   depositIndex: number
   createdAt: Date
   updatedAt: Date

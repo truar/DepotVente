@@ -1,4 +1,5 @@
 import {
+  Controller,
   type FieldArrayWithId,
   FormProvider,
   useFieldArray,
@@ -7,7 +8,7 @@ import {
 } from 'react-hook-form'
 import { ChevronLeft, Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { useCallback, useState, type KeyboardEvent } from 'react'
+import { type KeyboardEvent, useCallback, useState } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
@@ -29,6 +30,8 @@ import { type DepotFormType, DepotSchema, TypeEnum } from '@/types/depotForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
+import { Field, FieldContent } from '@/components/ui/field'
+import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -154,6 +157,8 @@ export function DepositFormPage() {
             Enregistrer un nouveau dépôt vendeur
           </h2>
 
+          <ErrorMessages />
+
           <div className="flex gap-6 flex-col">
             <div className="flex gap-8">
               <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
@@ -212,7 +217,10 @@ export function DepositFormPage() {
 }
 
 function SellerInformationForm() {
-  const { register } = useFormContext()
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext()
   return (
     <div className="flex flex-2 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
       <h3 className="text-2xl font-bold text-gray-800 mb-5">
@@ -222,7 +230,12 @@ function SellerInformationForm() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="grid gap-2">
           <Label htmlFor="lastName">Nom</Label>
-          <Input id="lastName" type="text" {...register('lastName')} required />
+          <Input
+            id="lastName"
+            type="text"
+            {...register('lastName')}
+            aria-invalid={errors.lastName ? 'true' : 'false'}
+          />
         </div>
 
         <div className="grid gap-2">
@@ -231,7 +244,7 @@ function SellerInformationForm() {
             id="firstName"
             type="text"
             {...register('firstName')}
-            required
+            aria-invalid={errors.firstName ? 'true' : 'false'}
           />
         </div>
 
@@ -241,7 +254,7 @@ function SellerInformationForm() {
             id="phoneNumber"
             type="text"
             {...register('phoneNumber')}
-            required
+            aria-invalid={errors.phoneNumber ? 'true' : 'false'}
           />
         </div>
       </div>
@@ -368,7 +381,7 @@ type ArticleLineFormProps = {
 
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { field, index, onRemove } = props
-  const { register } = useFormContext()
+  const { register, control } = useFormContext()
   const dymo = useDymo()
 
   const printDymo = useCallback(
@@ -389,11 +402,24 @@ function ArticleLineForm(props: ArticleLineFormProps) {
   return (
     <tr className="border-b border-gray-100">
       <td className="py-1 px-1">
-        <input
-          type="text"
-          readOnly={true}
-          {...register(`articles.${index}.shortArticleCode`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.shortArticleCode`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-code-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                    readOnly
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
@@ -448,10 +474,23 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center gap-1">
-          <input
-            type="number"
-            {...register(`articles.${index}.price`)}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+          <Controller
+            name={`articles.${index}.price`}
+            control={control}
+            render={({ field: controllerField, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...controllerField}
+                      id={`article-number-${index}`}
+                      aria-invalid={fieldState.invalid}
+                      type="number"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
           />
           <span className="text-sm text-gray-600">€</span>
         </div>
@@ -476,4 +515,20 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
     </tr>
   )
+}
+
+function ErrorMessages() {
+  const {
+    formState: { errors },
+  } = useFormContext()
+
+  console.log(errors)
+
+  const errorsDisplayed = Object.keys(errors).map((key, index) => {
+    if (typeof errors[key]?.message === 'string') {
+      return <li key={index}>{errors[key]?.message}</li>
+    }
+    return null
+  })
+  return <ul className="mb-6 pl-5 text-red-600 list-disc">{errorsDisplayed}</ul>
 }

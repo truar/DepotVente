@@ -1,10 +1,10 @@
 import { db } from '@/db.ts'
 import { v4 } from 'uuid'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import type { DepotFormType } from '@/types/depot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useContactDb } from './useContactDb.ts'
 import { useArticleDb } from '@/hooks/useArticleDb.ts'
+import type { DepotFormType } from '@/types/depotForm.ts'
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
@@ -41,6 +41,7 @@ export function useCreateDepot() {
           contributionStatus: data.cotisationPayee ? 'PAYER' : 'A_PAYER',
           depositIndex: depotIndex,
           incrementStart: workstation.incrementStart,
+          dropWorkstationId: workstation.incrementStart,
           createdAt: currentDate,
           updatedAt: currentDate,
           deletedAt: null,
