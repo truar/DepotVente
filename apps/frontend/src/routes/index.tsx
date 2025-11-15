@@ -39,7 +39,7 @@ export function RouteComponent() {
         <div className="grid md:grid-cols-2 gap-8 mb-16">
           {/* Mode Dépôt Card */}
           <button
-            onClick={() => navigate({ to: '/depot-vente/depot' })}
+            onClick={() => navigate({ to: '/deposits/add' })}
             className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200"
           >
             <div className="flex justify-center mb-6">

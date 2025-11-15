@@ -21,7 +21,7 @@ export default function Header() {
 
   const [workstation] = useWorkstation()
   return (
-    <header className="flex items-center text-white shadow-lg">
+    <header className="flex items-center text-white shadow-lg h-9">
       {dymo.isEnabled ? (
         <HeaderSuccessStatus text={'Dymo OK'} />
       ) : (
@@ -42,13 +42,13 @@ export default function Header() {
 }
 
 export function HeaderSuccessStatus({ text }: { text: string }) {
-  return <p className="p-1 bg-green-500 flex-1">{text}</p>
+  return <p className="p-1 h-full bg-green-500 flex-1">{text}</p>
 }
 
 export function HeaderNeutralStatus({ text }: { text: string }) {
-  return <p className="p-1 flex-1 text-black">{text}</p>
+  return <p className="p-1 h-full flex-1 text-black">{text}</p>
 }
 
 export function HeaderFailureStatus({ text }: { text: string }) {
-  return <p className="p-1 bg-red-500 flex-1">{text}</p>
+  return <p className="p-1 h-full bg-red-500 flex-1">{text}</p>
 }

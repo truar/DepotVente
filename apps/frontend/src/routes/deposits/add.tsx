@@ -6,7 +6,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { Plus, Printer, Trash2 } from 'lucide-react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
@@ -28,8 +28,17 @@ import PublicLayout from '@/components/PublicLayout'
 import { type DepotFormType, DepotSchema, TypeEnum } from '@/types/depotForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
+import { useAuthStore } from '@/stores/authStore.ts'
 
-export const Route = createFileRoute('/depot-vente/depot')({
+export const Route = createFileRoute('/deposits/add')({
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      throw redirect({
+        to: '/login',
+      })
+    }
+  },
   component: () => (
     <PublicLayout>
       <DepositFormPage />
