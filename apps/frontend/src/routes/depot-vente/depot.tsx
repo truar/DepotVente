@@ -9,7 +9,6 @@ import { Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
-import { type DepotFormType, TypeEnum } from '@/types/depot.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
@@ -26,6 +25,9 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
 import PublicLayout from '@/components/PublicLayout'
+import { type DepotFormType, DepotSchema, TypeEnum } from '@/types/depotForm.ts'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button.tsx'
 
 export const Route = createFileRoute('/depot-vente/depot')({
   component: () => (
@@ -61,11 +63,13 @@ export function DepositFormPage() {
   const createDepotMutation = useCreateDepot()
   const depotDb = useDepotDb()
   const [workstation] = useWorkstation()
-  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
   if (!workstation) return null
+
+  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
   const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   const methods = useForm<DepotFormType>({
+    resolver: zodResolver(DepotSchema),
     defaultValues: {
       depotIndex: depotCurrentIndex,
       lastName: '',
@@ -177,26 +181,21 @@ export function DepositFormPage() {
             </div>
 
             <div className="flex justify-end gap-4">
-              <button
+              <Button
                 type="button"
-                className="px-6 py-3 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
                 onClick={generateFakeVente}
+                variant="secondary"
               >
                 Générer une fausse vente
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => reset()}
-                className="px-6 py-3 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
+                variant="destructive"
               >
                 Annuler
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors shadow-md"
-              >
-                Valider et enregistrer le dépôt
-              </button>
+              </Button>
+              <Button type="submit">Valider et enregistrer le dépôt</Button>
             </div>
           </div>
         </form>
@@ -277,7 +276,7 @@ function ArticleForm(props: ArticleFormProps) {
       price: 0,
       discipline: '',
       brand: '',
-      type: '',
+      type: TypeEnum.Skis,
       size: '',
       color: '',
       model: '',
