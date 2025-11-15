@@ -9,12 +9,12 @@ export enum TypeEnum {
 
 export const ArticleSchema = z.object({
   price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
-  discipline: z.string(),
-  brand: z.string(),
+  discipline: z.string().nonempty({ error: 'La discipline est requise' }),
+  brand: z.string().nonempty({ error: 'La marque est requise' }),
   type: z.enum(TypeEnum),
-  size: z.string(),
-  color: z.string(),
-  model: z.string(),
+  size: z.string().nonempty({ error: 'La taille est requise' }),
+  color: z.string().nonempty({ error: 'La couleur est requise' }),
+  model: z.string().nonempty({ error: 'Le model est requis' }),
   articleCode: z.string(),
   year: z.number(),
   depotIndex: z.number(),

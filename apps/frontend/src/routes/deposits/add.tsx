@@ -6,7 +6,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { ChevronLeft, Plus, Printer, Trash2 } from 'lucide-react'
+import { ChevronLeft, Euro, Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { type KeyboardEvent, useCallback, useState } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
@@ -381,8 +381,11 @@ type ArticleLineFormProps = {
 
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { field, index, onRemove } = props
-  const { register, control } = useFormContext()
+  const { control, getFieldState } = useFormContext()
   const dymo = useDymo()
+
+  const fieldState = getFieldState(`articles.${index}`)
+  const isError = !fieldState.isTouched || fieldState.invalid
 
   const printDymo = useCallback(
     (field: FieldArrayWithId<DepotFormType, 'articles'>) => {
@@ -438,38 +441,103 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         </Select>
       </td>
       <td className="py-1 px-1">
-        <input
-          type="text"
-          {...register(`articles.${index}.brand`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.brand`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-brand-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
-        <input
-          type="text"
-          {...register(`articles.${index}.model`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.model`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-model-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
-        <input
-          type="text"
-          {...register(`articles.${index}.size`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.size`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-size-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
-        <input
-          type="text"
-          {...register(`articles.${index}.color`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.color`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-color-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
-        <input
-          type="text"
-          {...register(`articles.${index}.discipline`)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+        <Controller
+          name={`articles.${index}.discipline`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-discipline-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
         />
       </td>
       <td className="py-1 px-1">
@@ -483,27 +551,27 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                   <InputGroup>
                     <InputGroupInput
                       {...controllerField}
-                      id={`article-number-${index}`}
+                      id={`article-price-${index}`}
                       aria-invalid={fieldState.invalid}
-                      type="number"
+                      type="text"
                     />
+                    <Euro className="w-5 pr-1" />
                   </InputGroup>
                 </FieldContent>
               </Field>
             )}
           />
-          <span className="text-sm text-gray-600">€</span>
         </div>
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => printDymo(field)}
-            type="button"
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={isError}
           >
             <Printer className="w-4 h-4" />
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => onRemove(index)}
