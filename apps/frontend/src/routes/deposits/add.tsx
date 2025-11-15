@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Field, FieldContent } from '@/components/ui/field'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
+import type { Workstation } from '@/db.ts'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -72,23 +73,65 @@ function generateArticleCode(
 }
 
 export function DepositFormPage() {
-  const createDepotMutation = useCreateDepot()
   const depotDb = useDepotDb()
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
-  const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
+  const currentDepotCount = useLiveQuery(() => depotDb.count())
+  const depotCurrentIndex = currentDepotCount
+    ? workstation.incrementStart + currentDepotCount + 1
+    : undefined
 
+  if (!depotCurrentIndex) return null
+
+  return (
+    <main className="flex-1 p-6">
+      <Button variant="link" className="cursor-pointer">
+        <ChevronLeft />
+        <Link to={'..'}>Retour au menu</Link>
+      </Button>
+      <DepositForm depotIndex={depotCurrentIndex} workstation={workstation} />
+    </main>
+  )
+}
+
+function DepositForm({
+  depotIndex,
+  workstation,
+}: {
+  depotIndex: number
+  workstation: Workstation
+}) {
+  const createDepotMutation = useCreateDepot()
   const methods = useForm<DepotFormType>({
     resolver: zodResolver(DepotSchema),
+    mode: 'onSubmit',
     defaultValues: {
-      depotIndex: depotCurrentIndex,
+      depotIndex: depotIndex,
       lastName: '',
       firstName: '',
       phoneNumber: '',
       cotisationPayee: false,
-      articles: [],
+      articles: [
+        {
+          articleCode: generateArticleCode(
+            2025,
+            depotIndex,
+            generateArticleIndex(0),
+          ),
+          articleIndex: generateArticleIndex(0),
+          brand: '',
+          color: '',
+          type: TypeEnum.Skis,
+          model: '',
+          depotIndex: depotIndex,
+          size: '',
+          year: 2025,
+          discipline: '',
+          price: 0,
+          shortArticleCode: depotIndex + ' ' + generateArticleIndex(0),
+        },
+      ],
     },
   })
   const { handleSubmit, setValue, reset } = methods
@@ -102,7 +145,7 @@ export function DepositFormPage() {
   }
 
   const generateFakeVente = useCallback(() => {
-    if (!depotCurrentIndex) return
+    if (!depotIndex) return
 
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
@@ -113,11 +156,7 @@ export function DepositFormPage() {
       Array.from({ length: nbArticles }).map((_, index) => {
         const year = new Date().getFullYear()
         const articleIndex = generateArticleIndex(index)
-        const articleCode = generateArticleCode(
-          year,
-          depotCurrentIndex,
-          articleIndex,
-        )
+        const articleCode = generateArticleCode(year, depotIndex, articleIndex)
         return {
           price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
           discipline: faker.lorem.words({ min: 1, max: 4 }),
@@ -128,91 +167,77 @@ export function DepositFormPage() {
           model: faker.commerce.productName(),
           articleCode,
           year,
-          depotIndex: depotCurrentIndex,
+          depotIndex: depotIndex,
           articleIndex,
-          shortArticleCode: `${depotCurrentIndex} ${articleIndex}`,
+          shortArticleCode: `${depotIndex} ${articleIndex}`,
         }
       }),
     )
     setCountArticle(nbArticles)
-  }, [depotCurrentIndex, setValue])
-
-  if (!depotCurrentIndex) {
-    return null
-  }
+  }, [depotIndex, setValue])
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
   return (
-    <main className="flex-1 p-6">
-      <Button variant="link" className="cursor-pointer">
-        <ChevronLeft />
-        <Link to={'..'}>Retour au menu</Link>
-      </Button>
-      <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
-          <h2 className="text-4xl font-bold text-gray-800 mb-8">
-            Enregistrer un nouveau dépôt vendeur
-          </h2>
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
+        <h2 className="text-4xl font-bold text-gray-800 mb-8">
+          Enregistrer un nouveau dépôt vendeur
+        </h2>
 
-          <ErrorMessages />
+        <ErrorMessages />
 
-          <div className="flex gap-6 flex-col">
-            <div className="flex gap-8">
-              <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-800 mb-5">
-                  Informations du Dépot
-                </h3>
+        <div className="flex gap-6 flex-col">
+          <div className="flex gap-8">
+            <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              <h3 className="text-2xl font-bold text-gray-800 mb-5">
+                Informations du Dépot
+              </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="workstation">Numéro de poste</Label>
-                    <Input
-                      readOnly={true}
-                      id="workstation"
-                      type="text"
-                      value={workstation.incrementStart}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="depotIndex">Dépot</Label>
-                    <Input
-                      readOnly={true}
-                      id="depotIndex"
-                      type="text"
-                      value={depotCurrentIndex}
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="workstation">Numéro de poste</Label>
+                  <Input
+                    readOnly={true}
+                    id="workstation"
+                    type="text"
+                    value={workstation.incrementStart}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="depotIndex">Dépot</Label>
+                  <Input
+                    readOnly={true}
+                    id="depotIndex"
+                    type="text"
+                    value={depotIndex}
+                  />
                 </div>
               </div>
-
-              <SellerInformationForm />
             </div>
-            <ArticleForm
-              onArticleAdd={() => setCountArticle(countArticle + 1)}
-              articleCount={countArticle}
-              depotIndex={depotCurrentIndex}
-            />
-          </div>
 
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              onClick={generateFakeVente}
-              variant="secondary"
-            >
-              Générer une fausse vente
-            </Button>
-            <Button type="button" onClick={() => reset()} variant="destructive">
-              Annuler
-            </Button>
-            <Button type="submit">Valider et enregistrer le dépôt</Button>
+            <SellerInformationForm />
           </div>
-        </form>
-      </FormProvider>
-    </main>
+          <ArticleForm
+            onArticleAdd={() => setCountArticle(countArticle + 1)}
+            articleCount={countArticle}
+            depotIndex={depotIndex}
+          />
+        </div>
+
+        <div className="flex justify-end gap-4">
+          <Button type="button" onClick={generateFakeVente} variant="secondary">
+            Générer une fausse vente
+          </Button>
+          <Button type="button" onClick={() => reset()} variant="destructive">
+            Annuler
+          </Button>
+          <Button type="submit">Valider et enregistrer le dépôt</Button>
+        </div>
+      </form>
+    </FormProvider>
   )
 }
 
@@ -282,7 +307,6 @@ type ArticleFormProps = {
 
 function ArticleForm(props: ArticleFormProps) {
   const { onArticleAdd, articleCount, depotIndex } = props
-
   const { fields, append, remove } = useFieldArray<DepotFormType>({
     name: 'articles',
   })
@@ -381,27 +405,8 @@ type ArticleLineFormProps = {
 
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { field, index, onRemove } = props
-  const { control, getFieldState } = useFormContext()
-  const dymo = useDymo()
+  const { control } = useFormContext()
 
-  const fieldState = getFieldState(`articles.${index}`)
-  const isError = !fieldState.isTouched || fieldState.invalid
-
-  const printDymo = useCallback(
-    (field: FieldArrayWithId<DepotFormType, 'articles'>) => {
-      dymo.print({
-        color: field.color,
-        brand: field.brand,
-        size: field.size,
-        category: field.type,
-        code: field.articleCode,
-        price: `${field.price}`,
-        shortCode: field.shortArticleCode,
-        model: field.model,
-      })
-    },
-    [dymo],
-  )
   return (
     <tr className="border-b border-gray-100">
       <td className="py-1 px-1">
@@ -565,13 +570,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => printDymo(field)}
-            disabled={isError}
-          >
-            <Printer className="w-4 h-4" />
-          </Button>
+          <PrintArticleButton index={index} field={field} />
           <button
             type="button"
             onClick={() => onRemove(index)}
@@ -585,12 +584,42 @@ function ArticleLineForm(props: ArticleLineFormProps) {
   )
 }
 
+type PrintArticleButtonProps = {
+  index: number
+  field: FieldArrayWithId<DepotFormType, 'articles'>
+}
+
+function PrintArticleButton(props: PrintArticleButtonProps) {
+  const { field } = props
+  const dymo = useDymo()
+
+  const printDymo = useCallback(
+    (field: FieldArrayWithId<DepotFormType, 'articles'>) => {
+      dymo.print({
+        color: field.color,
+        brand: field.brand,
+        size: field.size,
+        category: field.type,
+        code: field.articleCode,
+        price: `${field.price}`,
+        shortCode: field.shortArticleCode,
+        model: field.model,
+      })
+    },
+    [dymo],
+  )
+
+  return (
+    <Button variant="ghost" onClick={() => printDymo(field)}>
+      <Printer className="w-4 h-4" />
+    </Button>
+  )
+}
+
 function ErrorMessages() {
   const {
     formState: { errors },
   } = useFormContext()
-
-  console.log(errors)
 
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
     if (typeof errors[key]?.message === 'string') {
