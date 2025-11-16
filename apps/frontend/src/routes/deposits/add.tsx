@@ -135,6 +135,7 @@ function DepositForm({
     },
   })
   const { handleSubmit, setValue, reset } = methods
+  const [predeposit, setPredeposit] = useState<string | null>(null)
 
   const [countArticle, setCountArticle] = useState(1)
 
@@ -176,6 +177,10 @@ function DepositForm({
     setCountArticle(nbArticles)
   }, [depotIndex, setValue])
 
+  const loadPredeposit = useCallback(() => {
+    console.log('loadPredeposit', predeposit)
+  }, [predeposit])
+
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
@@ -191,6 +196,25 @@ function DepositForm({
 
         <div className="flex gap-6 flex-col">
           <div className="flex gap-8">
+            <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              <p>Rechercher une fiche de pré-dépot</p>
+              <div className="grid grid-cols-6 gap-2">
+                <Input
+                  className="col-span-4"
+                  id="predeposit"
+                  type="text"
+                  onChange={(e) => setPredeposit(e.target.value)}
+                />
+                <Button
+                  className="col-span-2"
+                  type="button"
+                  variant="secondary"
+                  onClick={loadPredeposit}
+                >
+                  Rechercher
+                </Button>
+              </div>
+            </div>
             <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <h3 className="text-2xl font-bold text-gray-800 mb-5">
                 Informations du Dépot
@@ -217,9 +241,8 @@ function DepositForm({
                 </div>
               </div>
             </div>
-
-            <SellerInformationForm />
           </div>
+          <SellerInformationForm />
           <ArticleForm
             onArticleAdd={() => setCountArticle(countArticle + 1)}
             articleCount={countArticle}
