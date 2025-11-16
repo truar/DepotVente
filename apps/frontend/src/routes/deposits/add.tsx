@@ -242,11 +242,7 @@ function DepositForm({
 }
 
 function SellerInformationForm() {
-  const {
-    register,
-    formState: { errors },
-    control,
-  } = useFormContext()
+  const { register, control } = useFormContext()
   return (
     <div className="flex flex-2 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
       <h3 className="text-2xl font-bold text-gray-800 mb-5">
