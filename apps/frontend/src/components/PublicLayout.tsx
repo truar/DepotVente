@@ -1,4 +1,3 @@
-import { Footer } from '@/components/Footer'
 import Header from '@/components/Header'
 
 interface PublicLayoutProps {
@@ -10,7 +9,6 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
     <div className="relative flex min-h-screen w-full flex-col bg-gradient-to-br from-green-50 to-blue-50">
       <Header />
       {children}
-      <Footer />
     </div>
   )
 }

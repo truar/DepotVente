@@ -6,15 +6,22 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { ChevronLeft, Euro, Plus, Printer, Trash2 } from 'lucide-react'
+import {
+  Check,
+  ChevronLeft,
+  ChevronsUpDown,
+  Euro,
+  Plus,
+  Printer,
+  Trash2,
+} from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { type KeyboardEvent, useCallback, useState } from 'react'
+import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { Label } from '@/components/ui/label.tsx'
-import { Input } from '@/components/ui/input.tsx'
 import {
   Select,
   SelectContent,
@@ -32,7 +39,21 @@ import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Field, FieldContent } from '@/components/ui/field'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
-import type { Workstation } from '@/db.ts'
+
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -90,18 +111,92 @@ export function DepositFormPage() {
         <ChevronLeft />
         <Link to={'..'}>Retour au menu</Link>
       </Button>
-      <DepositForm depotIndex={depotCurrentIndex} workstation={workstation} />
+      <DepositForm depotIndex={depotCurrentIndex} />
     </main>
   )
 }
 
-function DepositForm({
-  depotIndex,
-  workstation,
-}: {
-  depotIndex: number
-  workstation: Workstation
-}) {
+const predeposits = [
+  {
+    value: '001',
+    label: '001 - Ruaro Thibault',
+    keywords: ['ruaro', 'thibault', '001'],
+  },
+  {
+    value: '002',
+    label: '002 - Jacques Henry',
+    keywords: ['Jacques', 'Henry', '002'],
+  },
+  {
+    value: '003',
+    label: '003 - El tomato',
+    keywords: ['El', 'tomato', '003'],
+  },
+]
+
+type ComboboxProps = {
+  items: { label: string; value: string; keywords?: string[] }[]
+  onSelect: (value: string) => void
+}
+
+export function Combobox(props: ComboboxProps) {
+  const { items, onSelect } = props
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+
+  useEffect(() => {
+    onSelect(value)
+  }, [value])
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {value
+            ? items.find((item) => item.value === value)?.label
+            : 'Rechercher une fiche de pré-dépot...'}
+          <ChevronsUpDown className="opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0">
+        <Command>
+          <CommandInput placeholder="Rechercher une fiche de pré-dépot..." />
+          <CommandList>
+            <CommandEmpty>Aucun prédépot</CommandEmpty>
+            <CommandGroup>
+              {items.map((item) => (
+                <CommandItem
+                  keywords={item.keywords}
+                  key={item.value}
+                  value={item.value}
+                  onSelect={(currentValue) => {
+                    setValue(currentValue === value ? '' : currentValue)
+                    setOpen(false)
+                  }}
+                >
+                  {item.label}
+                  <Check
+                    className={cn(
+                      'ml-auto',
+                      value === item.value ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
   const methods = useForm<DepotFormType>({
     resolver: zodResolver(DepotSchema),
@@ -151,7 +246,7 @@ function DepositForm({
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
-    const nbArticles = Math.floor(Math.random() * 10) + 1
+    const nbArticles = 10
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
@@ -188,76 +283,53 @@ function DepositForm({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
-        <h2 className="text-4xl font-bold text-gray-800 mb-8">
-          Enregistrer un nouveau dépôt vendeur
-        </h2>
+        <div className="flex flex-col gap-5 mb-3">
+          <h2 className="text-3xl font-bold">
+            Enregistrer un nouveau dépôt vendeur
+          </h2>
+          <div className="flex flex-col w-[500px]">
+            <div className="grid grid-cols-6 gap-2">
+              <div className="col-span-4">
+                <Combobox
+                  items={predeposits}
+                  onSelect={(value) => setPredeposit(value)}
+                />
+              </div>
+              <Button
+                className="col-span-2"
+                type="button"
+                variant="secondary"
+                onClick={loadPredeposit}
+              >
+                Rechercher
+              </Button>
+            </div>
+          </div>
+        </div>
 
         <ErrorMessages />
 
-        <div className="flex gap-6 flex-col">
-          <div className="flex gap-8">
-            <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <p>Rechercher une fiche de pré-dépot</p>
-              <div className="grid grid-cols-6 gap-2">
-                <Input
-                  className="col-span-4"
-                  id="predeposit"
-                  type="text"
-                  onChange={(e) => setPredeposit(e.target.value)}
-                />
-                <Button
-                  className="col-span-2"
-                  type="button"
-                  variant="secondary"
-                  onClick={loadPredeposit}
-                >
-                  Rechercher
-                </Button>
-              </div>
-            </div>
-            <div className="flex flex-1 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-800 mb-5">
-                Informations du Dépot
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="workstation">Numéro de poste</Label>
-                  <Input
-                    readOnly={true}
-                    id="workstation"
-                    type="text"
-                    value={workstation.incrementStart}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="depotIndex">Dépot</Label>
-                  <Input
-                    readOnly={true}
-                    id="depotIndex"
-                    type="text"
-                    value={depotIndex}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <SellerInformationForm />
           <ArticleForm
             onArticleAdd={() => setCountArticle(countArticle + 1)}
             articleCount={countArticle}
             depotIndex={depotIndex}
           />
-        </div>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" onClick={generateFakeVente} variant="secondary">
-            Générer une fausse vente
-          </Button>
-          <Button type="button" onClick={() => reset()} variant="destructive">
-            Annuler
-          </Button>
-          <Button type="submit">Valider et enregistrer le dépôt</Button>
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              onClick={generateFakeVente}
+              variant="secondary"
+            >
+              Générer une fausse vente
+            </Button>
+            <Button type="button" onClick={() => reset()} variant="destructive">
+              Annuler
+            </Button>
+            <Button type="submit">Valider et enregistrer le dépôt</Button>
+          </div>
         </div>
       </form>
     </FormProvider>
@@ -265,14 +337,11 @@ function DepositForm({
 }
 
 function SellerInformationForm() {
-  const { register, control } = useFormContext()
+  const { control } = useFormContext()
   return (
-    <div className="flex flex-2 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-      <h3 className="text-2xl font-bold text-gray-800 mb-5">
-        Informations du Vendeur
-      </h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div className="flex flex-col gap-3">
+      <h3 className="text-2xl font-bold">Vendeur</h3>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
             name={`lastName`}
@@ -338,18 +407,27 @@ function SellerInformationForm() {
             )}
           />
         </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          {...register('cotisationPayee')}
-          id="cotisation"
-          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-400"
-        />
-        <label htmlFor="cotisation" className="text-sm text-gray-700">
-          Cotisation annuelle payée
-        </label>
+        <div className="grid gap-2">
+          <Controller
+            name={`phoneNumber`}
+            control={control}
+            render={({ field: controllerField, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="phoneNumber">Ville</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...controllerField}
+                      id="phoneNumber"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
+          />
+        </div>
       </div>
     </div>
   )
@@ -393,10 +471,8 @@ function ArticleForm(props: ArticleFormProps) {
   }, [depotIndex, articleCount])
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 mb-8">
-      <h3 className="text-2xl font-bold text-gray-800 mb-5">
-        Liste des articles déposés
-      </h3>
+    <div className="flex flex-col gap-3">
+      <h3 className="text-2xl font-bold ">Articles</h3>
 
       <div className="overflow-x-auto overflow-y-scroll">
         <table className="w-full table-fixed">
@@ -444,14 +520,12 @@ function ArticleForm(props: ArticleFormProps) {
         </table>
       </div>
 
-      <button
-        type="button"
-        onClick={addArticle}
-        className="mt-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-      >
-        <Plus className="w-5 h-5" />
-        Ajouter un nouvel article
-      </button>
+      <div>
+        <Button type="button" variant="ghost" onClick={addArticle}>
+          <Plus className="w-5 h-5" />
+          Ajouter un nouvel article
+        </Button>
+      </div>
     </div>
   )
 }
@@ -686,5 +760,6 @@ function ErrorMessages() {
     }
     return null
   })
+  if (errorsDisplayed.length === 0) return null
   return <ul className="mb-6 pl-5 text-red-600 list-disc">{errorsDisplayed}</ul>
 }
