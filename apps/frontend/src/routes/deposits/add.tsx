@@ -136,7 +136,7 @@ function DepositForm({
   })
   const { handleSubmit, setValue, reset } = methods
 
-  const [countArticle, setCountArticle] = useState(0)
+  const [countArticle, setCountArticle] = useState(1)
 
   const onSubmit = async (data: DepotFormType) => {
     await createDepotMutation.mutate(data)
@@ -245,6 +245,7 @@ function SellerInformationForm() {
   const {
     register,
     formState: { errors },
+    control,
   } = useFormContext()
   return (
     <div className="flex flex-2 flex-col bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
@@ -254,32 +255,68 @@ function SellerInformationForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="grid gap-2">
-          <Label htmlFor="lastName">Nom</Label>
-          <Input
-            id="lastName"
-            type="text"
-            {...register('lastName')}
-            aria-invalid={errors.lastName ? 'true' : 'false'}
+          <Controller
+            name={`lastName`}
+            control={control}
+            render={({ field: controllerField, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="lastName">Nom</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...controllerField}
+                      id="lastName"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
           />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="firstName">Prénom</Label>
-          <Input
-            id="firstName"
-            type="text"
-            {...register('firstName')}
-            aria-invalid={errors.firstName ? 'true' : 'false'}
+          <Controller
+            name={`firstName`}
+            control={control}
+            render={({ field: controllerField, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...controllerField}
+                      id="firstName"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
           />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="phoneNumber">Téléphone</Label>
-          <Input
-            id="phoneNumber"
-            type="text"
-            {...register('phoneNumber')}
-            aria-invalid={errors.phoneNumber ? 'true' : 'false'}
+          <Controller
+            name={`phoneNumber`}
+            control={control}
+            render={({ field: controllerField, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="phoneNumber">Téléphone</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...controllerField}
+                      id="phoneNumber"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
           />
         </div>
       </div>
@@ -310,9 +347,12 @@ function ArticleForm(props: ArticleFormProps) {
   const { fields, append, remove } = useFieldArray<DepotFormType>({
     name: 'articles',
   })
-
-  const addArticle = useCallback(() => {
+  const { trigger, getFieldState } = useFormContext()
+  const addArticle = useCallback(async () => {
     if (!depotIndex) return
+    await trigger()
+    const fieldState = getFieldState('articles')
+    if (fieldState.invalid) return
     const year = new Date().getFullYear()
     const articleIndex = generateArticleIndex(articleCount)
     const articleCode = generateArticleCode(year, depotIndex, articleIndex)
