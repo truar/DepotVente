@@ -488,7 +488,7 @@ function ArticleForm(props: ArticleFormProps) {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Discipline
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[150px]">
                 Catégorie
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
@@ -500,10 +500,10 @@ function ArticleForm(props: ArticleFormProps) {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Couleur
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
                 Taille
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
                 Prix
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
@@ -703,7 +703,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td className="py-1 px-1 w-[75px]">
         <Controller
           name={`articles.${index}.size`}
           render={({ field: controllerField, fieldState }) => (
