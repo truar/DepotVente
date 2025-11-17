@@ -564,19 +564,34 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td className="py-1 px-1">
-        <Select name={`articles.${index}.type`} value={field.type}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="Chaussures">Chaussures</SelectItem>
-              <SelectItem value="Skis">Skis</SelectItem>
-              <SelectItem value="Bâtons">Bâtons</SelectItem>
-              <SelectItem value="Snowboard">Snowboard</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <Controller
+          name={`articles.${index}.type`}
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field orientation="responsive" data-invalid={fieldState.invalid}>
+              <Select
+                name={field.name}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger
+                  className="w-full"
+                  aria-invalid={fieldState.invalid}
+                >
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="Chaussures">Chaussures</SelectItem>
+                    <SelectItem value="Skis">Skis</SelectItem>
+                    <SelectItem value="Bâtons">Bâtons</SelectItem>
+                    <SelectItem value="Snowboard">Snowboard</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
       </td>
       <td className="py-1 px-1">
         <Controller
