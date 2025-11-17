@@ -246,6 +246,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
+    setValue('city', faker.location.city())
     const nbArticles = 10
     setValue(
       'articles',
@@ -409,16 +410,16 @@ function SellerInformationForm() {
         </div>
         <div className="grid gap-2">
           <Controller
-            name={`phoneNumber`}
+            name={`city`}
             control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
-                  <Label htmlFor="phoneNumber">Ville</Label>
+                  <Label htmlFor="city">Ville</Label>
                   <InputGroup>
                     <InputGroupInput
                       {...controllerField}
-                      id="phoneNumber"
+                      id="city"
                       aria-invalid={fieldState.invalid}
                       type="text"
                     />

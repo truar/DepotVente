@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { ContributionStatusEnum } from '@/types/depotForm.ts'
 
 export type Workstation = {
   id: string
@@ -8,7 +9,7 @@ export type Workstation = {
 
 export type Deposit = {
   id: string
-  contributionStatus: string
+  contributionStatus: ContributionStatusEnum
   sellerId: string
   incrementStart: number
   dropWorkstationId: number

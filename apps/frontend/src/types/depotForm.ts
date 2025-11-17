@@ -7,6 +7,13 @@ export enum TypeEnum {
   Snowboard = 'Snowboard',
 }
 
+export enum ContributionStatusEnum {
+  'A_PAYER' = 'A payer',
+  'PAYEE' = 'Payee',
+  'PRO' = 'Pro',
+  'GRATUIT' = 'Gratuit',
+}
+
 export const ArticleSchema = z.object({
   price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
   discipline: z.string().nonempty({ error: 'La discipline est requise' }),
@@ -29,7 +36,8 @@ export const DepotSchema = z.object({
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
-  cotisationPayee: z.boolean(),
+  city: z.string().nullable(),
+  contributionStatus: z.enum(ContributionStatusEnum),
   articles: z
     .array(ArticleSchema)
     .nonempty({ message: 'Au moins un article est requis' }),
