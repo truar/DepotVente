@@ -104,12 +104,8 @@ export function DepositFormPage() {
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const currentDepotCount = useLiveQuery(() => depotDb.count())
-  const depotCurrentIndex = currentDepotCount
-    ? workstation.incrementStart + currentDepotCount + 1
-    : undefined
-
-  if (!depotCurrentIndex) return null
+  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
+  const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
     <main className="flex-1 p-6">
@@ -254,6 +250,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
     setValue('city', faker.location.city())
+    setValue('contributionStatus', 'PAYEE')
     const nbArticles = 5
     setValue(
       'articles',
