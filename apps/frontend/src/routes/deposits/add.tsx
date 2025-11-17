@@ -347,7 +347,6 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name={`lastName`}
-            control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -369,7 +368,6 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name={`firstName`}
-            control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -391,7 +389,6 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name={`phoneNumber`}
-            control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -412,7 +409,6 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name={`city`}
-            control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -541,7 +537,6 @@ function ArticleForm(props: ArticleFormProps) {
           <div>
             <Controller
               name={`contributionStatus`}
-              control={control}
               render={({ field, fieldState }) => (
                 <Field
                   orientation="responsive"
@@ -585,21 +580,18 @@ type ArticleLineFormProps = {
 
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { field, index, onRemove } = props
-  const { control } = useFormContext()
 
   return (
     <tr className="border-b border-gray-100">
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.shortArticleCode`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-code-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                     readOnly
@@ -613,14 +605,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.discipline`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-discipline-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
@@ -633,7 +623,6 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.type`}
-          control={control}
           render={({ field, fieldState }) => (
             <Field orientation="responsive" data-invalid={fieldState.invalid}>
               <Select
@@ -663,14 +652,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.brand`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-brand-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
@@ -683,14 +670,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.model`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-model-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
@@ -703,14 +688,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.color`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-color-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
@@ -723,14 +706,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.size`}
-          control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-size-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
@@ -744,14 +725,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         <div className="flex items-center gap-1">
           <Controller
             name={`articles.${index}.price`}
-            control={control}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
                   <InputGroup>
                     <InputGroupInput
                       {...controllerField}
-                      id={`article-price-${index}`}
                       aria-invalid={fieldState.invalid}
                       type="text"
                     />
