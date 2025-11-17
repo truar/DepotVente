@@ -38,7 +38,7 @@ export function useCreateDepot() {
         const depotId = await depotDb.upsert({
           id: v4(),
           sellerId: contactId,
-          contributionStatus: data.cotisationPayee ? 'PAYER' : 'A_PAYER',
+          contributionStatus: data.contributionStatus,
           depositIndex: depotIndex,
           incrementStart: workstation.incrementStart,
           dropWorkstationId: workstation.incrementStart,

@@ -16,7 +16,13 @@ import {
   Trash2,
 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
+import {
+  type KeyboardEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
@@ -139,7 +145,7 @@ type ComboboxProps = {
   onSelect: (value: string) => void
 }
 
-export function Combobox(props: ComboboxProps) {
+export const Combobox = memo((props: ComboboxProps) => {
   const { items, onSelect } = props
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
@@ -194,7 +200,7 @@ export function Combobox(props: ComboboxProps) {
       </PopoverContent>
     </Popover>
   )
-}
+})
 
 function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
@@ -206,7 +212,8 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       lastName: '',
       firstName: '',
       phoneNumber: '',
-      cotisationPayee: '',
+      cotisationPayee: null,
+      city: '',
       articles: [
         {
           articleCode: generateArticleCode(
@@ -247,7 +254,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
     setValue('city', faker.location.city())
-    const nbArticles = 30
+    const nbArticles = 5
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
@@ -291,10 +298,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           <div className="flex flex-col w-[500px]">
             <div className="grid grid-cols-6 gap-2">
               <div className="col-span-4">
-                <Combobox
-                  items={predeposits}
-                  onSelect={(value) => setPredeposit(value)}
-                />
+                <Combobox items={predeposits} onSelect={setPredeposit} />
               </div>
               <Button
                 className="col-span-2"
