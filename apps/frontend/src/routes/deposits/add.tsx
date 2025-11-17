@@ -206,7 +206,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       lastName: '',
       firstName: '',
       phoneNumber: '',
-      cotisationPayee: false,
+      cotisationPayee: '',
       articles: [
         {
           articleCode: generateArticleCode(
@@ -247,7 +247,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
     setValue('city', faker.location.city())
-    const nbArticles = 10
+    const nbArticles = 30
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
@@ -445,7 +445,9 @@ function ArticleForm(props: ArticleFormProps) {
   const { fields, append, remove } = useFieldArray<DepotFormType>({
     name: 'articles',
   })
-  const { trigger, getFieldState } = useFormContext()
+  const { trigger, getFieldState, control } = useFormContext()
+  const [contributionAmount, setContributionAmount] = useState<number>(2)
+
   const addArticle = useCallback(async () => {
     if (!depotIndex) return
     await trigger()
@@ -471,6 +473,10 @@ function ArticleForm(props: ArticleFormProps) {
     onArticleAdd()
   }, [depotIndex, articleCount])
 
+  useEffect(() => {
+    setContributionAmount((Math.floor((fields.length - 1) / 10) + 1) * 2)
+  }, [fields.length])
+
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold ">Articles</h3>
@@ -483,27 +489,27 @@ function ArticleForm(props: ArticleFormProps) {
                 Code
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Type
+                Discipline
+              </th>
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+                Catégorie
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Marque
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Modèle
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Taille
+                Descriptif
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Couleur
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Discipline
+                Taille
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Prix
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[75px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
                 Actions
               </th>
             </tr>
@@ -521,11 +527,50 @@ function ArticleForm(props: ArticleFormProps) {
         </table>
       </div>
 
-      <div>
-        <Button type="button" variant="ghost" onClick={addArticle}>
-          <Plus className="w-5 h-5" />
-          Ajouter un nouvel article
-        </Button>
+      <div className="flex flex-row justify-between">
+        <div>
+          <Button type="button" variant="ghost" onClick={addArticle}>
+            <Plus className="w-5 h-5" />
+            Ajouter un nouvel article
+          </Button>
+        </div>
+        <div className="flex flex-row gap-5 items-baseline">
+          <div>Nombre d'articles : {fields.length}</div>
+          <div>Montant de la cotisation : {contributionAmount}€</div>
+          <div>
+            <Controller
+              name={`contributionStatus`}
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field
+                  orientation="responsive"
+                  data-invalid={fieldState.invalid}
+                >
+                  <Select
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      aria-invalid={fieldState.invalid}
+                    >
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="A_PAYER">A payer</SelectItem>
+                        <SelectItem value="PAYEE">Payee</SelectItem>
+                        <SelectItem value="PRO">Pro</SelectItem>
+                        <SelectItem value="GRATUIT">Gratuit</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -557,6 +602,26 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                     aria-invalid={fieldState.invalid}
                     type="text"
                     readOnly
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+      </td>
+      <td className="py-1 px-1">
+        <Controller
+          name={`articles.${index}.discipline`}
+          control={control}
+          render={({ field: controllerField, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <InputGroup>
+                  <InputGroupInput
+                    {...controllerField}
+                    id={`article-discipline-${index}`}
+                    aria-invalid={fieldState.invalid}
+                    type="text"
                   />
                 </InputGroup>
               </FieldContent>
@@ -636,26 +701,6 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.size`}
-          control={control}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    id={`article-size-${index}`}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
           name={`articles.${index}.color`}
           control={control}
           render={({ field: controllerField, fieldState }) => (
@@ -676,7 +721,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.discipline`}
+          name={`articles.${index}.size`}
           control={control}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
@@ -684,7 +729,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
-                    id={`article-discipline-${index}`}
+                    id={`article-size-${index}`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
