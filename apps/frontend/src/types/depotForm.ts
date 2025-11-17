@@ -1,12 +1,5 @@
 import { z } from 'zod'
 
-export enum TypeEnum {
-  Chaussures = 'Chaussures',
-  Skis = 'Skis',
-  Batons = 'Bâtons',
-  Snowboard = 'Snowboard',
-}
-
 export enum ContributionStatusEnum {
   'A_PAYER' = 'A payer',
   'PAYEE' = 'Payee',
@@ -18,7 +11,7 @@ export const ArticleSchema = z.object({
   price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
   discipline: z.string().nonempty({ error: 'La discipline est requise' }),
   brand: z.string().nonempty({ error: 'La marque est requise' }),
-  type: z.enum(TypeEnum),
+  type: z.string().nonempty({ error: 'Le type est requis' }),
   size: z.string().nonempty({ error: 'La taille est requise' }),
   color: z.string().nonempty({ error: 'La couleur est requise' }),
   model: z.string().nonempty({ error: 'Le model est requis' }),
@@ -37,7 +30,7 @@ export const DepotSchema = z.object({
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
-  contributionStatus: z.string(),
+  contributionStatus: z.string().nonempty({ message: 'Le statut est requis' }),
   articles: z
     .array(ArticleSchema)
     .nonempty({ message: 'Au moins un article est requis' }),

@@ -2,6 +2,7 @@ import {
   Controller,
   type FieldArrayWithId,
   FormProvider,
+  type SubmitHandler,
   useFieldArray,
   useForm,
   useFormContext,
@@ -18,9 +19,9 @@ import {
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
-  memo,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
@@ -39,7 +40,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
 import PublicLayout from '@/components/PublicLayout'
-import { type DepotFormType, DepotSchema, TypeEnum } from '@/types/depotForm.ts'
+import { type DepotFormType, DepotSchema } from '@/types/depotForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
@@ -60,6 +61,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { disciplineItems, disciplines } from '@/types/disciplines.ts'
+import { categories, categoriesItems } from '@/types/categories.ts'
+import { brands, brandsItems } from '@/types/brands.ts'
+import { colors } from '@/types/colors.ts'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -139,16 +144,37 @@ const predeposits = [
 type ComboboxProps = {
   items: { label: string; value: string; keywords?: string[] }[]
   onSelect: (value: string) => void
+  placeholder?: string
+  value: string | null
 }
 
-export const Combobox = memo((props: ComboboxProps) => {
-  const { items, onSelect } = props
+function Combobox(props: ComboboxProps) {
+  const { items, onSelect, value, placeholder } = props
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
 
-  useEffect(() => {
-    onSelect(value)
-  }, [value])
+  const commandItems = useMemo(() => {
+    return items.map((item) => {
+      return (
+        <CommandItem
+          keywords={item.keywords}
+          key={item.value}
+          value={item.value}
+          onSelect={(currentValue) => {
+            onSelect(currentValue === value ? '' : currentValue)
+            setOpen(false)
+          }}
+        >
+          {item.label}
+          <Check
+            className={cn(
+              'ml-auto',
+              value === item.value ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </CommandItem>
+      )
+    })
+  }, [items])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -161,42 +187,22 @@ export const Combobox = memo((props: ComboboxProps) => {
         >
           {value
             ? items.find((item) => item.value === value)?.label
-            : 'Rechercher une fiche de pré-dépot...'}
+            : placeholder}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0">
         <Command>
-          <CommandInput placeholder="Rechercher une fiche de pré-dépot..." />
+          <CommandInput placeholder={placeholder} />
           <CommandList>
             <CommandEmpty>Aucun prédépot</CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => (
-                <CommandItem
-                  keywords={item.keywords}
-                  key={item.value}
-                  value={item.value}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? '' : currentValue)
-                    setOpen(false)
-                  }}
-                >
-                  {item.label}
-                  <Check
-                    className={cn(
-                      'ml-auto',
-                      value === item.value ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <CommandGroup>{commandItems}</CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
   )
-})
+}
 
 function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
@@ -208,7 +214,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       lastName: '',
       firstName: '',
       phoneNumber: '',
-      cotisationPayee: null,
+      contributionStatus: '',
       city: '',
       articles: [
         {
@@ -220,7 +226,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           articleIndex: generateArticleIndex(0),
           brand: '',
           color: '',
-          type: TypeEnum.Skis,
+          type: '',
           model: '',
           depotIndex: depotIndex,
           size: '',
@@ -237,7 +243,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
 
   const [countArticle, setCountArticle] = useState(1)
 
-  const onSubmit = async (data: DepotFormType) => {
+  const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
     await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)
@@ -251,7 +257,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
     setValue('city', faker.location.city())
     setValue('contributionStatus', 'PAYEE')
-    const nbArticles = 5
+    const nbArticles = 11
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
@@ -260,9 +266,9 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
         const articleCode = generateArticleCode(year, depotIndex, articleIndex)
         return {
           price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
-          discipline: faker.lorem.words({ min: 1, max: 4 }),
-          brand: faker.commerce.department(),
-          type: faker.helpers.enumValue(TypeEnum),
+          discipline: faker.helpers.arrayElement(disciplines),
+          brand: faker.helpers.arrayElement(brands),
+          type: faker.helpers.arrayElement(categories),
           size: faker.number.int({ min: 1, max: 180 }) + '',
           color: faker.color.human(),
           model: faker.commerce.productName(),
@@ -295,7 +301,12 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           <div className="flex flex-col w-[500px]">
             <div className="grid grid-cols-6 gap-2">
               <div className="col-span-4">
-                <Combobox items={predeposits} onSelect={setPredeposit} />
+                <Combobox
+                  items={predeposits}
+                  value={predeposit}
+                  onSelect={setPredeposit}
+                  placeholder="Rechercher une fiche de pré-dépot"
+                />
               </div>
               <Button
                 className="col-span-2"
@@ -339,7 +350,6 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
 }
 
 function SellerInformationForm() {
-  const { control } = useFormContext()
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
@@ -442,7 +452,7 @@ function ArticleForm(props: ArticleFormProps) {
   const { fields, append, remove } = useFieldArray<DepotFormType>({
     name: 'articles',
   })
-  const { trigger, getFieldState, control } = useFormContext()
+  const { trigger, getFieldState } = useFormContext()
   const [contributionAmount, setContributionAmount] = useState<number>(2)
 
   const addArticle = useCallback(async () => {
@@ -457,7 +467,7 @@ function ArticleForm(props: ArticleFormProps) {
       price: 0,
       discipline: '',
       brand: '',
-      type: TypeEnum.Skis,
+      type: '',
       size: '',
       color: '',
       model: '',
@@ -482,7 +492,7 @@ function ArticleForm(props: ArticleFormProps) {
         <table className="w-full table-fixed">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[100px]">
                 Code
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
@@ -533,7 +543,7 @@ function ArticleForm(props: ArticleFormProps) {
         </div>
         <div className="flex flex-row gap-5 items-baseline">
           <div>Nombre d'articles : {fields.length}</div>
-          <div>Montant de la cotisation : {contributionAmount}€</div>
+          <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>
             <Controller
               name={`contributionStatus`}
@@ -580,6 +590,9 @@ type ArticleLineFormProps = {
 
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { field, index, onRemove } = props
+  const colorOptions = useMemo(() => {
+    return colors.map((color) => <option value={color}></option>)
+  }, [colors])
 
   return (
     <tr className="border-b border-gray-100">
@@ -605,65 +618,36 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.discipline`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field: controllerField }) => (
+            <Combobox
+              items={disciplineItems}
+              onSelect={controllerField.onChange}
+              value={controllerField.value}
+            />
           )}
         />
       </td>
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.type`}
-          render={({ field, fieldState }) => (
-            <Field orientation="responsive" data-invalid={fieldState.invalid}>
-              <Select
-                name={field.name}
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger
-                  className="w-full"
-                  aria-invalid={fieldState.invalid}
-                >
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="Chaussures">Chaussures</SelectItem>
-                    <SelectItem value="Skis">Skis</SelectItem>
-                    <SelectItem value="Bâtons">Bâtons</SelectItem>
-                    <SelectItem value="Snowboard">Snowboard</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
+          render={({ field }) => (
+            <Combobox
+              items={categoriesItems}
+              onSelect={field.onChange}
+              value={field.value}
+            />
           )}
         />
       </td>
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.brand`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field }) => (
+            <Combobox
+              items={brandsItems}
+              onSelect={field.onChange}
+              value={field.value}
+            />
           )}
         />
       </td>
@@ -694,9 +678,14 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                 <InputGroup>
                   <InputGroupInput
                     {...controllerField}
+                    list={`articles-${index}-color-list`}
+                    id={`articles-${index}-color`}
                     aria-invalid={fieldState.invalid}
                     type="text"
                   />
+                  <datalist id={`articles-${index}-color-list`}>
+                    {colorOptions}
+                  </datalist>
                 </InputGroup>
               </FieldContent>
             </Field>
