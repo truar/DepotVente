@@ -248,8 +248,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
   const [countArticle, setCountArticle] = useState(1)
 
   const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
-    console.log(data)
-    // await createDepotMutation.mutate(data)
+    await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)
   }
@@ -340,12 +339,15 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           />
 
           <div className="flex justify-end gap-4">
+            <Button type="button" onClick={generateFakeVente} variant="ghost">
+              Générer une fausse vente
+            </Button>
             <Button
               type="button"
-              onClick={generateFakeVente}
+              onClick={() => console.log('printing...')}
               variant="secondary"
             >
-              Générer une fausse vente
+              Imprimer
             </Button>
             <Button type="button" onClick={() => reset()} variant="destructive">
               Annuler
@@ -462,8 +464,8 @@ function ArticleForm(props: ArticleFormProps) {
   const { trigger, getFieldState, setValue, watch } = useFormContext()
 
   const addArticle = useCallback(async () => {
-    await trigger()
-    const fieldState = getFieldState('articles')
+    await trigger(`articles.${fields.length - 1}`)
+    const fieldState = getFieldState(`articles.${fields.length - 1}`)
     if (fieldState.invalid) return
     const year = new Date().getFullYear()
     const articleIndex = generateArticleIndex(articleCount)
@@ -576,7 +578,7 @@ function ArticleForm(props: ArticleFormProps) {
                     <SelectContent>
                       <SelectGroup>
                         <SelectItem value="A_PAYER">A payer</SelectItem>
-                        <SelectItem value="PAYEE">Payee</SelectItem>
+                        <SelectItem value="PAYEE">Payée</SelectItem>
                         <SelectItem value="PRO">Pro</SelectItem>
                         <SelectItem value="GRATUIT">Gratuit</SelectItem>
                       </SelectGroup>
