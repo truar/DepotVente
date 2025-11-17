@@ -31,6 +31,7 @@ export const DepotSchema = z.object({
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
   contributionStatus: z.string().nonempty({ message: 'Le statut est requis' }),
+  contributionAmount: z.coerce.number<number>(),
   articles: z
     .array(ArticleSchema)
     .nonempty({ message: 'Au moins un article est requis' }),

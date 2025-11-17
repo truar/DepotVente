@@ -65,6 +65,7 @@ import { disciplineItems, disciplines } from '@/types/disciplines.ts'
 import { categories, categoriesItems } from '@/types/categories.ts'
 import { brands, brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
+import { cities, citiesItems } from '@/types/cities.ts'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -146,10 +147,11 @@ type ComboboxProps = {
   onSelect: (value: string) => void
   placeholder?: string
   value: string | null
+  invalid?: boolean
 }
 
 function Combobox(props: ComboboxProps) {
-  const { items, onSelect, value, placeholder } = props
+  const { items, onSelect, value, placeholder, invalid } = props
   const [open, setOpen] = useState(false)
 
   const commandItems = useMemo(() => {
@@ -180,6 +182,7 @@ function Combobox(props: ComboboxProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          aria-invalid={invalid}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -216,6 +219,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       phoneNumber: '',
       contributionStatus: '',
       city: '',
+      contributionAmount: 2,
       articles: [
         {
           articleCode: generateArticleCode(
@@ -244,7 +248,8 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
   const [countArticle, setCountArticle] = useState(1)
 
   const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
-    await createDepotMutation.mutate(data)
+    console.log(data)
+    // await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)
   }
@@ -255,7 +260,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue('lastName', faker.person.lastName())
     setValue('firstName', faker.person.firstName())
     setValue('phoneNumber', faker.phone.number({ style: 'national' }))
-    setValue('city', faker.location.city())
+    setValue('city', faker.helpers.arrayElement(cities))
     setValue('contributionStatus', 'PAYEE')
     const nbArticles = 11
     setValue(
@@ -293,8 +298,12 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} onKeyDown={checkKeyDown}>
-        <div className="flex flex-col gap-5 mb-3">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={checkKeyDown}
+        className="flex flex-col gap-4"
+      >
+        <div className="flex flex-col gap-5">
           <h2 className="text-3xl font-bold">
             Enregistrer un nouveau dépôt vendeur
           </h2>
@@ -419,18 +428,16 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name={`city`}
-            render={({ field: controllerField, fieldState }) => (
+            render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
                   <Label htmlFor="city">Ville</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="city"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
+                  <Combobox
+                    invalid={fieldState.invalid}
+                    items={citiesItems}
+                    onSelect={field.onChange}
+                    value={field.value}
+                  />
                 </FieldContent>
               </Field>
             )}
@@ -452,11 +459,9 @@ function ArticleForm(props: ArticleFormProps) {
   const { fields, append, remove } = useFieldArray<DepotFormType>({
     name: 'articles',
   })
-  const { trigger, getFieldState } = useFormContext()
-  const [contributionAmount, setContributionAmount] = useState<number>(2)
+  const { trigger, getFieldState, setValue, watch } = useFormContext()
 
   const addArticle = useCallback(async () => {
-    if (!depotIndex) return
     await trigger()
     const fieldState = getFieldState('articles')
     if (fieldState.invalid) return
@@ -480,8 +485,13 @@ function ArticleForm(props: ArticleFormProps) {
     onArticleAdd()
   }, [depotIndex, articleCount])
 
+  const contributionAmount = watch('contributionAmount')
+
   useEffect(() => {
-    setContributionAmount((Math.floor((fields.length - 1) / 10) + 1) * 2)
+    setValue(
+      'contributionAmount',
+      (Math.floor((fields.length - 1) / 10) + 1) * 2,
+    )
   }, [fields.length])
 
   return (
@@ -618,11 +628,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.discipline`}
-          render={({ field: controllerField }) => (
+          render={({ field, fieldState }) => (
             <Combobox
+              invalid={fieldState.invalid}
               items={disciplineItems}
-              onSelect={controllerField.onChange}
-              value={controllerField.value}
+              onSelect={field.onChange}
+              value={field.value}
             />
           )}
         />
@@ -630,8 +641,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.type`}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <Combobox
+              invalid={fieldState.invalid}
               items={categoriesItems}
               onSelect={field.onChange}
               value={field.value}
@@ -642,8 +654,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <Controller
           name={`articles.${index}.brand`}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <Combobox
+              invalid={fieldState.invalid}
               items={brandsItems}
               onSelect={field.onChange}
               value={field.value}
@@ -791,5 +804,9 @@ function ErrorMessages() {
     return null
   })
   if (errorsDisplayed.length === 0) return null
-  return <ul className="mb-6 pl-5 text-red-600 list-disc">{errorsDisplayed}</ul>
+  return (
+    <ul className="pl-3 text-red-600">
+      Merci de compléter les champs obligatoires
+    </ul>
+  )
 }
