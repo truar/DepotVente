@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { BaggageClaim, Boxes, ShoppingCart } from 'lucide-react'
+import { BaggageClaim, Package, ShoppingCart } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import type { ReactNode } from 'react'
@@ -40,7 +40,7 @@ export function RouteComponent() {
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <ClickableCard
             onClick={() => navigate({ to: '/deposits' })}
-            icon={<Boxes className="w-8 h-8 text-green-600" />}
+            icon={<Package className="w-8 h-8 text-green-600" />}
             title="Dépôt"
             description="Gérer les dépots"
           />

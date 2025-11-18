@@ -8,10 +8,10 @@ import {
   ChevronLeft,
   FileBox,
   FileCog,
-  Package,
   ReceiptEuro,
   SearchCheck,
   SquarePen,
+  Tag,
 } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
@@ -59,7 +59,7 @@ export function RouteComponent() {
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             <ClickableCard
               onClick={() => navigate({ to: '/deposits/add' })}
-              icon={<Package className="w-8 h-8 text-green-600" />}
+              icon={<Tag className="w-8 h-8 text-green-600" />}
               title="Dépôt"
               description="Enregistrer des articles"
             />
