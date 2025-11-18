@@ -1,6 +1,5 @@
 import {
   Controller,
-  type FieldArrayWithId,
   FormProvider,
   type SubmitHandler,
   useFieldArray,
@@ -19,6 +18,7 @@ import {
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -150,7 +150,7 @@ type ComboboxProps = {
   invalid?: boolean
 }
 
-function Combobox(props: ComboboxProps) {
+const Combobox = memo(function Combobox(props: ComboboxProps) {
   const { items, onSelect, value, placeholder, invalid } = props
   const [open, setOpen] = useState(false)
 
@@ -205,7 +205,7 @@ function Combobox(props: ComboboxProps) {
       </PopoverContent>
     </Popover>
   )
-}
+})
 
 function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
@@ -464,8 +464,9 @@ function ArticleForm(props: ArticleFormProps) {
   const { trigger, getFieldState, setValue, watch } = useFormContext()
 
   const addArticle = useCallback(async () => {
-    await trigger(`articles.${fields.length - 1}`)
-    const fieldState = getFieldState(`articles.${fields.length - 1}`)
+    const lastArticleFieldName = `articles.${fields.length - 1}`
+    await trigger(lastArticleFieldName)
+    const fieldState = getFieldState(lastArticleFieldName)
     if (fieldState.invalid) return
     const year = new Date().getFullYear()
     const articleIndex = generateArticleIndex(articleCount)
@@ -535,12 +536,7 @@ function ArticleForm(props: ArticleFormProps) {
           </thead>
           <tbody>
             {fields.map((field, index) => (
-              <ArticleLineForm
-                field={field}
-                key={field.id}
-                index={index}
-                onRemove={remove}
-              />
+              <ArticleLineForm key={field.id} index={index} onRemove={remove} />
             ))}
           </tbody>
         </table>
@@ -595,15 +591,14 @@ function ArticleForm(props: ArticleFormProps) {
 }
 
 type ArticleLineFormProps = {
-  field: FieldArrayWithId<DepotFormType, 'articles'>
   index: number
   onRemove: (index: number) => void
 }
 
 function ArticleLineForm(props: ArticleLineFormProps) {
-  const { field, index, onRemove } = props
+  const { index, onRemove } = props
   const colorOptions = useMemo(() => {
-    return colors.map((color) => <option value={color}></option>)
+    return colors.map((color) => <option key={color} value={color}></option>)
   }, [colors])
 
   return (
@@ -748,7 +743,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center gap-2">
-          <PrintArticleButton index={index} field={field} />
+          <PrintArticleButton index={index} />
           <button
             type="button"
             onClick={() => onRemove(index)}
@@ -764,31 +759,30 @@ function ArticleLineForm(props: ArticleLineFormProps) {
 
 type PrintArticleButtonProps = {
   index: number
-  field: FieldArrayWithId<DepotFormType, 'articles'>
 }
 
 function PrintArticleButton(props: PrintArticleButtonProps) {
-  const { field } = props
+  const { index } = props
   const dymo = useDymo()
+  const { getValues } = useFormContext()
 
-  const printDymo = useCallback(
-    (field: FieldArrayWithId<DepotFormType, 'articles'>) => {
-      dymo.print({
-        color: field.color,
-        brand: field.brand,
-        size: field.size,
-        category: field.type,
-        code: field.articleCode,
-        price: `${field.price}`,
-        shortCode: field.shortArticleCode,
-        model: field.model,
-      })
-    },
-    [dymo],
-  )
+  const printDymo = useCallback(() => {
+    const field = getValues(`articles.${index}`)
+    console.log('dymo', field)
+    dymo.print({
+      color: field.color,
+      brand: field.brand,
+      size: field.size,
+      category: field.type,
+      code: field.articleCode,
+      price: `${field.price}`,
+      shortCode: field.shortArticleCode,
+      model: field.model,
+    })
+  }, [dymo, getValues, index])
 
   return (
-    <Button variant="ghost" onClick={() => printDymo(field)}>
+    <Button variant="ghost" onClick={printDymo}>
       <Printer className="w-4 h-4" />
     </Button>
   )
