@@ -45,7 +45,9 @@ export function RouteComponent() {
             description="Gérer les dépots"
           />
           <ClickableCard
-            onClick={() => {}}
+            onClick={() => {
+              navigate({ to: '/sales' })
+            }}
             icon={<ShoppingCart className="w-8 h-8 text-green-600" />}
             title="Ventes"
             description="Gérer les ventes"

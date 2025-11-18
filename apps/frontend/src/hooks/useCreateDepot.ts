@@ -4,7 +4,10 @@ import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useDepotDb } from '@/hooks/useDepotDb.ts'
 import { useContactDb } from './useContactDb.ts'
 import { useArticleDb } from '@/hooks/useArticleDb.ts'
-import type { DepotFormType } from '@/types/depotForm.ts'
+import {
+  ContributionStatusEnum,
+  type DepotFormType,
+} from '@/types/depotForm.ts'
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
@@ -38,7 +41,7 @@ export function useCreateDepot() {
         const depotId = await depotDb.upsert({
           id: v4(),
           sellerId: contactId,
-          contributionStatus: data.contributionStatus,
+          contributionStatus: data.contributionStatus as ContributionStatusEnum,
           depositIndex: depotIndex,
           incrementStart: workstation.incrementStart,
           dropWorkstationId: workstation.incrementStart,

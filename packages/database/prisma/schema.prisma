@@ -61,17 +61,17 @@ model Contact {
 
 // Deposit
 model Deposit {
-  id                   String             @id @default(uuid()) @db.Uuid
-  sellerId             String             @map("seller_id") @db.Uuid
-  contributionStatus   ContributionStatus @default(A_PAYER) @map("contribution_status")
-  depositIndex         Int                @map("depot_index")
-  incrementStart       Int                @map("increment_start")
-  dropWorkstationId    Int                @map("deposit_workstation_id")
+  id                 String             @id @default(uuid()) @db.Uuid
+  sellerId           String             @map("seller_id") @db.Uuid
+  contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
+  depositIndex       Int                @map("depot_index")
+  incrementStart     Int                @map("increment_start")
+  dropWorkstationId  Int                @map("deposit_workstation_id")
 
-  collectWorkstationId Int?               @map("collect_workstation_id")
-  collectedAt          DateTime?          @map("collected_at")
-  paymentAmount        Decimal?           @map("payment_amount") @db.Decimal(6,2)
-  chequeNumber         String?            @map("cheque_number")
+  collectWorkstationId Int?      @map("collect_workstation_id")
+  collectedAt          DateTime? @map("collected_at")
+  paymentAmount        Decimal?  @map("payment_amount") @db.Decimal(6, 2)
+  chequeNumber         String?   @map("cheque_number")
   signature            String?
 
   // Relations
@@ -100,20 +100,17 @@ model Sale {
   id      String @id @default(uuid()) @db.Uuid
   buyerId String @map("buyer_id") @db.Uuid
 
+  saleCode String @map("sale_code")
+
   // Montants des différents moyens de paiement
   cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
   cashAmount  Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
   checkAmount Decimal @default(0) @map("check_amount") @db.Decimal(10, 2)
 
-  // Montant total de la vente (somme des articles vendus)
-  totalAmount Decimal @default(0) @map("total_amount") @db.Decimal(10, 2)
-  postalCode  String? @map("postal_code") // Code postal du client
-
   // Relations
   buyer    Contact   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   articles Article[]
 
-  saleAt    DateTime  @default(now()) @map("sale_at")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")

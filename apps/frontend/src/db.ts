@@ -7,6 +7,19 @@ export type Workstation = {
   name: string
 }
 
+export type Sale = {
+  id: string
+  buyerId: string
+  saleCode: string
+  incrementStart: number
+  cardAmount: number | null
+  cashAmount: number | null
+  checkAmount: number | null
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
 export type Deposit = {
   id: string
   contributionStatus: ContributionStatusEnum
@@ -77,6 +90,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
     Article,
     'id' // primary key "id" (for the typings only)
   >
+  sales: EntityTable<Sale, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
 }
 
@@ -85,6 +99,7 @@ db.version(1).stores({
   contacts: '++id',
   deposits: '++id, incrementStart',
   articles: '++id, depotId, code',
+  sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
 })
 

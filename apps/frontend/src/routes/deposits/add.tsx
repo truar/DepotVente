@@ -6,19 +6,10 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import {
-  Check,
-  ChevronLeft,
-  ChevronsUpDown,
-  Euro,
-  Plus,
-  Printer,
-  Trash2,
-} from 'lucide-react'
+import { Euro, Plus, Printer, Trash2 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
-  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -46,26 +37,14 @@ import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Field, FieldContent } from '@/components/ui/field'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
 import { disciplineItems, disciplines } from '@/types/disciplines.ts'
 import { categories, categoriesItems } from '@/types/categories.ts'
 import { brands, brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
 import { cities, citiesItems } from '@/types/cities.ts'
+import { Combobox } from '@/components/Combobox'
+import { Page } from '@/components/Page.tsx'
+import { generateArticleCode, generateArticleIndex } from '@/utils'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -78,34 +57,12 @@ export const Route = createFileRoute('/deposits/add')({
   },
   component: () => (
     <PublicLayout>
-      <DepositFormPage />
+      <RouteComponent />
     </PublicLayout>
   ),
 })
 
-function generateArticleIndex(articleIndex: number) {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  let result = ''
-  let index = articleIndex
-
-  while (index >= 0) {
-    result = alphabet[index % 26] + result
-    index = Math.floor(index / 26) - 1
-  }
-
-  return result
-}
-
-function generateArticleCode(
-  year: number,
-  depotIndex: number,
-  articleIndex: string,
-) {
-  // Combine all parts into the final code
-  return `${year} ${depotIndex}${articleIndex}`
-}
-
-export function DepositFormPage() {
+export function RouteComponent() {
   const depotDb = useDepotDb()
   const [workstation] = useWorkstation()
   if (!workstation) return null
@@ -114,13 +71,12 @@ export function DepositFormPage() {
   const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
-    <main className="flex-1 p-6">
-      <Button variant="link" className="cursor-pointer">
-        <ChevronLeft />
-        <Link to={'..'}>Retour au menu</Link>
-      </Button>
+    <Page
+      navigation={<Link to={'..'}>Retour au menu</Link>}
+      title="Faire un dépôt"
+    >
       <DepositForm depotIndex={depotCurrentIndex} />
-    </main>
+    </Page>
   )
 }
 
@@ -141,71 +97,6 @@ const predeposits = [
     keywords: ['El', 'tomato', '003'],
   },
 ]
-
-type ComboboxProps = {
-  items: { label: string; value: string; keywords?: string[] }[]
-  onSelect: (value: string) => void
-  placeholder?: string
-  value: string | null
-  invalid?: boolean
-}
-
-const Combobox = memo(function Combobox(props: ComboboxProps) {
-  const { items, onSelect, value, placeholder, invalid } = props
-  const [open, setOpen] = useState(false)
-
-  const commandItems = useMemo(() => {
-    return items.map((item) => {
-      return (
-        <CommandItem
-          keywords={item.keywords}
-          key={item.value}
-          value={item.value}
-          onSelect={(currentValue) => {
-            onSelect(currentValue === value ? '' : currentValue)
-            setOpen(false)
-          }}
-        >
-          {item.label}
-          <Check
-            className={cn(
-              'ml-auto',
-              value === item.value ? 'opacity-100' : 'opacity-0',
-            )}
-          />
-        </CommandItem>
-      )
-    })
-  }, [items])
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-invalid={invalid}
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {value
-            ? items.find((item) => item.value === value)?.label
-            : placeholder}
-          <ChevronsUpDown className="opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0">
-        <Command>
-          <CommandInput placeholder={placeholder} />
-          <CommandList>
-            <CommandEmpty>Aucun prédépot</CommandEmpty>
-            <CommandGroup>{commandItems}</CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-})
 
 function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
@@ -302,30 +193,23 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
         onKeyDown={checkKeyDown}
         className="flex flex-col gap-4"
       >
-        <div className="flex flex-col gap-5">
-          <h2 className="text-3xl font-bold">
-            Enregistrer un nouveau dépôt vendeur
-          </h2>
-          <div className="flex flex-col w-[500px]">
-            <div className="grid grid-cols-6 gap-2">
-              <div className="col-span-4">
-                <Combobox
-                  items={predeposits}
-                  value={predeposit}
-                  onSelect={setPredeposit}
-                  placeholder="Rechercher une fiche de pré-dépot"
-                />
-              </div>
-              <Button
-                className="col-span-2"
-                type="button"
-                variant="secondary"
-                onClick={loadPredeposit}
-              >
-                Rechercher
-              </Button>
-            </div>
+        <div className="grid grid-cols-6 gap-2 w-[500px]">
+          <div className="col-span-4">
+            <Combobox
+              items={predeposits}
+              value={predeposit}
+              onSelect={setPredeposit}
+              placeholder="Rechercher une fiche de pré-dépot"
+            />
           </div>
+          <Button
+            className="col-span-2"
+            type="button"
+            variant="secondary"
+            onClick={loadPredeposit}
+          >
+            Rechercher
+          </Button>
         </div>
 
         <ErrorMessages />
