@@ -486,7 +486,7 @@ function ArticleForm(props: ArticleFormProps) {
       shortArticleCode: `${depotIndex} ${articleIndex}`,
     })
     onArticleAdd()
-  }, [depotIndex, articleCount])
+  }, [fields, depotIndex, articleCount])
 
   const contributionAmount = watch('contributionAmount')
 
