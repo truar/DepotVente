@@ -17,12 +17,7 @@ import {
 } from 'react-hook-form'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { useContactDb } from '@/hooks/useContactDb.ts'
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldGroup,
-} from '@/components/ui/field.tsx'
+import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
   InputGroup,
@@ -44,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Euro, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -325,6 +321,8 @@ function SaleArticlesForm() {
       })
     }
 
+    toast.success('Article ajouté', {})
+
     setArticleCode('')
   }, [articleCode, articlesDb])
 
@@ -405,7 +403,7 @@ function ScannedArticles() {
             <TableCell>{article.color}</TableCell>
             <TableCell>{article.size}</TableCell>
             <TableCell className="text-right">{article.price}€</TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-center">
               <button
                 type="button"
                 onClick={() => onRemove(index)}
@@ -424,6 +422,7 @@ function ScannedArticles() {
           <TableCell>{articles.length}</TableCell>
           <TableCell>Total</TableCell>
           <TableCell className="text-right">{total}€</TableCell>
+          <TableCell></TableCell>
         </TableRow>
       </TableFooter>
     </Table>
@@ -431,6 +430,16 @@ function ScannedArticles() {
 }
 
 function PaymentForm() {
+  const { watch } = useFormContext<SaleFormType>()
+  const [cashReceived, setCashReceived] = useState<string>('')
+  const cashAmount = watch('cashAmount')
+  let cashReturned = Math.max(
+    0,
+    parseInt(cashReceived, 10) - parseInt(`${cashAmount}`, 10),
+  )
+  if (Number.isNaN(cashReturned)) {
+    cashReturned = 0
+  }
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Règlements</h3>
@@ -438,7 +447,28 @@ function PaymentForm() {
         name="root.totalPrice"
         render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
       />
-      <div className="grid grid-cols-8 gap-6">
+      <div className="grid grid-cols-8 gap-6 align-baseline">
+        <Controller
+          name="checkAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="checkAmount">Montant chèque</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="checkAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
         <Controller
           name="cardAmount"
           render={({ field, fieldState }) => (
@@ -481,27 +511,23 @@ function PaymentForm() {
             </Field>
           )}
         />
-        <Controller
-          name="checkAmount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <Label htmlFor="checkAmount">Montant chèque</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    {...field}
-                    id="checkAmount"
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <Euro />
-                  </InputGroupAddon>
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
+        <Field>
+          <FieldContent>
+            <Label htmlFor="cashReceived">Espèces reçues</Label>
+            <InputGroup>
+              <InputGroupInput
+                id="cashReceived"
+                type="text"
+                value={cashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
+              />
+              <InputGroupAddon align="inline-end">
+                <Euro />
+              </InputGroupAddon>
+            </InputGroup>
+          </FieldContent>
+        </Field>
+        <div>Monnaie rendue: {cashReturned}€</div>
       </div>
     </div>
   )
