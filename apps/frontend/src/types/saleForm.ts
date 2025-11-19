@@ -19,9 +19,9 @@ export const SaleFormSchema = z.object({
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
-  cardAmount: z.coerce.number<number>().optional(),
-  cashAmount: z.coerce.number<number>().optional(),
-  checkAmount: z.coerce.number<number>().optional(),
+  cardAmount: z.coerce.number<number>().nullable(),
+  cashAmount: z.coerce.number<number>().nullable(),
+  checkAmount: z.coerce.number<number>().nullable(),
   articles: z.array(ArticleFormSchema).optional(),
 })
 

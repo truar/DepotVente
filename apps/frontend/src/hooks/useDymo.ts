@@ -735,7 +735,6 @@ export function useDymo() {
   const print = useCallback((param: ArticlePrintParam) => {
     const printers = getPrinters()
     const replacedXml = replacePlaceholders(droppedArticleLabelXml, param)
-    console.log(replacedXml)
 
     const label = window.dymo.label.framework.openLabelXml(replacedXml)
 

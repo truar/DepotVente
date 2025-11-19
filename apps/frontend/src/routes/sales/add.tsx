@@ -17,9 +17,18 @@ import {
 } from 'react-hook-form'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { useContactDb } from '@/hooks/useContactDb.ts'
-import { Field, FieldContent } from '@/components/ui/field.tsx'
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+} from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
-import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group.tsx'
 import { citiesItems } from '@/types/cities.ts'
 import { SaleFormSchema, type SaleFormType } from '@/types/saleForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Euro, Trash2 } from 'lucide-react'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -68,6 +78,7 @@ function RouteComponent() {
 type SalesFormProps = {
   saleIndex: number
 }
+
 function SalesForm(props: SalesFormProps) {
   const { saleIndex } = props
   const methods = useForm<SaleFormType>({
@@ -75,18 +86,33 @@ function SalesForm(props: SalesFormProps) {
     mode: 'onSubmit',
     defaultValues: {
       saleIndex,
+      contactId: null,
       lastName: '',
       firstName: '',
-      city: '',
       phoneNumber: '',
+      city: '',
       articles: [],
+      cashAmount: 0,
+      cardAmount: 0,
+      checkAmount: 0,
     },
   })
-  const { handleSubmit, reset } = methods
+  const { handleSubmit, reset, setError } = methods
 
   const onSubmit: SubmitHandler<SaleFormType> = (data) => {
-    console.log(data)
-    console.log('here')
+    const articles = data.articles
+    const totalPrice = articles?.reduce((acc, cur) => acc + cur.price, 0) ?? 0
+    const cashAmount = data.cashAmount ?? 0
+    const cardAmount = data.cardAmount ?? 0
+    const checkAmount = data.checkAmount ?? 0
+
+    if (totalPrice !== cashAmount + cardAmount + checkAmount) {
+      setError('root.totalPrice', {
+        type: 'value',
+        message: `Merci de vérifier que le montant total est couvert par les 3 modes de règlements.`,
+      })
+      return
+    }
   }
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
@@ -107,6 +133,7 @@ function SalesForm(props: SalesFormProps) {
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <BuyerInformationForm />
           <SaleArticlesForm />
+          <PaymentForm />
           <div className="flex justify-end gap-4">
             <Button
               type="button"
@@ -118,7 +145,7 @@ function SalesForm(props: SalesFormProps) {
             <Button type="button" onClick={() => reset()} variant="destructive">
               Annuler
             </Button>
-            <Button type="submit">Valider et enregistrer le dépôt</Button>
+            <Button type="submit">Valider et enregistrer la vente</Button>
           </div>
         </div>
       </form>
@@ -176,7 +203,7 @@ function BuyerInformationForm() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Acheteur</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
             name="lastName"
@@ -287,7 +314,7 @@ function SaleArticlesForm() {
     if (!articles?.some(({ id }) => id === article.id)) {
       append({
         id: article.id,
-        articleCode: article.code,
+        articleCode: article.depositIndex + ' ' + article.articleIndex,
         discipline: article.discipline,
         category: article.category,
         brand: article.brand,
@@ -336,6 +363,17 @@ function SaleArticlesForm() {
 
 function ScannedArticles() {
   const { watch } = useFormContext<SaleFormType>()
+  const { remove } = useFieldArray<SaleFormType>({
+    name: 'articles',
+  })
+
+  const onRemove = useCallback(
+    (index: number) => {
+      remove(index)
+    },
+    [remove],
+  )
+
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const total = articles.reduce((acc, cur) => {
@@ -357,7 +395,7 @@ function ScannedArticles() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {articles.map((article) => (
+        {articles.map((article, index) => (
           <TableRow key={article.id}>
             <TableCell className="font-medium">{article.articleCode}</TableCell>
             <TableCell>{article.discipline}</TableCell>
@@ -366,13 +404,25 @@ function ScannedArticles() {
             <TableCell>{article.model}</TableCell>
             <TableCell>{article.color}</TableCell>
             <TableCell>{article.size}</TableCell>
-            <TableCell className="text-right">{article.price}</TableCell>
+            <TableCell className="text-right">{article.price}€</TableCell>
+            <TableCell className="text-right">
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
       <TableFooter>
-        <TableRow>
-          <TableCell colSpan={7}>Total</TableCell>
+        <TableRow className="font-bold">
+          <TableCell colSpan={4}></TableCell>
+          <TableCell>Nombre d'articles</TableCell>
+          <TableCell>{articles.length}</TableCell>
+          <TableCell>Total</TableCell>
           <TableCell className="text-right">{total}€</TableCell>
         </TableRow>
       </TableFooter>
@@ -380,10 +430,89 @@ function ScannedArticles() {
   )
 }
 
+function PaymentForm() {
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-2xl font-bold">Règlements</h3>
+      <Controller
+        name="root.totalPrice"
+        render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
+      />
+      <div className="grid grid-cols-8 gap-6">
+        <Controller
+          name="cardAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="cardAmount">Montant CB</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="cardAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="cashAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="cashAmount">Montant espèce</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="cashAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="checkAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="checkAmount">Montant chèque</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="checkAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ErrorMessages() {
   const {
     formState: { errors },
   } = useFormContext()
+
+  console.log(errors)
 
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
     if (typeof errors[key]?.message === 'string') {

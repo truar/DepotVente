@@ -139,6 +139,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
   const [countArticle, setCountArticle] = useState(1)
 
   const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
+    console.log('submitting')
     await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)
@@ -652,7 +653,6 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
 
   const printDymo = useCallback(() => {
     const field = getValues(`articles.${index}`)
-    console.log('dymo', field)
     dymo.print({
       color: field.color,
       brand: field.brand,
@@ -666,7 +666,7 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
   }, [dymo, getValues, index])
 
   return (
-    <Button variant="ghost" onClick={printDymo}>
+    <Button type="button" variant="ghost" onClick={printDymo}>
       <Printer className="w-4 h-4" />
     </Button>
   )
