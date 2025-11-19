@@ -29,7 +29,7 @@ export function useCreateDepot() {
           lastName: data.lastName,
           firstName: data.firstName,
           phoneNumber: data.phoneNumber,
-          city: null,
+          city: data.city,
           postalCode: null,
           createdAt: currentDate,
           updatedAt: currentDate,
