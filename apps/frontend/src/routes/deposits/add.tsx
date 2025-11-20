@@ -46,6 +46,8 @@ import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex } from '@/utils'
 import { toast } from 'sonner'
+import { pdf, PDFViewer } from '@react-pdf/renderer'
+import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -228,13 +230,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
             <Button type="button" onClick={generateFakeVente} variant="ghost">
               Générer une fausse vente
             </Button>
-            <Button
-              type="button"
-              onClick={() => console.log('printing...')}
-              variant="secondary"
-            >
-              Imprimer
-            </Button>
+            <SummaryPrintButton />
             <Button type="button" onClick={() => reset()} variant="destructive">
               Annuler
             </Button>
@@ -242,6 +238,44 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           </div>
         </div>
       </form>
+      <PDFViewer width={1000} height={800}>
+        <DepositPdf
+          data={{
+            deposit: {
+              depositIndex: 1001,
+              year: 2025,
+            },
+            contact: {
+              lastName: 'Ruaro',
+              firstName: 'Thibault',
+              city: 'Chainaz',
+              phoneNumber: '0102020304',
+            },
+            articles: [
+              {
+                index: 'A',
+                category: 'Chaussures',
+                brand: 'Fischer',
+                model: 'MY hybrid',
+                discipline: 'Alpin',
+                size: '150',
+                price: 180,
+                color: 'Noir / Blanc',
+              },
+              {
+                index: 'B',
+                category: 'Chaussures',
+                brand: 'Fischer',
+                model: 'MY hybrid',
+                discipline: 'Alpin',
+                size: '150',
+                price: 180,
+                color: 'Noir / Blanc',
+              },
+            ],
+          }}
+        />
+      </PDFViewer>
     </FormProvider>
   )
 }
@@ -669,6 +703,55 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
   return (
     <Button type="button" variant="ghost" onClick={printDymo}>
       <Printer className="w-4 h-4" />
+    </Button>
+  )
+}
+
+function SummaryPrintButton() {
+  const { getValues } = useFormContext<DepotFormType>()
+  const print = async () => {
+    const formData = getValues()
+    const year = new Date().getFullYear()
+    const data: DepositPdfProps['data'] = {
+      deposit: {
+        depositIndex: formData.depotIndex,
+        year,
+      },
+      contact: {
+        lastName: formData.lastName,
+        firstName: formData.firstName,
+        city: formData.city,
+        phoneNumber: formData.phoneNumber,
+      },
+      articles: formData.articles.map((article) => ({
+        index: article.articleIndex,
+        category: article.type,
+        brand: article.brand,
+        model: article.model,
+        discipline: article.discipline,
+        size: article.size,
+        price: article.price,
+        color: article.color,
+      })),
+    }
+    const blob = await pdf(<DepositPdf data={data} />).toBlob()
+    const blobURL = URL.createObjectURL(blob)
+    const iframe = document.createElement('iframe') //load content in an iframe to print later
+    document.body.appendChild(iframe)
+
+    iframe.style.display = 'none'
+    iframe.src = blobURL
+    iframe.onload = function () {
+      setTimeout(function () {
+        iframe.focus()
+        iframe.contentWindow.print()
+      }, 1)
+    }
+  }
+
+  return (
+    <Button type="button" onClick={print} variant="secondary">
+      Imprimer
     </Button>
   )
 }
