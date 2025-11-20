@@ -45,6 +45,7 @@ import { cities, citiesItems } from '@/types/cities.ts'
 import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex } from '@/utils'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -142,6 +143,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)
+    toast.success(`Dépôt ${depotIndex} enregistré`)
   }
 
   const generateFakeVente = useCallback(() => {

@@ -15,7 +15,13 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -114,6 +120,7 @@ function SalesForm(props: SalesFormProps) {
 
     await createSaleMutation.mutate(data)
     reset()
+    toast.success(`Vente ${saleIndex} enregistrée`)
   }
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
@@ -133,7 +140,7 @@ function SalesForm(props: SalesFormProps) {
 
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <BuyerInformationForm />
-          <SaleArticlesForm />
+          <SaleArticlesForm saleIndex={saleIndex} />
           <PaymentForm />
           <div className="flex justify-end gap-4">
             <Button
@@ -155,7 +162,7 @@ function SalesForm(props: SalesFormProps) {
 }
 
 function ContactSearchForm() {
-  const { setValue } = useFormContext()
+  const { setValue, watch } = useFormContext()
   const contactsDb = useContactsDb()
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
@@ -167,7 +174,11 @@ function ContactSearchForm() {
       })),
     [contacts],
   )
-  const [contactId, setContactId] = useState<string | null>(null)
+  const formContactId = watch('contactId')
+  useEffect(() => {
+    setContactId(formContactId)
+  }, [formContactId])
+  const [contactId, setContactId] = useState<string | null>(formContactId)
   const prefillBuyerInformation = useCallback(async () => {
     if (!contactId) return
     const contact = await contactsDb.findById(contactId)
@@ -289,14 +300,16 @@ function BuyerInformationForm() {
     </div>
   )
 }
-
-function SaleArticlesForm() {
+type SaleArticlesFormProps = {
+  saleIndex: number
+}
+function SaleArticlesForm(props: SaleArticlesFormProps) {
+  const { saleIndex } = props
   const { getValues } = useFormContext<SaleFormType>()
   const { append } = useFieldArray<SaleFormType>({
     name: 'articles',
   })
   const articlesDb = useArticlesDb()
-  const saleIndex = getValues('saleIndex')
   const [articleCode, setArticleCode] = useState('')
   const checkKeyDown = useCallback(
     async (e: KeyboardEvent) => {
@@ -335,10 +348,10 @@ function SaleArticlesForm() {
       })
     }
 
-    toast.success('Article ajouté', {})
+    toast.success('Article ajouté')
 
     setArticleCode('')
-  }, [articleCode, articlesDb])
+  }, [articleCode, articlesDb, getValues])
 
   return (
     <div className="flex flex-col gap-3">
