@@ -22,7 +22,9 @@ export const SaleFormSchema = z.object({
   cardAmount: z.coerce.number<number>().nullable(),
   cashAmount: z.coerce.number<number>().nullable(),
   checkAmount: z.coerce.number<number>().nullable(),
-  articles: z.array(ArticleFormSchema).optional(),
+  articles: z
+    .array(ArticleFormSchema)
+    .nonempty({ message: 'Au moins un article est requis' }),
 })
 
 export type SaleFormType = z.infer<typeof SaleFormSchema>

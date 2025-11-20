@@ -1,9 +1,9 @@
 import { db } from '@/db.ts'
 import { v4 } from 'uuid'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import { useDepotDb } from '@/hooks/useDepotDb.ts'
-import { useContactDb } from './useContactDb.ts'
-import { useArticleDb } from '@/hooks/useArticleDb.ts'
+import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
+import { useContactsDb } from './useContactsDb.ts'
+import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import {
   ContributionStatusEnum,
   type DepotFormType,
@@ -11,9 +11,9 @@ import {
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
-  const depotDb = useDepotDb()
-  const contactDb = useContactDb()
-  const articleDb = useArticleDb()
+  const depotDb = useDepotsDb()
+  const contactDb = useContactsDb()
+  const articleDb = useArticlesDb()
   async function mutate(data: DepotFormType) {
     if (workstation === undefined) throw new Error('Workstation is undefined')
     await db.transaction(
@@ -24,7 +24,7 @@ export function useCreateDepot() {
       db.outbox,
       async () => {
         const currentDate = new Date()
-        const contactId = await contactDb.upsert({
+        const contactId = await contactDb.insert({
           id: v4(),
           lastName: data.lastName,
           firstName: data.firstName,
@@ -38,7 +38,7 @@ export function useCreateDepot() {
 
         const depotCount = await depotDb.count()
         const depotIndex = workstation.incrementStart + depotCount + 1
-        const depotId = await depotDb.upsert({
+        const depotId = await depotDb.insert({
           id: v4(),
           sellerId: contactId,
           contributionStatus: data.contributionStatus as ContributionStatusEnum,

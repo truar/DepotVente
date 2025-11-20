@@ -10,7 +10,7 @@ export type Workstation = {
 export type Sale = {
   id: string
   buyerId: string
-  saleCode: string
+  saleIndex: number
   incrementStart: number
   cardAmount: number | null
   cashAmount: number | null

@@ -2,7 +2,7 @@ import { db, type Deposit } from '@/db.ts'
 import { useWorkstation } from './useWorkstation'
 import { syncService } from '@/sync-service.ts'
 
-export function useDepotDb() {
+export function useDepotsDb() {
   const [workstation] = useWorkstation()
 
   function count() {
@@ -12,8 +12,8 @@ export function useDepotDb() {
       .count()
   }
 
-  async function upsert(depot: Deposit) {
-    const depotId = await db.deposits.put(depot)
+  async function insert(depot: Deposit) {
+    const depotId = await db.deposits.add(depot)
     // Add to outbox for syncing
     await syncService.addToOutbox(
       'deposits',
@@ -23,5 +23,5 @@ export function useDepotDb() {
     )
     return depotId
   }
-  return { upsert, count }
+  return { insert, count }
 }

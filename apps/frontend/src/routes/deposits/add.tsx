@@ -17,7 +17,7 @@ import {
 } from 'react'
 import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
-import { useDepotDb } from '@/hooks/useDepotDb.ts'
+import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -63,7 +63,7 @@ export const Route = createFileRoute('/deposits/add')({
 })
 
 export function RouteComponent() {
-  const depotDb = useDepotDb()
+  const depotDb = useDepotsDb()
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
@@ -139,7 +139,6 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
   const [countArticle, setCountArticle] = useState(1)
 
   const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
-    console.log('submitting')
     await createDepotMutation.mutate(data)
     reset()
     setCountArticle(0)

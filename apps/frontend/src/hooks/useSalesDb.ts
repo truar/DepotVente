@@ -1,6 +1,5 @@
-import { db, type Deposit } from '@/db.ts'
+import { db, type Sale } from '@/db.ts'
 import { useWorkstation } from './useWorkstation'
-import { syncService } from '@/sync-service.ts'
 
 export function useSalesDb() {
   const [workstation] = useWorkstation()
@@ -12,5 +11,17 @@ export function useSalesDb() {
       .count()
   }
 
-  return { count }
+  async function insert(sale: Sale) {
+    const saleId = await db.sales.add(sale)
+    // Add to outbox for syncing
+    // await syncService.addToOutbox(
+    //   'deposits',
+    //   'create', // or 'create' based on your logic
+    //   depot.id,
+    //   depot,
+    // )
+    return saleId
+  }
+
+  return { count, insert }
 }

@@ -16,7 +16,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
-import { useContactDb } from '@/hooks/useContactDb.ts'
+import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -28,7 +28,7 @@ import { citiesItems } from '@/types/cities.ts'
 import { SaleFormSchema, type SaleFormType } from '@/types/saleForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/components/ui/input.tsx'
-import { useArticleDb } from '@/hooks/useArticleDb.ts'
+import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import {
   Table,
   TableBody,
@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table'
 import { Euro, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useCreateSale } from '@/hooks/useCreateSale.ts'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -62,7 +63,8 @@ function RouteComponent() {
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const currentSaleCount = useLiveQuery(() => salesDb.count()) ?? 0
+  const currentSaleCount = useLiveQuery(() => salesDb.count())
+  if (!currentSaleCount) return null
   const saleCurrentIndex = workstation.incrementStart + currentSaleCount + 1
   return (
     <Page navigation={<Link to={'..'}>Retour</Link>} title="Faire une vente">
@@ -94,8 +96,8 @@ function SalesForm(props: SalesFormProps) {
     },
   })
   const { handleSubmit, reset, setError } = methods
-
-  const onSubmit: SubmitHandler<SaleFormType> = (data) => {
+  const createSaleMutation = useCreateSale()
+  const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
     const totalPrice = articles?.reduce((acc, cur) => acc + cur.price, 0) ?? 0
     const cashAmount = data.cashAmount ?? 0
@@ -109,6 +111,9 @@ function SalesForm(props: SalesFormProps) {
       })
       return
     }
+
+    await createSaleMutation.mutate(data)
+    reset()
   }
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
@@ -151,7 +156,7 @@ function SalesForm(props: SalesFormProps) {
 
 function ContactSearchForm() {
   const { setValue } = useFormContext()
-  const contactsDb = useContactDb()
+  const contactsDb = useContactsDb()
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
     () =>
@@ -290,7 +295,7 @@ function SaleArticlesForm() {
   const { append } = useFieldArray<SaleFormType>({
     name: 'articles',
   })
-  const articlesDb = useArticleDb()
+  const articlesDb = useArticlesDb()
   const saleIndex = getValues('saleIndex')
   const [articleCode, setArticleCode] = useState('')
   const checkKeyDown = useCallback(
@@ -304,7 +309,16 @@ function SaleArticlesForm() {
 
   const addArticle = useCallback(async () => {
     const article = await articlesDb.findByCode(articleCode)
-    if (!article) return
+    if (!article) {
+      toast.error(`Article ${articleCode} inconnu`)
+      setArticleCode('')
+      return
+    }
+    if (article.saleId) {
+      toast.error(`Article ${articleCode} déja vendu`)
+      setArticleCode('')
+      return
+    }
 
     const articles = getValues('articles')
     if (!articles?.some(({ id }) => id === article.id)) {
