@@ -64,6 +64,7 @@ model Deposit {
   id                 String             @id @default(uuid()) @db.Uuid
   sellerId           String             @map("seller_id") @db.Uuid
   contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
+  contributionAmount Decimal            @default (2) @map("contribution_amount") @db.Decimal(3, 2)
   depositIndex       Int                @map("depot_index")
   incrementStart     Int                @map("increment_start")
   dropWorkstationId  Int                @map("deposit_workstation_id")
