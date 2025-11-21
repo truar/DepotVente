@@ -255,44 +255,6 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           </div>
         </div>
       </form>
-      <PDFViewer width={1000} height={800}>
-        <DepositPdf
-          data={{
-            deposit: {
-              depositIndex: 1001,
-              year: 2025,
-            },
-            contact: {
-              lastName: 'Ruaro',
-              firstName: 'Thibault',
-              city: 'Chainaz',
-              phoneNumber: '0102020304',
-            },
-            articles: [
-              {
-                index: 'A',
-                category: 'Chaussures',
-                brand: 'Fischer',
-                model: 'MY hybrid',
-                discipline: 'Alpin',
-                size: '150',
-                price: 180,
-                color: 'Noir / Blanc',
-              },
-              {
-                index: 'B',
-                category: 'Chaussures',
-                brand: 'Fischer',
-                model: 'MY hybrid',
-                discipline: 'Alpin',
-                size: '150',
-                price: 180,
-                color: 'Noir / Blanc',
-              },
-            ],
-          }}
-        />
-      </PDFViewer>
     </FormProvider>
   )
 }
