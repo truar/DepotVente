@@ -19,3 +19,7 @@ export function generateArticleCode(
   // Combine all parts into the final code
   return `${year} ${depotIndex}${articleIndex}`
 }
+
+export function timeout(delay: number) {
+  return new Promise((res) => setTimeout(res, delay))
+}

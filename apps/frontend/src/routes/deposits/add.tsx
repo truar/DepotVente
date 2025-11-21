@@ -48,6 +48,8 @@ import { generateArticleCode, generateArticleIndex } from '@/utils'
 import { toast } from 'sonner'
 import { pdf, PDFViewer } from '@react-pdf/renderer'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
+import { CustomButton } from '@/components/custom/Button.tsx'
+import { useDebouncedCallback } from 'use-debounce'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -136,7 +138,8 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       ],
     },
   })
-  const { handleSubmit, setValue, reset } = methods
+  const { handleSubmit, setValue, reset, formState } = methods
+  const { isSubmitting } = formState
   const [predeposit, setPredeposit] = useState<string | null>(null)
 
   const [countArticle, setCountArticle] = useState(1)
@@ -227,14 +230,28 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           />
 
           <div className="flex justify-end gap-4">
-            <Button type="button" onClick={generateFakeVente} variant="ghost">
+            <CustomButton
+              type="button"
+              onClick={() => generateFakeVente()}
+              variant="ghost"
+            >
               Générer une fausse vente
-            </Button>
+            </CustomButton>
             <SummaryPrintButton />
-            <Button type="button" onClick={() => reset()} variant="destructive">
+            <CustomButton
+              type="button"
+              onClick={() => reset()}
+              variant="destructive"
+            >
               Annuler
-            </Button>
-            <Button type="submit">Valider et enregistrer le dépôt</Button>
+            </CustomButton>
+            <CustomButton
+              type="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              Valider et enregistrer le dépôt
+            </CustomButton>
           </div>
         </div>
       </form>
@@ -684,9 +701,12 @@ type PrintArticleButtonProps = {
 function PrintArticleButton(props: PrintArticleButtonProps) {
   const { index } = props
   const dymo = useDymo()
-  const { getValues } = useFormContext()
+  const { trigger, getValues, getFieldState } = useFormContext<DepotFormType>()
 
-  const printDymo = useCallback(() => {
+  const printDymo = useCallback(async () => {
+    await trigger(`articles.${index}`)
+    const state = getFieldState(`articles.${index}`)
+    if (state.invalid) return
     const field = getValues(`articles.${index}`)
     dymo.print({
       color: field.color,
@@ -700,16 +720,22 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
     })
   }, [dymo, getValues, index])
 
+  const debouncedPrintDymo = useDebouncedCallback(printDymo, 1000)
+
   return (
-    <Button type="button" variant="ghost" onClick={printDymo}>
+    <CustomButton type="button" variant="ghost" onClick={debouncedPrintDymo}>
       <Printer className="w-4 h-4" />
-    </Button>
+    </CustomButton>
   )
 }
 
 function SummaryPrintButton() {
-  const { getValues } = useFormContext<DepotFormType>()
+  const { getValues, trigger, formState } = useFormContext<DepotFormType>()
   const print = async () => {
+    await trigger()
+    if (!formState.isValid) {
+      return
+    }
     const formData = getValues()
     const year = new Date().getFullYear()
     const data: DepositPdfProps['data'] = {
@@ -750,9 +776,9 @@ function SummaryPrintButton() {
   }
 
   return (
-    <Button type="button" onClick={print} variant="secondary">
+    <CustomButton type="button" onClick={print} variant="secondary">
       Imprimer
-    </Button>
+    </CustomButton>
   )
 }
 

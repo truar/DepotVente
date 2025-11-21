@@ -1,4 +1,5 @@
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer'
+import { FormattedNumber, IntlProvider } from 'react-intl'
 
 // Create styles
 const styles = StyleSheet.create({
@@ -18,7 +19,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   contact: {
-    fontSize: 12,
+    fontSize: 10,
     flexDirection: 'column',
     gap: 5,
   },
@@ -32,6 +33,17 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   name: {
+    fontWeight: 'bold',
+  },
+  articles: {
+    flexDirection: 'column',
+    gap: 5,
+  },
+  articlesHeader: {
+    fontSize: 10,
+    flexDirection: 'row',
+  },
+  articleCount: {
     fontWeight: 'bold',
   },
   table: {
@@ -51,8 +63,13 @@ const styles = StyleSheet.create({
   tableCol: {
     width: '11%',
   },
+  tableColPrice: {
+    textAlign: 'right',
+    width: '9%',
+    paddingRight: 10,
+  },
   tableColDesc: {
-    width: '23%',
+    width: '25%',
   },
   headerCell: {
     fontStyle: 'italic',
@@ -96,92 +113,107 @@ export const DepositPdf = (props: DepositPdfProps) => {
   const { articles = [] } = data
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <View style={styles.title}>
-            <Text>Bourse au skis {data.deposit.year}</Text>
-            <Text>Club Montagnard Rumillien</Text>
+    <IntlProvider locale={'fr'}>
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <View style={styles.header}>
+            <View style={styles.title}>
+              <Text>Bourse au skis {data.deposit.year}</Text>
+              <Text>Club Montagnard Rumillien</Text>
+            </View>
+            <View>
+              <Text>Fiche de dépôt N° {data.deposit.depositIndex}</Text>
+            </View>
           </View>
-          <View>
-            <Text>Fiche de dépôt N° {data.deposit.depositIndex}</Text>
-          </View>
-        </View>
-        <View style={styles.contact}>
-          <View style={styles.contactLine}>
-            <Text style={styles.contactLineHeader}>Nom, Prénom :</Text>
-            <Text style={styles.name}>
-              {data.contact.lastName} {data.contact.firstName}
-            </Text>
-          </View>
-          <View style={styles.contactLine}>
-            <Text style={styles.contactLineHeader}>Adresse :</Text>
-            <Text>{data.contact.city}</Text>
-          </View>
-          <View style={styles.contactLine}>
-            <Text style={styles.contactLineHeader}>Téléphone :</Text>
-            <Text>{data.contact.phoneNumber}</Text>
-          </View>
-        </View>
-
-        <View style={styles.table}>
-          <View style={[styles.tableRow, styles.tableHeader]}>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Identifiant</Text>
+          <View style={styles.contact}>
+            <View style={styles.contactLine}>
+              <Text style={styles.contactLineHeader}>Nom, Prénom :</Text>
+              <Text style={styles.name}>
+                {data.contact.lastName} {data.contact.firstName}
+              </Text>
             </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Discipline</Text>
+            <View style={styles.contactLine}>
+              <Text style={styles.contactLineHeader}>Adresse :</Text>
+              <Text>{data.contact.city}</Text>
             </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Catégorie</Text>
-            </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Marque</Text>
-            </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Couleur</Text>
-            </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Taille</Text>
-            </View>
-            <View style={styles.tableColDesc}>
-              <Text style={styles.headerCell}>Descriptif</Text>
-            </View>
-            <View style={styles.tableCol}>
-              <Text style={styles.headerCell}>Prix</Text>
+            <View style={styles.contactLine}>
+              <Text style={styles.contactLineHeader}>Téléphone :</Text>
+              <Text>{data.contact.phoneNumber}</Text>
             </View>
           </View>
 
-          {articles.map((article, index) => (
-            <View style={styles.tableRow} key={index}>
-              <View style={styles.tableCol}>
-                <Text>{article.index}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.discipline}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.category}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.brand}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.color}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.size}</Text>
-              </View>
-              <View style={styles.tableColDesc}>
-                <Text>{article.model}</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text>{article.price}€</Text>
-              </View>
+          <View style={styles.articles}>
+            <View style={styles.articlesHeader}>
+              <Text>Liste des</Text>
+              <Text style={styles.articleCount}> {articles.length}</Text>
+              <Text> articles déposés</Text>
             </View>
-          ))}
-        </View>
-      </Page>
-    </Document>
+            <View style={styles.table}>
+              <View style={[styles.tableRow, styles.tableHeader]}>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Identifiant</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Discipline</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Catégorie</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Marque</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Couleur</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text style={styles.headerCell}>Taille</Text>
+                </View>
+                <View style={styles.tableColDesc}>
+                  <Text style={styles.headerCell}>Descriptif</Text>
+                </View>
+                <View style={styles.tableColPrice}>
+                  <Text style={styles.headerCell}>Prix</Text>
+                </View>
+              </View>
+
+              {articles.map((article, index) => (
+                <View style={styles.tableRow} key={index}>
+                  <View style={styles.tableCol}>
+                    <Text>{article.index}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{article.discipline}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{article.category}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{article.brand}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{article.color}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{article.size}</Text>
+                  </View>
+                  <View style={styles.tableColDesc}>
+                    <Text>{article.model}</Text>
+                  </View>
+                  <View style={styles.tableColPrice}>
+                    <Text>
+                      <FormattedNumber
+                        value={article.price}
+                        style="currency"
+                        currency="EUR"
+                      />
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </Page>
+      </Document>
+    </IntlProvider>
   )
 }

@@ -7,6 +7,7 @@ import { routeTree } from './routeTree.gen'
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 import { syncService } from '@/sync-service.ts'
+import { IntlProvider } from 'react-intl'
 
 syncService.startSync()
 
@@ -32,9 +33,11 @@ const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>,
+    <IntlProvider locale={'fr'}>
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>
+    </IntlProvider>,
   )
 }
 
