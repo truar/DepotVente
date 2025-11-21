@@ -72,7 +72,8 @@ export function RouteComponent() {
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const currentDepotCount = useLiveQuery(() => depotDb.count()) ?? 0
+  const currentDepotCount = useLiveQuery(() => depotDb.count())
+  if (!currentDepotCount) return null
   const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
