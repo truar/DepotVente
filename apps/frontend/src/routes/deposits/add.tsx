@@ -46,7 +46,7 @@ import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
 import { toast } from 'sonner'
-import { pdf } from '@react-pdf/renderer'
+import { pdf, PDFViewer } from '@react-pdf/renderer'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
@@ -265,6 +265,46 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           </div>
         </div>
       </form>
+      <PDFViewer width={1000} height={800}>
+        <DepositPdf
+          data={{
+            contact: {
+              lastName: 'Donsez sperber',
+              firstName: 'Thibault',
+              city: 'Rumilly',
+              phoneNumber: '0102030405',
+            },
+            deposit: {
+              depositIndex: 1001,
+              year: 2025,
+              contributionAmount: 2,
+              contributionStatus: 'PAYEE',
+            },
+            articles: [
+              {
+                shortCode: '1001 A',
+                model: 'Zenith',
+                color: 'Rouge blanc',
+                category: 'Skis',
+                brand: 'Rossignol',
+                size: '170',
+                discipline: 'Alpin',
+                price: 15,
+              },
+              {
+                shortCode: '1001 B',
+                model: 'Zenith',
+                color: 'Rouge blanc',
+                category: 'Skis',
+                brand: 'Rossignol',
+                size: '170',
+                discipline: 'Alpin',
+                price: 15,
+              },
+            ],
+          }}
+        />
+      </PDFViewer>
     </FormProvider>
   )
 }
@@ -711,6 +751,8 @@ function SummaryPrintButton() {
       deposit: {
         depositIndex: formData.depotIndex,
         year,
+        contributionStatus: formData.contributionStatus,
+        contributionAmount: formData.contributionAmount,
       },
       contact: {
         lastName: formData.lastName,
@@ -719,7 +761,7 @@ function SummaryPrintButton() {
         phoneNumber: formData.phoneNumber,
       },
       articles: formData.articles.map((article) => ({
-        index: article.articleIndex,
+        shortCode: `${formData.depotIndex} ${article.articleIndex}`,
         category: article.type,
         brand: article.brand,
         model: article.model,
