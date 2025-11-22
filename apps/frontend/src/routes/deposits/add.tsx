@@ -31,7 +31,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
 import PublicLayout from '@/components/PublicLayout'
-import { type DepotFormType, DepotSchema } from '@/types/depotForm.ts'
+import { type DepositFormType, DepositSchema } from '@/types/depotForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
@@ -104,49 +104,64 @@ const predeposits = [
   },
 ]
 
+function SubmitButton() {
+  const { formState, watch } = useFormContext<DepositFormType>()
+  const { isSubmitting } = formState
+  const isSummaryPrinted = watch('isSummaryPrinted')
+  const isDisabled = !isSummaryPrinted || isSubmitting
+
+  return (
+    <CustomButton type="submit" disabled={isDisabled} loading={isSubmitting}>
+      Valider et enregistrer le dépôt
+    </CustomButton>
+  )
+}
+
 function DepositForm({ depotIndex }: { depotIndex: number }) {
   const createDepotMutation = useCreateDepot()
-  const methods = useForm<DepotFormType>({
-    resolver: zodResolver(DepotSchema),
+  const methods = useForm<DepositFormType>({
+    resolver: zodResolver(DepositSchema),
     mode: 'onSubmit',
     defaultValues: {
-      depotIndex: depotIndex,
-      lastName: '',
-      firstName: '',
-      phoneNumber: '',
-      contributionStatus: '',
-      city: '',
-      contributionAmount: 2,
-      articles: [
-        {
-          articleCode: generateArticleCode(
-            2025,
-            depotIndex,
-            generateArticleIndex(0),
-          ),
-          articleIndex: generateArticleIndex(0),
-          brand: '',
-          color: '',
-          type: '',
-          model: '',
-          depotIndex: depotIndex,
-          size: '',
-          year: 2025,
-          discipline: '',
-          price: 0,
-          shortArticleCode: depotIndex + ' ' + generateArticleIndex(0),
-        },
-      ],
+      isSummaryPrinted: false,
+      deposit: {
+        depotIndex: depotIndex,
+        lastName: '',
+        firstName: '',
+        phoneNumber: '',
+        contributionStatus: '',
+        city: '',
+        contributionAmount: 2,
+        articles: [
+          {
+            articleCode: generateArticleCode(
+              2025,
+              depotIndex,
+              generateArticleIndex(0),
+            ),
+            articleIndex: generateArticleIndex(0),
+            brand: '',
+            color: '',
+            type: '',
+            model: '',
+            depotIndex: depotIndex,
+            size: '',
+            year: 2025,
+            discipline: '',
+            price: 0,
+            shortArticleCode: depotIndex + ' ' + generateArticleIndex(0),
+          },
+        ],
+      },
     },
   })
-  const { handleSubmit, setValue, reset, formState } = methods
-  const { isSubmitting } = formState
+  const { handleSubmit, setValue, reset } = methods
   const [predeposit, setPredeposit] = useState<string | null>(null)
 
   const [countArticle, setCountArticle] = useState(1)
 
-  const onSubmit: SubmitHandler<DepotFormType> = async (data) => {
-    await createDepotMutation.mutate(data)
+  const onSubmit: SubmitHandler<DepositFormType> = async (data) => {
+    await createDepotMutation.mutate(data.deposit)
     reset()
     setCountArticle(0)
     toast.success(`Dépôt ${depotIndex} enregistré`)
@@ -155,14 +170,14 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
   const generateFakeVente = useCallback(() => {
     if (!depotIndex) return
 
-    setValue('lastName', faker.person.lastName())
-    setValue('firstName', faker.person.firstName())
-    setValue('phoneNumber', faker.phone.number({ style: 'national' }))
-    setValue('city', faker.helpers.arrayElement(cities))
-    setValue('contributionStatus', 'PAYEE')
+    setValue('deposit.lastName', faker.person.lastName())
+    setValue('deposit.firstName', faker.person.firstName())
+    setValue('deposit.phoneNumber', faker.phone.number({ style: 'national' }))
+    setValue('deposit.city', faker.helpers.arrayElement(cities))
+    setValue('deposit.contributionStatus', 'PAYEE')
     const nbArticles = 11
     setValue(
-      'articles',
+      'deposit.articles',
       Array.from({ length: nbArticles }).map((_, index) => {
         const year = getYear()
         const articleIndex = generateArticleIndex(index)
@@ -246,13 +261,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
             >
               Annuler
             </CustomButton>
-            <CustomButton
-              type="submit"
-              disabled={isSubmitting}
-              loading={isSubmitting}
-            >
-              Valider et enregistrer le dépôt
-            </CustomButton>
+            <SubmitButton />
           </div>
         </div>
       </form>
@@ -267,7 +276,7 @@ function SellerInformationForm() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
-            name={`lastName`}
+            name="deposit.lastName"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -288,7 +297,7 @@ function SellerInformationForm() {
 
         <div className="grid gap-2">
           <Controller
-            name={`firstName`}
+            name="deposit.firstName"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -309,7 +318,7 @@ function SellerInformationForm() {
 
         <div className="grid gap-2">
           <Controller
-            name={`phoneNumber`}
+            name="deposit.phoneNumber"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -329,7 +338,7 @@ function SellerInformationForm() {
         </div>
         <div className="grid gap-2">
           <Controller
-            name={`city`}
+            name="deposit.city"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -358,16 +367,14 @@ type ArticleFormProps = {
 
 function ArticleForm(props: ArticleFormProps) {
   const { onArticleAdd, articleCount, depotIndex } = props
-  const { fields, append, remove } = useFieldArray<DepotFormType>({
-    name: 'articles',
+  const { fields, append, remove } = useFieldArray<DepositFormType>({
+    name: 'deposit.articles',
   })
-  const { trigger, getFieldState, setValue, watch } = useFormContext()
+  const { trigger, setValue, watch } = useFormContext<DepositFormType>()
 
   const addArticle = useCallback(async () => {
-    const lastArticleFieldName = `articles.${fields.length - 1}`
-    await trigger(lastArticleFieldName)
-    const fieldState = getFieldState(lastArticleFieldName)
-    if (fieldState.invalid) return
+    const invalid = await trigger(`deposit.articles.${fields.length - 1}`)
+    if (invalid) return
     const year = getYear()
     const articleIndex = generateArticleIndex(articleCount)
     const articleCode = generateArticleCode(year, depotIndex, articleIndex)
@@ -388,11 +395,11 @@ function ArticleForm(props: ArticleFormProps) {
     onArticleAdd()
   }, [fields, depotIndex, articleCount])
 
-  const contributionAmount = watch('contributionAmount')
+  const contributionAmount = watch('deposit.contributionAmount')
 
   useEffect(() => {
     setValue(
-      'contributionAmount',
+      'deposit.contributionAmount',
       (Math.floor((fields.length - 1) / 10) + 1) * 2,
     )
   }, [fields.length])
@@ -454,7 +461,7 @@ function ArticleForm(props: ArticleFormProps) {
           <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>
             <Controller
-              name={`contributionStatus`}
+              name="deposit.contributionStatus"
               render={({ field, fieldState }) => (
                 <Field
                   orientation="responsive"
@@ -505,7 +512,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
     <tr className="border-b border-gray-100">
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.shortArticleCode`}
+          name={`deposit.articles.${index}.shortArticleCode`}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
@@ -524,7 +531,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.discipline`}
+          name={`deposit.articles.${index}.discipline`}
           render={({ field, fieldState }) => (
             <Combobox
               invalid={fieldState.invalid}
@@ -537,7 +544,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.type`}
+          name={`deposit.articles.${index}.type`}
           render={({ field, fieldState }) => (
             <Combobox
               invalid={fieldState.invalid}
@@ -550,7 +557,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.brand`}
+          name={`deposit.articles.${index}.brand`}
           render={({ field, fieldState }) => (
             <Combobox
               invalid={fieldState.invalid}
@@ -563,7 +570,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.model`}
+          name={`deposit.articles.${index}.model`}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
@@ -581,7 +588,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <Controller
-          name={`articles.${index}.color`}
+          name={`deposit.articles.${index}.color`}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
@@ -604,7 +611,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1 w-[75px]">
         <Controller
-          name={`articles.${index}.size`}
+          name={`deposit.articles.${index}.size`}
           render={({ field: controllerField, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
@@ -623,7 +630,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       <td className="py-1 px-1">
         <div className="flex items-center gap-1">
           <Controller
-            name={`articles.${index}.price`}
+            name={`deposit.articles.${index}.price`}
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -664,13 +671,12 @@ type PrintArticleButtonProps = {
 function PrintArticleButton(props: PrintArticleButtonProps) {
   const { index } = props
   const dymo = useDymo()
-  const { trigger, getValues, getFieldState } = useFormContext<DepotFormType>()
+  const { trigger, getValues } = useFormContext<DepositFormType>()
 
   const printDymo = useCallback(async () => {
-    await trigger(`articles.${index}`)
-    const state = getFieldState(`articles.${index}`)
-    if (state.invalid) return
-    const field = getValues(`articles.${index}`)
+    const invalid = await trigger(`deposit.articles.${index}`)
+    if (invalid) return
+    const field = getValues(`deposit.articles.${index}`)
     dymo.print({
       color: field.color,
       brand: field.brand,
@@ -693,14 +699,13 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
 }
 
 function SummaryPrintButton() {
-  const { getValues, trigger, formState } = useFormContext<DepotFormType>()
+  const { getValues, trigger, setValue } = useFormContext<DepositFormType>()
   const print = async () => {
-    await trigger()
-    if (!formState.isValid) {
-      console.log('invalid form')
+    const invalid = await trigger('deposit')
+    if (!invalid) {
       return
     }
-    const formData = getValues()
+    const formData = getValues('deposit')
     const year = getYear()
     const data: DepositPdfProps['data'] = {
       deposit: {
@@ -739,6 +744,7 @@ function SummaryPrintButton() {
         }
       }, 1)
     }
+    setValue('isSummaryPrinted', true)
   }
 
   return (
@@ -751,7 +757,7 @@ function SummaryPrintButton() {
 function ErrorMessages() {
   const {
     formState: { errors },
-  } = useFormContext()
+  } = useFormContext<DepositFormType>()
 
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
     if (typeof errors[key]?.message === 'string') {

@@ -6,7 +6,7 @@ import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import {
   ContributionStatusEnum,
-  type DepotFormType,
+  type DepositFormType,
 } from '@/types/depotForm.ts'
 
 export function useCreateDepot() {
@@ -14,7 +14,7 @@ export function useCreateDepot() {
   const depotDb = useDepotsDb()
   const contactDb = useContactsDb()
   const articleDb = useArticlesDb()
-  async function mutate(data: DepotFormType) {
+  async function mutate(data: DepositFormType['deposit']) {
     if (workstation === undefined) throw new Error('Workstation is undefined')
     await db.transaction(
       'rw',

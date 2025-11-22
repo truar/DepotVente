@@ -24,17 +24,22 @@ export const ArticleSchema = z.object({
 
 export type ArticleFormType = z.infer<typeof ArticleSchema>
 
-export const DepotSchema = z.object({
-  depotIndex: z.number(),
-  lastName: z.string().nonempty({ message: 'Le nom est requis' }),
-  firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
-  phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
-  city: z.string().nullable(),
-  contributionStatus: z.string().nonempty({ message: 'Le statut est requis' }),
-  contributionAmount: z.coerce.number<number>(),
-  articles: z
-    .array(ArticleSchema)
-    .nonempty({ message: 'Au moins un article est requis' }),
+export const DepositSchema = z.object({
+  isSummaryPrinted: z.literal(true),
+  deposit: z.object({
+    depotIndex: z.number(),
+    lastName: z.string().nonempty({ message: 'Le nom est requis' }),
+    firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
+    phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
+    city: z.string().nullable(),
+    contributionStatus: z
+      .string()
+      .nonempty({ message: 'Le statut est requis' }),
+    contributionAmount: z.coerce.number<number>(),
+    articles: z
+      .array(ArticleSchema)
+      .nonempty({ message: 'Au moins un article est requis' }),
+  }),
 })
 
-export type DepotFormType = z.infer<typeof DepotSchema>
+export type DepositFormType = z.infer<typeof DepositSchema>
