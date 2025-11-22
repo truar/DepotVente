@@ -280,28 +280,16 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
               contributionAmount: 2,
               contributionStatus: 'PAYEE',
             },
-            articles: [
-              {
-                shortCode: '1001 A',
-                model: 'Zenith',
-                color: 'Rouge blanc',
-                category: 'Skis',
-                brand: 'Rossignol',
-                size: '170',
-                discipline: 'Alpin',
-                price: 15,
-              },
-              {
-                shortCode: '1001 B',
-                model: 'Zenith',
-                color: 'Rouge blanc',
-                category: 'Skis',
-                brand: 'Rossignol',
-                size: '170',
-                discipline: 'Alpin',
-                price: 15,
-              },
-            ],
+            articles: Array.from({ length: 100 }).map(() => ({
+              shortCode: '1001 A',
+              model: 'Zenith',
+              color: 'Rouge blanc',
+              category: 'Skis',
+              brand: 'Rossignol',
+              size: '170',
+              discipline: 'Alpin',
+              price: 15,
+            })),
           }}
         />
       </PDFViewer>

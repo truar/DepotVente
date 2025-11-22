@@ -149,7 +149,9 @@ export const DepositPdf = (props: DepositPdfProps) => {
       <Document>
         <Page size="A4" style={styles.page}>
           <View style={styles.header}>
-            <View style={{ flexDirection: 'row', gap: 5 }}>
+            <View
+              style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}
+            >
               <CMRLogo />
               <View style={styles.title}>
                 <Text>Bourse au skis {data.deposit.year}</Text>
@@ -278,6 +280,21 @@ export const DepositPdf = (props: DepositPdfProps) => {
                 </View>
               ))}
             </View>
+          </View>
+          <View
+            fixed
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              left: 20,
+              fontSize: 8,
+            }}
+          >
+            <Text
+              render={({ pageNumber, totalPages }) =>
+                `Page ${pageNumber} sur ${totalPages}`
+              }
+            />
           </View>
         </Page>
       </Document>
