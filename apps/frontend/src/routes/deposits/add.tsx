@@ -759,7 +759,7 @@ function SummaryPrintButton() {
         color: article.color,
       })),
     }
-    const blob = await pdf(<DepositPdf data={data} />).toBlob()
+    const blob = await pdf(<DepositPdf data={data} copy={2} />).toBlob()
     const blobURL = URL.createObjectURL(blob)
     const iframe = document.createElement('iframe') //load content in an iframe to print later
     document.body.appendChild(iframe)
