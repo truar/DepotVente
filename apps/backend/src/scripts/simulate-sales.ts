@@ -148,7 +148,7 @@ async function setupDependencies() {
     event = await prisma.event.create({
       data: {
         name: "Simulation Event",
-        year: new Date().getFullYear(),
+        year: new Date().getFullYear() + 1,
         isActive: true,
       },
     });

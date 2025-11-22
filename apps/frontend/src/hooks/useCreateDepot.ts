@@ -36,13 +36,11 @@ export function useCreateDepot() {
           deletedAt: null,
         })
 
-        const depotCount = await depotDb.count()
-        const depotIndex = workstation.incrementStart + depotCount + 1
         const depotId = await depotDb.insert({
           id: v4(),
           sellerId: contactId,
           contributionStatus: data.contributionStatus as ContributionStatusEnum,
-          depositIndex: depotIndex,
+          depositIndex: data.depotIndex,
           incrementStart: workstation.incrementStart,
           dropWorkstationId: workstation.incrementStart,
           createdAt: currentDate,
@@ -64,7 +62,7 @@ export function useCreateDepot() {
             color: articleForm.color,
             model: articleForm.model,
             year: articleForm.year,
-            depositIndex: depotIndex,
+            depositIndex: data.depotIndex,
             articleIndex: articleForm.articleIndex,
             createdAt: currentDate,
             updatedAt: currentDate,

@@ -1,297 +1,216 @@
 #!/usr/bin/env tsx
-import { Deposit, prisma } from 'database';
-import * as fs from 'fs';
-import * as path from 'path';
-import { dirname } from 'path';
+import { Article, Deposit, prisma, Sale } from 'database';
 import 'dotenv/config';
-import { fileURLToPath } from 'url';
+import { DepositData, extractDeposits } from './extract-deposits';
+import { ArticleData, extractArticles } from './extract-articles';
+import { BuyerData, extractBuyers } from './extract-buyers';
+import { extractSoldArticles, SoldArticleData } from './extract-sold-articles';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+async function importDeposits(fiches: DepositData[]) {
+  let successCount = 0;
+  let errorCount = 0;
 
-const N_FICHE = 1
-const NOM = 2
-const ADRESSE = 3
-const COTISATION = 4
-const POSTE = 5
-const MONTANT_REGLEMENT = 9
-const N_CH = 10
-const HEURE = 11
-const POSTE_RETOUR = 12
-const SIGNATURE = 13
-const HEURE_RETOUR = 14
-const TEL_VENDEUR = 15
+  const deposits = new Map<number, Deposit>
 
-const VENDEUR = 0
-const IDENTIFIANT_ARTICLE = 2
-const ID_MATERIEL = 3
-const ID_MARQUE = 4
-const ID_TYPE = 5
-const DESCRIPTIF = 6
-const COULEUR = 8
-const TAILLE = 9
-const PRIX = 10
-const DATE = 11
+  for (const fiche of fiches) {
+    try {
+      // First, create or find the contact
+      const contact = await prisma.contact.create({
+        data: {
+          lastName: fiche.lastName,
+          firstName: fiche.firstName,
+          phoneNumber: fiche.phoneNumber,
+          city: fiche.city,
+          postalCode: fiche.postalCode,
+        },
+      });
 
+      // Then create the deposit linked to this contact
+      const deposit = await prisma.deposit.create({
+        data: {
+          sellerId: contact.id,
+          contributionStatus: fiche.contributionStatus || 'A_PAYER',
+          depositIndex: fiche.depositIndex,
+          incrementStart: fiche.incrementStart,
+          dropWorkstationId: fiche.dropWorkstationId,
+          collectWorkstationId: fiche.collectWorkstationId,
+          collectedAt: fiche.collectedAt,
+          paymentAmount: fiche.paymentAmount,
+          chequeNumber: fiche.chequeNumber,
+          signature: fiche.signature,
+          createdAt: fiche.createdAt,
+          updatedAt: fiche.updatedAt,
+        },
+      });
+      deposits.set(deposit.depositIndex, deposit)
 
-interface DepositData {
-  lastName: string;
-  firstName: string;
-  phoneNumber: string;
-  city?: string;
-  postalCode?: string;
-  contributionStatus: 'PAYEE' | 'A_PAYER' | 'GRATUIT';
-  depositIndex: number;
-  incrementStart: number;
-  dropWorkstationId: number;
-  collectWorkstationId?: number;
-  collectedAt?: Date;
-  paymentAmount?: number;
-  chequeNumber?: string;
-  signature?: string;
-  createdAt?: Date;
-  updatedAt?: Date
-}
-
-interface ArticleData {
-  price: number;
-  category?: string;
-  discipline?: string;
-  brand: string;
-  model?: string;
-  size: string;
-  color: string;
-  code: string;
-  year: number;
-  depositIndex: number;
-  articleIndex: string;
-  createdAt?: Date;
-  updatedAt?: Date
-}
-
-const contributionStatuses = new Map(
-  [
-    ['Ext.1', 'GRATUIT'],
-    ['Payé', 'PAYEE'],
-    ['A Payer', 'A_PAYER'],
-    ['Gratuit', 'GRATUIT'],
-  ]
-)
-
-function parseToUTC(dateString: string): Date | undefined {
-  if (!dateString || dateString.trim() === '') {
-    return undefined;
-  }
-
-  try {
-    // Parse MM/D/YYYY HH:MM format
-    const [datePart, timePart] = dateString.split(' ');
-    const [month, day, year] = datePart.split('/').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-
-    // Create date in local timezone, then convert to UTC
-    // Return the date (JavaScript Date objects are already in UTC internally)
-    return new Date(parseInt('20' + year), month - 1, day, hours, minutes);
-  } catch (error) {
-    console.warn(`⚠️  Failed to parse date: ${dateString}`);
-    return undefined;
-  }
-}
-
-function parseFichesCSV(content: string): DepositData[] {
-  const lines = content.split('\n').filter((line) => line.trim());
-
-  return lines.slice(1).map((line) => {
-    const values = line.split('\t').map((v) => v.trim());
-    const [lastName, ...firstName] = values[NOM].split(' ')
-
-    return {
-      lastName: lastName.trim(),
-      firstName: firstName.join('').trim(),
-      phoneNumber: values[TEL_VENDEUR],
-      city: values[ADRESSE],
-      postalCode: undefined,
-      contributionStatus: contributionStatuses.get(values[COTISATION]) || 'A_PAYER',
-      depositIndex: parseInt(values[N_FICHE]),
-      incrementStart: parseInt(values[POSTE]),
-      dropWorkstationId: parseInt(values[POSTE]),
-      collectWorkstationId: parseInt(values[POSTE_RETOUR]),
-      collectedAt: parseToUTC(values[HEURE_RETOUR]),
-      paymentAmount: parseFloat(values[MONTANT_REGLEMENT]),
-      chequeNumber: values[N_CH],
-      signature: values[SIGNATURE],
-      createdAt: parseToUTC(values[HEURE_RETOUR].split(' ')[0] + ' ' + values[HEURE]),
-      updatedAt: parseToUTC(values[HEURE_RETOUR].split(' ')[0] + ' ' + values[HEURE]),
-    } as DepositData;
-  });
-}
-
-function extractFiches() {
-  const csvPath = path.join(__dirname, 'Fiche.tsv');
-
-  if (!fs.existsSync(csvPath)) {
-    console.error(`❌ File not found: ${csvPath}`);
-    process.exit(1);
-  }
-
-  console.log('📖 Reading Fiche.csv...');
-  const content = fs.readFileSync(csvPath, 'utf-8');
-  const fiches = parseFichesCSV(content);
-
-  console.log(`📊 Found ${fiches.length} fiches to import`);
-  return fiches;
-}
-
-function extractArticleIndex(articleCode: string) {
-  const [, vendeurArticle] = articleCode.split(' ')
-  const [, ...articleIndex] = vendeurArticle.split('')
-  return articleIndex.join('');
-}
-
-function parseArticlesCSV(content: string): ArticleData[] {
-  const lines = content.split('\n').filter((line) => line.trim());
-
-  return lines.slice(1).map((line) => {
-    const values = line.split('\t').map((v) => v.trim());
-    const articleCode = values[IDENTIFIANT_ARTICLE]
-    const articleIndex = extractArticleIndex(articleCode);
-    return {
-      price: parseFloat(values[PRIX]),
-      category: values[ID_MATERIEL],
-      discipline: values[ID_TYPE],
-      brand: values[ID_MARQUE],
-      model: values[DESCRIPTIF],
-      size: values[TAILLE],
-      color: values[COULEUR],
-      code: articleCode,
-      year: 2025,
-      depositIndex: parseInt(values[VENDEUR]),
-      articleIndex: articleIndex,
-      createdAt: parseToUTC(values[DATE]),
-      updatedAt: parseToUTC(values[DATE]),
-    } as ArticleData;
-  });
-}
-
-
-function extractArticles() {
-  const csvPath = path.join(__dirname, 'Article.tsv');
-
-  if (!fs.existsSync(csvPath)) {
-    console.error(`❌ File not found: ${csvPath}`);
-    process.exit(1);
-  }
-
-  console.log('📖 Reading Article.tsv...');
-  const content = fs.readFileSync(csvPath, 'utf-8');
-  const articles = parseArticlesCSV(content);
-
-  console.log(`📊 Found ${articles.length} articles to import`);
-  return articles;
-}
-
-async function importFiches() {
-  try {
-    const fiches = extractFiches();
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    const deposits = new Map<number, Deposit>
-
-    for (const fiche of fiches) {
-      try {
-        // First, create or find the contact
-        const contact = await prisma.contact.create({
-          data: {
-            lastName: fiche.lastName,
-            firstName: fiche.firstName,
-            phoneNumber: fiche.phoneNumber,
-            city: fiche.city,
-            postalCode: fiche.postalCode,
-          },
-        });
-
-        // Then create the deposit linked to this contact
-        const deposit = await prisma.deposit.create({
-          data: {
-            sellerId: contact.id,
-            contributionStatus: fiche.contributionStatus || 'A_PAYER',
-            depositIndex: fiche.depositIndex,
-            incrementStart: fiche.incrementStart,
-            dropWorkstationId: fiche.dropWorkstationId,
-            collectWorkstationId: fiche.collectWorkstationId,
-            collectedAt: fiche.collectedAt,
-            paymentAmount: fiche.paymentAmount,
-            chequeNumber: fiche.chequeNumber,
-            signature: fiche.signature,
-            createdAt: fiche.createdAt,
-            updatedAt: fiche.updatedAt,
-          },
-        });
-        deposits.set(deposit.depositIndex, deposit)
-
-        successCount++;
-        console.log(`✅ Imported fiche for ${fiche.firstName} ${fiche.lastName}`);
-      } catch (error) {
-        errorCount++;
-        console.error(
-          `❌ Error importing fiche for ${fiche.firstName} ${fiche.lastName}:`,
-          error
-        );
-      }
+      successCount++;
+      console.log(`✅ Imported fiche for ${fiche.firstName} ${fiche.lastName}`);
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing fiche for ${fiche.firstName} ${fiche.lastName}:`,
+        error
+      );
     }
+  }
 
-    console.log('\n' + '='.repeat(50));
-    console.log(`✅ Successfully imported: ${successCount}`);
-    console.log(`❌ Failed: ${errorCount}`);
-    console.log(`📊 Total: ${fiches.length}`);
-    console.log('='.repeat(50));
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${fiches.length}`);
+  console.log('='.repeat(50));
+  return { deposits };
+}
 
-    successCount = 0;
-    errorCount = 0;
-    const articles = extractArticles()
+async function importArticles(articlesFromImport: ArticleData[], deposits: Map<number, Deposit>) {
+  let successCount = 0;
+  let errorCount = 0;
+  const articles = new Map<string, Article>()
+  for (const articleFromImport of articlesFromImport) {
+    try {
+      const deposit = deposits.get(articleFromImport.depositIndex)
+      if (!deposit) throw new Error(`Deposit ${articleFromImport.depositIndex} not found`)
 
-    for (const article of articles) {
-      try {
-        const deposit = deposits.get(article.depositIndex)
-        if (!deposit) throw new Error(`Deposit ${article.depositIndex} not found`)
+      const article = await prisma.article.create({
+        data: {
+          depositId: deposit.id,
+          price: articleFromImport.price,
+          category: articleFromImport.category || 'AUTRE',
+          discipline: articleFromImport.discipline || 'AUTRE',
+          brand: articleFromImport.brand,
+          model: articleFromImport.model || 'AUTRE',
+          size: articleFromImport.size,
+          color: articleFromImport.color,
+          code: articleFromImport.code,
+          year: articleFromImport.year,
+          depositIndex: articleFromImport.depositIndex,
+          articleIndex: articleFromImport.articleIndex,
+          createdAt: articleFromImport.createdAt,
+          updatedAt: articleFromImport.updatedAt,
+        }
+      })
+      articles.set(articleFromImport.code, article)
 
-        await prisma.article.create({
-          data: {
-            depositId: deposit.id,
-            price: article.price,
-            category: article.category || 'AUTRE',
-            discipline: article.discipline || 'AUTRE',
-            brand: article.brand,
-            model: article.model || 'AUTRE',
-            size: article.size,
-            color: article.color,
-            code: article.code,
-            year: article.year,
-            depositIndex: article.depositIndex,
-            articleIndex: article.articleIndex,
-            createdAt: article.createdAt,
-            updatedAt: article.updatedAt,
-          }
-        })
-        console.log(`✅ Imported article for ${article.code}`);
-        successCount++
-      } catch (error) {
-        errorCount++;
-        console.error(
-          `❌ Error importing article for ${article.code}:`,
-          error
-        );
-      }
+      console.log(`✅ Imported article for ${articleFromImport.code}`);
+      successCount++
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing article for ${articleFromImport.code}:`,
+        error
+      );
     }
+  }
 
-    console.log('\n' + '='.repeat(50));
-    console.log(`✅ Successfully imported: ${successCount}`);
-    console.log(`❌ Failed: ${errorCount}`);
-    console.log(`📊 Total: ${articles.length}`);
-    console.log('='.repeat(50));
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${articlesFromImport.length}`);
+  console.log('='.repeat(50));
 
+  return { articles }
+}
+
+async function importSales(buyers: BuyerData[]) {
+  let successCount = 0;
+  let errorCount = 0;
+  const sales = new Map<string, Sale>()
+  for (const buyer of buyers) {
+    try {
+      const contact = await prisma.contact.create({
+        data: {
+          lastName: buyer.lastName,
+          firstName: buyer.firstName,
+          phoneNumber: buyer.phoneNumber,
+          city: buyer.city,
+          postalCode: null
+        }
+      })
+
+      const sale = await prisma.sale.create({
+        data: {
+          buyerId: contact.id,
+          saleCode: buyer.idBuyer,
+          cardAmount: buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0,
+          checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,
+          cashAmount: buyer.paymentMethod === 'Liquide' ? buyer.paymentAmount : 0,
+          updatedAt: buyer.updatedAt,
+          createdAt: buyer.createdAt,
+        }
+      })
+      sales.set(sale.saleCode, sale)
+
+      console.log(`✅ Imported buyer for ${buyer.idBuyer}`);
+      successCount++
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing buyer for ${buyer.idBuyer}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${buyers.length}`);
+  console.log('='.repeat(50));
+
+  return { sales }
+}
+
+async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map<string, Article>, sales: Map<string, Sale>) {
+  let successCount = 0;
+  let errorCount = 0;
+  for (const soldArticle of soldArticles) {
+    try {
+      const sale = sales.get(soldArticle.idBuyer)
+      if (!sale) throw new Error(`Sale ${soldArticle.idBuyer} not found`)
+
+      const article = articles.get(soldArticle.code)
+      if(!article) throw new Error(`Article ${soldArticle.code} not found`)
+      await prisma.article.update({
+        where: {
+          code: article.code,
+        }, data: {
+          saleId: sale.id,
+          updatedAt: sale.createdAt
+        }
+      })
+      console.log(`✅ Imported sold article for ${soldArticle.code}`);
+      successCount++
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing soldArticle for ${soldArticle.code}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${soldArticles.length}`);
+  console.log('='.repeat(50));
+}
+
+async function importAll() {
+  try {
+    const fiches = extractDeposits();
+
+    const { deposits } = await importDeposits(fiches);
+
+    const articlesFromImport = extractArticles()
+    const {articles} = await importArticles(articlesFromImport, deposits)
+
+    const buyersFromImport = await extractBuyers()
+    const {sales} = await importSales(buyersFromImport)
+
+    const soldArticles = await extractSoldArticles()
+    await importSoldArticles(soldArticles, articles, sales)
 
   } catch (error) {
     console.error('❌ Fatal error during import:', error);
@@ -303,4 +222,4 @@ async function importFiches() {
 
 // Run the script
 console.log('🚀 Starting Fiche import...\n');
-importFiches();
+importAll();

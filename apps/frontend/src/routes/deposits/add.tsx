@@ -44,9 +44,9 @@ import { colors } from '@/types/colors.ts'
 import { cities, citiesItems } from '@/types/cities.ts'
 import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
-import { generateArticleCode, generateArticleIndex } from '@/utils'
+import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
 import { toast } from 'sonner'
-import { pdf, PDFViewer } from '@react-pdf/renderer'
+import { pdf } from '@react-pdf/renderer'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
@@ -164,7 +164,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     setValue(
       'articles',
       Array.from({ length: nbArticles }).map((_, index) => {
-        const year = new Date().getFullYear()
+        const year = getYear()
         const articleIndex = generateArticleIndex(index)
         const articleCode = generateArticleCode(year, depotIndex, articleIndex)
         return {
@@ -368,7 +368,7 @@ function ArticleForm(props: ArticleFormProps) {
     await trigger(lastArticleFieldName)
     const fieldState = getFieldState(lastArticleFieldName)
     if (fieldState.invalid) return
-    const year = new Date().getFullYear()
+    const year = getYear()
     const articleIndex = generateArticleIndex(articleCount)
     const articleCode = generateArticleCode(year, depotIndex, articleIndex)
     append({
@@ -697,10 +697,11 @@ function SummaryPrintButton() {
   const print = async () => {
     await trigger()
     if (!formState.isValid) {
+      console.log('invalid form')
       return
     }
     const formData = getValues()
-    const year = new Date().getFullYear()
+    const year = getYear()
     const data: DepositPdfProps['data'] = {
       deposit: {
         depositIndex: formData.depotIndex,
@@ -733,7 +734,9 @@ function SummaryPrintButton() {
     iframe.onload = function () {
       setTimeout(function () {
         iframe.focus()
-        iframe.contentWindow.print()
+        if (iframe.contentWindow) {
+          iframe.contentWindow.print()
+        }
       }, 1)
     }
   }
