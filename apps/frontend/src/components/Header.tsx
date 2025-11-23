@@ -32,7 +32,9 @@ export default function Header() {
       ) : (
         <HeaderSuccessStatus text={'App Online'} />
       )}
-      <HeaderNeutralStatus text={`Numéro de poste: ${workstation?.name}`} />
+      <HeaderNeutralStatus
+        text={`Numéro de caisse: ${workstation?.incrementStart}`}
+      />
       <Button onClick={logout} className="gap-3">
         <LogOut size={20} />
         <span>Déconnexion</span>

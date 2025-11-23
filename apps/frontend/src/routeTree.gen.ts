@@ -13,9 +13,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DymoRouteImport } from './routes/dymo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SalesIndexRouteImport } from './routes/sales/index'
+import { Route as HiddenPdfsIndexRouteImport } from './routes/hidden-pdfs/index'
 import { Route as DepositsIndexRouteImport } from './routes/deposits/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
+import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
+import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
@@ -44,6 +47,11 @@ const SalesIndexRoute = SalesIndexRouteImport.update({
   path: '/sales/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HiddenPdfsIndexRoute = HiddenPdfsIndexRouteImport.update({
+  id: '/hidden-pdfs/',
+  path: '/hidden-pdfs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepositsIndexRoute = DepositsIndexRouteImport.update({
   id: '/deposits/',
   path: '/deposits/',
@@ -59,6 +67,18 @@ const SalesAddRoute = SalesAddRouteImport.update({
   path: '/sales/add',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HiddenPdfsSummaryDepositsRoute =
+  HiddenPdfsSummaryDepositsRouteImport.update({
+    id: '/hidden-pdfs/summary-deposits',
+    path: '/hidden-pdfs/summary-deposits',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DepositsCashRegisterControlRoute =
+  DepositsCashRegisterControlRouteImport.update({
+    id: '/deposits/cash-register-control',
+    path: '/deposits/cash-register-control',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DepositsAddRoute = DepositsAddRouteImport.update({
   id: '/deposits/add',
   path: '/deposits/add',
@@ -105,9 +125,12 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
+  '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/sales': typeof SalesIndexRoute
   '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
@@ -121,9 +144,12 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
+  '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/sales': typeof SalesIndexRoute
   '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
@@ -138,9 +164,12 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/admin/': typeof AdminIndexRoute
   '/deposits/': typeof DepositsIndexRoute
+  '/hidden-pdfs/': typeof HiddenPdfsIndexRoute
   '/sales/': typeof SalesIndexRoute
   '/admin/sales_/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
@@ -156,9 +185,12 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/cash-register-control'
+    | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/admin'
     | '/deposits'
+    | '/hidden-pdfs'
     | '/sales'
     | '/admin/sales/$saleId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -172,9 +204,12 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/cash-register-control'
+    | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/admin'
     | '/deposits'
+    | '/hidden-pdfs'
     | '/sales'
     | '/admin/sales/$saleId/edit'
   id:
@@ -188,9 +223,12 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/cash-register-control'
+    | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/admin/'
     | '/deposits/'
+    | '/hidden-pdfs/'
     | '/sales/'
     | '/admin/sales_/$saleId/edit'
   fileRoutesById: FileRoutesById
@@ -205,9 +243,12 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DepositsAddRoute: typeof DepositsAddRoute
+  DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
+  HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   SalesAddRoute: typeof SalesAddRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DepositsIndexRoute: typeof DepositsIndexRoute
+  HiddenPdfsIndexRoute: typeof HiddenPdfsIndexRoute
   SalesIndexRoute: typeof SalesIndexRoute
   AdminSalesSaleIdEditRoute: typeof AdminSalesSaleIdEditRoute
 }
@@ -242,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hidden-pdfs/': {
+      id: '/hidden-pdfs/'
+      path: '/hidden-pdfs'
+      fullPath: '/hidden-pdfs'
+      preLoaderRoute: typeof HiddenPdfsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/deposits/': {
       id: '/deposits/'
       path: '/deposits'
@@ -261,6 +309,20 @@ declare module '@tanstack/react-router' {
       path: '/sales/add'
       fullPath: '/sales/add'
       preLoaderRoute: typeof SalesAddRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hidden-pdfs/summary-deposits': {
+      id: '/hidden-pdfs/summary-deposits'
+      path: '/hidden-pdfs/summary-deposits'
+      fullPath: '/hidden-pdfs/summary-deposits'
+      preLoaderRoute: typeof HiddenPdfsSummaryDepositsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deposits/cash-register-control': {
+      id: '/deposits/cash-register-control'
+      path: '/deposits/cash-register-control'
+      fullPath: '/deposits/cash-register-control'
+      preLoaderRoute: typeof DepositsCashRegisterControlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deposits/add': {
@@ -325,9 +387,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   DepositsAddRoute: DepositsAddRoute,
+  DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
+  HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   SalesAddRoute: SalesAddRoute,
   AdminIndexRoute: AdminIndexRoute,
   DepositsIndexRoute: DepositsIndexRoute,
+  HiddenPdfsIndexRoute: HiddenPdfsIndexRoute,
   SalesIndexRoute: SalesIndexRoute,
   AdminSalesSaleIdEditRoute: AdminSalesSaleIdEditRoute,
 }

@@ -23,6 +23,7 @@ export type Sale = {
 export type Deposit = {
   id: string
   contributionStatus: ContributionStatusEnum
+  contributionAmount: number
   sellerId: string
   incrementStart: number
   dropWorkstationId: number

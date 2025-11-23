@@ -64,7 +64,9 @@ export function RouteComponent() {
               description="Enregistrer des articles"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => {
+                navigate({ to: '/deposits/cash-register-control' })
+              }}
               icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
               title="Caisse"
               description="Controler les espèces"

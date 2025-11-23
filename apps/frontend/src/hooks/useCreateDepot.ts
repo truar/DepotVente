@@ -40,6 +40,7 @@ export function useCreateDepot() {
           id: v4(),
           sellerId: contactId,
           contributionStatus: data.contributionStatus as ContributionStatusEnum,
+          contributionAmount: data.contributionAmount,
           depositIndex: data.depotIndex,
           incrementStart: workstation.incrementStart,
           dropWorkstationId: workstation.incrementStart,

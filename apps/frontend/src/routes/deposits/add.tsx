@@ -46,7 +46,7 @@ import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
 import { toast } from 'sonner'
-import { pdf, PDFViewer } from '@react-pdf/renderer'
+import { pdf } from '@react-pdf/renderer'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
@@ -73,7 +73,7 @@ export function RouteComponent() {
   if (!workstation) return null
 
   const currentDepotCount = useLiveQuery(() => depotDb.count())
-  if (!currentDepotCount) return null
+  if (currentDepotCount == null) return null
   const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
@@ -105,13 +105,11 @@ const predeposits = [
 ]
 
 function SubmitButton() {
-  const { formState, watch } = useFormContext<DepositFormType>()
+  const { formState } = useFormContext<DepositFormType>()
   const { isSubmitting } = formState
-  const isSummaryPrinted = watch('isSummaryPrinted')
-  const isDisabled = !isSummaryPrinted || isSubmitting
 
   return (
-    <CustomButton type="submit" disabled={isDisabled} loading={isSubmitting}>
+    <CustomButton type="submit" loading={isSubmitting}>
       Valider et enregistrer le dépôt
     </CustomButton>
   )
@@ -167,9 +165,9 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     toast.success(`Dépôt ${depotIndex} enregistré`)
   }
 
-  const generateFakeVente = useCallback(() => {
+  const generateFakeDeposit = useCallback(() => {
     if (!depotIndex) return
-
+    setValue('isSummaryPrinted', true)
     setValue('deposit.lastName', faker.person.lastName())
     setValue('deposit.firstName', faker.person.firstName())
     setValue('deposit.phoneNumber', faker.phone.number({ style: 'national' }))
@@ -248,7 +246,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           <div className="flex justify-end gap-4">
             <CustomButton
               type="button"
-              onClick={() => generateFakeVente()}
+              onClick={() => generateFakeDeposit()}
               variant="ghost"
             >
               Générer une fausse vente
@@ -265,34 +263,6 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           </div>
         </div>
       </form>
-      <PDFViewer width={1000} height={800}>
-        <DepositPdf
-          data={{
-            contact: {
-              lastName: 'Donsez sperber',
-              firstName: 'Thibault',
-              city: 'Rumilly',
-              phoneNumber: '0102030405',
-            },
-            deposit: {
-              depositIndex: 1001,
-              year: 2025,
-              contributionAmount: 2,
-              contributionStatus: 'PAYEE',
-            },
-            articles: Array.from({ length: 100 }).map(() => ({
-              shortCode: '1001 A',
-              model: 'Zenith',
-              color: 'Rouge blanc',
-              category: 'Skis',
-              brand: 'Rossignol',
-              size: '170',
-              discipline: 'Alpin',
-              price: 15,
-            })),
-          }}
-        />
-      </PDFViewer>
     </FormProvider>
   )
 }
