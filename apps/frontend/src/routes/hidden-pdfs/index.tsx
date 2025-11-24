@@ -5,5 +5,16 @@ export const Route = createFileRoute('/hidden-pdfs/')({
 })
 
 function RouteComponent() {
-  return <Link to="/hidden-pdfs/summary-deposits">Summary deposits</Link>
+  return (
+    <>
+      <div>
+        <Link to="/hidden-pdfs/summary-deposits">Summary deposits</Link>
+      </div>
+      <div>
+        <Link to="/hidden-pdfs/deposit-cash-register-control">
+          Deposit cash register control
+        </Link>
+      </div>
+    </>
+  )
 }

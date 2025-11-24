@@ -21,10 +21,15 @@ import { Label } from '@/components/ui/label.tsx'
 import { Euro } from 'lucide-react'
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db.ts'
+import { db, type Workstation } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import { ContributionStatusEnum } from '@/types/depotForm.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
+import { getYear } from '@/utils'
+import {
+  DepositCashRegisterControlPdf,
+  type DepositCashRegisterControlProps,
+} from '@/pdf/deposit-cash-register-control-pdf.tsx'
+import { printPdf } from '@/pdf/print.tsx'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
   beforeLoad: () => {
@@ -57,17 +62,24 @@ const CashRegisterControlFormSchema = z.object({
 type CashRegisterControlFormType = z.infer<typeof CashRegisterControlFormSchema>
 
 function RouteComponent() {
+  const [workstation] = useWorkstation()
+  if (!workstation) return null
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
       title="Controler la caisse"
     >
-      <CashRegisterControlForm />
+      <CashRegisterControlForm workstation={workstation} />
     </Page>
   )
 }
 
-function CashRegisterControlForm() {
+type CashRegisterControlFormProps = {
+  workstation: Workstation
+}
+
+function CashRegisterControlForm(props: CashRegisterControlFormProps) {
+  const { workstation } = props
   const methods = useForm<CashRegisterControlFormType>({
     resolver: zodResolver(CashRegisterControlFormSchema),
     defaultValues: {
@@ -92,12 +104,23 @@ function CashRegisterControlForm() {
       ],
     },
   })
-  const { control, register } = methods
+  const { control, register, getValues } = methods
 
   const { fields } = useFieldArray({
     control,
     name: 'amounts',
   })
+
+  const print = async () => {
+    const formData = getValues()
+    const year = getYear()
+    const data: DepositCashRegisterControlProps['data'] = {
+      year,
+      cashRegisterId: workstation.incrementStart,
+      ...formData,
+    }
+    await printPdf(<DepositCashRegisterControlPdf data={data} />)
+  }
 
   return (
     <FormProvider {...methods}>
@@ -148,10 +171,7 @@ function CashRegisterControlForm() {
             </div>
           </div>
           <div className="flex justify-end">
-            <CustomButton
-              type="button"
-              onClick={() => console.log('printing...')}
-            >
+            <CustomButton type="button" onClick={print}>
               Imprimer le rapport
             </CustomButton>
           </div>
