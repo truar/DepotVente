@@ -1,12 +1,19 @@
-import { useLocalStorage } from '@/hooks/useLocalStorage.ts'
-import type { Workstation } from '@/db.ts'
+import { db, type Workstation } from '@/db.ts'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useCallback } from 'react'
 
 export function useWorkstation(): [
   Workstation | undefined,
-  (value: Workstation | undefined) => void,
+  (value: number | undefined) => void,
 ] {
-  const [workstation, setWorkstation] = useLocalStorage<
-    Workstation | undefined
-  >('workstation', undefined)
-  return [workstation, setWorkstation]
+  const workstation = useLiveQuery(() => db.workstation.get('incrementStart'))
+  const setWorkstation = useCallback((value: unknown) => {
+    db.workstation.put({ key: 'incrementStart', value })
+  }, [])
+  return [
+    {
+      incrementStart: (workstation?.value as number) ?? 0,
+    },
+    setWorkstation,
+  ]
 }

@@ -114,7 +114,6 @@ class SyncService {
       )
 
       await this.setMetadata('lastSync', data.syncedAt)
-      await this.setMetadata('workstationData', data.workstation)
 
       console.log('✅ Initial sync complete')
     } catch (error) {
@@ -123,6 +122,20 @@ class SyncService {
     } finally {
       this.syncInProgress = false
     }
+  }
+
+  // Initial full sync
+  async softInitialSync() {
+    const lastSync = await this.getMetadata('lastSync')
+    if (lastSync) {
+      console.log(
+        'Skipping initial sync - already synced at',
+        new Date(lastSync).toLocaleString(),
+      )
+      return
+    }
+
+    await this.initialSync()
   }
 
   // Delta sync (fetch changes since last sync)

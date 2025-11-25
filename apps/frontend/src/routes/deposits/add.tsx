@@ -46,10 +46,10 @@ import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
 import { toast } from 'sonner'
-import { pdf } from '@react-pdf/renderer'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
+import { printPdf } from '@/pdf/print.tsx'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -72,16 +72,20 @@ export function RouteComponent() {
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const currentDepotCount = useLiveQuery(() => depotDb.count())
+  const currentDepotCount = useLiveQuery(
+    () => depotDb.count(workstation),
+    [workstation],
+  )
+  console.log('currentDepotCount', currentDepotCount)
   if (currentDepotCount == null) return null
-  const depotCurrentIndex = workstation.incrementStart + currentDepotCount + 1
+  const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
       title="Faire un dépôt"
     >
-      <DepositForm depotIndex={depotCurrentIndex} />
+      <DepositForm depositIndex={depositCurrentIndex} />
     </Page>
   )
 }
@@ -115,7 +119,7 @@ function SubmitButton() {
   )
 }
 
-function DepositForm({ depotIndex }: { depotIndex: number }) {
+function DepositForm({ depositIndex }: { depositIndex: number }) {
   const createDepotMutation = useCreateDepot()
   const methods = useForm<DepositFormType>({
     resolver: zodResolver(DepositSchema),
@@ -123,50 +127,31 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
     defaultValues: {
       isSummaryPrinted: false,
       deposit: {
-        depotIndex: depotIndex,
+        depotIndex: depositIndex,
         lastName: '',
         firstName: '',
         phoneNumber: '',
         contributionStatus: '',
         city: '',
         contributionAmount: 2,
-        articles: [
-          {
-            articleCode: generateArticleCode(
-              2025,
-              depotIndex,
-              generateArticleIndex(0),
-            ),
-            articleIndex: generateArticleIndex(0),
-            brand: '',
-            color: '',
-            type: '',
-            model: '',
-            depotIndex: depotIndex,
-            size: '',
-            year: 2025,
-            discipline: '',
-            price: 0,
-            shortArticleCode: depotIndex + ' ' + generateArticleIndex(0),
-          },
-        ],
+        articles: [],
       },
     },
   })
   const { handleSubmit, setValue, reset } = methods
   const [predeposit, setPredeposit] = useState<string | null>(null)
 
-  const [countArticle, setCountArticle] = useState(1)
+  const [countArticle, setCountArticle] = useState(0)
 
   const onSubmit: SubmitHandler<DepositFormType> = async (data) => {
     await createDepotMutation.mutate(data.deposit)
     reset()
     setCountArticle(0)
-    toast.success(`Dépôt ${depotIndex} enregistré`)
+    toast.success(`Dépôt ${depositIndex} enregistré`)
   }
 
   const generateFakeDeposit = useCallback(() => {
-    if (!depotIndex) return
+    if (!depositIndex) return
     setValue('isSummaryPrinted', true)
     setValue('deposit.lastName', faker.person.lastName())
     setValue('deposit.firstName', faker.person.firstName())
@@ -179,7 +164,11 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
       Array.from({ length: nbArticles }).map((_, index) => {
         const year = getYear()
         const articleIndex = generateArticleIndex(index)
-        const articleCode = generateArticleCode(year, depotIndex, articleIndex)
+        const articleCode = generateArticleCode(
+          year,
+          depositIndex,
+          articleIndex,
+        )
         return {
           price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
           discipline: faker.helpers.arrayElement(disciplines),
@@ -190,14 +179,14 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           model: faker.commerce.productName(),
           articleCode,
           year,
-          depotIndex: depotIndex,
+          depotIndex: depositIndex,
           articleIndex,
-          shortArticleCode: `${depotIndex} ${articleIndex}`,
+          shortArticleCode: `${depositIndex} ${articleIndex}`,
         }
       }),
     )
     setCountArticle(nbArticles)
-  }, [depotIndex, setValue])
+  }, [depositIndex, setValue])
 
   const loadPredeposit = useCallback(() => {
     console.log('loadPredeposit', predeposit)
@@ -240,7 +229,7 @@ function DepositForm({ depotIndex }: { depotIndex: number }) {
           <ArticleForm
             onArticleAdd={() => setCountArticle(countArticle + 1)}
             articleCount={countArticle}
-            depotIndex={depotIndex}
+            depositIndex={depositIndex}
           />
 
           <div className="flex justify-end gap-4">
@@ -360,22 +349,24 @@ function SellerInformationForm() {
 type ArticleFormProps = {
   onArticleAdd: () => void
   articleCount: number
-  depotIndex: number
+  depositIndex: number
 }
 
 function ArticleForm(props: ArticleFormProps) {
-  const { onArticleAdd, articleCount, depotIndex } = props
+  const { onArticleAdd, articleCount, depositIndex } = props
   const { fields, append, remove } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
   const { trigger, setValue, watch } = useFormContext<DepositFormType>()
 
   const addArticle = useCallback(async () => {
-    const invalid = await trigger(`deposit.articles.${fields.length - 1}`)
-    if (invalid) return
+    const valid = await trigger(`deposit.articles.${fields.length - 1}`)
+    if (!valid) {
+      return
+    }
     const year = getYear()
     const articleIndex = generateArticleIndex(articleCount)
-    const articleCode = generateArticleCode(year, depotIndex, articleIndex)
+    const articleCode = generateArticleCode(year, depositIndex, articleIndex)
     append({
       price: 0,
       discipline: '',
@@ -386,12 +377,12 @@ function ArticleForm(props: ArticleFormProps) {
       model: '',
       articleCode,
       year,
-      depotIndex,
+      depotIndex: depositIndex,
       articleIndex,
-      shortArticleCode: `${depotIndex} ${articleIndex}`,
+      shortArticleCode: `${depositIndex} ${articleIndex}`,
     })
     onArticleAdd()
-  }, [fields, depotIndex, articleCount])
+  }, [fields, depositIndex, articleCount])
 
   const contributionAmount = watch('deposit.contributionAmount')
 
@@ -672,8 +663,8 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
   const { trigger, getValues } = useFormContext<DepositFormType>()
 
   const printDymo = useCallback(async () => {
-    const invalid = await trigger(`deposit.articles.${index}`)
-    if (invalid) return
+    const valid = await trigger(`deposit.articles.${index}`)
+    if (!valid) return
     const field = getValues(`deposit.articles.${index}`)
     dymo.print({
       color: field.color,
@@ -699,8 +690,8 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
 function SummaryPrintButton() {
   const { getValues, trigger, setValue } = useFormContext<DepositFormType>()
   const print = async () => {
-    const invalid = await trigger('deposit')
-    if (!invalid) {
+    const valid = await trigger('deposit')
+    if (!valid) {
       return
     }
     const formData = getValues('deposit')
@@ -729,21 +720,7 @@ function SummaryPrintButton() {
         color: article.color,
       })),
     }
-    const blob = await pdf(<DepositPdf data={data} copy={2} />).toBlob()
-    const blobURL = URL.createObjectURL(blob)
-    const iframe = document.createElement('iframe') //load content in an iframe to print later
-    document.body.appendChild(iframe)
-
-    iframe.style.display = 'none'
-    iframe.src = blobURL
-    iframe.onload = function () {
-      setTimeout(function () {
-        iframe.focus()
-        if (iframe.contentWindow) {
-          iframe.contentWindow.print()
-        }
-      }, 1)
-    }
+    await printPdf(<DepositPdf data={data} copy={2} />)
     setValue('isSummaryPrinted', true)
   }
 

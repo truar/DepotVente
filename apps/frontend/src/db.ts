@@ -2,9 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import { ContributionStatusEnum } from '@/types/depotForm.ts'
 
 export type Workstation = {
-  id: string
   incrementStart: number
-  name: string
 }
 
 export type Sale = {
@@ -83,6 +81,11 @@ export type SyncMetadata = {
   value: unknown
 }
 
+export type WorkstationMetadata = {
+  key: string
+  value: unknown
+}
+
 const db = new Dexie('DepotVenteDatabase') as Dexie & {
   contacts: EntityTable<
     Contact,
@@ -99,6 +102,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
   sales: EntityTable<Sale, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
   syncMetadata: EntityTable<SyncMetadata, 'key'>
+  workstation: EntityTable<WorkstationMetadata, 'key'>
 }
 
 // Schema declaration:
@@ -109,6 +113,7 @@ db.version(1).stores({
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
   syncMetadata: 'key',
+  workstation: 'key',
 })
 
 export { db }

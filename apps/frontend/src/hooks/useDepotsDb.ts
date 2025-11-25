@@ -1,14 +1,11 @@
-import { db, type Deposit } from '@/db.ts'
+import { db, type Deposit, type Workstation } from '@/db.ts'
 import { useWorkstation } from './useWorkstation'
 import { syncService } from '@/sync-service.ts'
 
 export function useDepotsDb() {
-  const [workstation] = useWorkstation()
-
-  function count() {
-    if (!workstation) return Promise.resolve(0)
+  function count(workstation: Workstation) {
     return db.deposits
-      .where({ incrementStart: workstation?.incrementStart })
+      .where({ incrementStart: workstation.incrementStart })
       .count()
   }
 

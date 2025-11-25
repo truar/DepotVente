@@ -71,9 +71,8 @@ export function useSyncStatus() {
     console.log('Initial sync triggered')
     ;(async () => {
       setStatus((prev) => ({ ...prev, isSyncing: true }))
-
       try {
-        await syncService.initialSync()
+        await syncService.softInitialSync()
         // syncService.connectSSE(workstation.id, token)
         setStatus((prev) => ({ ...prev, sseConnected: true }))
       } catch (error) {

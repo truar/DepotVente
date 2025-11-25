@@ -18,12 +18,15 @@ function CustomButton(props: CustomButtonProps) {
   const [isLoading, setIsLoading] = useState(loading ?? false)
   const onClickHandler: MouseEventHandler<HTMLButtonElement> = useCallback(
     async (event) => {
-      if (isLoading) return
-      setIsLoading(true)
-      if (onClick) await onClick(event)
-      setIsLoading(false)
+      try {
+        if (isLoading) return
+        setIsLoading(true)
+        if (onClick) await onClick(event)
+      } finally {
+        setIsLoading(false)
+      }
     },
-    [onClick],
+    [onClick, isLoading],
   )
   return (
     <Button {...rest} onClick={onClickHandler} disabled={isLoading || disabled}>
