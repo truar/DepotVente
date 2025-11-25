@@ -49,7 +49,10 @@ function SettingsPage() {
         <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow">
           <h2 className="text-2xl">Synchronization</h2>
           <p className="text-gray-600">
-            Last sync = {new Date(lastSync?.value ?? 0).toLocaleString()}
+            {lastSync
+              ? `Last sync = 
+            ${new Date(lastSync.value as number).toLocaleString()}`
+              : 'No sync yet'}
           </p>
           <div>
             <CustomButton type="button" onClick={triggerInitialSync}>

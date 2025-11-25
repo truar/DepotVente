@@ -1,5 +1,4 @@
 import { db, type Deposit, type Workstation } from '@/db.ts'
-import { useWorkstation } from './useWorkstation'
 import { syncService } from '@/sync-service.ts'
 
 export function useDepotsDb() {
