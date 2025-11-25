@@ -15,6 +15,7 @@ import { depositsRoutes } from "./routes/deposits.routes";
 // Import du database listener
 import { dbListener } from "./events/DatabaseListener";
 import { replicationRoutes } from "./routes/replication.route";
+import { syncRoutes } from './routes/sync.routes';
 
 // Étendre le type FastifyInstance pour inclure notre decorator
 declare module "fastify" {
@@ -64,6 +65,7 @@ await fastify.register(adminRoutes);
 await fastify.register(sseRoutes);
 await fastify.register(salesRoutes);
 await fastify.register(replicationRoutes);
+await fastify.register(syncRoutes);
 await fastify.register(depositsRoutes);
 
 // Graceful shutdown

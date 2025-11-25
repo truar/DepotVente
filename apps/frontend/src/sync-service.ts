@@ -6,8 +6,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const MAX_RETRIES = 10
 const BASE_DELAY = 1000 // 1 second
 
+function getToken() {
+  const authStorage = localStorage.getItem('auth-storage')
+  return authStorage ? JSON.parse(authStorage).state?.token : null
+}
+
 class SyncService {
   private isSyncing = false
+  private syncInProgress = false
   private retryTimeouts = new Map<string, NodeJS.Timeout>()
 
   /**
@@ -62,10 +68,125 @@ class SyncService {
     return outboxOperation.id
   }
 
+  // Initial full sync
+  async initialSync() {
+    if (this.syncInProgress) {
+      console.log('⏳ Sync already in progress')
+      return
+    }
+
+    this.syncInProgress = true
+    console.log(' Starting initial sync...')
+    const token = getToken()
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/sync/initial`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(`Sync failed: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Bulk update IndexedDB
+      await db.transaction(
+        'rw',
+        [db.deposits, db.articles, db.contacts, db.sales],
+        async () => {
+          await db.deposits.clear()
+          await db.deposits.bulkPut(data.deposits)
+
+          await db.articles.clear()
+          await db.articles.bulkPut(data.articles)
+
+          await db.contacts.clear()
+          await db.contacts.bulkPut(data.contacts)
+
+          await db.sales.clear()
+          await db.sales.bulkPut(data.sales)
+        },
+      )
+
+      await this.setMetadata('lastSync', data.syncedAt)
+      await this.setMetadata('workstationData', data.workstation)
+
+      console.log('✅ Initial sync complete')
+    } catch (error) {
+      console.error('❌ Initial sync failed:', error)
+      throw error
+    } finally {
+      this.syncInProgress = false
+    }
+  }
+
+  // Delta sync (fetch changes since last sync)
+  async deltaSync() {
+    const lastSync = await this.getMetadata('lastSync')
+
+    if (!lastSync) {
+      return this.initialSync()
+    }
+    const token = getToken()
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/sync/delta?since=${lastSync}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(`Delta sync failed: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Apply delta changes
+      await db.transaction(
+        'rw',
+        [db.deposits, db.articles, db.contacts, db.sales],
+        async () => {
+          if (data.deposits.length > 0) await db.deposits.bulkPut(data.deposits)
+          if (data.articles.length > 0) await db.articles.bulkPut(data.articles)
+          if (data.contacts.length > 0) await db.contacts.bulkPut(data.contacts)
+          if (data.sales.length > 0) await db.sales.bulkPut(data.sales)
+        },
+      )
+
+      await this.setMetadata('lastSync', data.syncedAt)
+
+      console.log(
+        `✅ Delta sync complete: ${data.deposits.length + data.articles.length + data.contacts.length + data.sales.length} changes`,
+      )
+    } catch (error) {
+      console.error('❌ Delta sync failed:', error)
+    }
+  }
+
+  // Get sync metadata
+  private async getMetadata(key: string): Promise<any> {
+    const meta = await db.syncMetadata.get(key)
+    return meta?.value
+  }
+
+  // Set sync metadata
+  private async setMetadata(key: string, value: any) {
+    await db.syncMetadata.put({ key, value })
+  }
+
   /**
    * Process all pending operations in the outbox
    */
-  private async processOutbox() {
+  async processOutbox() {
     if (this.isSyncing) {
       return
     }
@@ -122,8 +243,7 @@ class SyncService {
 
     try {
       // Get auth token
-      const authStorage = localStorage.getItem('auth-storage')
-      const token = authStorage ? JSON.parse(authStorage).state?.token : null
+      const token = getToken()
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',

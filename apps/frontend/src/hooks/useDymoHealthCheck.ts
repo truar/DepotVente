@@ -21,15 +21,16 @@ const isDymoEnabled = () => {
 }
 
 export function useDymoHealthCheck() {
-  const [isEnabled, setEnabled] = useState(isDymoEnabled())
+  const [isEnabled, setEnabled] = useState(false)
   useEffect(() => {
     const healthCheckInterval = setInterval(() => {
+      console.log('Checking dymo health...')
       const isEnabled = isDymoEnabled()
       setEnabled(isEnabled)
     }, 10000)
 
     return () => clearInterval(healthCheckInterval)
-  })
+  }, [])
 
   return { isEnabled }
 }

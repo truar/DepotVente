@@ -15,8 +15,7 @@ type ReplicationRequest = {
 
 export async function replicationRoutes(fastify: FastifyInstance) {
   fastify.post<{ Body: ReplicationRequest }>('/push', async (request) => {
-    const { operationId, collection, operation, data, timestamp } = request.body
-    console.log(operationId, collection, operation, data, timestamp)
+    const { collection, data } = request.body
     if (collection === 'deposits') {
       let depositData = data as DepositUncheckedCreateInput
       await prisma.deposit.upsert({

@@ -78,6 +78,11 @@ export type OutboxOperation = {
   status: 'pending' | 'syncing' | 'failed'
 }
 
+export type SyncMetadata = {
+  key: string
+  value: unknown
+}
+
 const db = new Dexie('DepotVenteDatabase') as Dexie & {
   contacts: EntityTable<
     Contact,
@@ -93,6 +98,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
   >
   sales: EntityTable<Sale, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
+  syncMetadata: EntityTable<SyncMetadata, 'key'>
 }
 
 // Schema declaration:
@@ -102,6 +108,7 @@ db.version(1).stores({
   articles: '++id, depotId, code',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
+  syncMetadata: 'key',
 })
 
 export { db }

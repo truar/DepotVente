@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useSyncStatus } from '@/hooks/useSyncStatus.ts'
 
 export default function Header() {
   const dymo = useDymoHealthCheck()
   const isAppOffline = useIsAppOffline()
   const authStore = useAuthStore()
+  const syncStatus = useSyncStatus()
   const navigate = useNavigate()
   const logout = useCallback(async () => {
     await authStore.logout()
@@ -35,6 +37,14 @@ export default function Header() {
       <HeaderNeutralStatus
         text={`Numéro de caisse: ${workstation?.incrementStart}`}
       />
+      {syncStatus.outboxCount > 0 && (
+        <HeaderWarningStatus text={`${syncStatus.outboxCount} en attente`} />
+      )}
+      {syncStatus.lastSync && (
+        <HeaderNeutralStatus
+          text={`Dernière sync: ${new Date(syncStatus.lastSync).toLocaleTimeString()}`}
+        />
+      )}
       <Button onClick={logout} className="gap-3">
         <LogOut size={20} />
         <span>Déconnexion</span>
@@ -53,4 +63,8 @@ export function HeaderNeutralStatus({ text }: { text: string }) {
 
 export function HeaderFailureStatus({ text }: { text: string }) {
   return <p className="p-1 h-full bg-red-500 flex-1">{text}</p>
+}
+
+export function HeaderWarningStatus({ text }: { text: string }) {
+  return <p className="p-1 bg-orange-500 flex-1">{text}</p>
 }
