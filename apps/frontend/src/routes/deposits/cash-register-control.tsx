@@ -211,19 +211,21 @@ function TheoreticalAmount() {
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
-  const deposits = useLiveQuery(() =>
-    db.deposits
-      .where({
-        incrementStart: workstation.incrementStart,
-      })
-      .toArray(),
+  const deposits = useLiveQuery(
+    () =>
+      db.deposits
+        .where({
+          incrementStart: workstation.incrementStart,
+        })
+        .toArray(),
+    [workstation],
   )
   useEffect(() => {
     const theoreticalAmount =
       deposits?.reduce((acc, deposit) => {
         const amount =
           deposit.contributionStatus === 'PAYEE'
-            ? (deposit.contributionAmount ?? 0)
+            ? (parseInt(deposit.contributionAmount) ?? 0)
             : 0
         return acc + amount
       }, 0) ?? 0
