@@ -76,7 +76,6 @@ export function RouteComponent() {
     () => depotDb.count(workstation),
     [workstation],
   )
-  console.log('currentDepotCount', currentDepotCount)
   if (currentDepotCount == null) return null
   const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
