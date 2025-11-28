@@ -13,6 +13,16 @@ import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.tsx'
+import { Trash2 } from 'lucide-react'
 
 export const Route = createFileRoute('/deposits/pros')({
   beforeLoad: () => {
@@ -208,10 +218,33 @@ function ArticleList(props: ArticleListProps) {
   if (!articles) return
 
   return (
-    <ul>
-      {articles.map((article) => (
-        <li key={article.id}>{article.code}</li>
-      ))}
-    </ul>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">Code</TableHead>
+          <TableHead>Discipline</TableHead>
+          <TableHead>Catégorie</TableHead>
+          <TableHead>Marque</TableHead>
+          <TableHead>Descriptif</TableHead>
+          <TableHead>Couleur</TableHead>
+          <TableHead>Taille</TableHead>
+          <TableHead className="text-right">Prix</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {articles.map((article, index) => (
+          <TableRow key={article.id}>
+            <TableCell className="font-medium">{article.code}</TableCell>
+            <TableCell>{article.discipline}</TableCell>
+            <TableCell>{article.category}</TableCell>
+            <TableCell>{article.brand}</TableCell>
+            <TableCell>{article.model}</TableCell>
+            <TableCell>{article.color}</TableCell>
+            <TableCell>{article.size}</TableCell>
+            <TableCell className="text-right">{article.price}€</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }
