@@ -8,7 +8,6 @@ import { Combobox } from '@/components/Combobox.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
-import { Label } from '@/components/ui/label.tsx'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
@@ -17,12 +16,10 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-import { Trash2 } from 'lucide-react'
 
 export const Route = createFileRoute('/deposits/pros')({
   beforeLoad: () => {
@@ -253,7 +250,7 @@ function ArticleList(props: ArticleListProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {articles.map((article, index) => (
+        {articles.map((article) => (
           <TableRow key={article.id}>
             <TableCell className="font-medium">{article.code}</TableCell>
             <TableCell>{article.discipline}</TableCell>
