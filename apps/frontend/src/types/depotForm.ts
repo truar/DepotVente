@@ -7,6 +7,11 @@ export enum ContributionStatusEnum {
   'GRATUIT' = 'Gratuit',
 }
 
+export enum DepositTypeEnum {
+  'PRO' = 'PRO',
+  'PARTICULIER' = 'PARTICULIER',
+}
+
 export const ArticleSchema = z.object({
   price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
   discipline: z.string().nonempty({ error: 'La discipline est requise' }),

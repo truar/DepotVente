@@ -1,13 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { prisma, Prisma } from 'database';
-import DepositUncheckedCreateInput = Prisma.DepositUncheckedCreateInput;
-import ContactUncheckedCreateInput = Prisma.ContactUncheckedCreateInput;
-import ArticleUncheckedCreateInput = Prisma.ArticleUncheckedCreateInput;
+import { prisma } from 'database';
 
 type ReplicationRequest = {
   operationId: string
   collection: 'deposits' | 'contacts' | 'articles'
-  operation: string
+  operation: 'create' | 'update'
   recordId: string
   data: unknown
   timestamp: number
@@ -15,39 +12,37 @@ type ReplicationRequest = {
 
 export async function replicationRoutes(fastify: FastifyInstance) {
   fastify.post<{ Body: ReplicationRequest }>('/push', async (request) => {
-    const { collection, data } = request.body
-    if (collection === 'deposits') {
-      let depositData = data as DepositUncheckedCreateInput
-      await prisma.deposit.upsert({
-        where: {id: depositData.id},
-        create: {
-          ...depositData
+    const { collection, operation, data, recordId } = request.body
+
+    // Map collection names to Prisma delegates
+    const delegates = {
+      deposits: prisma.deposit,
+      contacts: prisma.contact,
+      articles: prisma.article,
+    }
+    const delegate = delegates[collection] as any
+
+    if (!delegate) {
+      // fastify.log.warn(`Unknown collection: ${collection}`)
+      return
+    }
+
+    // We treat data as 'any' here because we are forwarding it dynamically.
+    // Prisma validation will still occur at the database level.
+    const entityData = data as any
+
+    if (operation === 'create') {
+      await delegate.create({
+        data: {
+          ...entityData,
         },
-        update: {
-          ...depositData
-        }
       })
-    } else if (collection === 'contacts') {
-      let contactData = data as ContactUncheckedCreateInput
-      await prisma.contact.upsert({
-        where: {id: contactData.id},
-        create: {
-          ...contactData
+    } else if (operation === 'update') {
+      await delegate.update({
+        where: { id: recordId },
+        data: {
+          ...entityData,
         },
-        update: {
-          ...contactData
-        }
-      })
-    } else if (collection === 'articles') {
-      let articleData = data as ArticleUncheckedCreateInput
-      await prisma.article.upsert({
-        where: {id: articleData.id},
-        create: {
-          ...articleData
-        },
-        update: {
-          ...articleData
-        }
       })
     }
   })

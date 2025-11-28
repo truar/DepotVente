@@ -8,6 +8,20 @@ export function useArticlesDb() {
     return undefined
   }
 
+  function findByDepositId(depositId: string) {
+    return db.articles.where({ depositId }).toArray()
+  }
+
+  async function markArticleAsReceived(articleId: string) {
+    const changes = {
+      status: 'RECEPTION_OK' as const,
+      updatedAt: new Date(),
+    }
+    db.articles.update(articleId, changes)
+
+    await syncService.addToOutbox('articles', 'update', articleId, changes)
+  }
+
   async function batchUpsert(articles: Article[]) {
     db.articles.bulkPut(articles)
 
@@ -21,9 +35,15 @@ export function useArticlesDb() {
   ) {
     db.articles.bulkUpdate(articles)
 
-    // for (const article of articles) {
-    //   await syncService.addToOutbox('articles', 'create', article.id, article)
-    // }
+    for (const article of articles) {
+      await syncService.addToOutbox('articles', 'update', article.id, article)
+    }
   }
-  return { batchUpsert, batchUpdate, findByCode }
+  return {
+    batchUpsert,
+    batchUpdate,
+    findByCode,
+    findByDepositId,
+    markArticleAsReceived,
+  }
 }

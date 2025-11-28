@@ -72,7 +72,7 @@ export function RouteComponent() {
               description="Controler les espèces"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => navigate({ to: '/deposits/pros' })}
               icon={<SearchCheck className="w-8 h-8 text-green-600" />}
               title="Pros"
               description="Réceptionner les articles"

@@ -10,6 +10,10 @@ export function useContactsDb() {
     return db.contacts.get(id)
   }
 
+  async function findByIds(ids: string[]) {
+    return db.contacts.where('id').anyOf(ids).toArray()
+  }
+
   async function update(contactId: string, contact: Partial<Contact>) {
     await db.contacts.upsert(contactId, contact)
     // Add to outbox for syncing
@@ -22,5 +26,5 @@ export function useContactsDb() {
     await syncService.addToOutbox('contacts', 'create', contactId, contact)
     return contactId
   }
-  return { update, insert, getAll, findById }
+  return { update, insert, getAll, findById, findByIds }
 }

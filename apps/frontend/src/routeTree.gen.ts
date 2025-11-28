@@ -19,6 +19,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
 import { Route as HiddenPdfsDepositCashRegisterControlRouteImport } from './routes/hidden-pdfs/deposit-cash-register-control'
+import { Route as DepositsProsRouteImport } from './routes/deposits/pros'
 import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
@@ -80,6 +81,11 @@ const HiddenPdfsDepositCashRegisterControlRoute =
     path: '/hidden-pdfs/deposit-cash-register-control',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DepositsProsRoute = DepositsProsRouteImport.update({
+  id: '/deposits/pros',
+  path: '/deposits/pros',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepositsCashRegisterControlRoute =
   DepositsCashRegisterControlRouteImport.update({
     id: '/deposits/cash-register-control',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
+  '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deposits/add'
     | '/deposits/cash-register-control'
+    | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deposits/add'
     | '/deposits/cash-register-control'
+    | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deposits/add'
     | '/deposits/cash-register-control'
+    | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   DepositsAddRoute: typeof DepositsAddRoute
   DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
+  DepositsProsRoute: typeof DepositsProsRoute
   HiddenPdfsDepositCashRegisterControlRoute: typeof HiddenPdfsDepositCashRegisterControlRoute
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   SalesAddRoute: typeof SalesAddRoute
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HiddenPdfsDepositCashRegisterControlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deposits/pros': {
+      id: '/deposits/pros'
+      path: '/deposits/pros'
+      fullPath: '/deposits/pros'
+      preLoaderRoute: typeof DepositsProsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/deposits/cash-register-control': {
       id: '/deposits/cash-register-control'
       path: '/deposits/cash-register-control'
@@ -409,6 +429,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   DepositsAddRoute: DepositsAddRoute,
   DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
+  DepositsProsRoute: DepositsProsRoute,
   HiddenPdfsDepositCashRegisterControlRoute:
     HiddenPdfsDepositCashRegisterControlRoute,
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,

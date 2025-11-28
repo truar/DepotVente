@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { ContributionStatusEnum } from '@/types/depotForm.ts'
+import { ContributionStatusEnum, DepositTypeEnum } from '@/types/depotForm.ts'
 
 export type Workstation = {
   incrementStart: number
@@ -26,6 +26,7 @@ export type Deposit = {
   incrementStart: number
   dropWorkstationId: number
   depositIndex: number
+  type: DepositTypeEnum
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -42,6 +43,7 @@ export type Article = {
   color: string
   code: string
   year: number
+  status: 'RECEPTION_PENDING' | 'RECEPTION_OK'
   depositIndex: number
   articleIndex: string
   depositId: string
@@ -108,8 +110,8 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   contacts: '++id',
-  deposits: '++id, incrementStart',
-  articles: '++id, depotId, code',
+  deposits: '++id, incrementStart, type',
+  articles: '++id, depositId, code',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
   syncMetadata: 'key',

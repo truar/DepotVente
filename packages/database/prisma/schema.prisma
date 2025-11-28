@@ -64,10 +64,11 @@ model Deposit {
   id                 String             @id @default(uuid()) @db.Uuid
   sellerId           String             @map("seller_id") @db.Uuid
   contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
-  contributionAmount Decimal            @default (2) @map("contribution_amount") @db.Decimal(3, 2)
+  contributionAmount Decimal            @default(2) @map("contribution_amount") @db.Decimal(3, 2)
   depositIndex       Int                @map("depot_index")
   incrementStart     Int                @map("increment_start")
   dropWorkstationId  Int                @map("deposit_workstation_id")
+  type               DepositType        @default(PARTICULIER)
 
   collectWorkstationId Int?      @map("collect_workstation_id")
   collectedAt          DateTime? @map("collected_at")
@@ -94,6 +95,16 @@ enum ContributionStatus {
   PAYEE
   A_PAYER
   GRATUIT
+}
+
+enum DepositType {
+  PRO
+  PARTICULIER
+}
+
+enum ArticleStatus {
+  RECEPTION_PENDING
+  RECEPTION_OK
 }
 
 // Sales - Ventes
@@ -128,17 +139,18 @@ model Article {
   id String @id @default(uuid()) @db.Uuid
 
   // Informations article
-  price        Decimal? @db.Decimal(10, 2)
+  price        Decimal?      @db.Decimal(10, 2)
   category     String
   discipline   String
   brand        String
   model        String
   size         String
   color        String
-  code         String   @unique // Code-barres
+  code         String        @unique // Code-barres
   year         Int
   depositIndex Int
   articleIndex String
+  status       ArticleStatus @default(RECEPTION_PENDING)
 
   // Un article appartient forcément à un dépot
   depositId String? @map("deposit_id") @db.Uuid

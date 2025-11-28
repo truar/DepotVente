@@ -22,10 +22,18 @@ type ComboboxProps = {
   placeholder?: string
   value: string | null
   invalid?: boolean
+  emptyLabel?: string
 }
 
 export const Combobox = memo(function Combobox(props: ComboboxProps) {
-  const { items, onSelect, value, placeholder, invalid } = props
+  const {
+    items,
+    onSelect,
+    value,
+    placeholder,
+    invalid,
+    emptyLabel = 'Vide',
+  } = props
   const [open, setOpen] = useState(false)
 
   const commandItems = useMemo(() => {
@@ -72,7 +80,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
-            <CommandEmpty>Aucun prédépot</CommandEmpty>
+            <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>{commandItems}</CommandGroup>
           </CommandList>
         </Command>

@@ -8,6 +8,10 @@ export function useDepotsDb() {
       .count()
   }
 
+  function findProfessionals() {
+    return db.deposits.where({ type: 'PRO' }).toArray()
+  }
+
   async function insert(depot: Deposit) {
     const depotId = await db.deposits.add(depot)
     // Add to outbox for syncing
@@ -19,5 +23,5 @@ export function useDepotsDb() {
     )
     return depotId
   }
-  return { insert, count }
+  return { insert, count, findProfessionals }
 }
