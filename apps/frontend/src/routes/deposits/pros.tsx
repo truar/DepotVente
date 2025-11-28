@@ -115,14 +115,34 @@ type ProArticlesFormProps = {
 
 function ProArticlesForm(props: ProArticlesFormProps) {
   const { depositId } = props
-  const articlesDb = useArticlesDb()
-  const articles = useLiveQuery(
-    () => articlesDb.findByDepositId(depositId),
-    [depositId],
+  const [shouldDisplayArticles, setShouldDisplayArticles] = useState(false)
+  return (
+    <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+      <ReceiveArticleInput />
+      <ReceivedArticleCount depositId={depositId} />
+      <TotalArticleCount depositId={depositId} />
+      <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
+        <div className="col-span-2 text-right">Articles non réceptionnés</div>
+        <div>
+          <Button
+            className="cursor-pointer"
+            type="button"
+            variant="secondary"
+            onClick={() => setShouldDisplayArticles(!shouldDisplayArticles)}
+          >
+            Consulter
+          </Button>
+        </div>
+      </div>
+
+      {shouldDisplayArticles && <ArticleList depositId={depositId} />}
+    </div>
   )
-  const alreadyReceivedArticlesCount =
-    articles?.filter((article) => article.status === 'RECEPTION_OK').length ?? 0
+}
+
+function ReceiveArticleInput() {
   const [articleCode, setArticleCode] = useState('')
+  const articlesDb = useArticlesDb()
   const checkKeyDown = useCallback(
     async (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -132,10 +152,8 @@ function ProArticlesForm(props: ProArticlesFormProps) {
     [articleCode, articlesDb],
   )
 
-  const [shouldDisplayArticles, setShouldDisplayArticles] = useState(false)
-
   const addArticle = useCallback(async () => {
-    const article = await articlesDb.findByCode(articleCode)
+    const article = await articlesDb.findByCode(articleCode.trim())
     if (!article) {
       toast.error(`Article ${articleCode} inconnu`)
       setArticleCode('')
@@ -154,52 +172,55 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   }, [articleCode, articlesDb])
 
   return (
-    <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Scanner un article</div>
-        <div>
-          <Input
-            type="text"
-            name="articleCode"
-            id="articleCode"
-            value={articleCode}
-            onChange={(e) => setArticleCode(e.target.value)}
-            onKeyDown={checkKeyDown}
-          />
-        </div>
-        <div>
-          <Button className="cursor-pointer" type="button" onClick={addArticle}>
-            Ajouter
-          </Button>
-        </div>
+    <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
+      <div className="col-span-2 text-right">Scanner un article</div>
+      <div>
+        <Input
+          type="text"
+          name="articleCode"
+          id="articleCode"
+          value={articleCode}
+          onChange={(e) => setArticleCode(e.target.value)}
+          onKeyDown={checkKeyDown}
+        />
       </div>
-      <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Nombre d'articles scannés</div>
-        <div>
-          <Input type="text" readOnly value={alreadyReceivedArticlesCount} />
-        </div>
+      <div>
+        <Button className="cursor-pointer" type="button" onClick={addArticle}>
+          Ajouter
+        </Button>
       </div>
-      <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Nombre d'articles totals</div>
-        <div>
-          <Input type="text" readOnly value={articles?.length} />
-        </div>
-      </div>
-      <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Articles non réceptionnés</div>
-        <div>
-          <Button
-            className="cursor-pointer"
-            type="button"
-            variant="secondary"
-            onClick={() => setShouldDisplayArticles(!shouldDisplayArticles)}
-          >
-            Consulter
-          </Button>
-        </div>
-      </div>
+    </div>
+  )
+}
 
-      {shouldDisplayArticles && <ArticleList depositId={depositId} />}
+function ReceivedArticleCount(props: { depositId: string }) {
+  const { depositId } = props
+  const alreadyReceivedArticlesCount = useLiveQuery(
+    () => db.articles.where({ depositId, status: 'RECEPTION_OK' }).count(),
+    [depositId],
+  )
+  return (
+    <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
+      <div className="col-span-2 text-right">Nombre d'articles scannés</div>
+      <div>
+        <Input type="text" readOnly value={alreadyReceivedArticlesCount} />
+      </div>
+    </div>
+  )
+}
+
+function TotalArticleCount(props: { depositId: string }) {
+  const { depositId } = props
+  const articlesTotalCount = useLiveQuery(
+    () => db.articles.where({ depositId }).count(),
+    [depositId],
+  )
+  return (
+    <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
+      <div className="col-span-2 text-right">Nombre d'articles totals</div>
+      <div>
+        <Input type="text" readOnly value={articlesTotalCount} />
+      </div>
     </div>
   )
 }
