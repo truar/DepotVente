@@ -154,7 +154,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
-          />
+          />{' '}
           (A Payer)
         </>
       )
@@ -165,7 +165,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
-          />
+          />{' '}
           (Payée)
         </>
       )

@@ -8,7 +8,6 @@ import { CustomButton } from '@/components/custom/Button.tsx'
 import { useState } from 'react'
 import { getYear } from '@/utils'
 import {
-  DepositPdf,
   type DepositPdfProps,
   DepositsPdf,
   type DepositsPdfProps,
