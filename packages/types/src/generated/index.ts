@@ -50,7 +50,7 @@ export const QueryModeSchema = z.enum(['default','insensitive']);
 
 export const NullsOrderSchema = z.enum(['first','last']);
 
-export const ContributionStatusSchema = z.enum(['PAYEE','A_PAYER','GRATUIT']);
+export const ContributionStatusSchema = z.enum(['PAYEE','A_PAYER','GRATUIT','PRO']);
 
 export type ContributionStatusType = `${z.infer<typeof ContributionStatusSchema>}`
 

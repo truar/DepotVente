@@ -95,6 +95,7 @@ enum ContributionStatus {
   PAYEE
   A_PAYER
   GRATUIT
+  PRO
 }
 
 enum DepositType {

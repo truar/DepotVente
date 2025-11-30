@@ -110,7 +110,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   contacts: '++id',
-  deposits: '++id, incrementStart, type',
+  deposits: '++id, depositIndex, incrementStart, type',
   articles: '++id, depositId, code, [depositId+status]',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
