@@ -1,5 +1,5 @@
 export const marques: Record<string, string> = {
-  '1':' ?',
+  '1':'?',
   '2':'1080 Degrees',
   '3':'ABX',
   '4':'Acerbis',

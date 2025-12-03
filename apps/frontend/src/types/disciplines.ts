@@ -3,7 +3,7 @@ export const disciplines = [
   'Fond',
   'Randonnée Alpine',
   'Randonnée Pédestre',
-  'Surf',
+  'Snowboard',
   'Telemark',
 ]
 
