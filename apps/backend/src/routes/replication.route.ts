@@ -35,6 +35,8 @@ export async function replicationRoutes(fastify: FastifyInstance) {
       await delegate.create({
         data: {
           ...entityData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       })
     } else if (operation === 'update') {
@@ -42,6 +44,7 @@ export async function replicationRoutes(fastify: FastifyInstance) {
         where: { id: recordId },
         data: {
           ...entityData,
+          updatedAt: new Date(),
         },
       })
     }
