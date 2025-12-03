@@ -127,7 +127,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
             variant="secondary"
             onClick={() => setShouldDisplayArticles(!shouldDisplayArticles)}
           >
-            Consulter
+            {shouldDisplayArticles ? 'Masquer' : 'Consulter'}
           </Button>
         </div>
       </div>

@@ -37,6 +37,7 @@ async function importDeposits(fiches: DepositData[]) {
           collectedAt: fiche.collectedAt,
           paymentAmount: fiche.paymentAmount,
           chequeNumber: fiche.chequeNumber,
+          type: fiche.depositIndex < 10 ? 'PRO' : 'PARTICULIER',
           signature: fiche.signature,
           createdAt: fiche.createdAt,
           updatedAt: fiche.updatedAt,
