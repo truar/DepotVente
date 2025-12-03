@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback } from 'react'
 
 export function useWorkstation(): [
-  Workstation | undefined,
+  Workstation,
   (value: number | undefined) => void,
 ] {
   const workstation = useLiveQuery(() => db.workstation.get('incrementStart'))

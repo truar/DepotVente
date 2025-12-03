@@ -24,6 +24,7 @@ export function useCreateDepot() {
       db.contacts,
       db.outbox,
       async () => {
+        console.log(data.depotIndex)
         const currentDate = new Date()
         const contactId = await contactDb.insert({
           id: v4(),

@@ -70,13 +70,20 @@ export const Route = createFileRoute('/deposits/add')({
 export function RouteComponent() {
   const depotDb = useDepotsDb()
   const [workstation] = useWorkstation()
-  if (!workstation) return null
-
-  const currentDepotCount = useLiveQuery(
-    () => depotDb.count(workstation),
-    [workstation],
+  const [currentDepotCount, setCurrentDepotCount] = useState<number | null>(
+    null,
   )
-  if (currentDepotCount == null) return null
+  useEffect(() => {
+    async function getDepotCount() {
+      if (workstation.incrementStart > 0) {
+        const count = await depotDb.count(workstation)
+        setCurrentDepotCount(count)
+      }
+    }
+    getDepotCount()
+  }, [workstation, setCurrentDepotCount])
+
+  if (currentDepotCount === null) return null
   const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
