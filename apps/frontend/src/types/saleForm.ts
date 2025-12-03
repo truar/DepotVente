@@ -9,7 +9,7 @@ export const ArticleFormSchema = z.object({
   model: z.string(),
   color: z.string(),
   size: z.string(),
-  price: z.number(),
+  price: z.coerce.number(),
 })
 
 export const SaleFormSchema = z.object({

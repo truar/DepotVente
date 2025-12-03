@@ -67,10 +67,18 @@ export const Route = createFileRoute('/sales/add')({
 function RouteComponent() {
   const salesDb = useSalesDb()
   const [workstation] = useWorkstation()
-  if (!workstation) return null
+  const [currentSaleCount, setCurrentSaleCount] = useState<number | null>(null)
+  useEffect(() => {
+    async function getCount() {
+      if (workstation.incrementStart > 0) {
+        const count = await salesDb.count(workstation)
+        setCurrentSaleCount(count)
+      }
+    }
+    getCount()
+  }, [workstation, setCurrentSaleCount])
 
-  const currentSaleCount = useLiveQuery(() => salesDb.count())
-  if (!currentSaleCount) return null
+  if (currentSaleCount === null) return null
   const saleCurrentIndex = workstation.incrementStart + currentSaleCount + 1
   return (
     <Page navigation={<Link to={'..'}>Retour</Link>} title="Faire une vente">
@@ -105,7 +113,8 @@ function SalesForm(props: SalesFormProps) {
   const createSaleMutation = useCreateSale()
   const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
-    const totalPrice = articles?.reduce((acc, cur) => acc + cur.price, 0) ?? 0
+    const totalPrice =
+      articles?.reduce((acc, cur) => acc + parseInt(`${cur.price}`), 0) ?? 0
     const cashAmount = data.cashAmount ?? 0
     const cardAmount = data.cardAmount ?? 0
     const checkAmount = data.checkAmount ?? 0
@@ -402,7 +411,7 @@ function ScannedArticles() {
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const total = articles.reduce((acc, cur) => {
-    acc += cur.price
+    acc += parseInt(`${cur.price}`)
     return acc
   }, 0)
   return (

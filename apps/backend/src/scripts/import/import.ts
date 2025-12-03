@@ -132,7 +132,7 @@ async function importSales(buyers: BuyerData[]) {
       const sale = await prisma.sale.create({
         data: {
           buyerId: contact.id,
-          saleCode: buyer.idBuyer,
+          saleIndex: parseInt(buyer.idBuyer),
           cardAmount: buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0,
           checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,
           cashAmount: buyer.paymentMethod === 'Liquide' ? buyer.paymentAmount : 0,
@@ -140,7 +140,7 @@ async function importSales(buyers: BuyerData[]) {
           createdAt: buyer.createdAt,
         }
       })
-      sales.set(sale.saleCode, sale)
+      sales.set(sale.saleIndex, sale)
 
       console.log(`✅ Imported buyer for ${buyer.idBuyer}`);
       successCount++
@@ -162,16 +162,16 @@ async function importSales(buyers: BuyerData[]) {
   return { sales }
 }
 
-async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map<string, Article>, sales: Map<string, Sale>) {
+async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map<string, Article>, sales: Map<number, Sale>) {
   let successCount = 0;
   let errorCount = 0;
   for (const soldArticle of soldArticles) {
     try {
-      const sale = sales.get(soldArticle.idBuyer)
+      const sale = sales.get(parseInt(soldArticle.idBuyer))
       if (!sale) throw new Error(`Sale ${soldArticle.idBuyer} not found`)
 
       const article = articles.get(soldArticle.code)
-      if(!article) throw new Error(`Article ${soldArticle.code} not found`)
+      if (!article) throw new Error(`Article ${soldArticle.code} not found`)
       await prisma.article.update({
         where: {
           code: article.code,
@@ -205,10 +205,10 @@ async function importAll() {
     const { deposits } = await importDeposits(fiches);
 
     const articlesFromImport = extractArticles()
-    const {articles} = await importArticles(articlesFromImport, deposits)
+    const { articles } = await importArticles(articlesFromImport, deposits)
 
     const buyersFromImport = await extractBuyers()
-    const {sales} = await importSales(buyersFromImport)
+    const { sales } = await importSales(buyersFromImport)
 
     const soldArticles = await extractSoldArticles()
     await importSoldArticles(soldArticles, articles, sales)

@@ -1,25 +1,22 @@
-import { db, type Sale } from '@/db.ts'
-import { useWorkstation } from './useWorkstation'
+import { db, type Sale, type Workstation } from '@/db.ts'
+import { syncService } from '@/sync-service.ts'
 
 export function useSalesDb() {
-  const [workstation] = useWorkstation()
-
-  function count() {
-    if (!workstation) return Promise.resolve(0)
+  function count(workstation: Workstation) {
     return db.sales
-      .where({ incrementStart: workstation?.incrementStart })
+      .where({ incrementStart: workstation.incrementStart })
       .count()
   }
 
   async function insert(sale: Sale) {
     const saleId = await db.sales.add(sale)
     // Add to outbox for syncing
-    // await syncService.addToOutbox(
-    //   'deposits',
-    //   'create', // or 'create' based on your logic
-    //   depot.id,
-    //   depot,
-    // )
+    await syncService.addToOutbox(
+      'sales',
+      'create', // or 'create' based on your logic
+      saleId,
+      sale,
+    )
     return saleId
   }
 

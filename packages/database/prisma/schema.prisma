@@ -25,10 +25,10 @@ enum UserRole {
 
 // Users - ADMIN Or BENEVOLE
 model User {
-  id       String @id @default(uuid()) @db.Uuid
+  id       String   @id @default(uuid()) @db.Uuid
   email    String
   password String
-  role UserRole @default(BENEVOLE)
+  role     UserRole @default(BENEVOLE)
 
   // Relations
   sales  Sale[]
@@ -120,7 +120,8 @@ model Sale {
   id      String @id @default(uuid()) @db.Uuid
   buyerId String @map("buyer_id") @db.Uuid
 
-  saleCode String @map("sale_code")
+  saleIndex      Int @map("sale_index")
+  incrementStart Int @map("increment_start") @default(1)
 
   // Montants des différents moyens de paiement
   cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
