@@ -22,7 +22,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
 
     const token = fastify.jwt.sign({
-      payload: { id: user.id },
+      payload: { id: user.id, role: user.role },
     });
 
     reply.send({ token });

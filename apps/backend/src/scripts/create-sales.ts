@@ -35,7 +35,7 @@ async function createRandomSales(options: CreateSaleOptions = {}) {
     event = await prisma.event.create({
       data: {
         name: "Test Event",
-        year: new Date().getFullYear(),
+        year: new Date().getFullYear() + 1,
         isActive: true,
       },
     });
@@ -155,7 +155,7 @@ async function getStats() {
     await Promise.all([
       prisma.user.count({ where: { deletedAt: null } }),
       prisma.deposit.count({
-        where: { status: "VALIDE", deletedAt: null },
+        where: { deletedAt: null },
       }),
       prisma.sale.count({
         where: { saleAt: { gte: startOfDay }, deletedAt: null },

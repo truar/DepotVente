@@ -8,19 +8,16 @@ export * from './generated'
 import type {
   Sale as GeneratedSale,
   Article as GeneratedArticle,
-  Workstation as GeneratedWorkstation,
   Deposit as GeneratedDeposit
 } from './generated'
 
 // Types with relations (for API responses with nested data)
 export type SaleWithRelations = GeneratedSale & {
   articles: GeneratedArticle[];
-  workstation: GeneratedWorkstation;
 }
 
 export type DepositWithRelations = GeneratedDeposit & {
   articles: GeneratedArticle[];
-  workstation: GeneratedWorkstation;
   user: User;
 }
 
@@ -29,6 +26,7 @@ export interface User {
   id: string
   email: string
   password: string
+  role: 'ADMIN' | 'BENEVOLE'
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null

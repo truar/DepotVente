@@ -2,18 +2,21 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
-import { Label } from '@/components/ui/label.tsx'
-import { Input } from '@/components/ui/input.tsx'
-import { CustomButton } from '@/components/custom/Button.tsx'
-import { useState } from 'react'
 import { getYear } from '@/utils'
+import { type ColumnDef } from '@tanstack/react-table'
+import { type Table } from '@tanstack/react-table'
+
 import {
   type DepositPdfProps,
   DepositsPdf,
   type DepositsPdfProps,
 } from '@/pdf/deposit-pdf.tsx'
+import { db, type Deposit } from '@/db.ts'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Checkbox } from '@/components/ui/checkbox'
+import { DataTable } from '@/components/custom/DataTable.tsx'
+import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { db } from '@/db.ts'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -31,24 +34,11 @@ export const Route = createFileRoute('/deposits/listing')({
   ),
 })
 
-function RouteComponent() {
-  return (
-    <Page
-      navigation={<Link to="..">Retour au menu</Link>}
-      title="Gérer les fiches des dépôts"
-    >
-      <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-        <DepositPrintingComponent />
-      </div>
-    </Page>
-  )
-}
-
 async function createDepositPdfData(
-  index: number,
+  id: string,
 ): Promise<DepositPdfProps['data'] | undefined> {
   const year = getYear()
-  const deposit = await db.deposits.where({ depositIndex: index }).first()
+  const deposit = await db.deposits.get(id)
   if (!deposit) return undefined
 
   const articles = await db.articles.where({ depositId: deposit.id }).toArray()
@@ -57,7 +47,7 @@ async function createDepositPdfData(
 
   return {
     deposit: {
-      depositIndex: index,
+      depositIndex: deposit.depositIndex,
       contributionStatus: deposit.contributionStatus,
       contributionAmount: deposit.contributionAmount,
       year: year,
@@ -81,22 +71,120 @@ async function createDepositPdfData(
   }
 }
 
-function DepositPrintingComponent() {
-  const [firstDepositIndex, setFirstDepositIndex] = useState<
-    string | undefined
-  >(undefined)
-  const [secondDepositIndex, setSecondDepositIndex] = useState<
-    string | undefined
-  >(undefined)
+function RouteComponent() {
+  return (
+    <Page
+      navigation={<Link to="..">Retour au menu</Link>}
+      title="Gérer les fiches des dépôts"
+    >
+      <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+        <DepositDataTable />
+      </div>
+    </Page>
+  )
+}
 
+function DepositDataTable() {
+  const deposits = useLiveQuery(() =>
+    db.deposits.offset(0).sortBy('depositIndex'),
+  )
+  const data: DepositTableType[] =
+    deposits?.map((deposit) => ({
+      depositId: deposit.id,
+      index: deposit.depositIndex,
+      type: deposit.type,
+      sellerId: deposit.sellerId,
+    })) ?? []
+
+  return (
+    <DataTable
+      columnVisibility={{
+        depositId: false,
+      }}
+      columns={columns}
+      data={data}
+      headerActions={(table) => <DepositDataTableHeaderAction table={table} />}
+    />
+  )
+}
+
+export type DepositTableType = {
+  depositId: string
+  index: number
+  type: Deposit['type']
+  sellerId: string
+}
+
+export const columns: ColumnDef<DepositTableType>[] = [
+  {
+    id: 'depositId',
+    accessorKey: 'depositId',
+  },
+  {
+    id: 'select',
+    size: 40,
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Tous sélectionner"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Sélectionner une ligne"
+      />
+    ),
+  },
+
+  {
+    accessorKey: 'index',
+    header: 'Identifiant',
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+  },
+  {
+    accessorKey: 'sellerId',
+    header: 'Déposant',
+    cell: ({ row }) => {
+      const sellerId = row.getValue<string>('sellerId')
+      const seller = useLiveQuery(() => db.contacts.get(sellerId))
+      return (
+        <div>
+          {seller ? (
+            <>
+              {seller.lastName} {seller.firstName}
+            </>
+          ) : (
+            <div className="h-2 bg-neutral-quaternary rounded-full max-w-[360px]"></div>
+          )}
+        </div>
+      )
+    },
+  },
+]
+
+type DepositDataTableHeaderActionProps = {
+  table: Table<DepositTableType>
+}
+function DepositDataTableHeaderAction({
+  table,
+}: DepositDataTableHeaderActionProps) {
   const print = async () => {
-    const firstIndex = parseInt(firstDepositIndex ?? '0')
-    const secondIndex = parseInt(secondDepositIndex ?? '0')
-    if (isNaN(firstIndex) || isNaN(secondIndex)) return
+    const selectedDepositIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.depositId)
 
     const depositsPdfData: DepositsPdfProps['data'] = []
-    for (let index = firstIndex; index <= secondIndex; index++) {
-      const data = await createDepositPdfData(index)
+    for (const id of selectedDepositIds) {
+      const data = await createDepositPdfData(id)
       if (data) {
         depositsPdfData.push(data)
       }
@@ -106,27 +194,9 @@ function DepositPrintingComponent() {
   }
 
   return (
-    <div className="flex flex-row items-baseline gap-3">
-      <div className="flex justify-end">
-        <Label>Imprimer les fiches</Label>
-      </div>
-      <div className="flex">
-        <Input
-          value={firstDepositIndex}
-          onChange={(e) => setFirstDepositIndex(e.target.value)}
-        />
-      </div>
-      <div className="flex justify-center">à</div>
-      <div className="flex">
-        <Input
-          value={secondDepositIndex}
-          onChange={(e) => setSecondDepositIndex(e.target.value)}
-        />
-      </div>
-      <div className="flex">
-        <CustomButton type="button" onClick={print}>
-          Imprimer
-        </CustomButton>
+    <div className="flex justify-end">
+      <div>
+        <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
       </div>
     </div>
   )

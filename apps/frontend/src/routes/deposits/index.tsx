@@ -36,7 +36,11 @@ export const Route = createFileRoute('/deposits/')({
 
 export function RouteComponent() {
   const navigate = useNavigate()
-
+  const user = useAuthStore((state) => state.user)
+  if (!user)
+    throw new Error(
+      'User not found. This should not happen. Please report this bug.',
+    )
   return (
     <>
       <Button variant="link" className="cursor-pointer">
@@ -77,24 +81,28 @@ export function RouteComponent() {
               title="Pros"
               description="Réceptionner les articles"
             />
-            <ClickableCard
-              onClick={() => navigate({ to: '/deposits/listing' })}
-              icon={<FileBox className="w-8 h-8 text-green-600" />}
-              title="Fiches dépôts"
-              description="Gérer les fiches"
-            />
-            <ClickableCard
-              onClick={() => {}}
-              icon={<FileCog className="w-8 h-8 text-green-600" />}
-              title="Fiches pré-dépôts"
-              description="Gérer les fiches"
-            />
-            <ClickableCard
-              onClick={() => {}}
-              icon={<SquarePen className="w-8 h-8 text-green-600" />}
-              title="Article"
-              description="Modifier un article"
-            />
+            {user.role === 'ADMIN' && (
+              <>
+                <ClickableCard
+                  onClick={() => navigate({ to: '/deposits/listing' })}
+                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  title="Fiches dépôts"
+                  description="Gérer les fiches"
+                />
+                <ClickableCard
+                  onClick={() => {}}
+                  icon={<FileCog className="w-8 h-8 text-green-600" />}
+                  title="Fiches pré-dépôts"
+                  description="Gérer les fiches"
+                />
+                <ClickableCard
+                  onClick={() => {}}
+                  icon={<SquarePen className="w-8 h-8 text-green-600" />}
+                  title="Article"
+                  description="Modifier un article"
+                />
+              </>
+            )}
           </div>
         </div>
       </main>
