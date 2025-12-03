@@ -44,6 +44,7 @@ import {
   EditDepositFormSchema,
   type EditDepositFormType,
 } from '@/types/EditDepositForm.ts'
+import { useEditDepot } from '@/hooks/useEditDepot.ts'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
   beforeLoad: () => {
@@ -130,9 +131,9 @@ function DepositForm(props: DepositFormProps) {
     },
   })
   const { handleSubmit, reset } = methods
-
+  const mutation = useEditDepot()
   const onSubmit: SubmitHandler<EditDepositFormType> = async (data) => {
-    console.log(data)
+    await mutation.mutate(data.deposit)
     toast.success(`Dépôt ${deposit.depositIndex} enregistré`)
   }
 

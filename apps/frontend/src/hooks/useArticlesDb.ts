@@ -36,7 +36,12 @@ export function useArticlesDb() {
     db.articles.bulkUpdate(articles)
 
     for (const article of articles) {
-      await syncService.addToOutbox('articles', 'update', article.key, article)
+      await syncService.addToOutbox(
+        'articles',
+        'update',
+        article.key,
+        article.changes,
+      )
     }
   }
   return {

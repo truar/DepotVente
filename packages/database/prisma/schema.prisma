@@ -112,6 +112,7 @@ enum DepositType {
 enum ArticleStatus {
   RECEPTION_PENDING
   RECEPTION_OK
+  REFUSED
 }
 
 // Sales - Ventes
