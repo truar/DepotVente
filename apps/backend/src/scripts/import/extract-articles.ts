@@ -3,6 +3,9 @@ import { dirname } from 'path';
 import { parseToUTC } from './utils';
 import path from 'path';
 import fs from 'fs';
+import { types } from './types';
+import { materiels } from './materiels';
+import { marques } from './marques';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,6 +20,7 @@ const COULEUR = 8
 const TAILLE = 9
 const PRIX = 10
 const DATE = 11
+const INDICE = 13
 
 
 export interface ArticleData {
@@ -35,31 +39,24 @@ export interface ArticleData {
   updatedAt?: Date
 }
 
-function extractArticleIndex(articleCode: string) {
-  const [, vendeurArticle] = articleCode.split(' ')
-  const [, ...articleIndex] = vendeurArticle.split('')
-  return articleIndex.join('');
-}
-
 function parseCSV(content: string): ArticleData[] {
   const lines = content.split('\n').filter((line) => line.trim());
 
   return lines.slice(1).map((line) => {
     const values = line.split('\t').map((v) => v.trim());
     const articleCode = values[IDENTIFIANT_ARTICLE]
-    const articleIndex = extractArticleIndex(articleCode);
     return {
       price: parseFloat(values[PRIX]),
-      category: values[ID_MATERIEL],
-      discipline: values[ID_TYPE],
-      brand: values[ID_MARQUE],
+      category: materiels[values[ID_MATERIEL]],
+      discipline: types[values[ID_TYPE]],
+      brand: marques[values[ID_MARQUE]],
       model: values[DESCRIPTIF],
       size: values[TAILLE],
       color: values[COULEUR],
       code: articleCode,
       year: 2025,
       depositIndex: parseInt(values[VENDEUR]),
-      articleIndex: articleIndex,
+      articleIndex: values[INDICE],
       createdAt: parseToUTC(values[DATE]),
       updatedAt: parseToUTC(values[DATE]),
     } as ArticleData;
