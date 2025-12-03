@@ -10,13 +10,14 @@ import {
   DepositsPdf,
   type DepositsPdfProps,
 } from '@/pdf/deposit-pdf.tsx'
-import { db, type Deposit } from '@/db.ts'
+import { type Contact, db, type Deposit } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { SquarePenIcon } from 'lucide-react'
+import { useMemo } from 'react'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -88,13 +89,29 @@ function DepositDataTable() {
   const deposits = useLiveQuery(() =>
     db.deposits.offset(0).sortBy('depositIndex'),
   )
-  const data: DepositTableType[] =
-    deposits?.map((deposit) => ({
-      depositId: deposit.id,
-      index: deposit.depositIndex,
-      type: deposit.type,
-      sellerId: deposit.sellerId,
-    })) ?? []
+  const contact = useLiveQuery(() => db.contacts.toArray())
+  const contactMap = useMemo(() => {
+    return (
+      contact?.reduce<Map<string, Contact>>((acc, el) => {
+        acc.set(el.id, el)
+        return acc
+      }, new Map()) ?? new Map()
+    )
+  }, [contact])
+
+  const data: DepositTableType[] = useMemo(
+    () =>
+      deposits?.map((deposit) => {
+        const seller = contactMap.get(deposit.sellerId)
+        return {
+          depositId: deposit.id,
+          index: deposit.depositIndex,
+          type: deposit.type,
+          seller: `${seller?.lastName} ${seller?.firstName}`,
+        }
+      }) ?? [],
+    [contactMap],
+  )
 
   return (
     <DataTable
@@ -112,7 +129,7 @@ export type DepositTableType = {
   depositId: string
   index: number
   type: Deposit['type']
-  sellerId: string
+  seller: string
 }
 
 export const columns: ColumnDef<DepositTableType>[] = [
@@ -151,23 +168,8 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: 'Type',
   },
   {
-    accessorKey: 'sellerId',
+    accessorKey: 'seller',
     header: 'Déposant',
-    cell: ({ row }) => {
-      const sellerId = row.getValue<string>('sellerId')
-      const seller = useLiveQuery(() => db.contacts.get(sellerId))
-      return (
-        <div>
-          {seller ? (
-            <>
-              {seller.lastName} {seller.firstName}
-            </>
-          ) : (
-            <div className="h-2 bg-neutral-quaternary rounded-full max-w-[360px]"></div>
-          )}
-        </div>
-      )
-    },
   },
   {
     id: 'actions',
@@ -208,10 +210,8 @@ function DepositDataTableHeaderAction({
   }
 
   return (
-    <div className="flex justify-end">
-      <div>
-        <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
-      </div>
+    <div>
+      <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
     </div>
   )
 }

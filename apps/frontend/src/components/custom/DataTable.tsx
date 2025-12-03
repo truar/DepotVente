@@ -1,14 +1,12 @@
 import {
-  type Table as TableDef,
-  type VisibilityState,
-} from '@tanstack/react-table'
-
-import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
+  type Table as TableDef,
   useReactTable,
+  type VisibilityState,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -19,7 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 import { DataTablePagination } from '@/components/custom/DataTablePagination.tsx'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
+import { Input } from '@/components/ui/input.tsx'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -34,6 +33,8 @@ export function DataTable<TData, TValue>({
   headerActions,
   columnVisibility,
 }: DataTableProps<TData, TValue>) {
+  const [globalFilter, setGlobalFilter] = useState<any>([])
+
   const table = useReactTable({
     data,
     columns,
@@ -42,16 +43,31 @@ export function DataTable<TData, TValue>({
     initialState: {
       columnVisibility,
     },
+    getFilteredRowModel: getFilteredRowModel(),
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: 'includesString', // built-in filter function
     defaultColumn: {
       size: 200, //starting column size
       minSize: 200, //enforced during column resizing
       maxSize: 200, //enforced during column resizing
     },
+    state: {
+      globalFilter,
+    },
   })
 
   return (
     <div className="flex flex-col gap-2">
-      {headerActions && headerActions(table)}
+      <div className="flex justify-between">
+        <div>
+          <Input
+            value={globalFilter}
+            onChange={(e) => table.setGlobalFilter(String(e.target.value))}
+            placeholder="Rechercher un dépôt..."
+          />
+        </div>
+        {headerActions && headerActions(table)}
+      </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
