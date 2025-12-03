@@ -20,6 +20,10 @@ export function generateArticleCode(
   return `${year} ${depotIndex}${articleIndex}`
 }
 
+export function shortArticleCode(depositIndex: number, articleIndex: string) {
+  return `${depositIndex} ${articleIndex}`
+}
+
 export function timeout(delay: number) {
   return new Promise((res) => setTimeout(res, delay))
 }

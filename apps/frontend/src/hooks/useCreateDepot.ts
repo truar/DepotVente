@@ -7,6 +7,7 @@ import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import {
   ContributionStatusEnum,
   type DepositFormType,
+  DepositTypeEnum,
 } from '@/types/depotForm.ts'
 
 export function useCreateDepot() {
@@ -38,6 +39,7 @@ export function useCreateDepot() {
 
         const depotId = await depotDb.insert({
           id: v4(),
+          type: 'PARTICULIER' as DepositTypeEnum,
           sellerId: contactId,
           contributionStatus: data.contributionStatus as ContributionStatusEnum,
           contributionAmount: data.contributionAmount,
@@ -55,6 +57,7 @@ export function useCreateDepot() {
             depositId: depotId,
             code: articleForm.articleCode,
             saleId: null,
+            status: 'RECEPTION_OK',
             price: articleForm.price,
             discipline: articleForm.discipline,
             brand: articleForm.brand,

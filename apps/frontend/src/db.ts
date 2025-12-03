@@ -43,7 +43,7 @@ export type Article = {
   color: string
   code: string
   year: number
-  status: 'RECEPTION_PENDING' | 'RECEPTION_OK'
+  status: 'RECEPTION_PENDING' | 'RECEPTION_OK' | 'REFUSED'
   depositIndex: number
   articleIndex: string
   depositId: string

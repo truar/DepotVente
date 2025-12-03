@@ -17,7 +17,7 @@ export function useContactsDb() {
   async function update(contactId: string, contact: Partial<Contact>) {
     await db.contacts.upsert(contactId, contact)
     // Add to outbox for syncing
-    await syncService.addToOutbox('contacts', 'create', contactId, contact)
+    await syncService.addToOutbox('contacts', 'update', contactId, contact)
   }
 
   async function insert(contact: Contact) {

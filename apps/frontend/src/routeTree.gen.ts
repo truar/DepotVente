@@ -28,6 +28,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminSalesRouteImport } from './routes/admin/sales'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminDepotsRouteImport } from './routes/admin/depots'
+import { Route as DepositsDepositIdEditRouteImport } from './routes/deposits/$depositId.edit'
 import { Route as AdminSalesSaleIdEditRouteImport } from './routes/admin/sales_.$saleId.edit'
 
 const LoginRoute = LoginRouteImport.update({
@@ -128,6 +129,11 @@ const AdminDepotsRoute = AdminDepotsRouteImport.update({
   path: '/admin/depots',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DepositsDepositIdEditRoute = DepositsDepositIdEditRouteImport.update({
+  id: '/deposits/$depositId/edit',
+  path: '/deposits/$depositId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSalesSaleIdEditRoute = AdminSalesSaleIdEditRouteImport.update({
   id: '/admin/sales_/$saleId/edit',
   path: '/admin/sales/$saleId/edit',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/sales': typeof SalesIndexRoute
+  '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/sales': typeof SalesIndexRoute
+  '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesById {
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/deposits/': typeof DepositsIndexRoute
   '/hidden-pdfs/': typeof HiddenPdfsIndexRoute
   '/sales/': typeof SalesIndexRoute
+  '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/admin/sales_/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRouteTypes {
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/deposits'
     | '/hidden-pdfs'
     | '/sales'
+    | '/deposits/$depositId/edit'
     | '/admin/sales/$saleId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/deposits'
     | '/hidden-pdfs'
     | '/sales'
+    | '/deposits/$depositId/edit'
     | '/admin/sales/$saleId/edit'
   id:
     | '__root__'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/deposits/'
     | '/hidden-pdfs/'
     | '/sales/'
+    | '/deposits/$depositId/edit'
     | '/admin/sales_/$saleId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   DepositsIndexRoute: typeof DepositsIndexRoute
   HiddenPdfsIndexRoute: typeof HiddenPdfsIndexRoute
   SalesIndexRoute: typeof SalesIndexRoute
+  DepositsDepositIdEditRoute: typeof DepositsDepositIdEditRoute
   AdminSalesSaleIdEditRoute: typeof AdminSalesSaleIdEditRoute
 }
 
@@ -428,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDepotsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deposits/$depositId/edit': {
+      id: '/deposits/$depositId/edit'
+      path: '/deposits/$depositId/edit'
+      fullPath: '/deposits/$depositId/edit'
+      preLoaderRoute: typeof DepositsDepositIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/sales_/$saleId/edit': {
       id: '/admin/sales_/$saleId/edit'
       path: '/admin/sales/$saleId/edit'
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   DepositsIndexRoute: DepositsIndexRoute,
   HiddenPdfsIndexRoute: HiddenPdfsIndexRoute,
   SalesIndexRoute: SalesIndexRoute,
+  DepositsDepositIdEditRoute: DepositsDepositIdEditRoute,
   AdminSalesSaleIdEditRoute: AdminSalesSaleIdEditRoute,
 }
 export const routeTree = rootRouteImport

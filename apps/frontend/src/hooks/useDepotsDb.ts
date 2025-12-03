@@ -23,5 +23,12 @@ export function useDepotsDb() {
     )
     return depotId
   }
-  return { insert, count, findProfessionals }
+
+  async function update(id: string, data: Partial<Deposit>) {
+    await db.deposits.upsert(id, data)
+    // Add to outbox for syncing
+    await syncService.addToOutbox('deposits', 'update', id, data)
+  }
+
+  return { insert, update, count, findProfessionals }
 }

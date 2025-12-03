@@ -23,6 +23,7 @@ type ComboboxProps = {
   value: string | null
   invalid?: boolean
   emptyLabel?: string
+  readOnly?: boolean
 }
 
 export const Combobox = memo(function Combobox(props: ComboboxProps) {
@@ -32,6 +33,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
     value,
     placeholder,
     invalid,
+    readOnly,
     emptyLabel = 'Vide',
   } = props
   const [open, setOpen] = useState(false)
@@ -69,6 +71,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          disabled={readOnly}
         >
           {value
             ? items.find((item) => item.value === value)?.label

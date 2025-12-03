@@ -3,9 +3,8 @@ import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { getYear } from '@/utils'
-import { type ColumnDef } from '@tanstack/react-table'
-import { type Table } from '@tanstack/react-table'
-
+import { type ColumnDef, type Table } from '@tanstack/react-table'
+import { Button } from '@/components/ui/button'
 import {
   type DepositPdfProps,
   DepositsPdf,
@@ -17,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
+import { SquarePenIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -166,6 +166,20 @@ export const columns: ColumnDef<DepositTableType>[] = [
             <div className="h-2 bg-neutral-quaternary rounded-full max-w-[360px]"></div>
           )}
         </div>
+      )
+    },
+  },
+  {
+    id: 'actions',
+    size: 30,
+    cell: ({ row }) => {
+      const id = row.original.depositId
+      return (
+        <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
+          <Button variant="ghost" size="icon">
+            <SquarePenIcon />
+          </Button>
+        </Link>
       )
     },
   },
