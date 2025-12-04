@@ -6,6 +6,7 @@ import { getYear } from '@/utils'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import {
+  DepositPdf,
   type DepositPdfProps,
   DepositsPdf,
   type DepositsPdfProps,
@@ -16,8 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { SquarePenIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { EyeIcon, SquarePenIcon } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -42,7 +43,9 @@ async function createDepositPdfData(
   const deposit = await db.deposits.get(id)
   if (!deposit) return undefined
 
-  const articles = await db.articles.where({ depositId: deposit.id }).toArray()
+  const articles = await db.articles
+    .where({ depositId: deposit.id })
+    .sortBy('code')
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 
@@ -176,12 +179,22 @@ export const columns: ColumnDef<DepositTableType>[] = [
     size: 30,
     cell: ({ row }) => {
       const id = row.original.depositId
+      const print = useCallback(async (depositId: string) => {
+        const data = await createDepositPdfData(depositId)
+        if (!data) return
+        await printPdf(<DepositPdf data={data} />)
+      }, [])
       return (
-        <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
-          <Button variant="ghost" size="icon">
-            <SquarePenIcon />
+        <div>
+          <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
+            <Button variant="ghost" size="icon">
+              <SquarePenIcon />
+            </Button>
+          </Link>
+          <Button variant="ghost" size="icon" onClick={() => print(id)}>
+            <EyeIcon />
           </Button>
-        </Link>
+        </div>
       )
     },
   },
