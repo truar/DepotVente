@@ -40,10 +40,14 @@ import { disciplineItems } from '@/types/disciplines.ts'
 import { categoriesItems } from '@/types/categories.ts'
 import { brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
-import { citiesItems } from '@/types/cities.ts'
+import { cities } from '@/types/cities.ts'
 import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
-import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
+import {
+  generateArticleCode,
+  generateIdentificationLetter,
+  getYear,
+} from '@/utils'
 import { toast } from 'sonner'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
@@ -144,21 +148,20 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     const predepositArticles = await db.predepositArticles
       .where({ predepositId })
       .toArray()
-    setValue('isSummaryPrinted', true)
     setValue('deposit.lastName', predeposit.sellerLastName)
     setValue('deposit.firstName', predeposit.sellerFirstName)
     setValue('deposit.phoneNumber', predeposit.sellerPhoneNumber)
     setValue('deposit.city', predeposit.sellerCity)
-    setValue('deposit.contributionStatus', 'A PAYER')
+    setValue('deposit.contributionStatus', 'A_PAYER')
     const year = getYear()
     setValue(
       'deposit.articles',
       predepositArticles.map((article, index) => {
-        const articleIndex = generateArticleIndex(index)
+        const identificationLetter = generateIdentificationLetter(index)
         const articleCode = generateArticleCode(
           year,
           depositIndex,
-          articleIndex,
+          identificationLetter,
         )
         return {
           price: article.price,
@@ -171,8 +174,9 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
           articleCode,
           year,
           depotIndex: depositIndex,
-          articleIndex,
-          shortArticleCode: `${depositIndex} ${articleIndex}`,
+          identificationLetter,
+          articleIndex: index,
+          shortArticleCode: `${depositIndex} ${identificationLetter}`,
         }
       }),
     )
@@ -264,6 +268,9 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
 }
 
 function SellerInformationForm() {
+  const cityOptions = useMemo(() => {
+    return cities.map((city) => <option key={city} value={city}></option>)
+  }, [cities])
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
@@ -337,12 +344,16 @@ function SellerInformationForm() {
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
                   <Label htmlFor="city">Ville</Label>
-                  <Combobox
-                    invalid={fieldState.invalid}
-                    items={citiesItems}
-                    onSelect={field.onChange}
-                    value={field.value}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      list="city-list"
+                      id="city"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                    <datalist id="city-list">{cityOptions}</datalist>
+                  </InputGroup>
                 </FieldContent>
               </Field>
             )}
@@ -372,8 +383,12 @@ function ArticleForm(props: ArticleFormProps) {
       return
     }
     const year = getYear()
-    const articleIndex = generateArticleIndex(articleCount)
-    const articleCode = generateArticleCode(year, depositIndex, articleIndex)
+    const identificationLetter = generateIdentificationLetter(articleCount)
+    const articleCode = generateArticleCode(
+      year,
+      depositIndex,
+      identificationLetter,
+    )
     append({
       price: 0,
       discipline: '',
@@ -385,8 +400,9 @@ function ArticleForm(props: ArticleFormProps) {
       articleCode,
       year,
       depotIndex: depositIndex,
-      articleIndex,
-      shortArticleCode: `${depositIndex} ${articleIndex}`,
+      identificationLetter,
+      articleIndex: 1,
+      shortArticleCode: `${depositIndex} ${identificationLetter}`,
     })
     onArticleAdd()
   }, [fields, depositIndex, articleCount])
@@ -717,7 +733,7 @@ function SummaryPrintButton() {
         phoneNumber: formData.phoneNumber,
       },
       articles: formData.articles.map((article) => ({
-        shortCode: `${formData.depotIndex} ${article.articleIndex}`,
+        shortCode: `${formData.depotIndex} ${article.identificationLetter}`,
         category: article.type,
         brand: article.brand,
         model: article.model,

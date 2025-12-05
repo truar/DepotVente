@@ -12,7 +12,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type KeyboardEvent, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { citiesItems } from '@/types/cities.ts'
+import { cities } from '@/types/cities.ts'
 import { getYear, shortArticleCode } from '@/utils'
 import { disciplineItems } from '@/types/disciplines.ts'
 import { brandsItems } from '@/types/brands.ts'
@@ -124,7 +124,7 @@ function DepositForm(props: DepositFormProps) {
           brand: article.brand,
           shortArticleCode: shortArticleCode(
             article.depositIndex,
-            article.articleIndex,
+            article.identificationLetter,
           ),
         })),
       },
@@ -172,6 +172,9 @@ function DepositForm(props: DepositFormProps) {
 }
 
 function SellerInformationForm() {
+  const cityOptions = useMemo(() => {
+    return cities.map((city) => <option key={city} value={city}></option>)
+  }, [cities])
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
@@ -245,12 +248,16 @@ function SellerInformationForm() {
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
                   <Label htmlFor="city">Ville</Label>
-                  <Combobox
-                    invalid={fieldState.invalid}
-                    items={citiesItems}
-                    onSelect={field.onChange}
-                    value={field.value}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      list="city-list"
+                      id="city"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                    <datalist id="city-list">{cityOptions}</datalist>
+                  </InputGroup>
                 </FieldContent>
               </Field>
             )}

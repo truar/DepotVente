@@ -23,7 +23,8 @@ export const ArticleSchema = z.object({
   articleCode: z.string(),
   year: z.number(),
   depotIndex: z.number(),
-  articleIndex: z.string(),
+  identificationLetter: z.string(),
+  articleIndex: z.number(),
   shortArticleCode: z.string(),
 })
 

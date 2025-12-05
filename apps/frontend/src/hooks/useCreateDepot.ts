@@ -24,7 +24,6 @@ export function useCreateDepot() {
       db.contacts,
       db.outbox,
       async () => {
-        console.log(data.depotIndex)
         const currentDate = new Date()
         const contactId = await contactDb.insert({
           id: v4(),
@@ -69,6 +68,7 @@ export function useCreateDepot() {
             year: articleForm.year,
             depositIndex: data.depotIndex,
             articleIndex: articleForm.articleIndex,
+            identificationLetter: articleForm.identificationLetter,
             createdAt: currentDate,
             updatedAt: currentDate,
             deletedAt: null,

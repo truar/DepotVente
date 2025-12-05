@@ -63,7 +63,7 @@ async function createDepositPdfData(
       phoneNumber: contact.phoneNumber,
     },
     articles: articles.map((article) => ({
-      shortCode: article.depositIndex + ' ' + article.articleIndex,
+      shortCode: article.depositIndex + ' ' + article.identificationLetter,
       discipline: article.discipline,
       size: article.size,
       price: article.price,

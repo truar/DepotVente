@@ -1,4 +1,4 @@
-export function generateArticleIndex(articleIndex: number) {
+export function generateIdentificationLetter(articleIndex: number) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let result = ''
   let index = articleIndex
