@@ -50,6 +50,7 @@ import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
 import { printPdf } from '@/pdf/print.tsx'
+import { db } from '@/db.ts'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -95,24 +96,6 @@ export function RouteComponent() {
     </Page>
   )
 }
-
-const predeposits = [
-  {
-    value: '001',
-    label: '001 - Ruaro Thibault',
-    keywords: ['ruaro', 'thibault', '001'],
-  },
-  {
-    value: '002',
-    label: '002 - Jacques Henry',
-    keywords: ['Jacques', 'Henry', '002'],
-  },
-  {
-    value: '003',
-    label: '003 - El tomato',
-    keywords: ['El', 'tomato', '003'],
-  },
-]
 
 function SubmitButton() {
   const { formState } = useFormContext<DepositFormType>()
@@ -202,6 +185,17 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
+  const predeposits = useLiveQuery(() => db.predeposits.toArray())
+  const predepositItems = useMemo(() => {
+    return (
+      predeposits?.map((predeposit) => ({
+        value: predeposit.id,
+        label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
+        keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
+      })) ?? []
+    )
+  }, [predeposits])
+
   return (
     <FormProvider {...methods}>
       <form
@@ -212,7 +206,7 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
         <div className="grid grid-cols-6 gap-2 w-[500px]">
           <div className="col-span-4">
             <Combobox
-              items={predeposits}
+              items={predepositItems}
               value={predeposit}
               onSelect={setPredeposit}
               placeholder="Rechercher une fiche de pré-dépot"

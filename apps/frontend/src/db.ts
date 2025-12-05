@@ -32,6 +32,35 @@ export type Deposit = {
   deletedAt: Date | null
 }
 
+export type Predeposit = {
+  id: string
+  sellerFirstName: string
+  sellerLastName: string
+  sellerPhoneNumber: string
+  sellerCity: string
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
+export type PredepositArticle = {
+  id: string
+  predepositId: string
+  price: number
+  category: string
+  discipline: string
+  brand: string
+  model: string
+  size: string
+  color: string
+  year: number
+  identificationLetter: string
+  articleIndex: number
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
 export type Article = {
   id: string
   price: number
@@ -45,7 +74,8 @@ export type Article = {
   year: number
   status: 'RECEPTION_PENDING' | 'RECEPTION_OK' | 'REFUSED'
   depositIndex: number
-  articleIndex: string
+  identificationLetter: string
+  articleIndex: number
   depositId: string
   saleId: string | null
   createdAt: Date
@@ -101,6 +131,14 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
     Article,
     'id' // primary key "id" (for the typings only)
   >
+  predeposits: EntityTable<
+    Predeposit,
+    'id' // primary key "id" (for the typings only)
+  >
+  predepositArticles: EntityTable<
+    PredepositArticle,
+    'id' // primary key "id" (for the typings only)
+  >
   sales: EntityTable<Sale, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
   syncMetadata: EntityTable<SyncMetadata, 'key'>
@@ -111,7 +149,9 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 db.version(1).stores({
   contacts: '++id',
   deposits: '++id, depositIndex, incrementStart, type',
-  articles: '++id, depositId, code, [depositId+status]',
+  articles: '++id, depositId, code, articleIndex, [depositId+status]',
+  predeposits: '++id',
+  predepositArticles: '++id, predepositId',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
   syncMetadata: 'key',

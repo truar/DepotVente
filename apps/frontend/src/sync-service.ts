@@ -97,7 +97,14 @@ class SyncService {
       // Bulk update IndexedDB
       await db.transaction(
         'rw',
-        [db.deposits, db.articles, db.contacts, db.sales],
+        [
+          db.deposits,
+          db.articles,
+          db.contacts,
+          db.sales,
+          db.predeposits,
+          db.predepositArticles,
+        ],
         async () => {
           await db.deposits.clear()
           await db.deposits.bulkPut(data.deposits)
@@ -110,6 +117,12 @@ class SyncService {
 
           await db.sales.clear()
           await db.sales.bulkPut(data.sales)
+
+          await db.predeposits.clear()
+          await db.predeposits.bulkPut(data.predeposits)
+
+          await db.predepositArticles.clear()
+          await db.predepositArticles.bulkPut(data.predepositArticles)
         },
       )
 
@@ -166,12 +179,23 @@ class SyncService {
       // Apply delta changes
       await db.transaction(
         'rw',
-        [db.deposits, db.articles, db.contacts, db.sales],
+        [
+          db.deposits,
+          db.articles,
+          db.contacts,
+          db.sales,
+          db.predeposits,
+          db.predepositArticles,
+        ],
         async () => {
           if (data.deposits.length > 0) await db.deposits.bulkPut(data.deposits)
           if (data.articles.length > 0) await db.articles.bulkPut(data.articles)
           if (data.contacts.length > 0) await db.contacts.bulkPut(data.contacts)
           if (data.sales.length > 0) await db.sales.bulkPut(data.sales)
+          if (data.predeposits.length > 0)
+            await db.predeposits.bulkPut(data.predeposits)
+          if (data.predepositArticles.length > 0)
+            await db.predepositArticles.bulkPut(data.predepositArticles)
         },
       )
 

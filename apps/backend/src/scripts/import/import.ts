@@ -1,10 +1,12 @@
 #!/usr/bin/env tsx
-import { Article, Deposit, prisma, Sale } from 'database';
+import { Article, Deposit, prisma, Sale, Predeposit } from 'database';
 import 'dotenv/config';
 import { DepositData, extractDeposits } from './extract-deposits';
 import { ArticleData, extractArticles } from './extract-articles';
 import { BuyerData, extractBuyers } from './extract-buyers';
 import { extractSoldArticles, SoldArticleData } from './extract-sold-articles';
+import { extractPredeposits, PredepositData } from './extract-predeposits';
+import { extractPredepositArticles, PredepositArticleData } from './extract-predepositArticles';
 
 async function importDeposits(fiches: DepositData[]) {
   let successCount = 0;
@@ -86,6 +88,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           code: articleFromImport.code,
           year: articleFromImport.year,
           depositIndex: articleFromImport.depositIndex,
+          identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
           createdAt: articleFromImport.createdAt,
           updatedAt: articleFromImport.updatedAt,
@@ -116,7 +119,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
 async function importSales(buyers: BuyerData[]) {
   let successCount = 0;
   let errorCount = 0;
-  const sales = new Map<string, Sale>()
+  const sales = new Map<number, Sale>()
   for (const buyer of buyers) {
     try {
       const contact = await prisma.contact.create({
@@ -198,11 +201,93 @@ async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map
   console.log('='.repeat(50));
 }
 
+async function importPredeposits(fiches: PredepositData[]) {
+  let successCount = 0;
+  let errorCount = 0;
+
+  const predeposits = new Map<number, Predeposit>
+
+  for (const fiche of fiches) {
+    try {
+      // Then create the deposit linked to this contact
+      const predeposit = await prisma.predeposit.create({
+        data: {
+          sellerLastName: fiche.lastName,
+          sellerFirstName: fiche.firstName,
+          sellerPhoneNumber: fiche.phoneNumber,
+          sellerCity: fiche.city || '',
+          createdAt: fiche.createdAt,
+          updatedAt: fiche.updatedAt,
+        },
+      });
+      predeposits.set(fiche.predepositIndex, predeposit)
+
+      successCount++;
+      console.log(`✅ Imported fiche for ${fiche.firstName} ${fiche.lastName}`);
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing fiche for ${fiche.firstName} ${fiche.lastName}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${fiches.length}`);
+  console.log('='.repeat(50));
+  return { predeposits };
+}
+
+async function importPredepositArticles(articlesFromImport: PredepositArticleData[], predeposits: Map<number, Predeposit>) {
+  let successCount = 0;
+  let errorCount = 0;
+  for (const articleFromImport of articlesFromImport) {
+    try {
+      const predeposit = predeposits.get(articleFromImport.vendeurId)
+      if (!predeposit) throw new Error(`Deposit ${articleFromImport.vendeurId} not found`)
+        await prisma.predepositArticle.create({
+        data: {
+          predepositId: predeposit.id,
+          price: articleFromImport.price,
+          category: articleFromImport.category || 'AUTRE',
+          discipline: articleFromImport.discipline || 'AUTRE',
+          brand: articleFromImport.brand,
+          model: articleFromImport.model || 'AUTRE',
+          size: articleFromImport.size,
+          color: articleFromImport.color,
+          year: articleFromImport.year,
+          identificationLetter: articleFromImport.identificationLetter,
+          articleIndex: articleFromImport.articleIndex,
+          createdAt: articleFromImport.createdAt,
+          updatedAt: articleFromImport.updatedAt,
+        }
+      })
+
+      console.log(`✅ Imported predepositArticle for ${predeposit.id} ${articleFromImport.articleIndex}`);
+      successCount++
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing predepositArticle for ${articleFromImport.articleIndex}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${articlesFromImport.length}`);
+  console.log('='.repeat(50));
+}
+
 async function importAll() {
   try {
-    const fiches = extractDeposits();
-
-    const { deposits } = await importDeposits(fiches);
+    const fiches = extractDeposits()
+    const { deposits } = await importDeposits(fiches)
 
     const articlesFromImport = extractArticles()
     const { articles } = await importArticles(articlesFromImport, deposits)
@@ -213,6 +298,11 @@ async function importAll() {
     const soldArticles = await extractSoldArticles()
     await importSoldArticles(soldArticles, articles, sales)
 
+    const predepositFiches = extractPredeposits()
+    const { predeposits } = await importPredeposits(predepositFiches)
+
+    const predepositArticles = extractPredepositArticles()
+    await importPredepositArticles(predepositArticles, predeposits)
   } catch (error) {
     console.error('❌ Fatal error during import:', error);
     throw error;

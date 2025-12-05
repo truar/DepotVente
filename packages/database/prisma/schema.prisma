@@ -121,7 +121,7 @@ model Sale {
   buyerId String @map("buyer_id") @db.Uuid
 
   saleIndex      Int @map("sale_index")
-  incrementStart Int @map("increment_start") @default(1)
+  incrementStart Int @default(1) @map("increment_start")
 
   // Montants des différents moyens de paiement
   cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
@@ -148,18 +148,19 @@ model Article {
   id String @id @default(uuid()) @db.Uuid
 
   // Informations article
-  price        Decimal?      @db.Decimal(10, 2)
-  category     String
-  discipline   String
-  brand        String
-  model        String
-  size         String
-  color        String
-  code         String        @unique // Code-barres
-  year         Int
-  depositIndex Int
-  articleIndex String
-  status       ArticleStatus @default(RECEPTION_PENDING)
+  price                Decimal?      @db.Decimal(10, 2)
+  category             String
+  discipline           String
+  brand                String
+  model                String
+  size                 String
+  color                String
+  code                 String        @unique // Code-barres
+  year                 Int
+  depositIndex         Int           @map("deposit_index")
+  identificationLetter String        @map("identification_letter")
+  articleIndex         Int           @map("article_index")
+  status               ArticleStatus @default(RECEPTION_PENDING)
 
   // Un article appartient forcément à un dépot
   depositId String? @map("deposit_id") @db.Uuid
@@ -179,6 +180,57 @@ model Article {
   @@index([updatedAt])
   @@index([deletedAt])
   @@map("articles")
+}
+
+// Predeposit
+model Predeposit {
+  id                String @id @default(uuid()) @db.Uuid
+  sellerLastName    String
+  sellerFirstName   String
+  sellerPhoneNumber String
+  sellerCity        String
+
+  // Relations
+  articles PredepositArticle[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([updatedAt])
+  @@index([deletedAt])
+  @@map("predeposits")
+}
+
+// Predeposit-articles
+model PredepositArticle {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Informations article
+  price                Decimal? @db.Decimal(10, 2)
+  category             String
+  discipline           String
+  brand                String
+  model                String
+  size                 String
+  color                String
+  year                 Int
+  identificationLetter String   @map("identification_letter")
+  articleIndex         Int      @map("article_index")
+
+  // Un predepositarticle appartient forcément à un predeposit
+  predepositId String? @map("predeposit_id") @db.Uuid
+
+  predeposit Predeposit? @relation(fields: [predepositId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([predepositId])
+  @@index([updatedAt])
+  @@index([deletedAt])
+  @@map("predepositArticles")
 }
 
 // Note: Les triggers PostgreSQL doivent être créés via une migration SQL
