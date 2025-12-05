@@ -15,7 +15,6 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { fakerFR as faker } from '@faker-js/faker'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
@@ -31,17 +30,17 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
 import PublicLayout from '@/components/PublicLayout'
-import { type DepositFormType, DepositFormSchema } from '@/types/depotForm.ts'
+import { DepositFormSchema, type DepositFormType } from '@/types/depotForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Field, FieldContent } from '@/components/ui/field'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
-import { disciplineItems, disciplines } from '@/types/disciplines.ts'
-import { categories, categoriesItems } from '@/types/categories.ts'
-import { brands, brandsItems } from '@/types/brands.ts'
+import { disciplineItems } from '@/types/disciplines.ts'
+import { categoriesItems } from '@/types/categories.ts'
+import { brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
-import { cities, citiesItems } from '@/types/cities.ts'
+import { citiesItems } from '@/types/cities.ts'
 import { Combobox } from '@/components/Combobox'
 import { Page } from '@/components/Page.tsx'
 import { generateArticleCode, generateArticleIndex, getYear } from '@/utils'
@@ -128,7 +127,6 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     },
   })
   const { handleSubmit, setValue, reset } = methods
-  const [predeposit, setPredeposit] = useState<string | null>(null)
 
   const [countArticle, setCountArticle] = useState(0)
 
@@ -139,19 +137,23 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
 
-  const generateFakeDeposit = useCallback(() => {
+  const loadPredeposit = useCallback(async (predepositId: string) => {
     if (!depositIndex) return
+    const predeposit = await db.predeposits.get(predepositId)
+    if (!predeposit) return
+    const predepositArticles = await db.predepositArticles
+      .where({ predepositId })
+      .toArray()
     setValue('isSummaryPrinted', true)
-    setValue('deposit.lastName', faker.person.lastName())
-    setValue('deposit.firstName', faker.person.firstName())
-    setValue('deposit.phoneNumber', faker.phone.number({ style: 'national' }))
-    setValue('deposit.city', faker.helpers.arrayElement(cities))
-    setValue('deposit.contributionStatus', 'PAYEE')
-    const nbArticles = 11
+    setValue('deposit.lastName', predeposit.sellerLastName)
+    setValue('deposit.firstName', predeposit.sellerFirstName)
+    setValue('deposit.phoneNumber', predeposit.sellerPhoneNumber)
+    setValue('deposit.city', predeposit.sellerCity)
+    setValue('deposit.contributionStatus', 'A PAYER')
+    const year = getYear()
     setValue(
       'deposit.articles',
-      Array.from({ length: nbArticles }).map((_, index) => {
-        const year = getYear()
+      predepositArticles.map((article, index) => {
         const articleIndex = generateArticleIndex(index)
         const articleCode = generateArticleCode(
           year,
@@ -159,13 +161,13 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
           articleIndex,
         )
         return {
-          price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
-          discipline: faker.helpers.arrayElement(disciplines),
-          brand: faker.helpers.arrayElement(brands),
-          type: faker.helpers.arrayElement(categories),
-          size: faker.number.int({ min: 1, max: 180 }) + '',
-          color: faker.color.human(),
-          model: faker.commerce.productName(),
+          price: article.price,
+          discipline: article.discipline,
+          brand: article.brand,
+          type: article.category,
+          size: article.size,
+          color: article.color,
+          model: article.model,
           articleCode,
           year,
           depotIndex: depositIndex,
@@ -174,27 +176,12 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
         }
       }),
     )
-    setCountArticle(nbArticles)
-  }, [depositIndex, setValue])
-
-  const loadPredeposit = useCallback(() => {
-    console.log('loadPredeposit', predeposit)
-  }, [predeposit])
+    setCountArticle(predepositArticles.length)
+  }, [])
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
-
-  const predeposits = useLiveQuery(() => db.predeposits.toArray())
-  const predepositItems = useMemo(() => {
-    return (
-      predeposits?.map((predeposit) => ({
-        value: predeposit.id,
-        label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
-        keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
-      })) ?? []
-    )
-  }, [predeposits])
 
   return (
     <FormProvider {...methods}>
@@ -203,24 +190,7 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
         onKeyDown={checkKeyDown}
         className="flex flex-col gap-4"
       >
-        <div className="grid grid-cols-6 gap-2 w-[500px]">
-          <div className="col-span-4">
-            <Combobox
-              items={predepositItems}
-              value={predeposit}
-              onSelect={setPredeposit}
-              placeholder="Rechercher une fiche de pré-dépot"
-            />
-          </div>
-          <Button
-            className="col-span-2"
-            type="button"
-            variant="secondary"
-            onClick={loadPredeposit}
-          >
-            Rechercher
-          </Button>
-        </div>
+        <PredepositComboBox onChange={loadPredeposit} />
 
         <ErrorMessages />
 
@@ -233,13 +203,6 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
           />
 
           <div className="flex justify-end gap-4">
-            <CustomButton
-              type="button"
-              onClick={() => generateFakeDeposit()}
-              variant="ghost"
-            >
-              Générer une fausse vente
-            </CustomButton>
             <SummaryPrintButton />
             <CustomButton
               type="button"
@@ -253,6 +216,50 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
         </div>
       </form>
     </FormProvider>
+  )
+}
+
+type PredepositComboBoxProps = {
+  onChange?: (id: string) => void
+}
+function PredepositComboBox(props: PredepositComboBoxProps) {
+  const { onChange } = props
+  const [predepositId, setPredepositId] = useState<string | null>(null)
+  const predeposits = useLiveQuery(() => db.predeposits.toArray())
+  const predepositItems = useMemo(() => {
+    return (
+      predeposits?.map((predeposit) => ({
+        value: predeposit.id,
+        label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
+        keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
+      })) ?? []
+    )
+  }, [predeposits])
+
+  const handleClick = useCallback(
+    () => onChange?.(predepositId ?? ''),
+    [onChange, predepositId],
+  )
+
+  return (
+    <div className="grid grid-cols-6 gap-2 w-[500px]">
+      <div className="col-span-4">
+        <Combobox
+          items={predepositItems}
+          value={predepositId}
+          onSelect={setPredepositId}
+          placeholder="Rechercher une fiche de pré-dépot"
+        />
+      </div>
+      <Button
+        className="col-span-2"
+        type="button"
+        variant="secondary"
+        onClick={handleClick}
+      >
+        Rechercher
+      </Button>
+    </div>
   )
 }
 
