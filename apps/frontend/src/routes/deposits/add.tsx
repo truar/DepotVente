@@ -122,11 +122,12 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     defaultValues: {
       isSummaryPrinted: false,
       deposit: {
+        predepositId: null,
         depotIndex: depositIndex,
         lastName: '',
         firstName: '',
         phoneNumber: '',
-        contributionStatus: '',
+        contributionStatus: 'A_PAYER',
         city: '',
         contributionAmount: 2,
         articles: [],
@@ -151,6 +152,7 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     const predepositArticles = await db.predepositArticles
       .where({ predepositId })
       .toArray()
+    setValue('deposit.predepositId', predeposit.id)
     setValue('deposit.lastName', predeposit.sellerLastName)
     setValue('deposit.firstName', predeposit.sellerFirstName)
     setValue('deposit.phoneNumber', predeposit.sellerPhoneNumber)
@@ -235,11 +237,13 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
   const predeposits = useLiveQuery(() => db.predeposits.toArray())
   const predepositItems = useMemo(() => {
     return (
-      predeposits?.map((predeposit) => ({
-        value: predeposit.id,
-        label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
-        keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
-      })) ?? []
+      predeposits
+        ?.filter((predeposit) => !predeposit.depositId)
+        .map((predeposit) => ({
+          value: predeposit.id,
+          label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
+          keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
+        })) ?? []
     )
   }, [predeposits])
 

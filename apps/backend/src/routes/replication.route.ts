@@ -20,6 +20,7 @@ export async function replicationRoutes(fastify: FastifyInstance) {
       contacts: prisma.contact,
       articles: prisma.article,
       sales: prisma.sale,
+      predeposits: prisma.predeposit,
     }
     const delegate = delegates[collection] as any
 

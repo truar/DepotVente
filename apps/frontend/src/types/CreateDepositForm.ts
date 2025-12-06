@@ -17,6 +17,7 @@ export const ArticleSchema = z.object({
 })
 
 export const DepositSchema = z.object({
+  predepositId: z.string().nullable(),
   depotIndex: z.number(),
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),

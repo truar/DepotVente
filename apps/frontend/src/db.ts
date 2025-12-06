@@ -20,8 +20,6 @@ export type Sale = {
 export type Deposit = {
   id: string
   contributionStatus: 'A_PAYER' | 'PAYEE' | 'PRO' | 'GRATUIT'
-  year: number
-  contributionType: 'CASH' | 'CARD' | 'CHECK' | 'OTHER'
   contributionAmount: number
   sellerId: string
   incrementStart: number
@@ -35,6 +33,7 @@ export type Deposit = {
 
 export type Predeposit = {
   id: string
+  depositId?: string
   sellerFirstName: string
   sellerLastName: string
   sellerPhoneNumber: string
