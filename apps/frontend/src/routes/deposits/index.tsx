@@ -90,7 +90,7 @@ export function RouteComponent() {
                   description="Gérer les fiches"
                 />
                 <ClickableCard
-                  onClick={() => {}}
+                  onClick={() => navigate({ to: '/deposits/predeposits' })}
                   icon={<FileCog className="w-8 h-8 text-green-600" />}
                   title="Fiches pré-dépôts"
                   description="Gérer les fiches"

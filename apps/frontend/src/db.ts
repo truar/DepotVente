@@ -151,7 +151,7 @@ db.version(1).stores({
   deposits: '++id, depositIndex, incrementStart, type',
   articles: '++id, depositId, code, articleIndex, [depositId+status]',
   predeposits: '++id',
-  predepositArticles: '++id, predepositId',
+  predepositArticles: '++id, predepositId, articleIndex',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',
   syncMetadata: 'key',
