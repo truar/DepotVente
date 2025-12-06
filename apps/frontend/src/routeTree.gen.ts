@@ -23,6 +23,7 @@ import { Route as DepositsProsRouteImport } from './routes/deposits/pros'
 import { Route as DepositsPredepositsRouteImport } from './routes/deposits/predeposits'
 import { Route as DepositsListingRouteImport } from './routes/deposits/listing'
 import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
+import { Route as DepositsArticlesRouteImport } from './routes/deposits/articles'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
@@ -105,6 +106,11 @@ const DepositsCashRegisterControlRoute =
     path: '/deposits/cash-register-control',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DepositsArticlesRoute = DepositsArticlesRouteImport.update({
+  id: '/deposits/articles',
+  path: '/deposits/articles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepositsAddRoute = DepositsAddRouteImport.update({
   id: '/deposits/add',
   path: '/deposits/add',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deposits/add': typeof DepositsAddRoute
+  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/deposits/add'
+    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DepositsAddRoute: typeof DepositsAddRoute
+  DepositsArticlesRoute: typeof DepositsArticlesRoute
   DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
   DepositsListingRoute: typeof DepositsListingRoute
   DepositsPredepositsRoute: typeof DepositsPredepositsRoute
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsCashRegisterControlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deposits/articles': {
+      id: '/deposits/articles'
+      path: '/deposits/articles'
+      fullPath: '/deposits/articles'
+      preLoaderRoute: typeof DepositsArticlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/deposits/add': {
       id: '/deposits/add'
       path: '/deposits/add'
@@ -488,6 +508,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   DepositsAddRoute: DepositsAddRoute,
+  DepositsArticlesRoute: DepositsArticlesRoute,
   DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
   DepositsListingRoute: DepositsListingRoute,
   DepositsPredepositsRoute: DepositsPredepositsRoute,

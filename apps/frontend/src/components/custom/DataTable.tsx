@@ -63,7 +63,7 @@ export function DataTable<TData, TValue>({
           <Input
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}
-            placeholder="Rechercher un dépôt..."
+            placeholder="Rechercher..."
           />
         </div>
         {headerActions && headerActions(table)}

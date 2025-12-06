@@ -2,7 +2,6 @@ import { db } from '@/db.ts'
 import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
-import { ContributionStatusEnum } from '@/types/depotForm.ts'
 import type { EditDepositFormType } from '@/types/EditDepositForm.ts'
 
 export function useEditDepot() {
@@ -27,7 +26,7 @@ export function useEditDepot() {
         })
 
         await depotDb.update(data.id, {
-          contributionStatus: data.contributionStatus as ContributionStatusEnum,
+          contributionStatus: data.contributionStatus,
           contributionAmount: data.contributionAmount,
           updatedAt: currentDate,
         })

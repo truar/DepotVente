@@ -96,7 +96,7 @@ export function RouteComponent() {
                   description="Gérer les fiches"
                 />
                 <ClickableCard
-                  onClick={() => {}}
+                  onClick={() => navigate({ to: '/deposits/articles' })}
                   icon={<SquarePen className="w-8 h-8 text-green-600" />}
                   title="Article"
                   description="Modifier un article"
