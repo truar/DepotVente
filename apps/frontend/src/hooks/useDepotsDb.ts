@@ -9,7 +9,7 @@ export function useDepotsDb() {
   }
 
   function findProfessionals() {
-    return db.deposits.where({ type: 'PRO' }).toArray()
+    return db.deposits.where({ type: 'PRO' }).sortBy('depositIndex')
   }
 
   async function insert(depot: Deposit) {

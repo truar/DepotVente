@@ -45,19 +45,19 @@ export function RouteComponent() {
       title="Réceptionner les pros"
     >
       <div className="flex flex-col gap-5">
-        <ProSearchForm value={depositId} onSelect={setDepositId} />
+        <ProSearchForm onClick={setDepositId} />
         {depositId && <ProArticlesForm depositId={depositId} />}
       </div>
     </Page>
   )
 }
 type ProSearchFormProps = {
-  value: string | null
-  onSelect: (depositId: string) => void
+  onClick: (depositId: string | null) => void
 }
 
 function ProSearchForm(props: ProSearchFormProps) {
-  const { value, onSelect } = props
+  const { onClick } = props
+  const [value, setValue] = useState<string | null>(null)
   const depositsDb = useDepotsDb()
   const contactsDb = useContactsDb()
   const deposits = useLiveQuery(() => depositsDb.findProfessionals())
@@ -78,7 +78,7 @@ function ProSearchForm(props: ProSearchFormProps) {
           )
           if (!contact) return undefined
           return {
-            label: `${contact.firstName} ${contact.lastName}`,
+            label: `${deposit.depositIndex} - ${contact.firstName} ${contact.lastName}`,
             value: deposit.id,
             keywords: [
               contact.firstName,
@@ -98,9 +98,19 @@ function ProSearchForm(props: ProSearchFormProps) {
           emptyLabel="Aucun dépôt professionel"
           items={items}
           value={value}
-          onSelect={onSelect}
+          onSelect={setValue}
           placeholder="Rechercher un professionel"
         />
+      </div>
+      <div>
+        <Button
+          className="col-span-2"
+          type="button"
+          variant="secondary"
+          onClick={() => onClick(value)}
+        >
+          Rechercher
+        </Button>
       </div>
     </div>
   )
@@ -229,7 +239,9 @@ function ArticleList(props: ArticleListProps) {
   const { depositId } = props
   const articles = useLiveQuery(
     () =>
-      db.articles.where({ depositId, status: 'RECEPTION_PENDING' }).toArray(),
+      db.articles
+        .where({ depositId, status: 'RECEPTION_PENDING' })
+        .sortBy('articleIndex'),
     [depositId],
   )
 

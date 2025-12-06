@@ -212,6 +212,7 @@ async function importPredeposits(fiches: PredepositData[]) {
       // Then create the deposit linked to this contact
       const predeposit = await prisma.predeposit.create({
         data: {
+          predepositIndex: fiche.predepositIndex,
           sellerLastName: fiche.lastName,
           sellerFirstName: fiche.firstName,
           sellerPhoneNumber: fiche.phoneNumber,

@@ -49,7 +49,7 @@ async function createPdfData(
 
   return {
     deposit: {
-      depositIndex: 1,
+      depositIndex: predeposit.predepositIndex,
       year: year,
     },
     contact: {
@@ -85,12 +85,14 @@ function RouteComponent() {
 }
 
 function PredepositDataTable() {
-  const predeposits = useLiveQuery(() => db.predeposits.toArray())
+  const predeposits = useLiveQuery(() =>
+    db.predeposits.offset(0).sortBy('predepositIndex'),
+  )
   const data: TableType[] = useMemo(
     () =>
-      predeposits?.map((predeposit, index) => ({
+      predeposits?.map((predeposit) => ({
         predepositId: predeposit.id,
-        index: index,
+        index: predeposit.predepositIndex,
         seller: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
       })) ?? [],
     [predeposits],

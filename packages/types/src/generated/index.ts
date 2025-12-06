@@ -44,7 +44,7 @@ export const SaleScalarFieldEnumSchema = z.enum(['id','buyerId','saleIndex','inc
 
 export const ArticleScalarFieldEnumSchema = z.enum(['id','price','category','discipline','brand','model','size','color','code','year','depositIndex','identificationLetter','articleIndex','status','depositId','saleId','createdAt','updatedAt','deletedAt']);
 
-export const PredepositScalarFieldEnumSchema = z.enum(['id','sellerLastName','sellerFirstName','sellerPhoneNumber','sellerCity','depositId','createdAt','updatedAt','deletedAt']);
+export const PredepositScalarFieldEnumSchema = z.enum(['id','predepositIndex','sellerLastName','sellerFirstName','sellerPhoneNumber','sellerCity','depositId','createdAt','updatedAt','deletedAt']);
 
 export const PredepositArticleScalarFieldEnumSchema = z.enum(['id','price','category','discipline','brand','model','size','color','year','identificationLetter','articleIndex','predepositId','createdAt','updatedAt','deletedAt']);
 
@@ -188,6 +188,7 @@ export type Article = z.infer<typeof ArticleSchema>
 
 export const PredepositSchema = z.object({
   id: z.uuid(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -454,6 +455,7 @@ export const PredepositCountOutputTypeSelectSchema: z.ZodType<Prisma.PredepositC
 
 export const PredepositSelectSchema: z.ZodType<Prisma.PredepositSelect> = z.object({
   id: z.boolean().optional(),
+  predepositIndex: z.boolean().optional(),
   sellerLastName: z.boolean().optional(),
   sellerFirstName: z.boolean().optional(),
   sellerPhoneNumber: z.boolean().optional(),
@@ -1027,6 +1029,7 @@ export const PredepositWhereInputSchema: z.ZodType<Prisma.PredepositWhereInput> 
   OR: z.lazy(() => PredepositWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => PredepositWhereInputSchema), z.lazy(() => PredepositWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  predepositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   sellerLastName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerFirstName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerPhoneNumber: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
@@ -1041,6 +1044,7 @@ export const PredepositWhereInputSchema: z.ZodType<Prisma.PredepositWhereInput> 
 
 export const PredepositOrderByWithRelationInputSchema: z.ZodType<Prisma.PredepositOrderByWithRelationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
   sellerLastName: z.lazy(() => SortOrderSchema).optional(),
   sellerFirstName: z.lazy(() => SortOrderSchema).optional(),
   sellerPhoneNumber: z.lazy(() => SortOrderSchema).optional(),
@@ -1061,6 +1065,7 @@ export const PredepositWhereUniqueInputSchema: z.ZodType<Prisma.PredepositWhereU
   AND: z.union([ z.lazy(() => PredepositWhereInputSchema), z.lazy(() => PredepositWhereInputSchema).array() ]).optional(),
   OR: z.lazy(() => PredepositWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => PredepositWhereInputSchema), z.lazy(() => PredepositWhereInputSchema).array() ]).optional(),
+  predepositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   sellerLastName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerFirstName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerPhoneNumber: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
@@ -1075,6 +1080,7 @@ export const PredepositWhereUniqueInputSchema: z.ZodType<Prisma.PredepositWhereU
 
 export const PredepositOrderByWithAggregationInputSchema: z.ZodType<Prisma.PredepositOrderByWithAggregationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
   sellerLastName: z.lazy(() => SortOrderSchema).optional(),
   sellerFirstName: z.lazy(() => SortOrderSchema).optional(),
   sellerPhoneNumber: z.lazy(() => SortOrderSchema).optional(),
@@ -1084,8 +1090,10 @@ export const PredepositOrderByWithAggregationInputSchema: z.ZodType<Prisma.Prede
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => PredepositCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => PredepositAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => PredepositMaxOrderByAggregateInputSchema).optional(),
   _min: z.lazy(() => PredepositMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => PredepositSumOrderByAggregateInputSchema).optional(),
 });
 
 export const PredepositScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.PredepositScalarWhereWithAggregatesInput> = z.strictObject({
@@ -1093,6 +1101,7 @@ export const PredepositScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Pr
   OR: z.lazy(() => PredepositScalarWhereWithAggregatesInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => PredepositScalarWhereWithAggregatesInputSchema), z.lazy(() => PredepositScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
+  predepositIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   sellerLastName: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   sellerFirstName: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   sellerPhoneNumber: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
@@ -1783,6 +1792,7 @@ export const ArticleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.ArticleUnch
 
 export const PredepositCreateInputSchema: z.ZodType<Prisma.PredepositCreateInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -1796,6 +1806,7 @@ export const PredepositCreateInputSchema: z.ZodType<Prisma.PredepositCreateInput
 
 export const PredepositUncheckedCreateInputSchema: z.ZodType<Prisma.PredepositUncheckedCreateInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -1809,6 +1820,7 @@ export const PredepositUncheckedCreateInputSchema: z.ZodType<Prisma.PredepositUn
 
 export const PredepositUpdateInputSchema: z.ZodType<Prisma.PredepositUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1822,6 +1834,7 @@ export const PredepositUpdateInputSchema: z.ZodType<Prisma.PredepositUpdateInput
 
 export const PredepositUncheckedUpdateInputSchema: z.ZodType<Prisma.PredepositUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1835,6 +1848,7 @@ export const PredepositUncheckedUpdateInputSchema: z.ZodType<Prisma.PredepositUn
 
 export const PredepositCreateManyInputSchema: z.ZodType<Prisma.PredepositCreateManyInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -1847,6 +1861,7 @@ export const PredepositCreateManyInputSchema: z.ZodType<Prisma.PredepositCreateM
 
 export const PredepositUpdateManyMutationInputSchema: z.ZodType<Prisma.PredepositUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1858,6 +1873,7 @@ export const PredepositUpdateManyMutationInputSchema: z.ZodType<Prisma.Predeposi
 
 export const PredepositUncheckedUpdateManyInputSchema: z.ZodType<Prisma.PredepositUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2698,6 +2714,7 @@ export const PredepositArticleOrderByRelationAggregateInputSchema: z.ZodType<Pri
 
 export const PredepositCountOrderByAggregateInputSchema: z.ZodType<Prisma.PredepositCountOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
   sellerLastName: z.lazy(() => SortOrderSchema).optional(),
   sellerFirstName: z.lazy(() => SortOrderSchema).optional(),
   sellerPhoneNumber: z.lazy(() => SortOrderSchema).optional(),
@@ -2708,8 +2725,13 @@ export const PredepositCountOrderByAggregateInputSchema: z.ZodType<Prisma.Predep
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
 });
 
+export const PredepositAvgOrderByAggregateInputSchema: z.ZodType<Prisma.PredepositAvgOrderByAggregateInput> = z.strictObject({
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
+});
+
 export const PredepositMaxOrderByAggregateInputSchema: z.ZodType<Prisma.PredepositMaxOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
   sellerLastName: z.lazy(() => SortOrderSchema).optional(),
   sellerFirstName: z.lazy(() => SortOrderSchema).optional(),
   sellerPhoneNumber: z.lazy(() => SortOrderSchema).optional(),
@@ -2722,6 +2744,7 @@ export const PredepositMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Predepos
 
 export const PredepositMinOrderByAggregateInputSchema: z.ZodType<Prisma.PredepositMinOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
   sellerLastName: z.lazy(() => SortOrderSchema).optional(),
   sellerFirstName: z.lazy(() => SortOrderSchema).optional(),
   sellerPhoneNumber: z.lazy(() => SortOrderSchema).optional(),
@@ -2730,6 +2753,10 @@ export const PredepositMinOrderByAggregateInputSchema: z.ZodType<Prisma.Predepos
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const PredepositSumOrderByAggregateInputSchema: z.ZodType<Prisma.PredepositSumOrderByAggregateInput> = z.strictObject({
+  predepositIndex: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const PredepositNullableScalarRelationFilterSchema: z.ZodType<Prisma.PredepositNullableScalarRelationFilter> = z.strictObject({
@@ -4083,6 +4110,7 @@ export const UserCreateOrConnectWithoutDepotsInputSchema: z.ZodType<Prisma.UserC
 
 export const PredepositCreateWithoutDepositInputSchema: z.ZodType<Prisma.PredepositCreateWithoutDepositInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -4095,6 +4123,7 @@ export const PredepositCreateWithoutDepositInputSchema: z.ZodType<Prisma.Predepo
 
 export const PredepositUncheckedCreateWithoutDepositInputSchema: z.ZodType<Prisma.PredepositUncheckedCreateWithoutDepositInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -4247,6 +4276,7 @@ export const PredepositScalarWhereInputSchema: z.ZodType<Prisma.PredepositScalar
   OR: z.lazy(() => PredepositScalarWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => PredepositScalarWhereInputSchema), z.lazy(() => PredepositScalarWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  predepositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   sellerLastName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerFirstName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   sellerPhoneNumber: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
@@ -4808,6 +4838,7 @@ export const DepositUncheckedUpdateWithoutPredepositsInputSchema: z.ZodType<Pris
 
 export const PredepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.PredepositCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -4820,6 +4851,7 @@ export const PredepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.Predep
 
 export const PredepositUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.PredepositUncheckedCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -4848,6 +4880,7 @@ export const PredepositUpdateToOneWithWhereWithoutArticlesInputSchema: z.ZodType
 
 export const PredepositUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.PredepositUpdateWithoutArticlesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -4860,6 +4893,7 @@ export const PredepositUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.Predep
 
 export const PredepositUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.PredepositUncheckedUpdateWithoutArticlesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5161,6 +5195,7 @@ export const ArticleCreateManyDepositInputSchema: z.ZodType<Prisma.ArticleCreate
 
 export const PredepositCreateManyDepositInputSchema: z.ZodType<Prisma.PredepositCreateManyDepositInput> = z.strictObject({
   id: z.uuid().optional(),
+  predepositIndex: z.number().int(),
   sellerLastName: z.string(),
   sellerFirstName: z.string(),
   sellerPhoneNumber: z.string(),
@@ -5235,6 +5270,7 @@ export const ArticleUncheckedUpdateManyWithoutDepositInputSchema: z.ZodType<Pris
 
 export const PredepositUpdateWithoutDepositInputSchema: z.ZodType<Prisma.PredepositUpdateWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5247,6 +5283,7 @@ export const PredepositUpdateWithoutDepositInputSchema: z.ZodType<Prisma.Predepo
 
 export const PredepositUncheckedUpdateWithoutDepositInputSchema: z.ZodType<Prisma.PredepositUncheckedUpdateWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5259,6 +5296,7 @@ export const PredepositUncheckedUpdateWithoutDepositInputSchema: z.ZodType<Prism
 
 export const PredepositUncheckedUpdateManyWithoutDepositInputSchema: z.ZodType<Prisma.PredepositUncheckedUpdateManyWithoutDepositInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  predepositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sellerLastName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerFirstName: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerPhoneNumber: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),

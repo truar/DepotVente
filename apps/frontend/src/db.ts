@@ -33,6 +33,7 @@ export type Deposit = {
 
 export type Predeposit = {
   id: string
+  predepositIndex: number
   depositId?: string
   sellerFirstName: string
   sellerLastName: string
@@ -150,7 +151,7 @@ db.version(1).stores({
   contacts: '++id',
   deposits: '++id, depositIndex, incrementStart, type',
   articles: '++id, depositId, code, articleIndex, [depositId+status]',
-  predeposits: '++id',
+  predeposits: '++id, predepositIndex',
   predepositArticles: '++id, predepositId, articleIndex',
   sales: '++id, incrementStart',
   outbox: '++id, timestamp, status, collection',

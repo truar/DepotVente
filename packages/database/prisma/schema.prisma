@@ -186,6 +186,7 @@ model Article {
 // Predeposit
 model Predeposit {
   id                String @id @default(uuid()) @db.Uuid
+  predepositIndex   Int    @map("predeposit_index")
   sellerLastName    String
   sellerFirstName   String
   sellerPhoneNumber String
