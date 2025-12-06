@@ -30,7 +30,10 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useDymo } from '@/hooks/useDymo.ts'
 import PublicLayout from '@/components/PublicLayout'
-import { DepositFormSchema, type DepositFormType } from '@/types/depotForm.ts'
+import {
+  DepositFormSchema,
+  type DepositFormType,
+} from '@/types/CreateDepositForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'

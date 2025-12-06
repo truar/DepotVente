@@ -29,5 +29,5 @@ export function timeout(delay: number) {
 }
 
 export function getYear() {
-  return new Date().getFullYear() + 1
+  return new Date().getFullYear()
 }

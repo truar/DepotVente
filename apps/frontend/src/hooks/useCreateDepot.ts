@@ -4,11 +4,8 @@ import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
-import {
-  ContributionStatusEnum,
-  type DepositFormType,
-  DepositTypeEnum,
-} from '@/types/depotForm.ts'
+import { type DepositFormType } from '@/types/CreateDepositForm.ts'
+import { getYear } from '@/utils'
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
@@ -25,6 +22,7 @@ export function useCreateDepot() {
       db.outbox,
       async () => {
         const currentDate = new Date()
+        const year = getYear()
         const contactId = await contactDb.insert({
           id: v4(),
           lastName: data.lastName,
@@ -37,12 +35,14 @@ export function useCreateDepot() {
           deletedAt: null,
         })
 
-        const depotId = await depotDb.insert({
+        const depositId = await depotDb.insert({
           id: v4(),
-          type: 'PARTICULIER' as DepositTypeEnum,
+          type: 'PARTICULIER',
           sellerId: contactId,
-          contributionStatus: data.contributionStatus as ContributionStatusEnum,
+          contributionStatus: data.contributionStatus,
           contributionAmount: data.contributionAmount,
+          year,
+          contributionType: 'CASH',
           depositIndex: data.depotIndex,
           incrementStart: workstation.incrementStart,
           dropWorkstationId: workstation.incrementStart,
@@ -54,7 +54,7 @@ export function useCreateDepot() {
         await articleDb.batchUpsert(
           data.articles.map((articleForm) => ({
             id: v4(),
-            depositId: depotId,
+            depositId: depositId,
             code: articleForm.articleCode,
             saleId: null,
             status: 'RECEPTION_OK',

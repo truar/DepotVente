@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ArticleSchema, DepositSchema } from '@/types/depotForm.ts'
+import { ArticleSchema, DepositSchema } from '@/types/CreateDepositForm.ts'
 
 export const EditArticleSchema = ArticleSchema.extend({
   id: z.string(),

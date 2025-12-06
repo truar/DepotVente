@@ -1,5 +1,4 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { ContributionStatusEnum, DepositTypeEnum } from '@/types/depotForm.ts'
 
 export type Workstation = {
   incrementStart: number
@@ -20,13 +19,15 @@ export type Sale = {
 
 export type Deposit = {
   id: string
-  contributionStatus: ContributionStatusEnum
+  contributionStatus: 'A_PAYER' | 'PAYEE' | 'PRO' | 'GRATUIT'
+  year: number
+  contributionType: 'CASH' | 'CARD' | 'CHECK' | 'OTHER'
   contributionAmount: number
   sellerId: string
   incrementStart: number
   dropWorkstationId: number
   depositIndex: number
-  type: DepositTypeEnum
+  type: 'PRO' | 'PARTICULIER'
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null

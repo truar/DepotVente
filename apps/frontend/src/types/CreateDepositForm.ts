@@ -1,17 +1,5 @@
 import { z } from 'zod'
 
-export enum ContributionStatusEnum {
-  'A_PAYER' = 'A payer',
-  'PAYEE' = 'Payee',
-  'PRO' = 'Pro',
-  'GRATUIT' = 'Gratuit',
-}
-
-export enum DepositTypeEnum {
-  'PRO' = 'PRO',
-  'PARTICULIER' = 'PARTICULIER',
-}
-
 export const ArticleSchema = z.object({
   price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
   discipline: z.string().nonempty({ error: 'La discipline est requise' }),
@@ -28,15 +16,18 @@ export const ArticleSchema = z.object({
   shortArticleCode: z.string(),
 })
 
-export type ArticleFormType = z.infer<typeof ArticleSchema>
-
 export const DepositSchema = z.object({
   depotIndex: z.number(),
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
-  contributionStatus: z.string().nonempty({ message: 'Le statut est requis' }),
+  contributionStatus: z.union([
+    z.literal('A_PAYER'),
+    z.literal('PAYEE'),
+    z.literal('PRO'),
+    z.literal('GRATUIT'),
+  ]),
   contributionAmount: z.coerce.number<number>(),
   articles: z
     .array(ArticleSchema)
