@@ -85,11 +85,15 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
   const checkKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        onClick(code)
+        submit()
       }
     },
     [code],
   )
+  const submit = useCallback(() => {
+    onClick(code)
+    setCode('')
+  }, [code])
   return (
     <div className="flex gap-3">
       <div>
@@ -101,7 +105,7 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
         />
       </div>
       <div>
-        <CustomButton onClick={() => onClick(code)}>Modifier</CustomButton>
+        <CustomButton onClick={submit}>Modifier</CustomButton>
       </div>
     </div>
   )
