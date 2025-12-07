@@ -1,4 +1,4 @@
-import { db, type Article } from '@/db.ts'
+import { type Article, db } from '@/db.ts'
 import { syncService } from '@/sync-service.ts'
 
 export function useArticlesDb() {
@@ -30,6 +30,10 @@ export function useArticlesDb() {
     }
   }
 
+  async function update(key: string, changes: Partial<Article>) {
+    return batchUpdate([{ key, changes }])
+  }
+
   async function batchUpdate(
     articles: readonly { key: string; changes: Partial<Article> }[],
   ) {
@@ -48,6 +52,7 @@ export function useArticlesDb() {
     batchUpsert,
     batchUpdate,
     findByCode,
+    update,
     findByDepositId,
     markArticleAsReceived,
   }

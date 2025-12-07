@@ -1,6 +1,6 @@
 export const categories = [
   'Chaussures',
-  'Surf',
+  'Snowboard',
   'Vetements',
   'Fixations',
   'Batons',
