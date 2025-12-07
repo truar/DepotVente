@@ -15,6 +15,7 @@ export function useEditArticle() {
         size: data.size,
         color: data.color,
         model: data.model,
+        status: data.status,
         updatedAt: new Date(),
       })
     },

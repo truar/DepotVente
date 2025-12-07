@@ -7,9 +7,15 @@ export const EditArticleSchema = z.object({
   brand: z.string().nonempty({ error: 'La marque est requise' }),
   type: z.string().nonempty({ error: 'Le type est requis' }),
   size: z.string().nonempty({ error: 'La taille est requise' }),
-  color: z.string().nonempty({ error: 'La couleur est requise' }),
+  color: z.string().optional(),
   model: z.string().nonempty({ error: 'Le model est requis' }),
+  articleCode: z.string(),
   shortArticleCode: z.string(),
+  status: z.union([
+    z.literal('RECEPTION_PENDING'),
+    z.literal('RECEPTION_OK'),
+    z.literal('REFUSED'),
+  ]),
 })
 
 export type EditArticleFormType = z.infer<typeof EditArticleSchema>

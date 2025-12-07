@@ -35,6 +35,14 @@ import { disciplineItems } from '@/types/disciplines.ts'
 import { brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
 import { useEditArticle } from '@/hooks/useEditArticle.ts'
+import { useDymo } from '@/hooks/useDymo.ts'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx'
 
 export const Route = createFileRoute('/deposits/articles')({
   beforeLoad: () => {
@@ -147,6 +155,7 @@ type ArticleEditFormProps = {
 
 function ArticleEditForm(props: ArticleEditFormProps) {
   const { article } = props
+  const dymo = useDymo()
   const articleEditMutation = useEditArticle()
   const methods = useForm<EditArticleFormType>({
     resolver: zodResolver(EditArticleSchema),
@@ -159,17 +168,20 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       size: article.size,
       color: article.color,
       model: article.model,
+      status: article.status,
       discipline: article.discipline,
+      articleCode: article.code,
       shortArticleCode: shortArticleCode(
         article.depositIndex,
         article.identificationLetter,
       ),
     },
   })
-  const { handleSubmit, control, reset } = methods
+  const { handleSubmit, control, reset, trigger, getValues } = methods
   useEffect(() => {
     reset({
       id: article.id,
+      status: article.status,
       price: article.price,
       brand: article.brand,
       type: article.category,
@@ -177,6 +189,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       color: article.color,
       model: article.model,
       discipline: article.discipline,
+      articleCode: article.code,
       shortArticleCode: shortArticleCode(
         article.depositIndex,
         article.identificationLetter,
@@ -194,8 +207,32 @@ function ArticleEditForm(props: ArticleEditFormProps) {
     },
     [articleEditMutation],
   )
+  const printDymo = useCallback(async () => {
+    const valid = await trigger()
+    if (!valid) return
+    const field = getValues()
+    dymo.print({
+      color: field.color,
+      brand: field.brand,
+      size: field.size,
+      category: field.type,
+      code: field.articleCode,
+      price: `${field.price}`,
+      shortCode: field.shortArticleCode,
+      model: field.model,
+    })
+  }, [dymo, getValues])
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <div className="flex justify-end gap-4">
+        <CustomButton
+          type="button"
+          onClick={() => printDymo()}
+          variant="secondary"
+        >
+          Imprimer l'étiquette
+        </CustomButton>
+      </div>
       <div className="grid grid-cols-4 gap-3">
         <div>
           <Controller
@@ -356,6 +393,39 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                     />
                     <Euro className="w-5 pr-1" />
                   </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
+          />
+        </div>
+        <div className="min-w-[200px]">
+          <Controller
+            control={control}
+            name="status"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger
+                      id="status"
+                      aria-invalid={fieldState.invalid}
+                      className="min-w-[120px]"
+                    >
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent position="item-aligned">
+                      <SelectItem value="RECEPTION_PENDING">
+                        Réception en attente
+                      </SelectItem>
+                      <SelectItem value="RECEPTION_OK">Réception OK</SelectItem>
+                      <SelectItem value="REFUSED">Refusé</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FieldContent>
               </Field>
             )}

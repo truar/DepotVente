@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 export type ArticlePrintParam = {
   code: string
   shortCode: string
-  color: string
+  color?: string
   price: string
   model: string
   brand: string
