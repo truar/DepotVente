@@ -150,10 +150,10 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 db.version(1).stores({
   contacts: '++id',
   deposits: '++id, depositIndex, incrementStart, type',
-  articles: '++id, depositId, code, articleIndex, [depositId+status]',
+  articles: '++id, depositId, saleId, code, articleIndex, [depositId+status]',
   predeposits: '++id, predepositIndex',
   predepositArticles: '++id, predepositId, articleIndex',
-  sales: '++id, incrementStart',
+  sales: '++id, incrementStart, saleIndex',
   outbox: '++id, timestamp, status, collection',
   syncMetadata: 'key',
   workstation: 'key',

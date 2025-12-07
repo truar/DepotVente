@@ -67,7 +67,7 @@ export function RouteComponent() {
               description="Controler la caisse"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => navigate({ to: '/sales/listing' })}
               icon={<ClipboardList className="w-8 h-8 text-green-600" />}
               title="Ventes"
               description="Gérer les ventes"
