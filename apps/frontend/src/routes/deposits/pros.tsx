@@ -42,7 +42,7 @@ export function RouteComponent() {
   return (
     <Page
       navigation={<Link to="..">Retour au menu</Link>}
-      title="Réceptionner les pros"
+      title="Réceptionner les articles des pros"
     >
       <div className="flex flex-col gap-5">
         <ProSearchForm onClick={setDepositId} />

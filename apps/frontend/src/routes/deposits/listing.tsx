@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { EyeIcon, SquarePenIcon } from 'lucide-react'
+import { ClipboardListIcon, EyeIcon, SquarePenIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 
 export const Route = createFileRoute('/deposits/listing')({
@@ -194,6 +194,9 @@ export const columns: ColumnDef<DepositTableType>[] = [
           <Button variant="ghost" size="icon" onClick={() => print(id)}>
             <EyeIcon />
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => print(id)}>
+            <ClipboardListIcon />
+          </Button>
         </div>
       )
     },
@@ -224,7 +227,7 @@ function DepositDataTableHeaderAction({
 
   return (
     <div>
-      <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
+      <CustomButton onClick={print}>Imprimer les fiches retour</CustomButton>
     </div>
   )
 }

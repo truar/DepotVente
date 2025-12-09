@@ -6,14 +6,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import {
-  CheckLineIcon,
-  Euro,
-  Plus,
-  Printer,
-  RotateCcwIcon,
-  Trash2,
-} from 'lucide-react'
+import { Euro, Plus, Printer, RotateCcwIcon, Trash2 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
@@ -704,7 +697,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`py-1 px-1 w-[75px] ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.size`}

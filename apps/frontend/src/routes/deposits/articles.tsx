@@ -224,15 +224,6 @@ function ArticleEditForm(props: ArticleEditFormProps) {
   }, [dymo, getValues])
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex justify-end gap-4">
-        <CustomButton
-          type="button"
-          onClick={() => printDymo()}
-          variant="secondary"
-        >
-          Imprimer l'étiquette
-        </CustomButton>
-      </div>
       <div className="grid grid-cols-4 gap-3">
         <div>
           <Controller
@@ -439,6 +430,13 @@ function ArticleEditForm(props: ArticleEditFormProps) {
           variant="destructive"
         >
           Réinitialiser
+        </CustomButton>
+        <CustomButton
+          type="button"
+          onClick={() => printDymo()}
+          variant="secondary"
+        >
+          Imprimer l'étiquette
         </CustomButton>
         <CustomButton type="submit">Sauvegarder</CustomButton>
       </div>

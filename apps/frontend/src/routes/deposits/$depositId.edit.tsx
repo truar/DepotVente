@@ -80,7 +80,7 @@ function RouteComponent() {
       navigation={
         <Link to={'/deposits/listing'}>Retour à la liste des dépôts</Link>
       }
-      title={`Modifier le dépôt ${deposit.depositIndex}`}
+      title={`Modification de la fiche n°${deposit.depositIndex}`}
     >
       <DepositForm deposit={deposit} seller={contact} articles={articles} />
     </Page>
@@ -150,7 +150,7 @@ function DepositForm(props: DepositFormProps) {
       >
         <ErrorMessages />
 
-        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-3 py-6 shadow-lg border border-gray-100">
           <SellerInformationForm />
           <ArticleForm />
 
@@ -178,7 +178,7 @@ function SellerInformationForm() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
             name="deposit.lastName"
@@ -291,11 +291,11 @@ function ArticleForm() {
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold ">Articles</h3>
 
-      <div className="overflow-x-auto overflow-y-scroll">
+      <div className="overflow-x-auto">
         <table className="w-full table-fixed">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[100px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
                 Code
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
@@ -313,10 +313,10 @@ function ArticleForm() {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Couleur
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
                 Taille
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
                 Prix
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
@@ -403,7 +403,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
   return (
     <tr className="border-b border-gray-100">
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
@@ -424,7 +424,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.discipline`}
@@ -440,7 +440,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.type`}
@@ -456,7 +456,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.brand`}
@@ -472,7 +472,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.model`}
@@ -493,7 +493,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.color`}
@@ -519,7 +519,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`py-1 p"x-1 w-[75px]" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <Controller
           name={`deposit.articles.${index}.size`}
@@ -540,7 +540,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         />
       </td>
       <td
-        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
       >
         <div className="flex items-center gap-1">
           <Controller
@@ -564,7 +564,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         </div>
       </td>
       <td className="py-1 px-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <PrintArticleButton index={index} disabled={isLineDisabled} />
           {isLineDisabled ? (
             <Button
