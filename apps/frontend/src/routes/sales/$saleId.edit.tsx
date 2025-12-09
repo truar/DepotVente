@@ -5,7 +5,6 @@ import {
   Controller,
   FormProvider,
   type SubmitHandler,
-  useFieldArray,
   useForm,
   useFormContext,
 } from 'react-hook-form'
@@ -13,17 +12,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { type KeyboardEvent, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
-import { getYear } from '@/utils'
-import { disciplineItems } from '@/types/disciplines.ts'
-import { brandsItems } from '@/types/brands.ts'
-import { categoriesItems } from '@/types/categories.ts'
-import { Combobox } from '@/components/Combobox.tsx'
+import { getYear, shortArticleCode } from '@/utils'
 import { CustomButton } from '@/components/custom/Button.tsx'
-import { Field, FieldContent } from '@/components/ui/field.tsx'
+import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
-import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
-import { Euro } from 'lucide-react'
-import { colors } from '@/types/colors.ts'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group.tsx'
+import { Euro, RotateCcwIcon, Trash2 } from 'lucide-react'
 import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -31,6 +29,15 @@ import { type Article, type Contact, db, type Sale } from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { type EditDepositFormType } from '@/types/EditDepositForm.ts'
 import { type EditSaleFormType, EditSaleSchema } from '@/types/EditSaleForm.ts'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.tsx'
 
 export const Route = createFileRoute('/sales/$saleId/edit')({
   beforeLoad: () => {
@@ -88,6 +95,8 @@ function SaleForm(props: SaleFormProps) {
       checkAmount: sale.checkAmount,
       cashAmount: sale.cashAmount,
       cardAmount: sale.cardAmount,
+      refundCardAmount: sale.refundCardAmount || 0,
+      refundCashAmount: sale.refundCashAmount || 0,
       city: buyer.city,
       lastName: buyer.lastName,
       contactId: buyer.id,
@@ -96,6 +105,14 @@ function SaleForm(props: SaleFormProps) {
       articles: articles.map((article) => ({
         id: article.id,
         articleCode: article.code,
+        year: article.year,
+        depotIndex: article.depositIndex,
+        identificationLetter: article.identificationLetter,
+        articleIndex: article.articleIndex,
+        shortArticleCode: shortArticleCode(
+          article.depositIndex,
+          article.identificationLetter,
+        ),
         price: article.price,
         color: article.color,
         model: article.model,
@@ -106,8 +123,37 @@ function SaleForm(props: SaleFormProps) {
       })),
     },
   })
-  const { handleSubmit, reset } = methods
+  const { handleSubmit, reset, setError } = methods
   const onSubmit: SubmitHandler<EditSaleFormType> = async (data) => {
+    const articles = data.articles
+    const totalPrice =
+      articles?.reduce((acc, cur) => acc + parseInt(`${cur.price}`), 0) ?? 0
+    const refundPrice =
+      articles?.reduce(
+        (acc, cur) => acc + parseInt(`${cur.isDeleted ? cur.price : 0}`),
+        0,
+      ) ?? 0
+    const cashAmount = data.cashAmount ?? 0
+    const cardAmount = data.cardAmount ?? 0
+    const checkAmount = data.checkAmount ?? 0
+    const refundCardAmount = data.refundCardAmount ?? 0
+    const refundCashAmount = data.refundCashAmount ?? 0
+
+    if (
+      totalPrice + refundPrice !==
+      cashAmount +
+        cardAmount +
+        checkAmount +
+        refundCardAmount +
+        refundCashAmount
+    ) {
+      setError('root.totalPrice', {
+        type: 'value',
+        message:
+          'Merci de vérifier que le montant total et le montant de remboursement soient couverts par tous les modes de paiement',
+      })
+      return
+    }
     console.log(data)
     toast.success(`Vente ${data.saleIndex} enregistré`)
   }
@@ -128,7 +174,8 @@ function SaleForm(props: SaleFormProps) {
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <BuyerInformationForm />
           <ArticleForm />
-
+          <PaymentForm />
+          <RefundForm />
           <div className="flex justify-end gap-4">
             <SummaryPrintButton />
             <CustomButton
@@ -249,225 +296,91 @@ function SubmitButton() {
 
   return (
     <CustomButton type="submit" loading={isSubmitting}>
-      Valider et enregistrer le dépôt
+      Valider et enregistrer la vente
     </CustomButton>
   )
 }
 
 function ArticleForm() {
-  const { fields } = useFieldArray<EditSaleFormType>({
-    name: 'articles',
-  })
+  const { watch, setValue } = useFormContext<EditSaleFormType>()
 
+  const onRemove = useCallback((index: number) => {
+    setValue(`articles.${index}.isDeleted`, true)
+  }, [])
+
+  const onAccept = useCallback((index: number) => {
+    setValue(`articles.${index}.isDeleted`, false)
+  }, [])
+
+  const articles = watch('articles')
+  if (!articles || articles.length === 0) return null
+  const total = articles.reduce((acc, cur) => {
+    acc += parseInt(`${cur.isDeleted ? 0 : cur.price}`)
+    return acc
+  }, 0)
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="text-2xl font-bold ">Articles</h3>
-
-      <div className="overflow-x-auto overflow-y-scroll">
-        <table className="w-full table-fixed">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[100px]">
-                Code
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Discipline
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[150px]">
-                Catégorie
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Marque
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Descriptif
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Couleur
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
-                Taille
-              </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
-                Prix
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {fields.map((field, index) => (
-              <ArticleLineForm key={field.id} index={index} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex flex-row justify-end">
-        <div className="flex flex-row gap-5 items-baseline">
-          <div>Nombre d'articles : {fields.length}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-type ArticleLineFormProps = {
-  index: number
-}
-
-function ArticleLineForm(props: ArticleLineFormProps) {
-  const { index } = props
-  const colorOptions = useMemo(() => {
-    return colors.map((color) => <option key={color} value={color}></option>)
-  }, [colors])
-
-  return (
-    <tr className="border-b border-gray-100">
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.articleCode`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.discipline`}
-          render={({ field, fieldState }) => (
-            <Combobox
-              invalid={fieldState.invalid}
-              items={disciplineItems}
-              onSelect={field.onChange}
-              value={field.value}
-              readOnly
-            />
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.category`}
-          render={({ field, fieldState }) => (
-            <Combobox
-              invalid={fieldState.invalid}
-              items={categoriesItems}
-              onSelect={field.onChange}
-              value={field.value}
-              readOnly
-            />
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.brand`}
-          render={({ field, fieldState }) => (
-            <Combobox
-              invalid={fieldState.invalid}
-              items={brandsItems}
-              onSelect={field.onChange}
-              value={field.value}
-              readOnly
-            />
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.model`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <Controller
-          name={`articles.${index}.color`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    list={`articles-${index}-color-list`}
-                    id={`articles-${index}-color`}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                  <datalist id={`articles-${index}-color-list`}>
-                    {colorOptions}
-                  </datalist>
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-      </td>
-      <td className="py-1 px-1 w-[75px]">
-        <Controller
-          name={`articles.${index}.size`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-      </td>
-      <td className="py-1 px-1">
-        <div className="flex items-center gap-1">
-          <Controller
-            name={`articles.${index}.price`}
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                      readOnly
-                    />
-                    <Euro className="w-5 pr-1" />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
-            )}
-          />
-        </div>
-      </td>
-    </tr>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">Code</TableHead>
+          <TableHead>Discipline</TableHead>
+          <TableHead>Catégorie</TableHead>
+          <TableHead>Marque</TableHead>
+          <TableHead>Descriptif</TableHead>
+          <TableHead>Couleur</TableHead>
+          <TableHead>Taille</TableHead>
+          <TableHead className="text-right">Prix</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {articles.map((article, index) => (
+          <TableRow
+            key={article.id}
+            className={`${article.isDeleted ? 'line-through' : ''}`}
+          >
+            <TableCell className="font-medium">
+              {article.shortArticleCode}
+            </TableCell>
+            <TableCell>{article.discipline}</TableCell>
+            <TableCell>{article.category}</TableCell>
+            <TableCell>{article.brand}</TableCell>
+            <TableCell>{article.model}</TableCell>
+            <TableCell>{article.color}</TableCell>
+            <TableCell>{article.size}</TableCell>
+            <TableCell className="text-right">{article.price}€</TableCell>
+            <TableCell className="text-center">
+              {article.isDeleted ? (
+                <button
+                  type="button"
+                  onClick={() => onAccept(index)}
+                  className="p-2 text-green-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <RotateCcwIcon className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableRow className="font-bold">
+          <TableCell colSpan={4}></TableCell>
+          <TableCell>Nombre d'articles</TableCell>
+          <TableCell>{articles.length}</TableCell>
+          <TableCell>Total</TableCell>
+          <TableCell className="text-right">{total}€</TableCell>
+          <TableCell></TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
   )
 }
 
@@ -515,10 +428,185 @@ function SummaryPrintButton() {
   )
 }
 
+function PaymentForm() {
+  return (
+    <div className="flex flex-col gap-3">
+      <Controller
+        name="root.totalPrice"
+        render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
+      />
+      <h3 className="text-2xl font-bold">Règlements</h3>
+      <div className="grid grid-cols-6 gap-6 align-baseline">
+        <Controller
+          name="checkAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="checkAmount">Montant chèque</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="checkAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="cardAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="cardAmount">Montant CB</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="cardAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="cashAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="cashAmount">Montant espèce</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="cashAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+
+function RefundForm() {
+  const { watch } = useFormContext<EditSaleFormType>()
+  const articles = watch('articles')
+  if (!articles || articles.length === 0) return null
+  const totalRefund = articles.reduce((acc, cur) => {
+    acc += parseInt(`${cur.isDeleted ? cur.price : 0}`)
+    return acc
+  }, 0)
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-2xl font-bold">Remboursement</h3>
+      <Controller
+        name="root.incorretRefund"
+        render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
+      />
+      <div className="grid grid-cols-6 gap-6 align-baseline">
+        <Field>
+          <FieldContent>
+            <Label>Montant à rembourser</Label>
+            <InputGroup>
+              <InputGroupInput
+                id="checkAmount"
+                type="text"
+                value={totalRefund}
+              />
+              <InputGroupAddon align="inline-end">
+                <Euro />
+              </InputGroupAddon>
+            </InputGroup>
+          </FieldContent>
+        </Field>
+        <Controller
+          name="refundCardAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="refundCardAmount">Remboursement CB</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="refundCardAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="refundCashAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="refundCashAmount">Remboursement espèce</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="refundCashAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="refundComment"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="col-span-2">
+              <FieldContent>
+                <Label htmlFor="refundComment">Commentaire</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="refundComment"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ErrorMessages() {
   const {
     formState: { errors },
   } = useFormContext<EditDepositFormType>()
+
+  console.log(errors)
 
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
     if (typeof errors[key]?.message === 'string') {

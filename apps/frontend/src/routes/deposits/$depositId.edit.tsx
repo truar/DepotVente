@@ -381,6 +381,7 @@ type ArticleLineFormProps = {
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { index } = props
   const { setValue, watch } = useFormContext<EditDepositFormType>()
+  // TODO the form should handle "isDeleted" only. The business hook to mutate should handle how the "deletion" transform to business logic
   const markAsRefused = useCallback(
     (index: number) => {
       setValue(`deposit.articles.${index}.status`, 'REFUSED')

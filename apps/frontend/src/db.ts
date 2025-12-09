@@ -12,6 +12,8 @@ export type Sale = {
   cardAmount: number | null
   cashAmount: number | null
   checkAmount: number | null
+  refundCardAmount: number | null
+  refundCashAmount: number | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
