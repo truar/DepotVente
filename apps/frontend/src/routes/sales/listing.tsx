@@ -88,28 +88,6 @@ export const columns: ColumnDef<DataTableType>[] = [
     accessorKey: 'saleId',
   },
   {
-    id: 'select',
-    size: 40,
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Tous sélectionner"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Sélectionner une ligne"
-      />
-    ),
-  },
-
-  {
     accessorKey: 'index',
     header: 'Identifiant',
   },

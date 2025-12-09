@@ -73,7 +73,7 @@ function RouteComponent() {
       navigation={
         <Link to={'/sales/listing'}>Retour à la liste des ventes</Link>
       }
-      title={`Modifier la vente ${sale.saleIndex}`}
+      title={`Modifier la vente n°${sale.saleIndex}`}
     >
       <SaleForm sale={sale} buyer={contact} articles={articles} />
     </Page>
@@ -177,7 +177,6 @@ function SaleForm(props: SaleFormProps) {
           <PaymentForm />
           <RefundForm />
           <div className="flex justify-end gap-4">
-            <SummaryPrintButton />
             <CustomButton
               type="button"
               onClick={() => reset()}
@@ -185,6 +184,7 @@ function SaleForm(props: SaleFormProps) {
             >
               Annuler les modifications
             </CustomButton>
+            <SummaryPrintButton />
             <SubmitButton />
           </div>
         </div>
