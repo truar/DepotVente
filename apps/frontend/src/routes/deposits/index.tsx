@@ -15,8 +15,9 @@ import {
 } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
-import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button.tsx'
+import { ClickableCard } from '@/components/ClickableCard.tsx'
+import { LogoutButton } from '@/components/LogoutButton.tsx'
 
 export const Route = createFileRoute('/deposits/')({
   beforeLoad: () => {
@@ -43,24 +44,26 @@ export function RouteComponent() {
     )
   return (
     <>
-      <Button variant="link" className="cursor-pointer">
-        <ChevronLeft />
-        <Link to={'..'}>Retour au menu principal</Link>
-      </Button>
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex flex-row justify-between px-3 py-3">
+        <div>
+          <Button variant="link" className="cursor-pointer">
+            <ChevronLeft />
+            <Link to={'..'}>Retour au menu principal</Link>
+          </Button>
+        </div>
+        <LogoutButton />
+      </div>
+      <main className="flex-1 flex items-center justify-center">
         <div className="max-w-5xl w-full">
-          {/* Title Section */}
-          <div className="text-center mb-12">
-            <h2 className="text-5xl font-bold text-gray-800 mb-4">
-              Que souhaitez-vous faire ?
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+              Gérer les dépôts
             </h2>
-            <p className="text-xl text-gray-600">
-              Choisissez votre mode de travail pour commencer.
-            </p>
+            <p className="text-xl text-gray-600">Que souhaitez-vous faire ?</p>
           </div>
 
           {/* Cards Grid */}
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="grid md:grid-cols-3 max-w-3xl gap-3 mx-auto">
             <ClickableCard
               onClick={() => navigate({ to: '/deposits/add' })}
               icon={<Tag className="w-8 h-8 text-green-600" />}
@@ -107,29 +110,5 @@ export function RouteComponent() {
         </div>
       </main>
     </>
-  )
-}
-
-type ClickableCardProps = {
-  onClick: () => void
-  icon: ReactNode
-  title: string
-  description?: string
-}
-function ClickableCard(props: ClickableCardProps) {
-  const { onClick, icon, title, description } = props
-  return (
-    <button
-      onClick={onClick}
-      className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200 cursor-pointer"
-    >
-      <div className="flex justify-center mb-6">
-        <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-          {icon}
-        </div>
-      </div>
-      <h3 className="text-2xl font-bold text-gray-800 mb-3">{title}</h3>
-      {description ?? <p className="text-foreground">{description}</p>}
-    </button>
   )
 }

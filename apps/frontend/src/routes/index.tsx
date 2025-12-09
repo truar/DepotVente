@@ -2,7 +2,8 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { BaggageClaim, Package, ShoppingCart } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
-import type { ReactNode } from 'react'
+import { ClickableCard } from '@/components/ClickableCard.tsx'
+import { LogoutButton } from '@/components/LogoutButton.tsx'
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {
@@ -24,66 +25,44 @@ export function RouteComponent() {
   const navigate = useNavigate()
 
   return (
-    <main className="flex-1 flex items-center justify-center px-6 py-12">
-      <div className="max-w-5xl w-full">
-        {/* Title Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-5xl font-bold text-gray-800 mb-4">
-            Que souhaitez-vous faire ?
-          </h2>
-          <p className="text-xl text-gray-600">
-            Choisissez votre mode de travail pour commencer.
-          </p>
-        </div>
-
-        {/* Cards Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <ClickableCard
-            onClick={() => navigate({ to: '/deposits' })}
-            icon={<Package className="w-8 h-8 text-green-600" />}
-            title="Dépôt"
-            description="Gérer les dépots"
-          />
-          <ClickableCard
-            onClick={() => {
-              navigate({ to: '/sales' })
-            }}
-            icon={<ShoppingCart className="w-8 h-8 text-green-600" />}
-            title="Ventes"
-            description="Gérer les ventes"
-          />
-          <ClickableCard
-            onClick={() => {}}
-            icon={<BaggageClaim className="w-8 h-8 text-green-600" />}
-            title="Retours"
-            description="Gérer les retours"
-          />
-        </div>
+    <>
+      <div className="flex flex-row justify-end px-3 py-3">
+        <LogoutButton />
       </div>
-    </main>
-  )
-}
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="max-w-5xl w-full">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+              Menu principal
+            </h2>
+            <p className="text-xl text-gray-600">Que souhaitez-vous faire ?</p>
+          </div>
 
-type ClickableCardProps = {
-  onClick: () => void
-  icon: ReactNode
-  title: string
-  description?: string
-}
-function ClickableCard(props: ClickableCardProps) {
-  const { onClick, icon, title, description } = props
-  return (
-    <button
-      onClick={onClick}
-      className="bg-white rounded-2xl p-12 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200 cursor-pointer"
-    >
-      <div className="flex justify-center mb-6">
-        <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-          {icon}
+          {/* Cards Grid */}
+          <div className="grid grid-cols-3 gap-3 max-w-3xl mx-auto">
+            <ClickableCard
+              onClick={() => navigate({ to: '/deposits' })}
+              icon={<Package className="w-8 h-8 text-green-600" />}
+              title="Dépôt"
+              description="Gérer les dépots"
+            />
+            <ClickableCard
+              onClick={() => {
+                navigate({ to: '/sales' })
+              }}
+              icon={<ShoppingCart className="w-8 h-8 text-green-600" />}
+              title="Ventes"
+              description="Gérer les ventes"
+            />
+            <ClickableCard
+              onClick={() => {}}
+              icon={<BaggageClaim className="w-8 h-8 text-green-600" />}
+              title="Retours"
+              description="Gérer les retours"
+            />
+          </div>
         </div>
-      </div>
-      <h3 className="text-2xl font-bold text-gray-800 mb-3">{title}</h3>
-      {description ?? <p className="text-foreground">{description}</p>}
-    </button>
+      </main>
+    </>
   )
 }

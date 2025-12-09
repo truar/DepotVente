@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button.tsx'
 import { ChevronLeft } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { LogoutButton } from '@/components/LogoutButton.tsx'
 
 type PageProps = {
   navigation?: ReactNode
@@ -10,18 +11,26 @@ type PageProps = {
 
 export function Page(props: PageProps) {
   const { navigation, title, children } = props
+
   return (
-    <main className="flex flex-1 p-6 gap-3 flex-col">
-      {navigation && (
+    <>
+      <div className="flex flex-row justify-between px-3 py-3">
+        {navigation && (
+          <div>
+            <Button variant="link" className="cursor-pointer">
+              <ChevronLeft />
+              {navigation}
+            </Button>
+          </div>
+        )}
         <div>
-          <Button variant="link" className="cursor-pointer">
-            <ChevronLeft />
-            {navigation}
-          </Button>
+          <LogoutButton />
         </div>
-      )}
-      <h2 className="text-3xl font-bold">{title}</h2>
-      <section>{children}</section>
-    </main>
+      </div>
+      <main className="flex flex-1 p-6 gap-3 flex-col">
+        <h2 className="text-3xl font-bold">{title}</h2>
+        <section>{children}</section>
+      </main>
+    </>
   )
 }

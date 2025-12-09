@@ -6,7 +6,14 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { Euro, Plus, Printer, Trash2 } from 'lucide-react'
+import {
+  CheckLineIcon,
+  Euro,
+  Plus,
+  Printer,
+  RotateCcwIcon,
+  Trash2,
+} from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
@@ -39,9 +46,9 @@ import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Field, FieldContent } from '@/components/ui/field'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
-import { disciplineItems } from '@/types/disciplines.ts'
-import { categoriesItems } from '@/types/categories.ts'
-import { brandsItems } from '@/types/brands.ts'
+import { disciplineItems, disciplines } from '@/types/disciplines.ts'
+import { categories, categoriesItems } from '@/types/categories.ts'
+import { brands, brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
 import { cities } from '@/types/cities.ts'
 import { Combobox } from '@/components/Combobox'
@@ -57,6 +64,7 @@ import { CustomButton } from '@/components/custom/Button.tsx'
 import { useDebouncedCallback } from 'use-debounce'
 import { printPdf } from '@/pdf/print.tsx'
 import { db } from '@/db.ts'
+import { fakerFR as faker } from '@faker-js/faker'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -188,6 +196,45 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     setCountArticle(predepositArticles.length)
   }, [])
 
+  const generateFakeDeposit = useCallback(() => {
+    if (!depositIndex) return
+    setValue('isSummaryPrinted', true)
+    setValue('deposit.lastName', faker.person.lastName())
+    setValue('deposit.firstName', faker.person.firstName())
+    setValue('deposit.phoneNumber', faker.phone.number({ style: 'national' }))
+    setValue('deposit.city', faker.helpers.arrayElement(cities))
+    setValue('deposit.contributionStatus', 'PAYEE')
+    const nbArticles = 11
+    setValue(
+      'deposit.articles',
+      Array.from({ length: nbArticles }).map((_, index) => {
+        const year = getYear()
+        const identificationLetter = generateIdentificationLetter(index)
+        const articleCode = generateArticleCode(
+          year,
+          depositIndex,
+          identificationLetter,
+        )
+        return {
+          price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
+          discipline: faker.helpers.arrayElement(disciplines),
+          brand: faker.helpers.arrayElement(brands),
+          type: faker.helpers.arrayElement(categories),
+          size: faker.number.int({ min: 1, max: 180 }) + '',
+          color: faker.color.human(),
+          model: faker.commerce.productName(),
+          articleCode,
+          year,
+          depotIndex: depositIndex,
+          identificationLetter,
+          articleIndex: index,
+          shortArticleCode: `${depositIndex} ${identificationLetter}`,
+        }
+      }),
+    )
+    setCountArticle(nbArticles)
+  }, [depositIndex, setValue])
+
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
@@ -212,6 +259,13 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
           />
 
           <div className="flex justify-end gap-4">
+            <CustomButton
+              type="button"
+              onClick={() => generateFakeDeposit()}
+              variant="secondary"
+            >
+              Générer une fausse vente
+            </CustomButton>
             <SummaryPrintButton />
             <CustomButton
               type="button"
@@ -379,7 +433,7 @@ type ArticleFormProps = {
 
 function ArticleForm(props: ArticleFormProps) {
   const { onArticleAdd, articleCount, depositIndex } = props
-  const { fields, append, remove } = useFieldArray<DepositFormType>({
+  const { fields, append } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
   const { trigger, setValue, watch } = useFormContext<DepositFormType>()
@@ -414,14 +468,16 @@ function ArticleForm(props: ArticleFormProps) {
     onArticleAdd()
   }, [fields, depositIndex, articleCount])
 
+  const articles = watch('deposit.articles')
   const contributionAmount = watch('deposit.contributionAmount')
+  const countArticles = articles.filter((article) => !article.isDeleted).length
 
   useEffect(() => {
     setValue(
       'deposit.contributionAmount',
-      (Math.floor((fields.length - 1) / 10) + 1) * 2,
+      (Math.floor((countArticles - 1) / 10) + 1) * 2,
     )
-  }, [fields.length])
+  }, [countArticles])
 
   return (
     <div className="flex flex-col gap-3">
@@ -462,7 +518,7 @@ function ArticleForm(props: ArticleFormProps) {
           </thead>
           <tbody>
             {fields.map((field, index) => (
-              <ArticleLineForm key={field.id} index={index} onRemove={remove} />
+              <ArticleLineForm key={field.id} index={index} />
             ))}
           </tbody>
         </table>
@@ -476,7 +532,7 @@ function ArticleForm(props: ArticleFormProps) {
           </Button>
         </div>
         <div className="flex flex-row gap-5 items-baseline">
-          <div>Nombre d'articles : {fields.length}</div>
+          <div>Nombre d'articles : {countArticles}</div>
           <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>
             <Controller
@@ -518,18 +574,22 @@ function ArticleForm(props: ArticleFormProps) {
 
 type ArticleLineFormProps = {
   index: number
-  onRemove: (index: number) => void
 }
 
 function ArticleLineForm(props: ArticleLineFormProps) {
-  const { index, onRemove } = props
+  const { index } = props
+  const { setValue, watch } = useFormContext<DepositFormType>()
   const colorOptions = useMemo(() => {
     return colors.map((color) => <option key={color} value={color}></option>)
   }, [colors])
 
+  const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
+  const isLineDisabled = isDeleted === true
   return (
     <tr className="border-b border-gray-100">
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
           render={({ field: controllerField, fieldState }) => (
@@ -548,7 +608,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.discipline`}
           render={({ field, fieldState }) => (
@@ -557,11 +619,14 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={disciplineItems}
               onSelect={field.onChange}
               value={field.value}
+              readOnly={isLineDisabled}
             />
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.type`}
           render={({ field, fieldState }) => (
@@ -570,11 +635,14 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={categoriesItems}
               onSelect={field.onChange}
               value={field.value}
+              readOnly={isLineDisabled}
             />
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.brand`}
           render={({ field, fieldState }) => (
@@ -583,11 +651,14 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={brandsItems}
               onSelect={field.onChange}
               value={field.value}
+              readOnly={isLineDisabled}
             />
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.model`}
           render={({ field: controllerField, fieldState }) => (
@@ -598,6 +669,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                     {...controllerField}
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    readOnly={isLineDisabled}
                   />
                 </InputGroup>
               </FieldContent>
@@ -605,7 +677,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.color`}
           render={({ field: controllerField, fieldState }) => (
@@ -618,6 +692,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                     id={`articles-${index}-color`}
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    readOnly={isLineDisabled}
                   />
                   <datalist id={`articles-${index}-color-list`}>
                     {colorOptions}
@@ -628,7 +703,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td className="py-1 px-1 w-[75px]">
+      <td
+        className={`py-1 p"x-1 w-[75px]" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <Controller
           name={`deposit.articles.${index}.size`}
           render={({ field: controllerField, fieldState }) => (
@@ -639,6 +716,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                     {...controllerField}
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    readOnly={isLineDisabled}
                   />
                 </InputGroup>
               </FieldContent>
@@ -646,7 +724,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td className="py-1 px-1">
+      <td
+        className={`"py-1 px-1" + ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
+      >
         <div className="flex items-center gap-1">
           <Controller
             name={`deposit.articles.${index}.price`}
@@ -658,6 +738,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                       {...controllerField}
                       aria-invalid={fieldState.invalid}
                       type="text"
+                      readOnly={isLineDisabled}
                     />
                     <Euro className="w-5 pr-1" />
                   </InputGroup>
@@ -669,14 +750,30 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center gap-2">
-          <PrintArticleButton index={index} />
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <PrintArticleButton index={index} disabled={isLineDisabled} />
+          {isLineDisabled ? (
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() =>
+                setValue(`deposit.articles.${index}.isDeleted`, false)
+              }
+              className="p-2 text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+            >
+              <RotateCcwIcon className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() =>
+                setValue(`deposit.articles.${index}.isDeleted`, true)
+              }
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </td>
     </tr>
