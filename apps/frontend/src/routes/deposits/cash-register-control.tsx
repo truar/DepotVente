@@ -11,7 +11,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Field, FieldContent } from '@/components/ui/field.tsx'
+import { Field } from '@/components/ui/field.tsx'
 import {
   InputGroup,
   InputGroupAddon,
@@ -67,7 +67,7 @@ function RouteComponent() {
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
-      title="Controler la caisse"
+      title="Controler les espèces"
     >
       <CashRegisterControlForm workstation={workstation} />
     </Page>
@@ -126,32 +126,29 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
     <FormProvider {...methods}>
       <form className="flex flex-col gap-4">
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-          <div className="flex flex-row justify-between">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-row justify-between gap-6">
+            <div className="grid grid-cols-6 gap-2">
               {fields.map((field, index) => (
-                <div key={field.id}>
-                  <Controller
-                    control={control}
-                    name={`amounts.${index}.amount`}
-                    render={({ field: controllerField, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldContent>
-                          <Label>{field.value}</Label>
-                          <InputGroup>
-                            <InputGroupInput
-                              {...controllerField}
-                              aria-invalid={fieldState.invalid}
-                              type="text"
-                            />
-                          </InputGroup>
-                        </FieldContent>
-                      </Field>
-                    )}
-                  />
-                </div>
+                <Controller
+                  key={field.id}
+                  control={control}
+                  name={`amounts.${index}.amount`}
+                  render={({ field: controllerField, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <Label>{field.value}</Label>
+                      <InputGroup>
+                        <InputGroupInput
+                          {...controllerField}
+                          aria-invalid={fieldState.invalid}
+                          type="text"
+                        />
+                      </InputGroup>
+                    </Field>
+                  )}
+                />
               ))}
             </div>
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
               <Field>
                 <Label>Fonds de caisse</Label>
                 <InputGroup>
@@ -195,7 +192,7 @@ function RealAmountInput() {
 
   return (
     <Field>
-      <Label>Montant réels</Label>
+      <Label>Montant réel</Label>
       <InputGroup>
         <InputGroupInput type="text" readOnly {...register('realAmount')} />
         <InputGroupAddon align="inline-end">
@@ -234,7 +231,7 @@ function TheoreticalAmount() {
 
   return (
     <Field>
-      <Label>Montant théoriques</Label>
+      <Label>Montant théorique</Label>
       <InputGroup>
         <InputGroupInput
           type="text"

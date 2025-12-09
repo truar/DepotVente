@@ -1,8 +1,8 @@
 export const disciplines = [
   'Alpin',
   'Fond',
-  'Randonnée Alpine',
-  'Randonnée Pédestre',
+  'Rando Alpine',
+  'Rando Pédestre',
   'Snowboard',
   'Telemark',
 ]

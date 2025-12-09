@@ -27,7 +27,7 @@ export function Page(props: PageProps) {
           <LogoutButton />
         </div>
       </div>
-      <main className="flex flex-1 p-6 gap-3 flex-col">
+      <main className="flex flex-1 px-3 gap-3 flex-col">
         <h2 className="text-3xl font-bold">{title}</h2>
         <section>{children}</section>
       </main>
