@@ -333,7 +333,7 @@ function ArticleForm() {
       </div>
 
       <div className="flex flex-row justify-end">
-        <div className="flex flex-row gap-5 items-baseline">
+        <div className="flex flex-row gap-5 items-baseline font-bold">
           <div>Nombre d'articles : {fields.length}</div>
           <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>

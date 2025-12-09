@@ -524,7 +524,7 @@ function ArticleForm(props: ArticleFormProps) {
             Ajouter un nouvel article
           </Button>
         </div>
-        <div className="flex flex-row gap-5 items-baseline">
+        <div className="flex flex-row gap-5 items-baseline font-bold">
           <div>Nombre d'articles : {countArticles}</div>
           <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>

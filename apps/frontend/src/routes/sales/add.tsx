@@ -412,53 +412,53 @@ function ScannedArticles() {
     return acc
   }, 0)
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">Code</TableHead>
-          <TableHead>Discipline</TableHead>
-          <TableHead>Catégorie</TableHead>
-          <TableHead>Marque</TableHead>
-          <TableHead>Descriptif</TableHead>
-          <TableHead>Couleur</TableHead>
-          <TableHead>Taille</TableHead>
-          <TableHead className="text-right">Prix</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {articles.map((article, index) => (
-          <TableRow key={article.id}>
-            <TableCell className="font-medium">{article.articleCode}</TableCell>
-            <TableCell>{article.discipline}</TableCell>
-            <TableCell>{article.category}</TableCell>
-            <TableCell>{article.brand}</TableCell>
-            <TableCell>{article.model}</TableCell>
-            <TableCell>{article.color}</TableCell>
-            <TableCell>{article.size}</TableCell>
-            <TableCell className="text-right">{article.price}€</TableCell>
-            <TableCell className="text-center">
-              <button
-                type="button"
-                onClick={() => onRemove(index)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Code</TableHead>
+            <TableHead>Discipline</TableHead>
+            <TableHead>Catégorie</TableHead>
+            <TableHead>Marque</TableHead>
+            <TableHead>Descriptif</TableHead>
+            <TableHead>Couleur</TableHead>
+            <TableHead>Taille</TableHead>
+            <TableHead className="text-right">Prix</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-      <TableFooter>
-        <TableRow className="font-bold">
-          <TableCell colSpan={4}></TableCell>
-          <TableCell>Nombre d'articles</TableCell>
-          <TableCell>{articles.length}</TableCell>
-          <TableCell>Total</TableCell>
-          <TableCell className="text-right">{total}€</TableCell>
-          <TableCell></TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {articles.map((article, index) => (
+            <TableRow key={article.id}>
+              <TableCell className="font-medium">
+                {article.articleCode}
+              </TableCell>
+              <TableCell>{article.discipline}</TableCell>
+              <TableCell>{article.category}</TableCell>
+              <TableCell>{article.brand}</TableCell>
+              <TableCell>{article.model}</TableCell>
+              <TableCell>{article.color}</TableCell>
+              <TableCell>{article.size}</TableCell>
+              <TableCell className="text-right">{article.price}€</TableCell>
+              <TableCell className="text-center">
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <div className="flex flex-row justify-end">
+        <div className="flex flex-row gap-5 items-baseline font-bold">
+          <div>Nombre d'articles : {articles.length}</div>
+          <div>Montant droit de dépôt : {total}€</div>
+        </div>
+      </div>
+    </>
   )
 }
 
