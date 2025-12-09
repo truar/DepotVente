@@ -152,15 +152,15 @@ function SalesForm(props: SalesFormProps) {
           <SaleArticlesForm saleIndex={saleIndex} />
           <PaymentForm />
           <div className="flex justify-end gap-4">
+            <Button type="button" onClick={() => reset()} variant="destructive">
+              Annuler
+            </Button>
             <Button
               type="button"
               onClick={() => console.log('printing...')}
               variant="secondary"
             >
-              Imprimer
-            </Button>
-            <Button type="button" onClick={() => reset()} variant="destructive">
-              Annuler
+              Facture
             </Button>
             <Button type="submit">Valider et enregistrer la vente</Button>
           </div>

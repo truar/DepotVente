@@ -113,7 +113,7 @@ function DepositDataTable() {
           seller: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
-    [contactMap],
+    [contactMap, deposits],
   )
 
   return (

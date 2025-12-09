@@ -62,7 +62,7 @@ function SalesDataTable() {
           buyer: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
-    [contactMap],
+    [contactMap, sales],
   )
 
   return (
