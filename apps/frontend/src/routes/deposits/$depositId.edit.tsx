@@ -80,7 +80,7 @@ function RouteComponent() {
       navigation={
         <Link to={'/deposits/listing'}>Retour à la liste des dépôts</Link>
       }
-      title={`Modification de la fiche n°${deposit.depositIndex}`}
+      title={`Modifier la fiche n°${deposit.depositIndex}`}
     >
       <DepositForm deposit={deposit} seller={contact} articles={articles} />
     </Page>

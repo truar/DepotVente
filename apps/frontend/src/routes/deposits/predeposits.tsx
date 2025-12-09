@@ -75,7 +75,7 @@ function RouteComponent() {
   return (
     <Page
       navigation={<Link to="..">Retour au menu</Link>}
-      title="Gérer les fiches des dépôts"
+      title="Gérer les fiches des pré-dépôts"
     >
       <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
         <PredepositDataTable />

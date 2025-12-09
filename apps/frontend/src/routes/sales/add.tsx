@@ -346,7 +346,7 @@ function SaleArticlesForm(props: SaleArticlesFormProps) {
     if (!articles?.some(({ id }) => id === article.id)) {
       append({
         id: article.id,
-        articleCode: article.depositIndex + ' ' + article.articleIndex,
+        articleCode: article.depositIndex + ' ' + article.identificationLetter,
         discipline: article.discipline,
         category: article.category,
         brand: article.brand,
@@ -356,9 +356,6 @@ function SaleArticlesForm(props: SaleArticlesFormProps) {
         price: article.price,
       })
     }
-
-    toast.success('Article ajouté')
-
     setArticleCode('')
   }, [articleCode, articlesDb, getValues])
 
@@ -563,7 +560,22 @@ function PaymentForm() {
             </InputGroup>
           </FieldContent>
         </Field>
-        <div>Monnaie rendue: {cashReturned}€</div>
+        <Field>
+          <FieldContent>
+            <Label>Monnaie rendue</Label>
+            <InputGroup>
+              <InputGroupInput
+                id="cashReceived"
+                type="text"
+                value={cashReturned}
+                readOnly
+              />
+              <InputGroupAddon align="inline-end">
+                <Euro />
+              </InputGroupAddon>
+            </InputGroup>
+          </FieldContent>
+        </Field>
       </div>
     </div>
   )
