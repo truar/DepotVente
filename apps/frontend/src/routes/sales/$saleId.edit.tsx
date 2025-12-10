@@ -38,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
+import { useEditSale } from '@/hooks/useEditSale.ts'
 
 export const Route = createFileRoute('/sales/$saleId/edit')({
   beforeLoad: () => {
@@ -86,6 +87,7 @@ type SaleFormProps = {
 }
 function SaleForm(props: SaleFormProps) {
   const { sale, articles, buyer } = props
+  const mutation = useEditSale()
   const methods = useForm<EditSaleFormType>({
     resolver: zodResolver(EditSaleSchema),
     mode: 'onSubmit',
@@ -97,6 +99,7 @@ function SaleForm(props: SaleFormProps) {
       cardAmount: sale.cardAmount,
       refundCardAmount: sale.refundCardAmount || 0,
       refundCashAmount: sale.refundCashAmount || 0,
+      refundComment: sale.refundComment,
       city: buyer.city,
       lastName: buyer.lastName,
       contactId: buyer.id,
@@ -127,10 +130,8 @@ function SaleForm(props: SaleFormProps) {
   const onSubmit: SubmitHandler<EditSaleFormType> = async (data) => {
     const articles = data.articles
     const totalPrice =
-      articles?.reduce((acc, cur) => acc + parseInt(`${cur.price}`), 0) ?? 0
-    const refundPrice =
       articles?.reduce(
-        (acc, cur) => acc + parseInt(`${cur.isDeleted ? cur.price : 0}`),
+        (acc, cur) => acc + parseInt(`${!cur.isDeleted ? cur.price : 0}`),
         0,
       ) ?? 0
     const cashAmount = data.cashAmount ?? 0
@@ -140,12 +141,11 @@ function SaleForm(props: SaleFormProps) {
     const refundCashAmount = data.refundCashAmount ?? 0
 
     if (
-      totalPrice + refundPrice !==
+      totalPrice !==
       cashAmount +
         cardAmount +
-        checkAmount +
-        refundCardAmount +
-        refundCashAmount
+        checkAmount -
+        (refundCardAmount + refundCashAmount)
     ) {
       setError('root.totalPrice', {
         type: 'value',
@@ -154,7 +154,8 @@ function SaleForm(props: SaleFormProps) {
       })
       return
     }
-    console.log(data)
+
+    await mutation.mutate(data)
     toast.success(`Vente ${data.saleIndex} enregistré`)
   }
 

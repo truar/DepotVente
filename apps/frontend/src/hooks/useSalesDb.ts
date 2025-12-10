@@ -20,5 +20,11 @@ export function useSalesDb() {
     return saleId
   }
 
-  return { count, insert }
+  async function update(id: string, data: Partial<Sale>) {
+    await db.sales.upsert(id, data)
+    // Add to outbox for syncing
+    await syncService.addToOutbox('sales', 'update', id, data)
+  }
+
+  return { count, insert, update }
 }

@@ -14,6 +14,7 @@ export type Sale = {
   checkAmount: number | null
   refundCardAmount: number | null
   refundCashAmount: number | null
+  refundComment: string | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null

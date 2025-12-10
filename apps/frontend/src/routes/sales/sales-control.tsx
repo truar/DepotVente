@@ -137,22 +137,28 @@ function SalesControlPage(props: SalesControlPageProps) {
       <FormProvider {...methods}>
         <form className="flex flex-col gap-4">
           <Accordion type="single" collapsible defaultValue="item-1">
-            <AccordionItem value="item-1">
+            <AccordionItem value="card-payments">
               <AccordionTrigger>Carte bancaires</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CardPaymentDetails workstation={workstation} />
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-2">
+            <AccordionItem value="cash-payments">
               <AccordionTrigger>Espèces</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CashRegisterControlForm />
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-3">
+            <AccordionItem value="check-payments">
               <AccordionTrigger>Chèques</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CheckPaymentDetails workstation={workstation} />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="refund-payments">
+              <AccordionTrigger>Remboursement</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-4 text-balance">
+                <RefundPaymentDetails workstation={workstation} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -292,6 +298,89 @@ function CheckPaymentDetails({ workstation }: { workstation: Workstation }) {
                 <TableCell className="text-right">
                   <FormattedNumber
                     value={sale.checkAmount ?? 0}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+      <div className="flex justify-end">
+        <p className="font-bold">
+          Total:{' '}
+          <FormattedNumber value={total} style="currency" currency="EUR" />
+        </p>
+      </div>
+    </>
+  )
+}
+
+function RefundPaymentDetails({ workstation }: { workstation: Workstation }) {
+  const allSales = useLiveQuery(
+    () =>
+      db.sales
+        .where({
+          incrementStart: workstation.incrementStart,
+        })
+        .sortBy('saleIndex'),
+    [workstation],
+  )
+  const contacts = useLiveQuery(() => db.contacts.toArray())
+  const contactMap = useMemo(
+    () =>
+      new Map<string, Contact>(
+        contacts?.map((contact) => [contact.id, contact]),
+      ),
+    [contacts],
+  )
+  if (!allSales) return null
+  const sales = allSales.filter(
+    (sale) =>
+      (sale.refundCashAmount !== null && sale.refundCashAmount > 0) ||
+      (sale.refundCardAmount !== null && sale.refundCardAmount > 0),
+  )
+  const total = sales.reduce(
+    (acc, cur) =>
+      acc +
+      parseInt(`${cur.refundCashAmount}`) +
+      parseInt(`${cur.refundCardAmount}`),
+    0,
+  )
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">N° vente</TableHead>
+            <TableHead>Nom acheteur</TableHead>
+            <TableHead>Téléphone</TableHead>
+            <TableHead>Ville</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Commentaires</TableHead>
+            <TableHead>Remboursement</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sales.map((sale) => {
+            const buyer = contactMap.get(sale.buyerId)
+            if (!buyer) return
+            return (
+              <TableRow key={sale.id}>
+                <TableCell className="font-medium">{sale.saleIndex}</TableCell>
+                <TableCell>
+                  {buyer.lastName} {buyer.firstName}
+                </TableCell>
+                <TableCell>{buyer.phoneNumber}</TableCell>
+                <TableCell>{buyer.city}</TableCell>
+                <TableCell>{sale.refundCardAmount ? 'CB' : 'Espèce'}</TableCell>
+                <TableCell>{sale.refundComment}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={
+                      (sale.refundCardAmount || sale.refundCashAmount) ?? 0
+                    }
                     style="currency"
                     currency="EUR"
                   />

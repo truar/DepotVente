@@ -18,6 +18,7 @@ export const EditArticleSchema = ArticleSchema.extend({
 
 export const EditSaleSchema = SaleFormSchema.extend({
   id: z.string(),
+  contactId: z.string(),
   refundCardAmount: z.coerce.number<number>().nullable(),
   refundCashAmount: z.coerce.number<number>().nullable(),
   refundComment: z.string().optional(),
