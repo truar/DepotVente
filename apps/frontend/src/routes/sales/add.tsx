@@ -341,6 +341,13 @@ function SaleArticlesForm(props: SaleArticlesFormProps) {
       setArticleCode('')
       return
     }
+    if (article.status === 'REFUSED') {
+      toast.error(
+        `Article ${articleCode} invendable, contactez l'administrateur`,
+      )
+      setArticleCode('')
+      return
+    }
 
     const articles = getValues('articles')
     if (!articles?.some(({ id }) => id === article.id)) {

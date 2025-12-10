@@ -838,6 +838,7 @@ function SummaryPrintButton() {
         size: article.size,
         price: article.price,
         color: article.color,
+        status: article.isDeleted ? 'REFUSED' : 'RECEPTION_OK',
       })),
     }
     await printPdf(<DepositPdf data={data} copy={2} />)

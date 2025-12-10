@@ -93,7 +93,7 @@ export function useSyncStatus() {
 
     const interval = setInterval(() => {
       syncService.deltaSync()
-    }, 60000)
+    }, 20000)
 
     return () => clearInterval(interval)
   }, [status.isOnline])

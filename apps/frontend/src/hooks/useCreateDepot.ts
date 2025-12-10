@@ -53,7 +53,7 @@ export function useCreateDepot() {
             depositId: depositId,
             code: articleForm.articleCode,
             saleId: null,
-            status: 'RECEPTION_OK',
+            status: articleForm.isDeleted ? 'REFUSED' : 'RECEPTION_OK',
             price: articleForm.price,
             discipline: articleForm.discipline,
             brand: articleForm.brand,
