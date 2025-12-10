@@ -106,7 +106,6 @@ export type Article = {
   discipline: string
   color: string
   category: string
-  status: 'RECEPTION_OK' | 'REFUSED'
 }
 
 export type DepositPdfProps = {
@@ -265,15 +264,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             </View>
 
             {articles.map((article, index) => (
-              <View
-                style={[
-                  styles.tableRow,
-                  article.status === 'REFUSED'
-                    ? { backgroundColor: 'red' }
-                    : {},
-                ]}
-                key={index}
-              >
+              <View style={styles.tableRow} key={index}>
                 <View style={styles.tableCol}>
                   <Text>{article.shortCode}</Text>
                 </View>

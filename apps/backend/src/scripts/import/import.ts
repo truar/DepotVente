@@ -135,6 +135,7 @@ async function importSales(buyers: BuyerData[]) {
       const sale = await prisma.sale.create({
         data: {
           buyerId: contact.id,
+          incrementStart: 1000,
           saleIndex: parseInt(buyer.idBuyer),
           cardAmount: buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0,
           checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,

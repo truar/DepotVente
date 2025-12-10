@@ -16,6 +16,7 @@ import { Route as SalesIndexRouteImport } from './routes/sales/index'
 import { Route as HiddenPdfsIndexRouteImport } from './routes/hidden-pdfs/index'
 import { Route as DepositsIndexRouteImport } from './routes/deposits/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as SalesSalesControlRouteImport } from './routes/sales/sales-control'
 import { Route as SalesListingRouteImport } from './routes/sales/listing'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
@@ -68,6 +69,11 @@ const DepositsIndexRoute = DepositsIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalesSalesControlRoute = SalesSalesControlRouteImport.update({
+  id: '/sales/sales-control',
+  path: '/sales/sales-control',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalesListingRoute = SalesListingRouteImport.update({
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
+  '/sales/sales-control': typeof SalesSalesControlRoute
   '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
+  '/sales/sales-control': typeof SalesSalesControlRoute
   '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
+  '/sales/sales-control': typeof SalesSalesControlRoute
   '/admin/': typeof AdminIndexRoute
   '/deposits/': typeof DepositsIndexRoute
   '/hidden-pdfs/': typeof HiddenPdfsIndexRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/sales/listing'
+    | '/sales/sales-control'
     | '/admin'
     | '/deposits'
     | '/hidden-pdfs'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/sales/listing'
+    | '/sales/sales-control'
     | '/admin'
     | '/deposits'
     | '/hidden-pdfs'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/sales/add'
     | '/sales/listing'
+    | '/sales/sales-control'
     | '/admin/'
     | '/deposits/'
     | '/hidden-pdfs/'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   SalesAddRoute: typeof SalesAddRoute
   SalesListingRoute: typeof SalesListingRoute
+  SalesSalesControlRoute: typeof SalesSalesControlRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DepositsIndexRoute: typeof DepositsIndexRoute
   HiddenPdfsIndexRoute: typeof HiddenPdfsIndexRoute
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales/sales-control': {
+      id: '/sales/sales-control'
+      path: '/sales/sales-control'
+      fullPath: '/sales/sales-control'
+      preLoaderRoute: typeof SalesSalesControlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/listing': {
@@ -558,6 +578,7 @@ const rootRouteChildren: RootRouteChildren = {
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   SalesAddRoute: SalesAddRoute,
   SalesListingRoute: SalesListingRoute,
+  SalesSalesControlRoute: SalesSalesControlRoute,
   AdminIndexRoute: AdminIndexRoute,
   DepositsIndexRoute: DepositsIndexRoute,
   HiddenPdfsIndexRoute: HiddenPdfsIndexRoute,

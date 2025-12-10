@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
-import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button.tsx'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
 import { ClickableCard } from '@/components/ClickableCard.tsx'
@@ -66,7 +65,7 @@ export function RouteComponent() {
               description="Faire une vente"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => navigate({ to: '/sales/sales-control' })}
               icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
               title="Caisse"
               description="Controler la caisse"
