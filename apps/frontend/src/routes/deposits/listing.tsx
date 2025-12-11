@@ -19,6 +19,12 @@ import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { ClipboardListIcon, EyeIcon, SquarePenIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
+import {
+  ReturnDepositPdf,
+  type ReturnDepositPdfProps,
+  ReturnDepositsPdf,
+  type ReturnDepositsPdfProps,
+} from '@/pdf/return-deposit-pdf.tsx'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -71,6 +77,57 @@ async function createDepositPdfData(
       model: article.model,
       color: article.color,
       category: article.category,
+    })),
+  }
+}
+
+async function createReturnDepositPdfData(
+  id: string,
+): Promise<ReturnDepositPdfProps['data'] | undefined> {
+  const year = getYear()
+  const deposit = await db.deposits.get(id)
+  if (!deposit) return undefined
+
+  const articles = await db.articles
+    .where({ depositId: deposit.id })
+    .sortBy('code')
+  const contact = await db.contacts.get(deposit.sellerId)
+  if (!contact) throw new Error('No contact found for deposit')
+
+  const soldArticles = articles.filter((article) => !!article.saleId)
+  const totalAmount = soldArticles.reduce(
+    (acc, article) => acc + parseInt(`${article.price}`),
+    0,
+  )
+  const clubAmount = Math.round(totalAmount * 0.1)
+  const dueAmount = totalAmount - clubAmount
+  return {
+    deposit: {
+      depositIndex: deposit.depositIndex,
+      contributionStatus: deposit.contributionStatus,
+      contributionAmount: deposit.contributionAmount,
+      year: year,
+      totalAmount,
+      clubAmount,
+      dueAmount,
+      countSoldArticles: soldArticles.length,
+    },
+    contact: {
+      lastName: contact.lastName,
+      firstName: contact.firstName,
+      city: contact.city,
+      phoneNumber: contact.phoneNumber,
+    },
+    articles: articles.map((article) => ({
+      shortCode: article.depositIndex + ' ' + article.identificationLetter,
+      discipline: article.discipline,
+      size: article.size,
+      price: article.price,
+      brand: article.brand,
+      model: article.model,
+      color: article.color,
+      category: article.category,
+      isSold: !!article.saleId,
     })),
   }
 }
@@ -184,6 +241,11 @@ export const columns: ColumnDef<DepositTableType>[] = [
         if (!data) return
         await printPdf(<DepositPdf data={data} />)
       }, [])
+      const printReturn = useCallback(async (depositId: string) => {
+        const data = await createReturnDepositPdfData(depositId)
+        if (!data) return
+        await printPdf(<ReturnDepositPdf data={data} />)
+      }, [])
       return (
         <div>
           <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
@@ -194,7 +256,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
           <Button variant="ghost" size="icon" onClick={() => print(id)}>
             <EyeIcon />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => print(id)}>
+          <Button variant="ghost" size="icon" onClick={() => printReturn(id)}>
             <ClipboardListIcon />
           </Button>
         </div>
@@ -225,9 +287,28 @@ function DepositDataTableHeaderAction({
     await printPdf(<DepositsPdf data={depositsPdfData} />)
   }
 
+  const printReturn = async () => {
+    const selectedDepositIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.depositId)
+
+    const pdfsData: ReturnDepositsPdfProps['data'] = []
+    for (const id of selectedDepositIds) {
+      const data = await createReturnDepositPdfData(id)
+      if (data) {
+        pdfsData.push(data)
+      }
+    }
+
+    await printPdf(<ReturnDepositsPdf data={pdfsData} />)
+  }
+
   return (
-    <div>
-      <CustomButton onClick={print}>Imprimer les fiches retour</CustomButton>
+    <div className="flex flex-row gap-3">
+      <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
+      <CustomButton onClick={printReturn}>
+        Imprimer les fiches retour
+      </CustomButton>
     </div>
   )
 }

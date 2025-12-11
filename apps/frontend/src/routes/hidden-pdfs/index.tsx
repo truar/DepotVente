@@ -11,6 +11,11 @@ function RouteComponent() {
         <Link to="/hidden-pdfs/summary-deposits">Summary deposits</Link>
       </div>
       <div>
+        <Link to="/hidden-pdfs/summary-return-deposits">
+          Summary return deposits
+        </Link>
+      </div>
+      <div>
         <Link to="/hidden-pdfs/deposit-cash-register-control">
           Deposit cash register control
         </Link>
