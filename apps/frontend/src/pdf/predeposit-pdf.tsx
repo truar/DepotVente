@@ -239,6 +239,7 @@ export const PredepositsPdf = (props: PdfsProps) => {
                       value={article.price}
                       style="currency"
                       currency="EUR"
+                      useGrouping={false}
                     />
                   </Text>
                 </View>

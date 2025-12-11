@@ -125,9 +125,12 @@ model Sale {
   incrementStart Int @default(1) @map("increment_start")
 
   // Montants des différents moyens de paiement
-  cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
-  cashAmount  Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
-  checkAmount Decimal @default(0) @map("check_amount") @db.Decimal(10, 2)
+  cardAmount       Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
+  cashAmount       Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
+  checkAmount      Decimal @default(0) @map("check_amount") @db.Decimal(10, 2)
+  refundCardAmount Decimal @default(0) @map("refund_card_amount") @db.Decimal(10, 2)
+  refundCashAmount Decimal @default(0) @map("refund_cash_amount") @db.Decimal(10, 2)
+  refundComment    String  @default("") @map("refund_comment")
 
   // Relations
   buyer    Contact   @relation(fields: [buyerId], references: [id], onDelete: Cascade)

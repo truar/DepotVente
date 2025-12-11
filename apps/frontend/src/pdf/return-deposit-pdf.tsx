@@ -167,6 +167,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
+            useGrouping={false}
           />{' '}
           (A Payer)
         </>
@@ -178,6 +179,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
+            useGrouping={false}
           />{' '}
           (Payée)
         </>
@@ -254,6 +256,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
                 value={data.deposit.totalAmount}
                 style="currency"
                 currency="EUR"
+                useGrouping={false}
               />
             </Text>
           </View>
@@ -264,6 +267,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
                 value={data.deposit.clubAmount}
                 style="currency"
                 currency="EUR"
+                useGrouping={false}
               />
             </Text>
           </View>
@@ -274,6 +278,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
                 value={data.deposit.dueAmount}
                 style="currency"
                 currency="EUR"
+                useGrouping={false}
               />
             </Text>
           </View>
@@ -339,6 +344,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
                       value={article.price}
                       style="currency"
                       currency="EUR"
+                      useGrouping={false}
                     />
                   </Text>
                 </View>
@@ -368,7 +374,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
     ))
   })
   return (
-    <IntlProvider locale={'fr'}>
+    <IntlProvider locale={'fr-FR'}>
       <Document>{depositPages}</Document>
     </IntlProvider>
   )

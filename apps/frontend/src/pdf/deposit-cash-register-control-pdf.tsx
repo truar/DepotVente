@@ -99,6 +99,7 @@ export const DepositCashRegisterControlPdf = (
                     value={data.initialAmount}
                     style="currency"
                     currency="EUR"
+                    useGrouping={false}
                   />
                 </Text>
                 <Text style={styles.libelle}>
@@ -107,6 +108,7 @@ export const DepositCashRegisterControlPdf = (
                     value={data.realAmount}
                     style="currency"
                     currency="EUR"
+                    useGrouping={false}
                   />
                 </Text>
                 <Text style={styles.libelle}>
@@ -115,6 +117,7 @@ export const DepositCashRegisterControlPdf = (
                     value={data.theoreticalAmount}
                     style="currency"
                     currency="EUR"
+                    useGrouping={false}
                   />
                 </Text>
                 <Text style={styles.libelle}>
@@ -123,6 +126,7 @@ export const DepositCashRegisterControlPdf = (
                     value={data.realAmount - data.theoreticalAmount}
                     style="currency"
                     currency="EUR"
+                    useGrouping={false}
                   />
                 </Text>
               </View>

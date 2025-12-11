@@ -33,7 +33,7 @@ const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
-    <IntlProvider locale={'fr'}>
+    <IntlProvider locale={'fr-FR'}>
       <StrictMode>
         <RouterProvider router={router} />
       </StrictMode>

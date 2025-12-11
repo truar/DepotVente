@@ -154,6 +154,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
+            useGrouping={false}
           />{' '}
           (A Payer)
         </>
@@ -165,6 +166,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             value={data.deposit.contributionAmount}
             style="currency"
             currency="EUR"
+            useGrouping={false}
           />{' '}
           (Payée)
         </>
@@ -292,6 +294,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
                       value={article.price}
                       style="currency"
                       currency="EUR"
+                      useGrouping={false}
                     />
                   </Text>
                 </View>

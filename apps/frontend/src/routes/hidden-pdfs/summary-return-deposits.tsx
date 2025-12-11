@@ -22,7 +22,7 @@ function RouteComponent() {
             year: 2025,
             contributionAmount: 2,
             contributionStatus: 'PAYEE',
-            totalAmount: 45,
+            totalAmount: 30000,
             clubAmount: 4.5,
             countSoldArticles: 3,
             dueAmount: 40.5,
@@ -35,7 +35,7 @@ function RouteComponent() {
             brand: 'Rossignol',
             size: '170',
             discipline: 'Alpin',
-            price: 999,
+            price: 1000,
             isSold: Math.random() < 0.5,
           })),
         }}
