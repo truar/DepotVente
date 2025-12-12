@@ -18,10 +18,7 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import {
-  ClipboardListIcon,
-  CogIcon,
   EyeIcon,
-  FileSymlinkIcon,
   HandCoinsIcon,
   ScanEyeIcon,
   SquarePenIcon,
@@ -284,6 +281,7 @@ type DepositDataTableHeaderActionProps = {
 function DepositDataTableHeaderAction({
   table,
 }: DepositDataTableHeaderActionProps) {
+  const mutation = useComputeReturnMutation()
   const print = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
@@ -316,8 +314,21 @@ function DepositDataTableHeaderAction({
     await printPdf(<ReturnDepositsPdf data={pdfsData} />)
   }
 
+  const computeReturns = async () => {
+    const selectedDepositIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.depositId)
+
+    for (const id of selectedDepositIds) {
+      await mutation.mutate(id)
+    }
+  }
+
   return (
     <div className="flex flex-row gap-3">
+      <CustomButton onClick={computeReturns}>
+        Lancer le calcul des retours
+      </CustomButton>
       <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
       <CustomButton onClick={printReturn}>
         Imprimer les fiches retour

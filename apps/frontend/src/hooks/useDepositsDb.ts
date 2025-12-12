@@ -29,7 +29,10 @@ export function useDepositsDb() {
   }
 
   async function update(id: string, data: Partial<Deposit>) {
-    await db.deposits.upsert(id, data)
+    await db.deposits.upsert(id, {
+      ...data,
+      updatedAt: new Date(),
+    })
     // Add to outbox for syncing
     await syncService.addToOutbox('deposits', 'update', id, data)
   }

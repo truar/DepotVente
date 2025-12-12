@@ -25,8 +25,18 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 
-export function numberToFrenchWords(num: number): string {
-  if (num === 0) return 'zéro'
+export function numberToFrenchWords(input: number | string): string {
+  // Accept "85,50" as well as 85.5
+  const normalized =
+    typeof input === 'string' ? input.trim().replace(',', '.') : `${input}`
+
+  const parsed = Number(normalized)
+  if (!Number.isFinite(parsed)) return ''
+
+  // Work in cents to avoid floating issues
+  const totalCents = Math.round(parsed * 100)
+  const integerPart = Math.floor(totalCents / 100)
+  const centsPart = totalCents % 100
 
   const units = [
     '',
@@ -82,64 +92,59 @@ export function numberToFrenchWords(num: number): string {
     if (n < 80) {
       const tensStr = 'soixante'
       if (n === 71) return `${tensStr} et onze`
-      // n - 60 gives 10-19, which maps correctly to dix...dix-neuf
       return `${tensStr}-${units[n - 60]}`
     }
 
     // 80-99
     const tensStr = 'quatre-vingt'
-    if (n === 80) return `${tensStr}s` // Plural
-    // 81-99 (Note: 81 is quatre-vingt-un, no 'et')
-    // n - 80 gives 1-19
+    if (n === 80) return `${tensStr}s`
     return `${tensStr}-${units[n - 80]}`
   }
 
   function convertHundreds(n: number): string {
+    if (n < 100) return convertLessThanHundred(n)
+
     const hundred = Math.floor(n / 100)
     const remainder = n % 100
     let result = ''
 
-    if (hundred > 0) {
-      if (hundred === 1) {
-        result = 'cent'
-      } else {
-        result = `${units[hundred]} cent`
-        if (remainder === 0) result += 's'
-      }
+    if (hundred === 1) {
+      result = 'cent'
+    } else {
+      result = `${units[hundred]} cent`
+      if (remainder === 0) result += 's'
     }
 
     if (remainder > 0) {
-      if (result) result += ' '
-      result += convertLessThanHundred(remainder)
-    } else if (hundred === 0) {
-      // Fallback for numbers < 100 called directly
-      return convertLessThanHundred(n)
+      result += ` ${convertLessThanHundred(remainder)}`
     }
 
     return result
   }
 
-  // Thousands
-  const thousand = Math.floor(num / 1000)
-  const remainder = num % 1000
-  let result = ''
+  function convertUpTo9999(n: number): string {
+    if (n === 0) return 'zéro'
+    if (n < 1000) return convertHundreds(n)
 
-  if (thousand > 0) {
-    if (thousand === 1) {
-      result = 'mille'
-    } else {
-      result = `${convertLessThanHundred(thousand)} mille`
+    const thousand = Math.floor(n / 1000)
+    const remainder = n % 1000
+
+    let result =
+      thousand === 1 ? 'mille' : `${convertLessThanHundred(thousand)} mille`
+
+    if (remainder > 0) {
+      result += ` ${convertHundreds(remainder)}`
     }
+
+    return result
   }
 
-  if (remainder > 0) {
-    if (result) result += ' '
-    result += convertHundreds(remainder)
-  } else if (thousand === 0) {
-    return convertHundreds(num)
-  }
+  const integerWords = convertUpTo9999(integerPart)
 
-  return result
+  if (centsPart === 0) return integerWords
+
+  const centsWords = convertLessThanHundred(centsPart)
+  return `${integerWords} et ${centsWords} centimes`
 }
 
 export const Route = createFileRoute('/returns/individuals')({
@@ -267,13 +272,23 @@ function DepositSearchForm(props: DepositSearchFormProps) {
   const { onClick } = props
   const [value, setValue] = useState<string | null>(null)
   const contactsDb = useContactsDb()
-  const deposits = useLiveQuery(
+  const allDeposits = useLiveQuery(
     () => db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
     [],
   )
+  const toBeTreated = useMemo(
+    () =>
+      allDeposits?.filter(
+        (deposit) =>
+          !deposit.signatory &&
+          !!deposit.soldAmount &&
+          parseInt(`${deposit.soldAmount}`) > 0,
+      ) ?? [],
+    [allDeposits],
+  )
   const sellerIds = useMemo(
-    () => deposits?.map((deposit) => deposit.sellerId) ?? [],
-    [deposits],
+    () => toBeTreated?.map((deposit) => deposit.sellerId) ?? [],
+    [toBeTreated],
   )
   const contacts = useLiveQuery(
     () => contactsDb.findByIds(sellerIds),
@@ -281,7 +296,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
   )
   const items = useMemo(() => {
     return (
-      deposits
+      toBeTreated
         ?.map((deposit) => {
           const contact = contacts?.find(
             (contact) => contact.id === deposit.sellerId,
@@ -299,7 +314,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
         })
         .filter((item) => item !== undefined) ?? []
     )
-  }, [deposits, contacts])
+  }, [toBeTreated, contacts])
 
   return (
     <div className="grid grid-cols-6 gap-2 w-[500px]">
@@ -335,9 +350,8 @@ function DepositData(props: DepositDataProps) {
   )
   if (!deposit || !contact) return
 
-  const dueAmount = Math.round(totalAmount * 0.9)
   return (
-    <Table className="max-w-1/2">
+    <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Fiche</TableHead>
@@ -355,19 +369,22 @@ function DepositData(props: DepositDataProps) {
           </TableCell>
           <TableCell className="text-right">
             <FormattedNumber
-              value={deposit.soldAmount}
+              value={deposit.soldAmount ?? 0}
               style="currency"
               currency="EUR"
             />
           </TableCell>
           <TableCell className="text-right">
             <FormattedNumber
-              value={deposit.clubAmount}
+              value={deposit.sellerAmount ?? 0}
               style="currency"
               currency="EUR"
             />
           </TableCell>
-          <TableCell>{numberToFrenchWords(deposit.clubAmount)}</TableCell>
+          <TableCell>
+            {numberToFrenchWords(deposit.sellerAmount ?? 0)}
+            {' euro'}
+          </TableCell>
         </TableRow>
       </TableBody>
     </Table>
@@ -380,7 +397,11 @@ function ReturnedDepositSummary() {
     [],
   )
   const toBeTreated = useMemo(
-    () => allDeposits?.filter((deposit) => !!deposit.soldAmount) ?? [],
+    () =>
+      allDeposits?.filter(
+        (deposit) =>
+          !!deposit.soldAmount && parseInt(`${deposit.soldAmount}`) > 0,
+      ) ?? [],
     [allDeposits],
   )
   const returned = useMemo(
