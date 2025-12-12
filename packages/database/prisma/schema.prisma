@@ -83,9 +83,8 @@ model Deposit {
 
   collectWorkstationId Int?      @map("collect_workstation_id")
   collectedAt          DateTime? @map("collected_at")
-  paymentAmount        Decimal?  @map("payment_amount") @db.Decimal(6, 2)
-  chequeNumber         String?   @map("cheque_number")
-  signature            String?
+  checkId              String?   @map("cheque_number")
+  signatory            String?
 
   // Relations
   seller   Contact   @relation(fields: [sellerId], references: [id], onDelete: Cascade)

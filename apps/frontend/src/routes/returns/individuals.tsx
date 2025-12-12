@@ -7,8 +7,7 @@ import PublicLayout from '@/components/PublicLayout.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import { Field, FieldContent } from '@/components/ui/field.tsx'
-import { z } from 'zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, type SubmitHandler, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useMemo, useState } from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
@@ -31,6 +30,11 @@ import {
   SellerCheckPdf,
   type SellerCheckPdfProps,
 } from '@/pdf/seller-check.tsx'
+import { useReturnDepositMutation } from '@/hooks/useReturnDepositMutation.ts'
+import {
+  IndividualReturnForm,
+  type IndividualReturnFormType,
+} from '@/types/ReturnDepositForm.ts'
 
 export const Route = createFileRoute('/returns/individuals')({
   beforeLoad: () => {
@@ -64,13 +68,8 @@ type IndividualReturnPageProps = {
   workstation: Workstation
 }
 
-const IndividualReturnForm = z.object({
-  signatory: z.string(),
-  workstation: z.coerce.number(),
-  checkId: z.coerce.number(),
-})
-type IndividualReturnFormType = z.infer<typeof IndividualReturnForm>
 function IndividualReturnPage(props: IndividualReturnPageProps) {
+  const mutation = useReturnDepositMutation()
   const { workstation } = props
   const methods = useForm<IndividualReturnFormType>({
     resolver: zodResolver(IndividualReturnForm),
@@ -78,9 +77,10 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
       workstation: workstation.incrementStart,
     },
   })
-  const { control } = methods
+  const { control, handleSubmit, watch, setValue } = methods
 
-  const [depositId, setDepositId] = useState<string | null>(null)
+  const depositId = watch('depositId')
+
   const printCheck = useCallback(async () => {
     if (!depositId) return
     const deposit = await db.deposits.get(depositId)
@@ -96,80 +96,100 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
     }
     await printPdf(<SellerCheckPdf data={data} />)
   }, [depositId])
+
+  const onSubmit: SubmitHandler<IndividualReturnFormType> = useCallback(
+    async (formData) => {
+      await mutation.mutate(formData)
+      setValue('checkId', formData.checkId + 1)
+      setValue('depositId', null)
+    },
+    [depositId],
+  )
   return (
-    <div className="flex flex-col gap-10">
-      <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
-          Édition des chèques
-        </h3>
-        <div className="flex flew-row gap-3">
-          <div>
-            <Controller
-              name="workstation"
-              control={control}
-              render={({ field }) => (
-                <Field>
-                  <FieldContent>
-                    <Label>N° du poste</Label>
-                    <InputGroup>
-                      <InputGroupInput {...field} type="text" readOnly />
-                    </InputGroup>
-                  </FieldContent>
-                </Field>
-              )}
-            />
-          </div>
-          <div>
-            <Controller
-              name="signatory"
-              control={control}
-              render={({ field }) => (
-                <Field>
-                  <FieldContent>
-                    <Label>Édition chèque signé par</Label>
-                    <InputGroup>
-                      <InputGroupInput {...field} type="text" />
-                    </InputGroup>
-                  </FieldContent>
-                </Field>
-              )}
-            />
-          </div>
-          <div>
-            <Controller
-              name="checkId"
-              control={control}
-              render={({ field }) => (
-                <Field>
-                  <FieldContent>
-                    <Label>N° de chèque</Label>
-                    <InputGroup>
-                      <InputGroupInput {...field} type="text" />
-                    </InputGroup>
-                  </FieldContent>
-                </Field>
-              )}
-            />
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-col gap-10">
+        <div>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            Édition des chèques
+          </h3>
+          <div className="flex flew-row gap-3">
+            <div>
+              <Controller
+                name="workstation"
+                control={control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldContent>
+                      <Label>N° du poste</Label>
+                      <InputGroup>
+                        <InputGroupInput {...field} type="text" readOnly />
+                      </InputGroup>
+                    </FieldContent>
+                  </Field>
+                )}
+              />
+            </div>
+            <div>
+              <Controller
+                name="signatory"
+                control={control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldContent>
+                      <Label>Édition chèque signé par</Label>
+                      <InputGroup>
+                        <InputGroupInput {...field} type="text" />
+                      </InputGroup>
+                    </FieldContent>
+                  </Field>
+                )}
+              />
+            </div>
+            <div>
+              <Controller
+                name="checkId"
+                control={control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldContent>
+                      <Label>N° de chèque</Label>
+                      <InputGroup>
+                        <InputGroupInput {...field} type="text" />
+                      </InputGroup>
+                    </FieldContent>
+                  </Field>
+                )}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-row gap-5">
-          <DepositSearchForm onClick={(id) => setDepositId(id)} />
-          {depositId && (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-row gap-5">
+            <DepositSearchForm onClick={(id) => setValue('depositId', id)} />
+          </div>
+          {depositId && <DepositData depositId={depositId} />}
+        </div>
+        <div>
+          <ReturnedDepositSummary />
+        </div>
+        {depositId && (
+          <div className="flex flex-row justify-end gap-5">
             <div>
-              <CustomButton onClick={printCheck}>
+              <CustomButton
+                type="button"
+                onClick={printCheck}
+                variant="outline"
+              >
                 Imprimer le chèque
               </CustomButton>
             </div>
-          )}
-        </div>
-        {depositId && <DepositData depositId={depositId} />}
+            <div>
+              <CustomButton type="submit">Valider</CustomButton>
+            </div>
+          </div>
+        )}
       </div>
-      <div>
-        <ReturnedDepositSummary />
-      </div>
-    </div>
+    </form>
   )
 }
 

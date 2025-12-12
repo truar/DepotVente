@@ -34,8 +34,9 @@ export type Deposit = {
   clubAmount?: number
   sellerAmount?: number
   signatory?: string
-  dueAmount?: number
-  signedAtA?: Date
+  collectedAt?: Date
+  collectWorkstationId?: number
+  checkId?: string
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
