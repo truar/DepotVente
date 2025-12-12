@@ -10,7 +10,7 @@ import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { z } from 'zod'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
@@ -24,128 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-
-export function numberToFrenchWords(input: number | string): string {
-  // Accept "85,50" as well as 85.5
-  const normalized =
-    typeof input === 'string' ? input.trim().replace(',', '.') : `${input}`
-
-  const parsed = Number(normalized)
-  if (!Number.isFinite(parsed)) return ''
-
-  // Work in cents to avoid floating issues
-  const totalCents = Math.round(parsed * 100)
-  const integerPart = Math.floor(totalCents / 100)
-  const centsPart = totalCents % 100
-
-  const units = [
-    '',
-    'un',
-    'deux',
-    'trois',
-    'quatre',
-    'cinq',
-    'six',
-    'sept',
-    'huit',
-    'neuf',
-    'dix',
-    'onze',
-    'douze',
-    'treize',
-    'quatorze',
-    'quinze',
-    'seize',
-    'dix-sept',
-    'dix-huit',
-    'dix-neuf',
-  ]
-
-  const tens = [
-    '',
-    'dix',
-    'vingt',
-    'trente',
-    'quarante',
-    'cinquante',
-    'soixante',
-    'soixante', // 70s use base 60
-    'quatre-vingt', // 80s
-    'quatre-vingt', // 90s use base 80
-  ]
-
-  function convertLessThanHundred(n: number): string {
-    if (n < 20) return units[n]
-
-    const ten = Math.floor(n / 10)
-    const unit = n % 10
-
-    // 20-69
-    if (n < 70) {
-      const tensStr = tens[ten]
-      if (unit === 0) return tensStr
-      if (unit === 1) return `${tensStr} et un`
-      return `${tensStr}-${units[unit]}`
-    }
-
-    // 70-79
-    if (n < 80) {
-      const tensStr = 'soixante'
-      if (n === 71) return `${tensStr} et onze`
-      return `${tensStr}-${units[n - 60]}`
-    }
-
-    // 80-99
-    const tensStr = 'quatre-vingt'
-    if (n === 80) return `${tensStr}s`
-    return `${tensStr}-${units[n - 80]}`
-  }
-
-  function convertHundreds(n: number): string {
-    if (n < 100) return convertLessThanHundred(n)
-
-    const hundred = Math.floor(n / 100)
-    const remainder = n % 100
-    let result = ''
-
-    if (hundred === 1) {
-      result = 'cent'
-    } else {
-      result = `${units[hundred]} cent`
-      if (remainder === 0) result += 's'
-    }
-
-    if (remainder > 0) {
-      result += ` ${convertLessThanHundred(remainder)}`
-    }
-
-    return result
-  }
-
-  function convertUpTo9999(n: number): string {
-    if (n === 0) return 'zéro'
-    if (n < 1000) return convertHundreds(n)
-
-    const thousand = Math.floor(n / 1000)
-    const remainder = n % 1000
-
-    let result =
-      thousand === 1 ? 'mille' : `${convertLessThanHundred(thousand)} mille`
-
-    if (remainder > 0) {
-      result += ` ${convertHundreds(remainder)}`
-    }
-
-    return result
-  }
-
-  const integerWords = convertUpTo9999(integerPart)
-
-  if (centsPart === 0) return integerWords
-
-  const centsWords = convertLessThanHundred(centsPart)
-  return `${integerWords} et ${centsWords} centimes`
-}
+import { CustomButton } from '@/components/custom/Button.tsx'
+import { numberToFrenchWords } from '@/utils'
+import { printPdf } from '@/pdf/print.tsx'
+import {
+  SellerCheckPdf,
+  type SellerCheckPdfProps,
+} from '@/pdf/seller-check.tsx'
 
 export const Route = createFileRoute('/returns/individuals')({
   beforeLoad: () => {
@@ -182,7 +67,7 @@ type IndividualReturnPageProps = {
 const IndividualReturnForm = z.object({
   signatory: z.string(),
   workstation: z.coerce.number(),
-  firstCheckId: z.coerce.number(),
+  checkId: z.coerce.number(),
 })
 type IndividualReturnFormType = z.infer<typeof IndividualReturnForm>
 function IndividualReturnPage(props: IndividualReturnPageProps) {
@@ -196,6 +81,21 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
   const { control } = methods
 
   const [depositId, setDepositId] = useState<string | null>(null)
+  const printCheck = useCallback(async () => {
+    if (!depositId) return
+    const deposit = await db.deposits.get(depositId)
+    if (!deposit) return
+    const contact = await db.contacts.get(deposit.sellerId)
+    if (!contact) return
+    const data: SellerCheckPdfProps['data'] = {
+      textualAmount: numberToFrenchWords(deposit.sellerAmount ?? 0),
+      amount: deposit.sellerAmount ?? 0,
+      city: 'Rumilly',
+      seller: `${contact.firstName} ${contact.lastName}`,
+      date: new Date(),
+    }
+    await printPdf(<SellerCheckPdf data={data} />)
+  }, [depositId])
   return (
     <div className="flex flex-col gap-10">
       <div>
@@ -237,7 +137,7 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
           </div>
           <div>
             <Controller
-              name="firstCheckId"
+              name="checkId"
               control={control}
               render={({ field }) => (
                 <Field>
@@ -254,7 +154,16 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
         </div>
       </div>
       <div className="flex flex-col gap-5">
-        <DepositSearchForm onClick={(id) => setDepositId(id)} />
+        <div className="flex flex-row gap-5">
+          <DepositSearchForm onClick={(id) => setDepositId(id)} />
+          {depositId && (
+            <div>
+              <CustomButton onClick={printCheck}>
+                Imprimer le chèque
+              </CustomButton>
+            </div>
+          )}
+        </div>
         {depositId && <DepositData depositId={depositId} />}
       </div>
       <div>
@@ -354,10 +263,10 @@ function DepositData(props: DepositDataProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Fiche</TableHead>
-          <TableHead>Nom</TableHead>
-          <TableHead className="text-right">Montant total</TableHead>
-          <TableHead className="text-right">Montant due</TableHead>
+          <TableHead className="w-[100px]">Fiche</TableHead>
+          <TableHead className="w-[200px]">Nom</TableHead>
+          <TableHead className="text-right w-[100px]">Montant total</TableHead>
+          <TableHead className="text-right w-[100px]">Montant due</TableHead>
           <TableHead>Montant</TableHead>
         </TableRow>
       </TableHeader>
@@ -367,14 +276,14 @@ function DepositData(props: DepositDataProps) {
           <TableCell>
             {contact.lastName} {contact.firstName}
           </TableCell>
-          <TableCell className="text-right">
+          <TableCell className="text-right w-[100px]">
             <FormattedNumber
               value={deposit.soldAmount ?? 0}
               style="currency"
               currency="EUR"
             />
           </TableCell>
-          <TableCell className="text-right">
+          <TableCell className="text-right w-[100px]">
             <FormattedNumber
               value={deposit.sellerAmount ?? 0}
               style="currency"
@@ -383,7 +292,6 @@ function DepositData(props: DepositDataProps) {
           </TableCell>
           <TableCell>
             {numberToFrenchWords(deposit.sellerAmount ?? 0)}
-            {' euro'}
           </TableCell>
         </TableRow>
       </TableBody>

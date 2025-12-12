@@ -76,9 +76,10 @@ model Deposit {
   dropWorkstationId  Int                @map("deposit_workstation_id")
   type               DepositType        @default(PARTICULIER)
 
-  soldAmount   Decimal @default(0) @map("sold_amount") @db.Decimal(10, 2)
-  clubAmount   Decimal @default(0) @map("club_amount") @db.Decimal(10, 2)
-  sellerAmount Decimal @default(0) @map("seller_amount") @db.Decimal(10, 2)
+  returnedCalculationDate DateTime? @map("returned_calculation_date")
+  soldAmount              Decimal?  @map("sold_amount") @db.Decimal(10, 2)
+  clubAmount              Decimal?  @map("club_amount") @db.Decimal(10, 2)
+  sellerAmount            Decimal?  @map("seller_amount") @db.Decimal(10, 2)
 
   collectWorkstationId Int?      @map("collect_workstation_id")
   collectedAt          DateTime? @map("collected_at")

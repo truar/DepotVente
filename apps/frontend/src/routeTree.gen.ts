@@ -23,6 +23,7 @@ import { Route as SalesAddRouteImport } from './routes/sales/add'
 import { Route as ReturnsIndividualsRouteImport } from './routes/returns/individuals'
 import { Route as HiddenPdfsSummaryReturnDepositsRouteImport } from './routes/hidden-pdfs/summary-return-deposits'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
+import { Route as HiddenPdfsSellerCheckRouteImport } from './routes/hidden-pdfs/seller-check'
 import { Route as HiddenPdfsDepositCashRegisterControlRouteImport } from './routes/hidden-pdfs/deposit-cash-register-control'
 import { Route as DepositsProsRouteImport } from './routes/deposits/pros'
 import { Route as DepositsPredepositsRouteImport } from './routes/deposits/predeposits'
@@ -111,6 +112,11 @@ const HiddenPdfsSummaryDepositsRoute =
     path: '/hidden-pdfs/summary-deposits',
     getParentRoute: () => rootRouteImport,
   } as any)
+const HiddenPdfsSellerCheckRoute = HiddenPdfsSellerCheckRouteImport.update({
+  id: '/hidden-pdfs/seller-check',
+  path: '/hidden-pdfs/seller-check',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HiddenPdfsDepositCashRegisterControlRoute =
   HiddenPdfsDepositCashRegisterControlRouteImport.update({
     id: '/hidden-pdfs/deposit-cash-register-control',
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/deposits/predeposits': typeof DepositsPredepositsRoute
   '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
+  '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/deposits/predeposits': typeof DepositsPredepositsRoute
   '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
+  '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/deposits/predeposits': typeof DepositsPredepositsRoute
   '/deposits/pros': typeof DepositsProsRoute
   '/hidden-pdfs/deposit-cash-register-control': typeof HiddenPdfsDepositCashRegisterControlRoute
+  '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/deposits/predeposits'
     | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
+    | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/deposits/predeposits'
     | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
+    | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/deposits/predeposits'
     | '/deposits/pros'
     | '/hidden-pdfs/deposit-cash-register-control'
+    | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
@@ -395,6 +407,7 @@ export interface RootRouteChildren {
   DepositsPredepositsRoute: typeof DepositsPredepositsRoute
   DepositsProsRoute: typeof DepositsProsRoute
   HiddenPdfsDepositCashRegisterControlRoute: typeof HiddenPdfsDepositCashRegisterControlRoute
+  HiddenPdfsSellerCheckRoute: typeof HiddenPdfsSellerCheckRoute
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   HiddenPdfsSummaryReturnDepositsRoute: typeof HiddenPdfsSummaryReturnDepositsRoute
   ReturnsIndividualsRoute: typeof ReturnsIndividualsRoute
@@ -509,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/hidden-pdfs/summary-deposits'
       fullPath: '/hidden-pdfs/summary-deposits'
       preLoaderRoute: typeof HiddenPdfsSummaryDepositsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hidden-pdfs/seller-check': {
+      id: '/hidden-pdfs/seller-check'
+      path: '/hidden-pdfs/seller-check'
+      fullPath: '/hidden-pdfs/seller-check'
+      preLoaderRoute: typeof HiddenPdfsSellerCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hidden-pdfs/deposit-cash-register-control': {
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   DepositsProsRoute: DepositsProsRoute,
   HiddenPdfsDepositCashRegisterControlRoute:
     HiddenPdfsDepositCashRegisterControlRoute,
+  HiddenPdfsSellerCheckRoute: HiddenPdfsSellerCheckRoute,
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   HiddenPdfsSummaryReturnDepositsRoute: HiddenPdfsSummaryReturnDepositsRoute,
   ReturnsIndividualsRoute: ReturnsIndividualsRoute,

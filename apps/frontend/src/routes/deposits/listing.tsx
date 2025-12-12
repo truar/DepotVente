@@ -167,6 +167,9 @@ function DepositDataTable() {
           depositId: deposit.id,
           index: deposit.depositIndex,
           type: deposit.type,
+          returnStatus: deposit.returnedCalculationDate
+            ? 'PRÊT'
+            : 'RETOUR A CALCULER',
           seller: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
@@ -189,6 +192,7 @@ export type DepositTableType = {
   depositId: string
   index: number
   type: Deposit['type']
+  returnStatus: string
   seller: string
 }
 
@@ -218,7 +222,6 @@ export const columns: ColumnDef<DepositTableType>[] = [
       />
     ),
   },
-
   {
     accessorKey: 'index',
     header: 'Identifiant',
@@ -230,6 +233,10 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     accessorKey: 'seller',
     header: 'Déposant',
+  },
+  {
+    accessorKey: 'returnStatus',
+    header: 'Statut du retour',
   },
   {
     id: 'actions',

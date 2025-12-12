@@ -19,7 +19,9 @@ export function useComputeReturnMutation() {
       .filter((article) => !!article.saleId)
       .reduce((acc, article) => acc + parseInt(`${article.price}`), 0)
     const dueAmount = computeDueAmount(totalSale, deposit.type)
+    const date = new Date()
     await depositsDb.update(depositId, {
+      returnedCalculationDate: date,
       soldAmount: totalSale,
       clubAmount: dueAmount,
       sellerAmount: totalSale - dueAmount,

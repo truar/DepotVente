@@ -29,6 +29,7 @@ export type Deposit = {
   dropWorkstationId: number
   depositIndex: number
   type: 'PRO' | 'PARTICULIER'
+  returnedCalculationDate?: Date
   soldAmount?: number
   clubAmount?: number
   sellerAmount?: number
