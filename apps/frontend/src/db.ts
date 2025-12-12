@@ -29,6 +29,12 @@ export type Deposit = {
   dropWorkstationId: number
   depositIndex: number
   type: 'PRO' | 'PARTICULIER'
+  soldAmount?: number
+  clubAmount?: number
+  sellerAmount?: number
+  signatory?: string
+  dueAmount?: number
+  signedAtA?: Date
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -152,7 +158,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   contacts: '++id',
-  deposits: '++id, depositIndex, incrementStart, type',
+  deposits: '++id, depositIndex, incrementStart, type, signatory',
   articles: '++id, depositId, saleId, code, articleIndex, [depositId+status]',
   predeposits: '++id, predepositIndex',
   predepositArticles: '++id, predepositId, articleIndex',

@@ -55,7 +55,9 @@ export function RouteComponent() {
               description="Gérer les ventes"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => {
+                navigate({ to: '/returns' })
+              }}
               icon={<BaggageClaim className="w-8 h-8 text-green-600" />}
               title="Retours"
               description="Gérer les retours"

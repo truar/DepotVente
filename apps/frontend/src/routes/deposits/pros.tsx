@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Page } from '@/components/Page.tsx'
-import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
@@ -58,7 +58,7 @@ type ProSearchFormProps = {
 function ProSearchForm(props: ProSearchFormProps) {
   const { onClick } = props
   const [value, setValue] = useState<string | null>(null)
-  const depositsDb = useDepotsDb()
+  const depositsDb = useDepositsDb()
   const contactsDb = useContactsDb()
   const deposits = useLiveQuery(() => depositsDb.findProfessionals())
   const sellerIds = useMemo(

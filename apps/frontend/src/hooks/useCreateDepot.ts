@@ -1,7 +1,7 @@
 import { db } from '@/db.ts'
 import { v4 } from 'uuid'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { type DepositFormType } from '@/types/CreateDepositForm.ts'
@@ -9,7 +9,7 @@ import { usePredepositsDb } from '@/hooks/usePredepositsDb.ts'
 
 export function useCreateDepot() {
   const [workstation] = useWorkstation()
-  const depotDb = useDepotsDb()
+  const depotDb = useDepositsDb()
   const contactDb = useContactsDb()
   const articleDb = useArticlesDb()
   const predepositsDb = usePredepositsDb()

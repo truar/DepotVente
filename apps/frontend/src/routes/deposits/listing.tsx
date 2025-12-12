@@ -17,7 +17,15 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { ClipboardListIcon, EyeIcon, SquarePenIcon } from 'lucide-react'
+import {
+  ClipboardListIcon,
+  CogIcon,
+  EyeIcon,
+  FileSymlinkIcon,
+  HandCoinsIcon,
+  ScanEyeIcon,
+  SquarePenIcon,
+} from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import {
   ReturnDepositPdf,
@@ -25,6 +33,7 @@ import {
   ReturnDepositsPdf,
   type ReturnDepositsPdfProps,
 } from '@/pdf/return-deposit-pdf.tsx'
+import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -95,21 +104,15 @@ async function createReturnDepositPdfData(
   if (!contact) throw new Error('No contact found for deposit')
 
   const soldArticles = articles.filter((article) => !!article.saleId)
-  const totalAmount = soldArticles.reduce(
-    (acc, article) => acc + parseInt(`${article.price}`),
-    0,
-  )
-  const clubAmount = Math.round(totalAmount * 0.1)
-  const dueAmount = totalAmount - clubAmount
   return {
     deposit: {
       depositIndex: deposit.depositIndex,
       contributionStatus: deposit.contributionStatus,
       contributionAmount: deposit.contributionAmount,
       year: year,
-      totalAmount,
-      clubAmount,
-      dueAmount,
+      totalAmount: deposit.soldAmount ?? 0,
+      clubAmount: deposit.clubAmount ?? 0,
+      dueAmount: deposit.sellerAmount ?? 0,
       countSoldArticles: soldArticles.length,
     },
     contact: {
@@ -235,6 +238,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
     id: 'actions',
     size: 30,
     cell: ({ row }) => {
+      const mutation = useComputeReturnMutation()
       const id = row.original.depositId
       const print = useCallback(async (depositId: string) => {
         const data = await createDepositPdfData(depositId)
@@ -246,6 +250,12 @@ export const columns: ColumnDef<DepositTableType>[] = [
         if (!data) return
         await printPdf(<ReturnDepositPdf data={data} />)
       }, [])
+      const computeReturn = useCallback(
+        async (depositId: string) => {
+          await mutation.mutate(depositId)
+        },
+        [mutation],
+      )
       return (
         <div>
           <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
@@ -256,8 +266,11 @@ export const columns: ColumnDef<DepositTableType>[] = [
           <Button variant="ghost" size="icon" onClick={() => print(id)}>
             <EyeIcon />
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => computeReturn(id)}>
+            <HandCoinsIcon />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => printReturn(id)}>
-            <ClipboardListIcon />
+            <ScanEyeIcon />
           </Button>
         </div>
       )

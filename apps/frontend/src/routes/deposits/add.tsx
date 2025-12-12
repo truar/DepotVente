@@ -16,7 +16,7 @@ import {
   useState,
 } from 'react'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
-import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -76,7 +76,7 @@ export const Route = createFileRoute('/deposits/add')({
 })
 
 export function RouteComponent() {
-  const depotDb = useDepotsDb()
+  const depotDb = useDepositsDb()
   const [workstation] = useWorkstation()
   const [currentDepotCount, setCurrentDepotCount] = useState<number | null>(
     null,

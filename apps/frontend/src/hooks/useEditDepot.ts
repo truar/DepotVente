@@ -1,11 +1,11 @@
 import { db } from '@/db.ts'
-import { useDepotsDb } from '@/hooks/useDepotsDb.ts'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import type { EditDepositFormType } from '@/types/EditDepositForm.ts'
 
 export function useEditDepot() {
-  const depotDb = useDepotsDb()
+  const depotDb = useDepositsDb()
   const contactDb = useContactsDb()
   const articleDb = useArticlesDb()
   async function mutate(data: EditDepositFormType['deposit']) {

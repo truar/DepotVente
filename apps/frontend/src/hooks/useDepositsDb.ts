@@ -1,7 +1,11 @@
 import { db, type Deposit, type Workstation } from '@/db.ts'
 import { syncService } from '@/sync-service.ts'
 
-export function useDepotsDb() {
+export function useDepositsDb() {
+  function get(id: string) {
+    return db.deposits.get(id)
+  }
+
   function count(workstation: Workstation) {
     return db.deposits
       .where({ incrementStart: workstation.incrementStart })
@@ -30,5 +34,5 @@ export function useDepotsDb() {
     await syncService.addToOutbox('deposits', 'update', id, data)
   }
 
-  return { insert, update, count, findProfessionals }
+  return { get, insert, update, count, findProfessionals }
 }
