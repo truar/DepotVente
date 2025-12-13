@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 
-export const Route = createFileRoute('/deposits/pros')({
+export const Route = createFileRoute('/returns/pros')({
   beforeLoad: () => {
     const { isAuthenticated } = useAuthStore.getState()
     if (!isAuthenticated) {
@@ -42,7 +42,7 @@ export function RouteComponent() {
   return (
     <Page
       navigation={<Link to="..">Retour au menu</Link>}
-      title="Réceptionner les articles des pros"
+      title="Retourner les articles des pros"
     >
       <div className="flex flex-col gap-5">
         <ProSearchForm onClick={setDepositId} />
@@ -125,9 +125,9 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const [shouldDisplayArticles, setShouldDisplayArticles] = useState(false)
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReceiveArticleInput />
-      <ReceivedArticleCount depositId={depositId} />
-      <TotalArticleCount depositId={depositId} />
+      <ReturnArticleInput />
+      <ReturnedArticleCount depositId={depositId} />
+      <TotalArticleReceivedUnsoldCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
         <div className="col-span-2 text-right">Articles non réceptionnés</div>
         <div>
@@ -147,7 +147,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   )
 }
 
-function ReceiveArticleInput() {
+function ReturnArticleInput() {
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
   const checkKeyDown = useCallback(
@@ -166,14 +166,14 @@ function ReceiveArticleInput() {
       setArticleCode('')
       return
     }
-    if (article.status === 'RECEPTION_OK') {
-      toast.error(`Dépôt de l'article ${articleCode} déja effectué`)
+    if (article.status === 'RETURNED') {
+      toast.error(`Retour de l'article ${articleCode} déja effectué`)
       setArticleCode('')
       return
     }
 
-    await articlesDb.markArticleAsReceived(article.id)
-    toast.success(`Dépôt de l'article ${articleCode} effectué`)
+    await articlesDb.markArticleAsReturned(article.id)
+    toast.success(`Retour de l'article ${articleCode} effectué`)
 
     setArticleCode('')
   }, [articleCode, articlesDb])
@@ -200,33 +200,35 @@ function ReceiveArticleInput() {
   )
 }
 
-function ReceivedArticleCount(props: { depositId: string }) {
+function ReturnedArticleCount(props: { depositId: string }) {
   const { depositId } = props
-  const alreadyReceivedArticlesCount = useLiveQuery(
-    () => db.articles.where({ depositId, status: 'RECEPTION_OK' }).count(),
+  const count = useLiveQuery(
+    () => db.articles.where({ depositId, status: 'RETURNED' }).count(),
     [depositId],
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
       <div className="col-span-2 text-right">Nombre d'articles scannés</div>
       <div>
-        <Input type="text" readOnly value={alreadyReceivedArticlesCount} />
+        <Input type="text" readOnly value={count} />
       </div>
     </div>
   )
 }
 
-function TotalArticleCount(props: { depositId: string }) {
+function TotalArticleReceivedUnsoldCount(props: { depositId: string }) {
   const { depositId } = props
-  const articlesTotalCount = useLiveQuery(
-    () => db.articles.where({ depositId }).count(),
+  const count = useLiveQuery(
+    () => db.articles.where({ depositId, status: 'RECEPTION_OK' }).count(),
     [depositId],
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-      <div className="col-span-2 text-right">Nombre d'articles totals</div>
+      <div className="col-span-2 text-right">
+        Nombre d'articles totals non vendus
+      </div>
       <div>
-        <Input type="text" readOnly value={articlesTotalCount} />
+        <Input type="text" readOnly value={count} />
       </div>
     </div>
   )
@@ -240,11 +242,10 @@ function ArticleList(props: ArticleListProps) {
   const articles = useLiveQuery(
     () =>
       db.articles
-        .where({ depositId, status: 'RECEPTION_PENDING' })
+        .where({ depositId, status: 'RECEPTION_OK' })
         .sortBy('articleIndex'),
     [depositId],
   )
-
   if (!articles) return
 
   return (

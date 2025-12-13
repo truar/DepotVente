@@ -68,6 +68,7 @@ export function useCreateSale() {
             key: articleForm.id,
             changes: {
               saleId: saleId,
+              status: 'SOLD',
               updatedAt: currentDate,
             },
           })),

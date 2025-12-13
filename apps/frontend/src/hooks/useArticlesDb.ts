@@ -21,6 +21,15 @@ export function useArticlesDb() {
 
     await syncService.addToOutbox('articles', 'update', articleId, changes)
   }
+  async function markArticleAsReturned(articleId: string) {
+    const changes = {
+      status: 'RETURNED' as const,
+      updatedAt: new Date(),
+    }
+    db.articles.update(articleId, changes)
+
+    await syncService.addToOutbox('articles', 'update', articleId, changes)
+  }
 
   async function batchUpsert(articles: Article[]) {
     db.articles.bulkPut(articles)
@@ -55,5 +64,6 @@ export function useArticlesDb() {
     update,
     findByDepositId,
     markArticleAsReceived,
+    markArticleAsReturned,
   }
 }

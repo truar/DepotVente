@@ -60,7 +60,7 @@ export function RouteComponent() {
               description="Retourner les particuliers"
             />
             <ClickableCard
-              onClick={() => {}}
+              onClick={() => navigate({ to: '/returns/pros' })}
               icon={<ShoppingBasket className="w-8 h-8 text-green-600" />}
               title="Pros"
               description="Retourner les pros"

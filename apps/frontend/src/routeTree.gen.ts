@@ -20,6 +20,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SalesSalesControlRouteImport } from './routes/sales/sales-control'
 import { Route as SalesListingRouteImport } from './routes/sales/listing'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
+import { Route as ReturnsProsRouteImport } from './routes/returns/pros'
 import { Route as ReturnsIndividualsRouteImport } from './routes/returns/individuals'
 import { Route as HiddenPdfsSummaryReturnDepositsRouteImport } from './routes/hidden-pdfs/summary-return-deposits'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
@@ -93,6 +94,11 @@ const SalesListingRoute = SalesListingRouteImport.update({
 const SalesAddRoute = SalesAddRouteImport.update({
   id: '/sales/add',
   path: '/sales/add',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnsProsRoute = ReturnsProsRouteImport.update({
+  id: '/returns/pros',
+  path: '/returns/pros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReturnsIndividualsRoute = ReturnsIndividualsRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
+  '/returns/pros': typeof ReturnsProsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
+  '/returns/pros': typeof ReturnsProsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
+  '/returns/pros': typeof ReturnsProsRoute
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
+    | '/returns/pros'
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
+    | '/returns/pros'
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/returns/individuals'
+    | '/returns/pros'
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
@@ -411,6 +423,7 @@ export interface RootRouteChildren {
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   HiddenPdfsSummaryReturnDepositsRoute: typeof HiddenPdfsSummaryReturnDepositsRoute
   ReturnsIndividualsRoute: typeof ReturnsIndividualsRoute
+  ReturnsProsRoute: typeof ReturnsProsRoute
   SalesAddRoute: typeof SalesAddRoute
   SalesListingRoute: typeof SalesListingRoute
   SalesSalesControlRoute: typeof SalesSalesControlRoute
@@ -501,6 +514,13 @@ declare module '@tanstack/react-router' {
       path: '/sales/add'
       fullPath: '/sales/add'
       preLoaderRoute: typeof SalesAddRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns/pros': {
+      id: '/returns/pros'
+      path: '/returns/pros'
+      fullPath: '/returns/pros'
+      preLoaderRoute: typeof ReturnsProsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/returns/individuals': {
@@ -660,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   HiddenPdfsSummaryReturnDepositsRoute: HiddenPdfsSummaryReturnDepositsRoute,
   ReturnsIndividualsRoute: ReturnsIndividualsRoute,
+  ReturnsProsRoute: ReturnsProsRoute,
   SalesAddRoute: SalesAddRoute,
   SalesListingRoute: SalesListingRoute,
   SalesSalesControlRoute: SalesSalesControlRoute,

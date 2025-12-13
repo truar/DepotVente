@@ -15,6 +15,8 @@ export const EditArticleSchema = z.object({
     z.literal('RECEPTION_PENDING'),
     z.literal('RECEPTION_OK'),
     z.literal('REFUSED'),
+    z.literal('RETURNED'),
+    z.literal('SOLD'),
   ]),
 })
 

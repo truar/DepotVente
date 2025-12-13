@@ -66,7 +66,7 @@ export const DepositTypeSchema = z.enum(['PRO','PARTICULIER']);
 
 export type DepositTypeType = `${z.infer<typeof DepositTypeSchema>}`
 
-export const ArticleStatusSchema = z.enum(['RECEPTION_PENDING','RECEPTION_OK','REFUSED']);
+export const ArticleStatusSchema = z.enum(['RECEPTION_PENDING','RECEPTION_OK','REFUSED','RETURNED','SOLD']);
 
 export type ArticleStatusType = `${z.infer<typeof ArticleStatusSchema>}`
 

@@ -71,7 +71,7 @@ function RouteComponent() {
     [deposit],
   )
   const articles = useLiveQuery(
-    () => db.articles.where({ depositId }).sortBy('code'),
+    () => db.articles.where({ depositId }).sortBy('articleIndex'),
     [depositId],
   )
   if (!deposit || !contact || !articles) return

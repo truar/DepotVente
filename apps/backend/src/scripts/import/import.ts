@@ -87,6 +87,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           color: articleFromImport.color,
           code: articleFromImport.code,
           year: articleFromImport.year,
+          status: 'RECEPTION_OK',
           depositIndex: articleFromImport.depositIndex,
           identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
@@ -181,6 +182,7 @@ async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map
           code: article.code,
         }, data: {
           saleId: sale.id,
+          status: 'SOLD',
           updatedAt: sale.createdAt
         }
       })

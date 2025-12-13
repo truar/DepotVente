@@ -118,6 +118,8 @@ enum ArticleStatus {
   RECEPTION_PENDING
   RECEPTION_OK
   REFUSED
+  RETURNED
+  SOLD
 }
 
 // Sales - Ventes
