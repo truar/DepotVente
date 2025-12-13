@@ -9,12 +9,12 @@ export type Sale = {
   buyerId: string
   saleIndex: number
   incrementStart: number
-  cardAmount: number | null
-  cashAmount: number | null
-  checkAmount: number | null
-  refundCardAmount: number | null
-  refundCashAmount: number | null
-  refundComment: string | null
+  cardAmount: number | null | undefined
+  cashAmount: number | null | undefined
+  checkAmount: number | null | undefined
+  refundCardAmount: number | null | undefined
+  refundCashAmount: number | null | undefined
+  refundComment: string | null | undefined
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null

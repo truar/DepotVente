@@ -78,20 +78,12 @@ export const Route = createFileRoute('/deposits/add')({
 export function RouteComponent() {
   const depotDb = useDepositsDb()
   const [workstation] = useWorkstation()
-  const [currentDepotCount, setCurrentDepotCount] = useState<number | null>(
-    null,
-  )
-  useEffect(() => {
-    async function getDepotCount() {
-      if (workstation.incrementStart > 0) {
-        const count = await depotDb.count(workstation)
-        setCurrentDepotCount(count)
-      }
-    }
-    getDepotCount()
-  }, [workstation, setCurrentDepotCount])
 
-  if (currentDepotCount === null) return null
+  const currentDepotCount = useLiveQuery(
+    () => depotDb.count(workstation),
+    [workstation],
+  )
+  if (currentDepotCount === undefined) return null
   const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
@@ -137,6 +129,10 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
   })
   const { handleSubmit, setValue, reset } = methods
 
+  useEffect(() => {
+    setValue('deposit.depotIndex', depositIndex)
+  }, [depositIndex, setValue])
+
   const [countArticle, setCountArticle] = useState(0)
 
   const onSubmit: SubmitHandler<DepositFormType> = async (data) => {
@@ -146,48 +142,52 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
 
-  const loadPredeposit = useCallback(async (predepositId: string) => {
-    if (!depositIndex) return
-    const predeposit = await db.predeposits.get(predepositId)
-    if (!predeposit) return
-    const predepositArticles = await db.predepositArticles
-      .where({ predepositId })
-      .toArray()
-    setValue('deposit.predepositId', predeposit.id)
-    setValue('deposit.lastName', predeposit.sellerLastName)
-    setValue('deposit.firstName', predeposit.sellerFirstName)
-    setValue('deposit.phoneNumber', predeposit.sellerPhoneNumber)
-    setValue('deposit.city', predeposit.sellerCity)
-    setValue('deposit.contributionStatus', 'A_PAYER')
-    const year = getYear()
-    setValue(
-      'deposit.articles',
-      predepositArticles.map((article, index) => {
-        const identificationLetter = generateIdentificationLetter(index)
-        const articleCode = generateArticleCode(
-          year,
-          depositIndex,
-          identificationLetter,
-        )
-        return {
-          price: article.price,
-          discipline: article.discipline,
-          brand: article.brand,
-          type: article.category,
-          size: article.size,
-          color: article.color,
-          model: article.model,
-          articleCode,
-          year,
-          depotIndex: depositIndex,
-          identificationLetter,
-          articleIndex: index,
-          shortArticleCode: `${depositIndex} ${identificationLetter}`,
-        }
-      }),
-    )
-    setCountArticle(predepositArticles.length)
-  }, [])
+  const loadPredeposit = useCallback(
+    async (predepositId: string) => {
+      if (!depositIndex) return
+      const predeposit = await db.predeposits.get(predepositId)
+      if (!predeposit) return
+      const predepositArticles = await db.predepositArticles
+        .where({ predepositId })
+        .toArray()
+      setValue('deposit.depotIndex', depositIndex)
+      setValue('deposit.predepositId', predeposit.id)
+      setValue('deposit.lastName', predeposit.sellerLastName)
+      setValue('deposit.firstName', predeposit.sellerFirstName)
+      setValue('deposit.phoneNumber', predeposit.sellerPhoneNumber)
+      setValue('deposit.city', predeposit.sellerCity)
+      setValue('deposit.contributionStatus', 'A_PAYER')
+      const year = getYear()
+      setValue(
+        'deposit.articles',
+        predepositArticles.map((article, index) => {
+          const identificationLetter = generateIdentificationLetter(index)
+          const articleCode = generateArticleCode(
+            year,
+            depositIndex,
+            identificationLetter,
+          )
+          return {
+            price: article.price,
+            discipline: article.discipline,
+            brand: article.brand,
+            type: article.category,
+            size: article.size,
+            color: article.color,
+            model: article.model,
+            articleCode,
+            year,
+            depotIndex: depositIndex,
+            identificationLetter,
+            articleIndex: index,
+            shortArticleCode: `${depositIndex} ${identificationLetter}`,
+          }
+        }),
+      )
+      setCountArticle(predepositArticles.length)
+    },
+    [depositIndex],
+  )
 
   const generateFakeDeposit = useCallback(() => {
     if (!depositIndex) return

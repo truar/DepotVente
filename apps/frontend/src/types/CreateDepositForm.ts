@@ -37,7 +37,7 @@ export const DepositSchema = z.object({
 })
 
 export const DepositFormSchema = z.object({
-  isSummaryPrinted: z.literal(true),
+  isSummaryPrinted: z.boolean(),
   deposit: DepositSchema,
 })
 

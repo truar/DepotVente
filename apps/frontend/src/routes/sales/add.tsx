@@ -30,7 +30,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group.tsx'
-import { citiesItems } from '@/types/cities.ts'
+import { cities, citiesItems } from '@/types/cities.ts'
 import { SaleFormSchema, type SaleFormType } from '@/types/saleForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/components/ui/input.tsx'
@@ -39,7 +39,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -221,6 +220,9 @@ function ContactSearchForm() {
 }
 
 function BuyerInformationForm() {
+  const cityOptions = useMemo(() => {
+    return cities.map((city) => <option key={city} value={city}></option>)
+  }, [cities])
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Acheteur</h3>
@@ -294,12 +296,16 @@ function BuyerInformationForm() {
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
                   <Label htmlFor="city">Ville</Label>
-                  <Combobox
-                    invalid={fieldState.invalid}
-                    items={citiesItems}
-                    onSelect={field.onChange}
-                    value={field.value}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      list="city-list"
+                      id="city"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                    <datalist id="city-list">{cityOptions}</datalist>
+                  </InputGroup>
                 </FieldContent>
               </Field>
             )}
