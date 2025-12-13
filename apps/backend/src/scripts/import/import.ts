@@ -31,6 +31,7 @@ async function importDeposits(fiches: DepositData[]) {
       const deposit = await prisma.deposit.create({
         data: {
           sellerId: contact.id,
+          contributionAmount: ['PRO', 'GRATUIT'].includes(fiche.contributionStatus) ? 0 : 2,
           contributionStatus: fiche.contributionStatus || 'A_PAYER',
           depositIndex: fiche.depositIndex,
           incrementStart: fiche.incrementStart,
