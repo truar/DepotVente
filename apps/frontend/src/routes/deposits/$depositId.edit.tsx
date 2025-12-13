@@ -45,6 +45,7 @@ import {
   type EditDepositFormType,
 } from '@/types/EditDepositForm.ts'
 import { useEditDepot } from '@/hooks/useEditDepot.ts'
+import { CityInput } from '@/components/custom/CityInput.tsx'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
   beforeLoad: () => {
@@ -172,9 +173,6 @@ function DepositForm(props: DepositFormProps) {
 }
 
 function SellerInformationForm() {
-  const cityOptions = useMemo(() => {
-    return cities.map((city) => <option key={city} value={city}></option>)
-  }, [cities])
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
@@ -245,21 +243,7 @@ function SellerInformationForm() {
           <Controller
             name="deposit.city"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="city">Ville</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      list="city-list"
-                      id="city"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                    <datalist id="city-list">{cityOptions}</datalist>
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <CityInput {...field} invalid={fieldState.invalid} />
             )}
           />
         </div>

@@ -58,6 +58,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { printPdf } from '@/pdf/print.tsx'
 import { db } from '@/db.ts'
 import { fakerFR as faker } from '@faker-js/faker'
+import { CityInput } from '@/components/custom/CityInput.tsx'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -322,9 +323,6 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
 }
 
 function SellerInformationForm() {
-  const cityOptions = useMemo(() => {
-    return cities.map((city) => <option key={city} value={city}></option>)
-  }, [cities])
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Vendeur</h3>
@@ -395,21 +393,7 @@ function SellerInformationForm() {
           <Controller
             name="deposit.city"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="city">Ville</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      list="city-list"
-                      id="city"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                    <datalist id="city-list">{cityOptions}</datalist>
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <CityInput {...field} invalid={fieldState.invalid} />
             )}
           />
         </div>
@@ -775,6 +759,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
 
 type PrintArticleButtonProps = {
   index: number
+  disabled?: boolean
 }
 
 function PrintArticleButton(props: PrintArticleButtonProps) {
@@ -801,7 +786,12 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
   const debouncedPrintDymo = useDebouncedCallback(printDymo, 1000)
 
   return (
-    <CustomButton type="button" variant="ghost" onClick={debouncedPrintDymo}>
+    <CustomButton
+      type="button"
+      variant="ghost"
+      onClick={debouncedPrintDymo}
+      disabled={props.disabled}
+    >
       <Printer className="w-4 h-4" />
     </CustomButton>
   )
