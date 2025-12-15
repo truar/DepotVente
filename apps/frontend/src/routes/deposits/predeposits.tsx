@@ -99,14 +99,16 @@ function PredepositDataTable() {
   )
 
   return (
-    <DataTable
-      columnVisibility={{
-        predepositId: false,
-      }}
-      columns={columns}
-      data={data}
-      headerActions={(table) => <DataTableHeaderAction table={table} />}
-    />
+    <>
+      <DataTable
+        columnVisibility={{
+          predepositId: false,
+        }}
+        columns={columns}
+        data={data}
+        headerActions={(table) => <DataTableHeaderAction table={table} />}
+      />
+    </>
   )
 }
 

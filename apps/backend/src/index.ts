@@ -1,20 +1,12 @@
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
-import cors from "@fastify/cors";
-import { prisma } from "database";
-import "dotenv/config";
-import jwt from "@fastify/jwt";
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
+import cors from '@fastify/cors';
+import { prisma } from 'database';
+import 'dotenv/config';
+import jwt from '@fastify/jwt';
 
 // Import des routes
-import { authRoutes } from "./routes/auth.routes";
-import { userRoutes } from "./routes/user.routes";
-import { adminRoutes } from "./routes/admin.routes";
-import { sseRoutes } from "./routes/sse.routes";
-import { salesRoutes } from "./routes/sales.routes";
-import { depositsRoutes } from "./routes/deposits.routes";
-
-// Import du database listener
-import { dbListener } from "./events/DatabaseListener";
-import { replicationRoutes } from "./routes/replication.route";
+import { authRoutes } from './routes/auth.routes';
+import { replicationRoutes } from './routes/replication.route';
 import { syncRoutes } from './routes/sync.routes';
 
 // Étendre le type FastifyInstance pour inclure notre decorator
@@ -60,31 +52,18 @@ fastify.get("/api/health", async () => {
 
 // Register routes
 await fastify.register(authRoutes);
-await fastify.register(userRoutes);
-await fastify.register(adminRoutes);
-await fastify.register(sseRoutes);
-await fastify.register(salesRoutes);
 await fastify.register(replicationRoutes);
 await fastify.register(syncRoutes);
-await fastify.register(depositsRoutes);
 
 // Graceful shutdown
 const signals = ["SIGINT", "SIGTERM"];
 signals.forEach((signal) => {
   process.on(signal, async () => {
-    await dbListener.stop();
     await prisma.$disconnect();
     await fastify.close();
     process.exit(0);
   });
 });
-
-// Start database listener (PostgreSQL LISTEN/NOTIFY)
-try {
-  await dbListener.start();
-} catch (err) {
-  fastify.log.error(err, "Failed to start database listener");
-}
 
 // Start server
 try {

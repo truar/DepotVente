@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db.ts'
@@ -44,7 +44,10 @@ function RouteComponent() {
     setWorkstation(incrementStart)
   }
   return (
-    <Page title="Paramètres">
+    <Page
+      title="Paramètres"
+      navigation={<Link to={'..'}>Retour au menu principal</Link>}
+    >
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow">
           <h2 className="text-2xl">Synchronisation</h2>
