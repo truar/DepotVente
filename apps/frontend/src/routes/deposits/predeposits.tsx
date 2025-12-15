@@ -19,6 +19,7 @@ import {
   PredepositPdf,
   PredepositsPdf,
 } from '@/pdf/predeposit-pdf.tsx'
+import { FormattedNumber } from 'react-intl'
 
 export const Route = createFileRoute('/deposits/predeposits')({
   beforeLoad: () => {
@@ -92,7 +93,9 @@ function PredepositDataTable() {
     () =>
       predeposits?.map((predeposit) => ({
         predepositId: predeposit.id,
+        depositId: predeposit.depositId,
         index: predeposit.predepositIndex,
+        status: predeposit.depositId ? 'CONFIRMÉ' : 'NON CONFIRMÉ',
         seller: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
       })) ?? [],
     [predeposits],
@@ -108,13 +111,16 @@ function PredepositDataTable() {
         data={data}
         headerActions={(table) => <DataTableHeaderAction table={table} />}
       />
+      <PredepositsSummary />
     </>
   )
 }
 
 export type TableType = {
   predepositId: string
+  depositId?: string
   index: number
+  status: string
   seller: string
 }
 
@@ -151,6 +157,59 @@ export const columns: ColumnDef<TableType>[] = [
   {
     accessorKey: 'seller',
     header: 'Déposant',
+  },
+  {
+    id: 'depositId',
+    header: 'Numéro de fiche',
+    cell: ({ row }) => {
+      const deposit = useLiveQuery(() =>
+        row.original.depositId
+          ? db.deposits.get(row.original.depositId)
+          : undefined,
+      )
+
+      return <p>{deposit?.depositIndex}</p>
+    },
+  },
+  {
+    id: 'countArticles',
+    header: "Nombre d'articles",
+    cell: ({ row }) => {
+      const articlesCount = useLiveQuery(() =>
+        db.predepositArticles
+          .where({ predepositId: row.original.predepositId })
+          .count(),
+      )
+
+      return <p>{articlesCount}</p>
+    },
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    accessorKey: 'status',
+  },
+  {
+    id: 'amount',
+    header: 'Montant',
+    cell: ({ row }) => {
+      const articles = useLiveQuery(() =>
+        db.predepositArticles
+          .where({ predepositId: row.original.predepositId })
+          .toArray(),
+      )
+      const sum =
+        articles?.reduce(
+          (acc, article) => acc + parseInt(`${article.price}`),
+          0,
+        ) ?? 0
+
+      return (
+        <p className="text-right pr-3">
+          <FormattedNumber value={sum} style="currency" currency="EUR" />
+        </p>
+      )
+    },
   },
   {
     id: 'actions',
@@ -196,6 +255,30 @@ function DataTableHeaderAction({ table }: DataTableHeaderActionProps) {
   return (
     <div>
       <CustomButton onClick={print}>Imprimer les pré-dépôts</CustomButton>
+    </div>
+  )
+}
+
+function PredepositsSummary() {
+  const predepositArticles = useLiveQuery(() => db.predepositArticles.toArray())
+  const predeposits = useLiveQuery(() => db.predeposits.toArray())
+  const notConfirmed =
+    predeposits?.filter((predeposit) => !predeposit.depositId).length ?? 0
+  const total =
+    predepositArticles?.reduce(
+      (acc, article) => acc + parseInt(`${article.price}`),
+      0,
+    ) ?? 0
+  const count = predepositArticles?.length ?? 0
+
+  return (
+    <div className="flex flew-row gap-5 font-bold">
+      <p>Nombre de Non Confirmés: {notConfirmed}</p>
+      <p>Nombre d'articles: {count}</p>
+      <p>
+        Montant total:{' '}
+        <FormattedNumber value={total} style="currency" currency="EUR" />
+      </p>
     </div>
   )
 }
