@@ -25,10 +25,6 @@ import { type Contact, db, type Workstation } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { getYear } from '@/utils'
-import {
-  DepositCashRegisterControlPdf,
-  type DepositCashRegisterControlProps,
-} from '@/pdf/deposit-cash-register-control-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   Accordion,
@@ -45,6 +41,10 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 import { FormattedNumber } from 'react-intl'
+import {
+  SaleCashRegisterControlPdf,
+  type SaleCashRegisterControlProps,
+} from '@/pdf/sale-cash-register-control-pdf.tsx'
 
 export const Route = createFileRoute('/sales/sales-control')({
   beforeLoad: () => {
@@ -124,12 +124,15 @@ function SalesControlPage(props: SalesControlPageProps) {
   const print = async () => {
     const formData = getValues()
     const year = getYear()
-    const data: DepositCashRegisterControlProps['data'] = {
+    const data: SaleCashRegisterControlProps['data'] = {
       year,
       cashRegisterId: workstation.incrementStart,
-      ...formData,
+      cashPayment: formData,
+      cardPayments: [],
+      checkPayments: [],
+      refundPayments: [],
     }
-    await printPdf(<DepositCashRegisterControlPdf data={data} />)
+    await printPdf(<SaleCashRegisterControlPdf data={data} />)
   }
 
   return (
