@@ -43,6 +43,7 @@ export function useEditSale() {
             key: articleForm.id,
             changes: {
               saleId: articleForm.isDeleted ? null : data.id,
+              status: articleForm.isDeleted ? 'RECEPTION_OK' : 'SOLD',
               updatedAt: currentDate,
             },
           })),
