@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DymoRouteImport } from './routes/dymo'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,7 +17,6 @@ import { Route as SalesIndexRouteImport } from './routes/sales/index'
 import { Route as ReturnsIndexRouteImport } from './routes/returns/index'
 import { Route as HiddenPdfsIndexRouteImport } from './routes/hidden-pdfs/index'
 import { Route as DepositsIndexRouteImport } from './routes/deposits/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SalesSalesControlRouteImport } from './routes/sales/sales-control'
 import { Route as SalesListingRouteImport } from './routes/sales/listing'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
@@ -32,15 +32,14 @@ import { Route as DepositsListingRouteImport } from './routes/deposits/listing'
 import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
 import { Route as DepositsArticlesRouteImport } from './routes/deposits/articles'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
-import { Route as AdminSalesRouteImport } from './routes/admin/sales'
-import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminDepotsRouteImport } from './routes/admin/depots'
 import { Route as SalesSaleIdEditRouteImport } from './routes/sales/$saleId.edit'
 import { Route as DepositsDepositIdEditRouteImport } from './routes/deposits/$depositId.edit'
-import { Route as AdminSalesSaleIdEditRouteImport } from './routes/admin/sales_.$saleId.edit'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -74,11 +73,6 @@ const HiddenPdfsIndexRoute = HiddenPdfsIndexRouteImport.update({
 const DepositsIndexRoute = DepositsIndexRouteImport.update({
   id: '/deposits/',
   path: '/deposits/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalesSalesControlRoute = SalesSalesControlRouteImport.update({
@@ -160,31 +154,6 @@ const DepositsAddRoute = DepositsAddRouteImport.update({
   path: '/deposits/add',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/admin/settings',
-  path: '/admin/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSalesRoute = AdminSalesRouteImport.update({
-  id: '/admin/sales',
-  path: '/admin/sales',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminDepotsRoute = AdminDepotsRouteImport.update({
-  id: '/admin/depots',
-  path: '/admin/depots',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SalesSaleIdEditRoute = SalesSaleIdEditRouteImport.update({
   id: '/sales/$saleId/edit',
   path: '/sales/$saleId/edit',
@@ -195,21 +164,12 @@ const DepositsDepositIdEditRoute = DepositsDepositIdEditRouteImport.update({
   path: '/deposits/$depositId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSalesSaleIdEditRoute = AdminSalesSaleIdEditRouteImport.update({
-  id: '/admin/sales_/$saleId/edit',
-  path: '/admin/sales/$saleId/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/admin/depots': typeof AdminDepotsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/sales': typeof AdminSalesRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -225,24 +185,18 @@ export interface FileRoutesByFullPath {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
-  '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/returns': typeof ReturnsIndexRoute
   '/sales': typeof SalesIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
-  '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/admin/depots': typeof AdminDepotsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/sales': typeof AdminSalesRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -258,25 +212,19 @@ export interface FileRoutesByTo {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
-  '/admin': typeof AdminIndexRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/returns': typeof ReturnsIndexRoute
   '/sales': typeof SalesIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
-  '/admin/sales/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/admin/depots': typeof AdminDepotsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/sales': typeof AdminSalesRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -292,14 +240,12 @@ export interface FileRoutesById {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
-  '/admin/': typeof AdminIndexRoute
   '/deposits/': typeof DepositsIndexRoute
   '/hidden-pdfs/': typeof HiddenPdfsIndexRoute
   '/returns/': typeof ReturnsIndexRoute
   '/sales/': typeof SalesIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
-  '/admin/sales_/$saleId/edit': typeof AdminSalesSaleIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -307,11 +253,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dymo'
     | '/login'
-    | '/admin/depots'
-    | '/admin/login'
-    | '/admin/sales'
-    | '/admin/settings'
-    | '/admin/users'
+    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -327,24 +269,18 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
-    | '/admin'
     | '/deposits'
     | '/hidden-pdfs'
     | '/returns'
     | '/sales'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
-    | '/admin/sales/$saleId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dymo'
     | '/login'
-    | '/admin/depots'
-    | '/admin/login'
-    | '/admin/sales'
-    | '/admin/settings'
-    | '/admin/users'
+    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -360,24 +296,18 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
-    | '/admin'
     | '/deposits'
     | '/hidden-pdfs'
     | '/returns'
     | '/sales'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
-    | '/admin/sales/$saleId/edit'
   id:
     | '__root__'
     | '/'
     | '/dymo'
     | '/login'
-    | '/admin/depots'
-    | '/admin/login'
-    | '/admin/sales'
-    | '/admin/settings'
-    | '/admin/users'
+    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -393,25 +323,19 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
-    | '/admin/'
     | '/deposits/'
     | '/hidden-pdfs/'
     | '/returns/'
     | '/sales/'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
-    | '/admin/sales_/$saleId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DymoRoute: typeof DymoRoute
   LoginRoute: typeof LoginRoute
-  AdminDepotsRoute: typeof AdminDepotsRoute
-  AdminLoginRoute: typeof AdminLoginRoute
-  AdminSalesRoute: typeof AdminSalesRoute
-  AdminSettingsRoute: typeof AdminSettingsRoute
-  AdminUsersRoute: typeof AdminUsersRoute
+  SettingsRoute: typeof SettingsRoute
   DepositsAddRoute: typeof DepositsAddRoute
   DepositsArticlesRoute: typeof DepositsArticlesRoute
   DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
@@ -427,18 +351,23 @@ export interface RootRouteChildren {
   SalesAddRoute: typeof SalesAddRoute
   SalesListingRoute: typeof SalesListingRoute
   SalesSalesControlRoute: typeof SalesSalesControlRoute
-  AdminIndexRoute: typeof AdminIndexRoute
   DepositsIndexRoute: typeof DepositsIndexRoute
   HiddenPdfsIndexRoute: typeof HiddenPdfsIndexRoute
   ReturnsIndexRoute: typeof ReturnsIndexRoute
   SalesIndexRoute: typeof SalesIndexRoute
   DepositsDepositIdEditRoute: typeof DepositsDepositIdEditRoute
   SalesSaleIdEditRoute: typeof SalesSaleIdEditRoute
-  AdminSalesSaleIdEditRoute: typeof AdminSalesSaleIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -486,13 +415,6 @@ declare module '@tanstack/react-router' {
       path: '/deposits'
       fullPath: '/deposits'
       preLoaderRoute: typeof DepositsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/sales-control': {
@@ -600,41 +522,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsAddRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/sales': {
-      id: '/admin/sales'
-      path: '/admin/sales'
-      fullPath: '/admin/sales'
-      preLoaderRoute: typeof AdminSalesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/admin/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/depots': {
-      id: '/admin/depots'
-      path: '/admin/depots'
-      fullPath: '/admin/depots'
-      preLoaderRoute: typeof AdminDepotsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sales/$saleId/edit': {
       id: '/sales/$saleId/edit'
       path: '/sales/$saleId/edit'
@@ -649,13 +536,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsDepositIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/sales_/$saleId/edit': {
-      id: '/admin/sales_/$saleId/edit'
-      path: '/admin/sales/$saleId/edit'
-      fullPath: '/admin/sales/$saleId/edit'
-      preLoaderRoute: typeof AdminSalesSaleIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -663,11 +543,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DymoRoute: DymoRoute,
   LoginRoute: LoginRoute,
-  AdminDepotsRoute: AdminDepotsRoute,
-  AdminLoginRoute: AdminLoginRoute,
-  AdminSalesRoute: AdminSalesRoute,
-  AdminSettingsRoute: AdminSettingsRoute,
-  AdminUsersRoute: AdminUsersRoute,
+  SettingsRoute: SettingsRoute,
   DepositsAddRoute: DepositsAddRoute,
   DepositsArticlesRoute: DepositsArticlesRoute,
   DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
@@ -684,14 +560,12 @@ const rootRouteChildren: RootRouteChildren = {
   SalesAddRoute: SalesAddRoute,
   SalesListingRoute: SalesListingRoute,
   SalesSalesControlRoute: SalesSalesControlRoute,
-  AdminIndexRoute: AdminIndexRoute,
   DepositsIndexRoute: DepositsIndexRoute,
   HiddenPdfsIndexRoute: HiddenPdfsIndexRoute,
   ReturnsIndexRoute: ReturnsIndexRoute,
   SalesIndexRoute: SalesIndexRoute,
   DepositsDepositIdEditRoute: DepositsDepositIdEditRoute,
   SalesSaleIdEditRoute: SalesSaleIdEditRoute,
-  AdminSalesSaleIdEditRoute: AdminSalesSaleIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

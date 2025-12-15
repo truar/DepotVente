@@ -1,4 +1,4 @@
-import type { Noop, RefCallBack } from 'react-hook-form/dist/types'
+import type { Noop, RefCallBack } from 'react-hook-form'
 import { useMemo } from 'react'
 import { cities } from '@/types/cities.ts'
 import { Field, FieldContent } from '@/components/ui/field.tsx'

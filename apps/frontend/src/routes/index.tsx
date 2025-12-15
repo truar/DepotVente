@@ -1,9 +1,15 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
 import { BaggageClaim, Package, ShoppingCart } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { ClickableCard } from '@/components/ClickableCard.tsx'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
+import { CustomButton } from '@/components/custom/Button.tsx'
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {
@@ -26,7 +32,8 @@ export function RouteComponent() {
 
   return (
     <>
-      <div className="flex flex-row justify-end px-3 py-3">
+      <div className="flex flex-row justify-between px-3 py-3">
+        <SettingsLink />
         <LogoutButton />
       </div>
       <main className="flex-1 flex items-center justify-center px-6 py-12">
@@ -66,5 +73,12 @@ export function RouteComponent() {
         </div>
       </main>
     </>
+  )
+}
+function SettingsLink() {
+  return (
+    <Link to={'/settings'}>
+      <CustomButton variant="outline">Configuration</CustomButton>
+    </Link>
   )
 }

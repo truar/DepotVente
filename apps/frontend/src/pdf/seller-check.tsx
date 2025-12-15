@@ -1,6 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
-import { FormattedNumber, IntlProvider } from 'react-intl'
-import { CMRLogo } from '@/pdf/cmr-logo.tsx'
+import { IntlProvider } from 'react-intl'
 
 // Create styles
 const styles = StyleSheet.create({

@@ -13,7 +13,7 @@ export type {
  * Type de service d'authentification
  * Permet de basculer facilement entre différentes implémentations
  */
-type AuthServiceType = 'api' | 'supabase' | 'firebase'
+type AuthServiceType = 'api'
 
 /**
  * Factory pour créer le service d'authentification approprié
@@ -26,12 +26,6 @@ function createAuthService(): IAuthService {
   switch (authProvider) {
     case 'api':
       return new ApiAuthService()
-
-    // case 'supabase':
-    //   return new SupabaseAuthService()
-
-    // case 'firebase':
-    //   return new FirebaseAuthService()
 
     default:
       console.warn(
