@@ -6,7 +6,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { Euro, Plus, Printer, RotateCcwIcon, Trash2 } from 'lucide-react'
+import { Plus, Printer, RotateCcwIcon, Trash2 } from 'lucide-react'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import {
   type KeyboardEvent,
@@ -18,7 +18,6 @@ import {
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
-import { Label } from '@/components/ui/label.tsx'
 import {
   Select,
   SelectContent,
@@ -37,8 +36,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
-import { Field, FieldContent } from '@/components/ui/field'
-import { InputGroup, InputGroupInput } from '@/components/ui/input-group'
+import { Field } from '@/components/ui/field'
 import { disciplineItems, disciplines } from '@/types/disciplines.ts'
 import { categories, categoriesItems } from '@/types/categories.ts'
 import { brands, brandsItems } from '@/types/brands.ts'
@@ -58,7 +56,9 @@ import { useDebouncedCallback } from 'use-debounce'
 import { printPdf } from '@/pdf/print.tsx'
 import { db } from '@/db.ts'
 import { fakerFR as faker } from '@faker-js/faker'
-import { CityInput } from '@/components/custom/CityInput.tsx'
+import { TextField } from '@/components/custom/input/TextField.tsx'
+import { DataListField } from '@/components/custom/input/DataListField.tsx'
+import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: () => {
@@ -330,20 +330,8 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.lastName"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="lastName">Nom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="lastName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField invalid={fieldState.invalid} {...field} label="Nom" />
             )}
           />
         </div>
@@ -351,20 +339,12 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.firstName"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="firstName">Prénom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="firstName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Prénom"
+              />
             )}
           />
         </div>
@@ -372,20 +352,12 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.phoneNumber"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="phoneNumber">Téléphone</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="phoneNumber"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Téléphone"
+              />
             )}
           />
         </div>
@@ -393,7 +365,12 @@ function SellerInformationForm() {
           <Controller
             name="deposit.city"
             render={({ field, fieldState }) => (
-              <CityInput {...field} invalid={fieldState.invalid} />
+              <DataListField
+                invalid={fieldState.invalid}
+                {...field}
+                items={cities}
+                label="Ville"
+              />
             )}
           />
         </div>
@@ -429,9 +406,9 @@ function ArticleForm(props: ArticleFormProps) {
     )
     append({
       price: 0,
-      discipline: '',
-      brand: '',
-      type: '',
+      discipline: null,
+      brand: null,
+      type: null,
       size: '',
       color: '',
       model: '',
@@ -556,9 +533,6 @@ type ArticleLineFormProps = {
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { index } = props
   const { setValue, watch } = useFormContext<DepositFormType>()
-  const colorOptions = useMemo(() => {
-    return colors.map((color) => <option key={color} value={color}></option>)
-  }, [colors])
 
   const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
   const isLineDisabled = isDeleted === true
@@ -569,19 +543,8 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField invalid={fieldState.invalid} {...field} />
           )}
         />
       </td>
@@ -638,19 +601,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.model`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={isLineDisabled}
+            />
           )}
         />
       </td>
@@ -659,24 +615,13 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.color`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    list={`articles-${index}-color-list`}
-                    id={`articles-${index}-color`}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                  <datalist id={`articles-${index}-color-list`}>
-                    {colorOptions}
-                  </datalist>
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <DataListField
+              invalid={fieldState.invalid}
+              {...field}
+              items={colors}
+              readOnly={isLineDisabled}
+            />
           )}
         />
       </td>
@@ -685,19 +630,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.size`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={isLineDisabled}
+            />
           )}
         />
       </td>
@@ -707,20 +645,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         <div className="flex items-center gap-1">
           <Controller
             name={`deposit.articles.${index}.price`}
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                      readOnly={isLineDisabled}
-                    />
-                    <Euro className="w-5 pr-1" />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <MonetaryField
+                invalid={fieldState.invalid}
+                {...field}
+                readOnly={isLineDisabled}
+              />
             )}
           />
         </div>

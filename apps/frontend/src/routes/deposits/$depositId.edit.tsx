@@ -45,7 +45,7 @@ import {
   type EditDepositFormType,
 } from '@/types/EditDepositForm.ts'
 import { useEditDepot } from '@/hooks/useEditDepot.ts'
-import { CityInput } from '@/components/custom/CityInput.tsx'
+import { DataListField } from '@/components/custom/input/DataListField.tsx'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
   beforeLoad: () => {
@@ -243,7 +243,12 @@ function SellerInformationForm() {
           <Controller
             name="deposit.city"
             render={({ field, fieldState }) => (
-              <CityInput {...field} invalid={fieldState.invalid} />
+              <DataListField
+                invalid={fieldState.invalid}
+                {...field}
+                items={cities}
+                label="Ville"
+              />
             )}
           />
         </div>
