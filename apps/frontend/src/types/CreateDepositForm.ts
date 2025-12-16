@@ -2,13 +2,13 @@ import { z } from 'zod'
 
 export const ArticleSchema = z.object({
   isDeleted: z.boolean().optional(),
-  price: z.coerce.number<number>().gt(0, { error: 'Le prix est requis' }),
-  discipline: z.string().nonempty({ error: 'La discipline est requise' }),
-  brand: z.string().nonempty({ error: 'La marque est requise' }),
-  type: z.string().nonempty({ error: 'Le type est requis' }),
-  size: z.string().nonempty({ error: 'La taille est requise' }),
-  color: z.string().nonempty({ error: 'La couleur est requise' }),
-  model: z.string().nonempty({ error: 'Le model est requis' }),
+  price: z.coerce.number().gt(0, { message: 'Le prix est requis' }),
+  discipline: z.string().nonempty({ message: 'La discipline est requise' }),
+  brand: z.string().nonempty({ message: 'La marque est requise' }),
+  type: z.string().nonempty({ message: 'Le type est requis' }),
+  size: z.string().nonempty({ message: 'La taille est requise' }),
+  color: z.string().nonempty({ message: 'La couleur est requise' }),
+  model: z.string().nonempty({ message: 'Le model est requis' }),
   articleCode: z.string(),
   year: z.number(),
   depotIndex: z.number(),
@@ -30,7 +30,7 @@ export const DepositSchema = z.object({
     z.literal('PRO'),
     z.literal('GRATUIT'),
   ]),
-  contributionAmount: z.coerce.number<number>(),
+  contributionAmount: z.coerce.number(),
   articles: z
     .array(ArticleSchema)
     .nonempty({ message: 'Au moins un article est requis' }),

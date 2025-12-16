@@ -10,20 +10,23 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type KeyboardEvent, useCallback, useMemo } from 'react'
+import { type KeyboardEvent, useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
-import { getYear, shortArticleCode } from '@/utils'
+import {
+  generateArticleCode,
+  generateIdentificationLetter,
+  getYear,
+  shortArticleCode,
+} from '@/utils'
 import { disciplineItems } from '@/types/disciplines.ts'
 import { brandsItems } from '@/types/brands.ts'
 import { categoriesItems } from '@/types/categories.ts'
 import { Combobox } from '@/components/Combobox.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
-import { Field, FieldContent } from '@/components/ui/field.tsx'
-import { Label } from '@/components/ui/label.tsx'
-import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
-import { CheckLineIcon, Euro, Printer, Trash2 } from 'lucide-react'
+import { Field } from '@/components/ui/field.tsx'
+import { CheckLineIcon, Plus, Printer, Trash2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -46,6 +49,9 @@ import {
 } from '@/types/EditDepositForm.ts'
 import { useEditDepot } from '@/hooks/useEditDepot.ts'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
+import { TextField } from '@/components/custom/input/TextField.tsx'
+import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
+import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
   beforeLoad: () => {
@@ -114,7 +120,7 @@ function DepositForm(props: DepositFormProps) {
           articleCode: article.code,
           price: article.price,
           color: article.color,
-          status: article.status,
+          isDeleted: false,
           depotIndex: article.depositIndex,
           articleIndex: article.articleIndex,
           discipline: article.discipline,
@@ -123,6 +129,7 @@ function DepositForm(props: DepositFormProps) {
           type: article.category,
           model: article.model,
           brand: article.brand,
+          identificationLetter: article.identificationLetter,
           shortArticleCode: shortArticleCode(
             article.depositIndex,
             article.identificationLetter,
@@ -137,6 +144,8 @@ function DepositForm(props: DepositFormProps) {
     await mutation.mutate(data.deposit)
     toast.success(`Dépôt ${deposit.depositIndex} enregistré`)
   }
+  const depositIndex = deposit.depositIndex
+  const [countArticle, setCountArticle] = useState(articles.length)
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
@@ -153,7 +162,11 @@ function DepositForm(props: DepositFormProps) {
 
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-3 py-6 shadow-lg border border-gray-100">
           <SellerInformationForm />
-          <ArticleForm />
+          <ArticleForm
+            onArticleAdd={() => setCountArticle(countArticle + 1)}
+            articleCount={countArticle}
+            depositIndex={depositIndex}
+          />
 
           <div className="flex justify-end gap-4">
             <SummaryPrintButton />
@@ -180,20 +193,8 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.lastName"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="lastName">Nom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="lastName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField invalid={fieldState.invalid} {...field} label="Nom" />
             )}
           />
         </div>
@@ -201,20 +202,12 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.firstName"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="firstName">Prénom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="firstName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Prénom"
+              />
             )}
           />
         </div>
@@ -222,20 +215,12 @@ function SellerInformationForm() {
         <div className="grid gap-2">
           <Controller
             name="deposit.phoneNumber"
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="phoneNumber">Téléphone</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      id="phoneNumber"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Téléphone"
+              />
             )}
           />
         </div>
@@ -268,13 +253,51 @@ function SubmitButton() {
   )
 }
 
-function ArticleForm() {
-  const { fields } = useFieldArray<EditDepositFormType>({
+type ArticleFormProps = {
+  onArticleAdd: () => void
+  articleCount: number
+  depositIndex: number
+}
+function ArticleForm(props: ArticleFormProps) {
+  const { onArticleAdd, articleCount, depositIndex } = props
+  const { fields, append } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
-  const { watch } = useFormContext<EditDepositFormType>()
+  const { trigger, watch } = useFormContext<DepositFormType>()
+
+  const addArticle = useCallback(async () => {
+    const valid = await trigger(`deposit.articles.${fields.length - 1}`)
+    if (!valid) {
+      return
+    }
+    const year = getYear()
+    const identificationLetter = generateIdentificationLetter(articleCount)
+    const articleCode = generateArticleCode(
+      year,
+      depositIndex,
+      identificationLetter,
+    )
+    append({
+      price: 0,
+      discipline: null,
+      brand: null,
+      type: null,
+      size: '',
+      color: '',
+      model: '',
+      articleCode,
+      year,
+      depotIndex: depositIndex,
+      identificationLetter,
+      articleIndex: 1,
+      shortArticleCode: `${depositIndex} ${identificationLetter}`,
+    })
+    onArticleAdd()
+  }, [fields, depositIndex, articleCount])
 
   const contributionAmount = watch('deposit.contributionAmount')
+  const articles = watch('deposit.articles')
+  const countArticles = articles.filter((article) => !article.isDeleted).length
 
   return (
     <div className="flex flex-col gap-3">
@@ -321,9 +344,15 @@ function ArticleForm() {
         </table>
       </div>
 
-      <div className="flex flex-row justify-end">
+      <div className="flex flex-row justify-between">
+        <div>
+          <Button type="button" variant="ghost" onClick={addArticle}>
+            <Plus className="w-5 h-5" />
+            Ajouter un nouvel article
+          </Button>
+        </div>
         <div className="flex flex-row gap-5 items-baseline font-bold">
-          <div>Nombre d'articles : {fields.length}</div>
+          <div>Nombre d'articles : {countArticles}</div>
           <div>Montant droit de dépôt : {contributionAmount}€</div>
           <div>
             <Controller
@@ -370,25 +399,7 @@ type ArticleLineFormProps = {
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { index } = props
   const { setValue, watch } = useFormContext<EditDepositFormType>()
-  // TODO the form should handle "isDeleted" only. The business hook to mutate should handle how the "deletion" transform to business logic
-  const markAsRefused = useCallback(
-    (index: number) => {
-      setValue(`deposit.articles.${index}.status`, 'REFUSED')
-    },
-    [setValue],
-  )
-  const markAsReceived = useCallback(
-    (index: number) => {
-      setValue(`deposit.articles.${index}.status`, 'RECEPTION_OK')
-    },
-    [setValue],
-  )
-  const colorOptions = useMemo(() => {
-    return colors.map((color) => <option key={color} value={color}></option>)
-  }, [colors])
-
-  const articleStatus = watch(`deposit.articles.${index}.status`)
-  const isLineDisabled = articleStatus === 'REFUSED'
+  const isLineDisabled = watch(`deposit.articles.${index}.isDeleted`)
   return (
     <tr className="border-b border-gray-100">
       <td
@@ -396,19 +407,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={true}
+            />
           )}
         />
       </td>
@@ -465,19 +469,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.model`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={isLineDisabled}
+            />
           )}
         />
       </td>
@@ -486,24 +483,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.color`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    list={`articles-${index}-color-list`}
-                    id={`articles-${index}-color`}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                  <datalist id={`articles-${index}-color-list`}>
-                    {colorOptions}
-                  </datalist>
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <DataListField
+              invalid={fieldState.invalid}
+              {...field}
+              items={colors}
+            />
           )}
         />
       </td>
@@ -512,19 +497,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       >
         <Controller
           name={`deposit.articles.${index}.size`}
-          render={({ field: controllerField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <InputGroup>
-                  <InputGroupInput
-                    {...controllerField}
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    readOnly={isLineDisabled}
-                  />
-                </InputGroup>
-              </FieldContent>
-            </Field>
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={isLineDisabled}
+            />
           )}
         />
       </td>
@@ -534,20 +512,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         <div className="flex items-center gap-1">
           <Controller
             name={`deposit.articles.${index}.price`}
-            render={({ field: controllerField, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                      readOnly={isLineDisabled}
-                    />
-                    <Euro className="w-5 pr-1" />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+            render={({ field, fieldState }) => (
+              <MonetaryField
+                invalid={fieldState.invalid}
+                {...field}
+                readOnly={isLineDisabled}
+              />
             )}
           />
         </div>
@@ -559,7 +529,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
             <Button
               variant="ghost"
               type="button"
-              onClick={() => markAsReceived(index)}
+              onClick={() =>
+                setValue(`deposit.articles.${index}.isDeleted`, false)
+              }
               className="p-2 text-green-800 hover:bg-green-50 rounded-lg transition-colors"
             >
               <CheckLineIcon className="w-4 h-4" />
@@ -568,7 +540,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
             <Button
               variant="ghost"
               type="button"
-              onClick={() => markAsRefused(index)}
+              onClick={() =>
+                setValue(`deposit.articles.${index}.isDeleted`, true)
+              }
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <Trash2 className="w-4 h-4" />
@@ -670,7 +644,7 @@ function ErrorMessages() {
   const {
     formState: { errors },
   } = useFormContext<EditDepositFormType>()
-
+  console.log(errors)
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
     if (typeof errors[key]?.message === 'string') {
       return <li key={index}>{errors[key]?.message}</li>

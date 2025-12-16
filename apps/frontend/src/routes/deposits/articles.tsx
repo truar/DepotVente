@@ -414,6 +414,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                         Réception en attente
                       </SelectItem>
                       <SelectItem value="RECEPTION_OK">Réception OK</SelectItem>
+                      <SelectItem value="SOLD">Vendu</SelectItem>
                       <SelectItem value="REFUSED">Refusé</SelectItem>
                     </SelectContent>
                   </Select>

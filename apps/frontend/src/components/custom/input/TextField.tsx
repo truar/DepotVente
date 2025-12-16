@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 
 type TextInputProps = {
-  invalid: boolean
+  invalid?: boolean
   label?: string
   onChange: (...event: any[]) => void
   onBlur: Noop

@@ -5,15 +5,15 @@ import { Euro } from 'lucide-react'
 import { Label } from '@/components/ui/label.tsx'
 
 type MonetaryFieldProps = {
-  invalid: boolean
+  invalid?: boolean
   label?: string
-  onChange: (...event: any[]) => void
-  onBlur: Noop
+  onChange?: (...event: any[]) => void
+  onBlur?: Noop
   value: string | readonly string[] | number | undefined
   disabled?: boolean
   readOnly?: boolean
-  name: string
-  ref: RefCallBack
+  name?: string
+  ref?: RefCallBack
 }
 
 export function MonetaryField(props: MonetaryFieldProps) {

@@ -30,6 +30,8 @@ import {
   type DepositCashRegisterControlProps,
 } from '@/pdf/deposit-cash-register-control-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
+import { TextField } from '@/components/custom/input/TextField.tsx'
+import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
   beforeLoad: () => {
@@ -104,7 +106,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       ],
     },
   })
-  const { control, register, getValues } = methods
+  const { control, getValues } = methods
 
   const { fields } = useFieldArray({
     control,
@@ -131,37 +133,28 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
               {fields.map((field, index) => (
                 <Controller
                   key={field.id}
-                  control={control}
                   name={`amounts.${index}.amount`}
-                  render={({ field: controllerField, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <Label>{field.value}</Label>
-                      <InputGroup>
-                        <InputGroupInput
-                          {...controllerField}
-                          aria-invalid={fieldState.invalid}
-                          type="text"
-                        />
-                      </InputGroup>
-                    </Field>
+                  render={({ field: controlledField, fieldState }) => (
+                    <TextField
+                      invalid={fieldState.invalid}
+                      {...controlledField}
+                      label={`${field.value}`}
+                    />
                   )}
                 />
               ))}
             </div>
             <div className="flex flex-col gap-2">
-              <Field>
-                <Label>Fonds de caisse</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    type="text"
-                    disabled
-                    {...register('initialAmount')}
+              <Controller
+                name="initialAmount"
+                render={({ field }) => (
+                  <MonetaryField
+                    {...field}
+                    label="Fonds de caisse"
+                    readOnly={true}
                   />
-                  <InputGroupAddon align="inline-end">
-                    <Euro />
-                  </InputGroupAddon>
-                </InputGroup>
-              </Field>
+                )}
+              />
               <RealAmountInput />
               <TheoreticalAmount />
               <DifferenceInput />
@@ -179,8 +172,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
 }
 
 function RealAmountInput() {
-  const { watch, setValue, register } =
-    useFormContext<CashRegisterControlFormType>()
+  const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
   const amounts = watch('amounts', [])
   const realAmount = amounts.reduce(
     (acc, cur) => acc + cur.amount * cur.value,
@@ -191,20 +183,15 @@ function RealAmountInput() {
   }, [realAmount, setValue])
 
   return (
-    <Field>
-      <Label>Montant réel</Label>
-      <InputGroup>
-        <InputGroupInput type="text" readOnly {...register('realAmount')} />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <Controller
+      name="realAmount"
+      render={({ field }) => <MonetaryField {...field} label="Montant réel" />}
+    />
   )
 }
 
 function TheoreticalAmount() {
-  const { setValue, register } = useFormContext<CashRegisterControlFormType>()
+  const { setValue } = useFormContext<CashRegisterControlFormType>()
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
@@ -222,7 +209,7 @@ function TheoreticalAmount() {
       deposits?.reduce((acc, deposit) => {
         const amount =
           deposit.contributionStatus === 'PAYEE'
-            ? (parseInt(deposit.contributionAmount) ?? 0)
+            ? (parseInt(`${deposit.contributionAmount}`) ?? 0)
             : 0
         return acc + amount
       }, 0) ?? 0
@@ -230,19 +217,12 @@ function TheoreticalAmount() {
   }, [deposits, setValue])
 
   return (
-    <Field>
-      <Label>Montant théorique</Label>
-      <InputGroup>
-        <InputGroupInput
-          type="text"
-          {...register('theoreticalAmount')}
-          readOnly
-        />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <Controller
+      name="theoreticalAmount"
+      render={({ field }) => (
+        <MonetaryField {...field} label="Montant théorique" />
+      )}
+    />
   )
 }
 
@@ -254,14 +234,11 @@ function DifferenceInput() {
   const difference = realAmount - theoreticalAmount
 
   return (
-    <Field>
-      <Label>Différence</Label>
-      <InputGroup>
-        <InputGroupInput type="text" value={difference} readOnly />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <MonetaryField
+      value={difference}
+      label="Différence"
+      onChange={() => {}}
+      readOnly={true}
+    />
   )
 }

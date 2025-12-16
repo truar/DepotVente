@@ -422,8 +422,8 @@ function ArticleForm(props: ArticleFormProps) {
     onArticleAdd()
   }, [fields, depositIndex, articleCount])
 
-  const articles = watch('deposit.articles')
   const contributionAmount = watch('deposit.contributionAmount')
+  const articles = watch('deposit.articles')
   const countArticles = articles.filter((article) => !article.isDeleted).length
 
   useEffect(() => {
@@ -533,9 +533,7 @@ type ArticleLineFormProps = {
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { index } = props
   const { setValue, watch } = useFormContext<DepositFormType>()
-
-  const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
-  const isLineDisabled = isDeleted === true
+  const isLineDisabled = watch(`deposit.articles.${index}.isDeleted`)
   return (
     <tr className="border-b border-gray-100">
       <td
@@ -544,7 +542,11 @@ function ArticleLineForm(props: ArticleLineFormProps) {
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
           render={({ field, fieldState }) => (
-            <TextField invalid={fieldState.invalid} {...field} />
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={true}
+            />
           )}
         />
       </td>

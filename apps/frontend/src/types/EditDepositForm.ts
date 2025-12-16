@@ -3,11 +3,6 @@ import { ArticleSchema, DepositSchema } from '@/types/CreateDepositForm.ts'
 
 export const EditArticleSchema = ArticleSchema.extend({
   id: z.string(),
-  status: z.union([
-    z.literal('RECEPTION_PENDING'),
-    z.literal('RECEPTION_OK'),
-    z.literal('REFUSED'),
-  ]),
 })
 
 export const EditDepositSchema = DepositSchema.extend({
