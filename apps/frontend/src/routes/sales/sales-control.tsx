@@ -11,14 +11,6 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Field } from '@/components/ui/field.tsx'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group.tsx'
-import { Label } from '@/components/ui/label.tsx'
-import { Euro } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type Contact, db, type Workstation } from '@/db.ts'
@@ -45,6 +37,8 @@ import {
   SaleCashRegisterControlPdf,
   type SaleCashRegisterControlProps,
 } from '@/pdf/sale-cash-register-control-pdf.tsx'
+import { TextField } from '@/components/custom/input/TextField.tsx'
+import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 
 export const Route = createFileRoute('/sales/sales-control')({
   beforeLoad: () => {
@@ -63,15 +57,26 @@ export const Route = createFileRoute('/sales/sales-control')({
 })
 
 const CashRegisterControlFormSchema = z.object({
-  initialAmount: z.coerce.number(),
-  realAmount: z.coerce.number(),
-  theoreticalAmount: z.coerce.number(),
-  amounts: z.array(
+  cardPayments: z.array(
     z.object({
-      amount: z.coerce.number(),
-      value: z.coerce.number(),
+      saleIndex: z.number(),
+      buyerName: z.string(),
+      buyerPhoneNumber: z.string(),
+      buyerCity: z.string(),
+      amount: z.number(),
     }),
   ),
+  cashPayment: z.object({
+    initialAmount: z.coerce.number(),
+    realAmount: z.coerce.number(),
+    theoreticalAmount: z.coerce.number(),
+    amounts: z.array(
+      z.object({
+        amount: z.coerce.number(),
+        value: z.coerce.number(),
+      }),
+    ),
+  }),
 })
 
 type CashRegisterControlFormType = z.infer<typeof CashRegisterControlFormSchema>
@@ -97,25 +102,28 @@ function SalesControlPage(props: SalesControlPageProps) {
   const methods = useForm<CashRegisterControlFormType>({
     resolver: zodResolver(CashRegisterControlFormSchema),
     defaultValues: {
-      initialAmount: 80,
-      realAmount: 0,
-      theoreticalAmount: 0,
-      amounts: [
-        { amount: 0, value: 200 },
-        { amount: 0, value: 100 },
-        { amount: 0, value: 50 },
-        { amount: 0, value: 20 },
-        { amount: 0, value: 10 },
-        { amount: 0, value: 5 },
-        { amount: 0, value: 2 },
-        { amount: 0, value: 1 },
-        { amount: 0, value: 0.5 },
-        { amount: 0, value: 0.2 },
-        { amount: 0, value: 0.1 },
-        { amount: 0, value: 0.05 },
-        { amount: 0, value: 0.02 },
-        { amount: 0, value: 0.01 },
-      ],
+      cardPayments: [],
+      cashPayment: {
+        initialAmount: 80,
+        realAmount: 0,
+        theoreticalAmount: 0,
+        amounts: [
+          { amount: 0, value: 200 },
+          { amount: 0, value: 100 },
+          { amount: 0, value: 50 },
+          { amount: 0, value: 20 },
+          { amount: 0, value: 10 },
+          { amount: 0, value: 5 },
+          { amount: 0, value: 2 },
+          { amount: 0, value: 1 },
+          { amount: 0, value: 0.5 },
+          { amount: 0, value: 0.2 },
+          { amount: 0, value: 0.1 },
+          { amount: 0, value: 0.05 },
+          { amount: 0, value: 0.02 },
+          { amount: 0, value: 0.01 },
+        ],
+      },
     },
   })
 
@@ -123,12 +131,13 @@ function SalesControlPage(props: SalesControlPageProps) {
 
   const print = async () => {
     const formData = getValues()
+    console.log(formData)
     const year = getYear()
     const data: SaleCashRegisterControlProps['data'] = {
       year,
       cashRegisterId: workstation.incrementStart,
-      cashPayment: formData,
-      cardPayments: [],
+      cashPayment: formData.cashPayment,
+      cardPayments: formData.cardPayments,
       checkPayments: [],
       refundPayments: [],
     }
@@ -177,6 +186,7 @@ function SalesControlPage(props: SalesControlPageProps) {
 }
 
 function CardPaymentDetails({ workstation }: { workstation: Workstation }) {
+  const { setValue } = useFormContext()
   const sales = useLiveQuery(
     () =>
       db.sales
@@ -194,14 +204,36 @@ function CardPaymentDetails({ workstation }: { workstation: Workstation }) {
       ),
     [contacts],
   )
-  if (!sales) return null
-  const onlyCardSales = sales.filter(
-    (sale) => sale.cardAmount !== null && sale.cardAmount > 0,
+  const onlyCardSales = useMemo(
+    () =>
+      (sales ?? []).filter(
+        (sale) => sale.cardAmount != null && sale.cardAmount > 0,
+      ),
+    [sales],
   )
   const total = onlyCardSales.reduce(
     (acc, cur) => acc + parseInt(`${cur.cardAmount}`),
     0,
   )
+
+  useEffect(() => {
+    const data = onlyCardSales
+      .map((payment) => {
+        const buyer = contactMap.get(payment.buyerId)
+        if (!buyer) return
+        return {
+          saleIndex: payment.saleIndex,
+          buyerName: `${buyer.lastName} ${buyer.firstName}`,
+          buyerPhoneNumber: buyer.phoneNumber,
+          buyerCity: buyer.city || '',
+          amount: payment.cardAmount || 0,
+        }
+      })
+      .filter((sale) => !!sale)
+    setValue('cardPayments', data)
+  }, [onlyCardSales, contactMap])
+
+  if (!sales) return null
   return (
     <>
       <Table>
@@ -268,7 +300,7 @@ function CheckPaymentDetails({ workstation }: { workstation: Workstation }) {
   )
   if (!allSales) return null
   const sales = allSales.filter(
-    (sale) => sale.checkAmount !== null && sale.checkAmount > 0,
+    (sale) => sale.checkAmount != null && sale.checkAmount > 0,
   )
   const total = sales.reduce(
     (acc, cur) => acc + parseInt(`${cur.checkAmount}`),
@@ -341,8 +373,8 @@ function RefundPaymentDetails({ workstation }: { workstation: Workstation }) {
   if (!allSales) return null
   const sales = allSales.filter(
     (sale) =>
-      (sale.refundCashAmount !== null && sale.refundCashAmount > 0) ||
-      (sale.refundCardAmount !== null && sale.refundCardAmount > 0),
+      (sale.refundCashAmount != null && sale.refundCashAmount > 0) ||
+      (sale.refundCardAmount != null && sale.refundCardAmount > 0),
   )
   const total = sales.reduce(
     (acc, cur) =>
@@ -404,9 +436,8 @@ function RefundPaymentDetails({ workstation }: { workstation: Workstation }) {
 }
 
 function CashRegisterControlForm() {
-  const { register } = useFormContext<CashRegisterControlFormType>()
   const { fields } = useFieldArray<CashRegisterControlFormType>({
-    name: 'amounts',
+    name: 'cashPayment.amounts',
   })
   return (
     <div className="flex flex-2 gap-6 flex-col">
@@ -415,36 +446,28 @@ function CashRegisterControlForm() {
           {fields.map((field, index) => (
             <Controller
               key={field.id}
-              name={`amounts.${index}.amount`}
+              name={`cashPayment.amounts.${index}.amount`}
               render={({ field: controllerField, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <Label>{field.value}</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...controllerField}
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </Field>
+                <TextField
+                  invalid={fieldState.invalid}
+                  {...controllerField}
+                  label={`${field.value}`}
+                />
               )}
             />
           ))}
         </div>
         <div className="flex flex-col gap-2">
-          <Field>
-            <Label>Fonds de caisse</Label>
-            <InputGroup>
-              <InputGroupInput
-                type="text"
-                disabled
-                {...register('initialAmount')}
+          <Controller
+            name="cashPayment.initialAmount"
+            render={({ field }) => (
+              <MonetaryField
+                {...field}
+                label="Fonds de caisse"
+                readOnly={true}
               />
-              <InputGroupAddon align="inline-end">
-                <Euro />
-              </InputGroupAddon>
-            </InputGroup>
-          </Field>
+            )}
+          />
           <RealAmountInput />
           <TheoreticalAmount />
           <DifferenceInput />
@@ -455,32 +478,26 @@ function CashRegisterControlForm() {
 }
 
 function RealAmountInput() {
-  const { watch, setValue, register } =
-    useFormContext<CashRegisterControlFormType>()
-  const amounts = watch('amounts', [])
+  const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
+  const amounts = watch('cashPayment.amounts', [])
   const realAmount = amounts.reduce(
     (acc, cur) => acc + cur.amount * cur.value,
     0,
   )
   useEffect(() => {
-    setValue('realAmount', realAmount)
+    setValue('cashPayment.realAmount', realAmount)
   }, [realAmount, setValue])
 
   return (
-    <Field>
-      <Label>Montant réel</Label>
-      <InputGroup>
-        <InputGroupInput type="text" readOnly {...register('realAmount')} />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <Controller
+      name="cashPayment.realAmount'"
+      render={({ field }) => <MonetaryField {...field} label="Montant réel" />}
+    />
   )
 }
 
 function TheoreticalAmount() {
-  const { setValue, register } = useFormContext<CashRegisterControlFormType>()
+  const { setValue } = useFormContext<CashRegisterControlFormType>()
   const [workstation] = useWorkstation()
   if (!workstation) return null
 
@@ -501,42 +518,32 @@ function TheoreticalAmount() {
           : 0
         return acc + amount
       }, 0) ?? 0
-    setValue('theoreticalAmount', theoreticalAmount)
+    setValue('cashPayment.theoreticalAmount', theoreticalAmount)
   }, [sales, setValue])
 
   return (
-    <Field>
-      <Label>Montant théorique</Label>
-      <InputGroup>
-        <InputGroupInput
-          type="text"
-          {...register('theoreticalAmount')}
-          readOnly
-        />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <Controller
+      name="cashPayment.theoreticalAmount"
+      render={({ field }) => (
+        <MonetaryField {...field} label="Montant théorique" />
+      )}
+    />
   )
 }
 
 function DifferenceInput() {
   const { watch } = useFormContext<CashRegisterControlFormType>()
 
-  const realAmount = watch('realAmount')
-  const theoreticalAmount = watch('theoreticalAmount')
+  const realAmount = watch('cashPayment.realAmount')
+  const theoreticalAmount = watch('cashPayment.theoreticalAmount')
   const difference = realAmount - theoreticalAmount
 
   return (
-    <Field>
-      <Label>Différence</Label>
-      <InputGroup>
-        <InputGroupInput type="text" value={difference} readOnly />
-        <InputGroupAddon align="inline-end">
-          <Euro />
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
+    <MonetaryField
+      value={difference}
+      label="Différence"
+      onChange={() => {}}
+      readOnly={true}
+    />
   )
 }
