@@ -31,6 +31,7 @@ import {
   type ReturnDepositsPdfProps,
 } from '@/pdf/return-deposit-pdf.tsx'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
+import { FormattedNumber } from 'react-intl'
 
 export const Route = createFileRoute('/deposits/listing')({
   beforeLoad: () => {
@@ -159,6 +160,15 @@ function DepositDataTable() {
     )
   }, [contact])
 
+  const contributionStatuses = useMemo(() => {
+    return new Map([
+      ['PAYEE', 'Payée'],
+      ['A_PAYER', 'A payer'],
+      ['PRO', 'Pro'],
+      ['GRATUIT', 'Gratuit'],
+    ])
+  }, [])
+
   const data: DepositTableType[] = useMemo(
     () =>
       deposits?.map((deposit) => {
@@ -167,6 +177,8 @@ function DepositDataTable() {
           depositId: deposit.id,
           index: deposit.depositIndex,
           type: deposit.type,
+          contributionStatus:
+            contributionStatuses.get(deposit.contributionStatus) ?? '',
           returnStatus: deposit.returnedCalculationDate
             ? 'PRÊT'
             : 'RETOUR A CALCULER',
@@ -177,14 +189,19 @@ function DepositDataTable() {
   )
 
   return (
-    <DataTable
-      columnVisibility={{
-        depositId: false,
-      }}
-      columns={columns}
-      data={data}
-      headerActions={(table) => <DepositDataTableHeaderAction table={table} />}
-    />
+    <>
+      <DataTable
+        columnVisibility={{
+          depositId: false,
+        }}
+        columns={columns}
+        data={data}
+        headerActions={(table) => (
+          <DepositDataTableHeaderAction table={table} />
+        )}
+      />
+      <DepositsSummary />
+    </>
   )
 }
 
@@ -193,6 +210,7 @@ export type DepositTableType = {
   index: number
   type: Deposit['type']
   returnStatus: string
+  contributionStatus: string
   seller: string
 }
 
@@ -235,8 +253,43 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: 'Déposant',
   },
   {
+    id: 'countArticles',
+    header: "Nombre d'articles",
+    cell: ({ row }) => {
+      const articlesCount = useLiveQuery(() =>
+        db.articles.where({ depositId: row.original.depositId }).count(),
+      )
+
+      return <p>{articlesCount}</p>
+    },
+  },
+  {
     accessorKey: 'returnStatus',
     header: 'Statut du retour',
+  },
+  {
+    accessorKey: 'contributionStatus',
+    header: 'Statut de la contribution',
+  },
+  {
+    id: 'amount',
+    header: 'Montant',
+    cell: ({ row }) => {
+      const articles = useLiveQuery(() =>
+        db.articles.where({ depositId: row.original.depositId }).toArray(),
+      )
+      const sum =
+        articles?.reduce(
+          (acc, article) => acc + parseInt(`${article.price}`),
+          0,
+        ) ?? 0
+
+      return (
+        <p className="text-right pr-3">
+          <FormattedNumber value={sum} style="currency" currency="EUR" />
+        </p>
+      )
+    },
   },
   {
     id: 'actions',
@@ -340,6 +393,24 @@ function DepositDataTableHeaderAction({
       <CustomButton onClick={printReturn}>
         Imprimer les fiches retour
       </CustomButton>
+    </div>
+  )
+}
+
+function DepositsSummary() {
+  const articles = useLiveQuery(() => db.articles.toArray())
+  const total =
+    articles?.reduce((acc, article) => acc + parseInt(`${article.price}`), 0) ??
+    0
+  const count = articles?.length ?? 0
+
+  return (
+    <div className="flex flew-row gap-5 font-bold">
+      <p>Nombre d'articles: {count}</p>
+      <p>
+        Montant total:{' '}
+        <FormattedNumber value={total} style="currency" currency="EUR" />
+      </p>
     </div>
   )
 }
