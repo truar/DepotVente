@@ -205,6 +205,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
     () => db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
     [],
   )
+
   const toBeTreated = useMemo(
     () =>
       allDeposits?.filter(

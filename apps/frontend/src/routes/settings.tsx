@@ -43,6 +43,7 @@ function RouteComponent() {
   const saveWorkstation = async () => {
     setWorkstation(incrementStart)
   }
+
   return (
     <Page
       title="Paramètres"
