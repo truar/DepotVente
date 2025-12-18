@@ -113,6 +113,7 @@ function useCardPaymentData({
         .where({
           incrementStart: workstation.incrementStart,
         })
+        .and((sale) => sale.cardAmount != null && sale.cardAmount > 0)
         .sortBy('saleIndex'),
     [workstation],
   )
@@ -124,16 +125,8 @@ function useCardPaymentData({
       ),
     [contacts],
   )
-  const onlyCardSales = useMemo(
-    () =>
-      (sales ?? []).filter(
-        (sale) => sale.cardAmount != null && sale.cardAmount > 0,
-      ),
-    [sales],
-  )
-
   useEffect(() => {
-    const data = onlyCardSales
+    const data = (sales ?? [])
       .map((payment) => {
         const buyer = contactMap.get(payment.buyerId)
         if (!buyer) return
@@ -147,7 +140,7 @@ function useCardPaymentData({
       })
       .filter((sale) => !!sale)
     setValue('cardPayments', data)
-  }, [onlyCardSales, contactMap])
+  }, [sales, contactMap])
 }
 
 function useCheckPaymentData({
@@ -156,12 +149,13 @@ function useCheckPaymentData({
   setValue: (key: string, value: any) => void
 }) {
   const [workstation] = useWorkstation()
-  const allSales = useLiveQuery(
+  const sales = useLiveQuery(
     () =>
       db.sales
         .where({
           incrementStart: workstation.incrementStart,
         })
+        .and((sale) => sale.checkAmount != null && sale.checkAmount > 0)
         .sortBy('saleIndex'),
     [workstation],
   )
@@ -173,16 +167,8 @@ function useCheckPaymentData({
       ),
     [contacts],
   )
-  const sales = useMemo(
-    () =>
-      (allSales ?? []).filter(
-        (sale) => sale.checkAmount != null && sale.checkAmount > 0,
-      ),
-    [allSales],
-  )
-
   useEffect(() => {
-    const data = sales
+    const data = (sales ?? [])
       .map((payment) => {
         const buyer = contactMap.get(payment.buyerId)
         if (!buyer) return
@@ -205,12 +191,17 @@ function useRefundPaymentData({
   setValue: (key: string, value: any) => void
 }) {
   const [workstation] = useWorkstation()
-  const allSales = useLiveQuery(
+  const sales = useLiveQuery(
     () =>
       db.sales
         .where({
           incrementStart: workstation.incrementStart,
         })
+        .and(
+          (sale) =>
+            (sale.refundCashAmount != null && sale.refundCashAmount > 0) ||
+            (sale.refundCardAmount != null && sale.refundCardAmount > 0),
+        )
         .sortBy('saleIndex'),
     [workstation],
   )
@@ -222,17 +213,8 @@ function useRefundPaymentData({
       ),
     [contacts],
   )
-  const sales = useMemo(
-    () =>
-      (allSales ?? []).filter(
-        (sale) =>
-          (sale.refundCashAmount != null && sale.refundCashAmount > 0) ||
-          (sale.refundCardAmount != null && sale.refundCardAmount > 0),
-      ),
-    [allSales],
-  )
   useEffect(() => {
-    const data = sales
+    const data = (sales ?? [])
       .map((payment) => {
         const buyer = contactMap.get(payment.buyerId)
         if (!buyer) return

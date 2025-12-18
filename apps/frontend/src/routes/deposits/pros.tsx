@@ -203,14 +203,22 @@ function ReceiveArticleInput() {
 function ReceivedArticleCount(props: { depositId: string }) {
   const { depositId } = props
   const alreadyReceivedArticlesCount = useLiveQuery(
-    () => db.articles.where({ depositId, status: 'RECEPTION_OK' }).count(),
+    () =>
+      db.articles
+        .where({ depositId })
+        .and((deposit) => deposit.status !== 'RECEPTION_PENDING')
+        .count(),
     [depositId],
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
       <div className="col-span-2 text-right">Nombre d'articles scannés</div>
       <div>
-        <Input type="text" readOnly value={alreadyReceivedArticlesCount} />
+        <Input
+          type="text"
+          readOnly
+          value={alreadyReceivedArticlesCount ?? ''}
+        />
       </div>
     </div>
   )
@@ -226,7 +234,7 @@ function TotalArticleCount(props: { depositId: string }) {
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
       <div className="col-span-2 text-right">Nombre d'articles totals</div>
       <div>
-        <Input type="text" readOnly value={articlesTotalCount} />
+        <Input type="text" readOnly value={articlesTotalCount ?? ''} />
       </div>
     </div>
   )
