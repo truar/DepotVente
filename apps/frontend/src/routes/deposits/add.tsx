@@ -182,6 +182,7 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
             identificationLetter,
             articleIndex: index,
             shortArticleCode: `${depositIndex} ${identificationLetter}`,
+            softDeletionEnabled: true,
           }
         }),
       )
@@ -221,6 +222,7 @@ function DepositForm({ depositIndex }: { depositIndex: number }) {
           year,
           depotIndex: depositIndex,
           identificationLetter,
+          softDeletionEnabled: false,
           articleIndex: index,
           shortArticleCode: `${depositIndex} ${identificationLetter}`,
         }
@@ -387,7 +389,7 @@ type ArticleFormProps = {
 
 function ArticleForm(props: ArticleFormProps) {
   const { onArticleAdd, articleCount, depositIndex } = props
-  const { fields, append } = useFieldArray<DepositFormType>({
+  const { fields, append, remove } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
   const { trigger, setValue, watch } = useFormContext<DepositFormType>()
@@ -472,7 +474,11 @@ function ArticleForm(props: ArticleFormProps) {
           </thead>
           <tbody>
             {fields.map((field, index) => (
-              <ArticleLineForm key={field.id} index={index} />
+              <ArticleLineForm
+                key={field.id}
+                index={index}
+                onRemove={() => remove(index)}
+              />
             ))}
           </tbody>
         </table>
@@ -528,11 +534,15 @@ function ArticleForm(props: ArticleFormProps) {
 
 type ArticleLineFormProps = {
   index: number
+  onRemove: () => void
 }
 
 function ArticleLineForm(props: ArticleLineFormProps) {
-  const { index } = props
+  const { index, onRemove } = props
   const { setValue, watch } = useFormContext<DepositFormType>()
+  const softDeletionEnabled = watch(
+    `deposit.articles.${index}.softDeletionEnabled`,
+  )
   const isLineDisabled = watch(`deposit.articles.${index}.isDeleted`)
   return (
     <tr className="border-b border-gray-100">
@@ -676,7 +686,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               variant="ghost"
               type="button"
               onClick={() =>
-                setValue(`deposit.articles.${index}.isDeleted`, true)
+                softDeletionEnabled
+                  ? setValue(`deposit.articles.${index}.isDeleted`, true)
+                  : onRemove()
               }
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >

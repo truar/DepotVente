@@ -315,11 +315,13 @@ export const columns: ColumnDef<DepositTableType>[] = [
       )
       return (
         <div>
-          <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
-            <Button variant="ghost" size="icon">
-              <SquarePenIcon />
-            </Button>
-          </Link>
+          {row.original.type === 'PARTICULIER' && (
+            <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
+              <Button variant="ghost" size="icon">
+                <SquarePenIcon />
+              </Button>
+            </Link>
+          )}
           <Button variant="ghost" size="icon" onClick={() => print(id)}>
             <EyeIcon />
           </Button>

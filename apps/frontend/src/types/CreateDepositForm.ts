@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const ArticleSchema = z.object({
   isDeleted: z.boolean().optional(),
+  softDeletionEnabled: z.boolean().optional(),
   price: z.coerce.number().gt(0, { message: 'Le prix est requis' }),
   discipline: z.string().nonempty({ message: 'La discipline est requise' }),
   brand: z.string().nonempty({ message: 'La marque est requise' }),
