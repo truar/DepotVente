@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "articles" ALTER COLUMN "model" DROP NOT NULL,
+ALTER COLUMN "size" DROP NOT NULL;

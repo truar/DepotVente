@@ -153,8 +153,8 @@ model Article {
   category             String
   discipline           String
   brand                String
-  model                String
-  size                 String
+  model                String?
+  size                 String?
   color                String
   code                 String        @unique // Code-barres
   year                 Int

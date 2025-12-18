@@ -19,7 +19,7 @@ export const ArticleSchema = z.object({
   type: z.string().nonempty({ message: 'Le type est requis' }),
   size: z.string().optional(),
   color: z.string().nonempty({ message: 'La couleur est requise' }),
-  model: z.string().nonempty({ message: 'Le model est requis' }),
+  model: z.string().optional(),
   articleCode: z.string(),
   year: z.number(),
   depotIndex: z.number(),
