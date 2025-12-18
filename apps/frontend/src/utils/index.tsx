@@ -32,6 +32,10 @@ export function getYear() {
   return new Date().getFullYear()
 }
 
+export function computeContributionAmount(articleCount: number) {
+  return (Math.floor((articleCount - 1) / 10) + 1) * 2
+}
+
 export function numberToFrenchWords(input: number | string): string {
   // Accept "85,50" as well as 85.5
   const normalized =

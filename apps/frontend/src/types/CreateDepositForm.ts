@@ -1,13 +1,23 @@
 import { z } from 'zod'
 
 export const ArticleSchema = z.object({
+  id: z.string().optional(),
   isDeleted: z.boolean().optional(),
+  status: z
+    .union([
+      z.literal('REFUSED'),
+      z.literal('RECEPTION_OK'),
+      z.literal('RECEPTION_PENDING'),
+      z.literal('SOLD'),
+      z.literal('RETURNED'),
+    ])
+    .optional(),
   softDeletionEnabled: z.boolean().optional(),
   price: z.coerce.number().gt(0, { message: 'Le prix est requis' }),
   discipline: z.string().nonempty({ message: 'La discipline est requise' }),
   brand: z.string().nonempty({ message: 'La marque est requise' }),
   type: z.string().nonempty({ message: 'Le type est requis' }),
-  size: z.string().nonempty({ message: 'La taille est requise' }),
+  size: z.string().optional(),
   color: z.string().nonempty({ message: 'La couleur est requise' }),
   model: z.string().nonempty({ message: 'Le model est requis' }),
   articleCode: z.string(),
@@ -19,7 +29,9 @@ export const ArticleSchema = z.object({
 })
 
 export const DepositSchema = z.object({
-  predepositId: z.string().nullable(),
+  id: z.string().optional(),
+  sellerId: z.string().optional(),
+  predepositId: z.string().nullable().optional(),
   depotIndex: z.number(),
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
