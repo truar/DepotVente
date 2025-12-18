@@ -4,7 +4,7 @@ import {
   redirect,
   useNavigate,
 } from '@tanstack/react-router'
-import { ChevronLeft, ReceiptEuro, ShoppingBasket } from 'lucide-react'
+import { ChevronLeft, FileBox, ReceiptEuro, ShoppingBasket } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Button } from '@/components/ui/button.tsx'
@@ -29,7 +29,11 @@ export const Route = createFileRoute('/returns/')({
 
 export function RouteComponent() {
   const navigate = useNavigate()
-
+  const user = useAuthStore((state) => state.user)
+  if (!user)
+    throw new Error(
+      'User not found. This should not happen. Please report this bug.',
+    )
   return (
     <>
       <div className="flex flex-row justify-between px-3 py-3">
@@ -52,7 +56,7 @@ export function RouteComponent() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-2 max-w-3xl gap-3 mx-auto">
+          <div className="grid grid-cols-3 max-w-3xl gap-3 mx-auto">
             <ClickableCard
               onClick={() => navigate({ to: '/returns/individuals' })}
               icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
@@ -65,6 +69,14 @@ export function RouteComponent() {
               title="Pros"
               description="Retourner les pros"
             />
+            {user.role === 'ADMIN' && (
+              <ClickableCard
+                onClick={() => navigate({ to: '/returns/listing' })}
+                icon={<FileBox className="w-8 h-8 text-green-600" />}
+                title="Fiches dépôts"
+                description="Gérer les fiches retours"
+              />
+            )}
           </div>
         </div>
       </main>

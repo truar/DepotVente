@@ -5,23 +5,24 @@ import PublicLayout from '@/components/PublicLayout.tsx'
 import { getYear } from '@/utils'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import {
-  DepositPdf,
-  type DepositPdfProps,
-  DepositsPdf,
-  type DepositsPdfProps,
-} from '@/pdf/deposit-pdf.tsx'
 import { type Contact, db, type Deposit } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { EyeIcon, SquarePenIcon } from 'lucide-react'
+import { HandCoinsIcon, ScanEyeIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
+import {
+  ReturnDepositPdf,
+  type ReturnDepositPdfProps,
+  ReturnDepositsPdf,
+  type ReturnDepositsPdfProps,
+} from '@/pdf/return-deposit-pdf.tsx'
+import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
 import { FormattedNumber } from 'react-intl'
 
-export const Route = createFileRoute('/deposits/listing')({
+export const Route = createFileRoute('/returns/listing')({
   beforeLoad: () => {
     const { isAuthenticated } = useAuthStore.getState()
     if (!isAuthenticated) {
@@ -37,25 +38,30 @@ export const Route = createFileRoute('/deposits/listing')({
   ),
 })
 
-async function createDepositPdfData(
+async function createReturnDepositPdfData(
   id: string,
-): Promise<DepositPdfProps['data'] | undefined> {
+): Promise<ReturnDepositPdfProps['data'] | undefined> {
   const year = getYear()
   const deposit = await db.deposits.get(id)
   if (!deposit) return undefined
 
   const articles = await db.articles
     .where({ depositId: deposit.id })
-    .sortBy('articleIndex')
+    .sortBy('code')
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 
+  const soldArticles = articles.filter((article) => !!article.saleId)
   return {
     deposit: {
       depositIndex: deposit.depositIndex,
       contributionStatus: deposit.contributionStatus,
       contributionAmount: deposit.contributionAmount,
       year: year,
+      totalAmount: deposit.soldAmount ?? 0,
+      clubAmount: deposit.clubAmount ?? 0,
+      dueAmount: deposit.sellerAmount ?? 0,
+      countSoldArticles: soldArticles.length,
     },
     contact: {
       lastName: contact.lastName,
@@ -72,6 +78,7 @@ async function createDepositPdfData(
       model: article.model,
       color: article.color,
       category: article.category,
+      isSold: !!article.saleId,
     })),
   }
 }
@@ -80,7 +87,7 @@ function RouteComponent() {
   return (
     <Page
       navigation={<Link to="..">Retour au menu</Link>}
-      title="Gérer les fiches des dépôts"
+      title="Gérer les fiches retours"
     >
       <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
         <DepositDataTable />
@@ -122,6 +129,10 @@ function DepositDataTable() {
           type: deposit.type,
           contributionStatus:
             contributionStatuses.get(deposit.contributionStatus) ?? '',
+          soldAmount: deposit.soldAmount,
+          returnStatus: deposit.returnedCalculationDate
+            ? 'PRÊT'
+            : 'RETOUR A CALCULER',
           seller: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
@@ -149,7 +160,9 @@ export type DepositTableType = {
   depositId: string
   index: number
   type: Deposit['type']
+  returnStatus: string
   contributionStatus: string
+  soldAmount?: number
   seller: string
 }
 
@@ -192,15 +205,8 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: 'Déposant',
   },
   {
-    id: 'countArticles',
-    header: "Nombre d'articles",
-    cell: ({ row }) => {
-      const articlesCount = useLiveQuery(() =>
-        db.articles.where({ depositId: row.original.depositId }).count(),
-      )
-
-      return <p>{articlesCount}</p>
-    },
+    accessorKey: 'returnStatus',
+    header: 'Statut du retour',
   },
   {
     accessorKey: 'contributionStatus',
@@ -208,20 +214,18 @@ export const columns: ColumnDef<DepositTableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant',
+    header: 'Montant vendu',
     cell: ({ row }) => {
-      const articles = useLiveQuery(() =>
-        db.articles.where({ depositId: row.original.depositId }).toArray(),
-      )
-      const sum =
-        articles?.reduce(
-          (acc, article) => acc + parseInt(`${article.price}`),
-          0,
-        ) ?? 0
-
+      const soldAmount = row.original.soldAmount
       return (
         <p className="text-right pr-3">
-          <FormattedNumber value={sum} style="currency" currency="EUR" />
+          {soldAmount ? (
+            <FormattedNumber
+              value={soldAmount}
+              style="currency"
+              currency="EUR"
+            />
+          ) : null}
         </p>
       )
     },
@@ -230,23 +234,26 @@ export const columns: ColumnDef<DepositTableType>[] = [
     id: 'actions',
     size: 30,
     cell: ({ row }) => {
+      const mutation = useComputeReturnMutation()
       const id = row.original.depositId
-      const print = useCallback(async (depositId: string) => {
-        const data = await createDepositPdfData(depositId)
+      const printReturn = useCallback(async (depositId: string) => {
+        const data = await createReturnDepositPdfData(depositId)
         if (!data) return
-        await printPdf(<DepositPdf data={data} />)
+        await printPdf(<ReturnDepositPdf data={data} />)
       }, [])
+      const computeReturn = useCallback(
+        async (depositId: string) => {
+          await mutation.mutate(depositId)
+        },
+        [mutation],
+      )
       return (
         <div>
-          {row.original.type === 'PARTICULIER' && (
-            <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
-              <Button variant="ghost" size="icon">
-                <SquarePenIcon />
-              </Button>
-            </Link>
-          )}
-          <Button variant="ghost" size="icon" onClick={() => print(id)}>
-            <EyeIcon />
+          <Button variant="ghost" size="icon" onClick={() => computeReturn(id)}>
+            <HandCoinsIcon />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => printReturn(id)}>
+            <ScanEyeIcon />
           </Button>
         </div>
       )
@@ -260,25 +267,41 @@ type DepositDataTableHeaderActionProps = {
 function DepositDataTableHeaderAction({
   table,
 }: DepositDataTableHeaderActionProps) {
-  const print = async () => {
+  const mutation = useComputeReturnMutation()
+  const printReturn = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.depositId)
 
-    const depositsPdfData: DepositsPdfProps['data'] = []
+    const pdfsData: ReturnDepositsPdfProps['data'] = []
     for (const id of selectedDepositIds) {
-      const data = await createDepositPdfData(id)
+      const data = await createReturnDepositPdfData(id)
       if (data) {
-        depositsPdfData.push(data)
+        pdfsData.push(data)
       }
     }
 
-    await printPdf(<DepositsPdf data={depositsPdfData} />)
+    await printPdf(<ReturnDepositsPdf data={pdfsData} />)
+  }
+
+  const computeReturns = async () => {
+    const selectedDepositIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.depositId)
+
+    for (const id of selectedDepositIds) {
+      await mutation.mutate(id)
+    }
   }
 
   return (
     <div className="flex flex-row gap-3">
-      <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
+      <CustomButton onClick={computeReturns}>
+        Lancer le calcul des retours
+      </CustomButton>
+      <CustomButton onClick={printReturn}>
+        Imprimer les fiches retour
+      </CustomButton>
     </div>
   )
 }
