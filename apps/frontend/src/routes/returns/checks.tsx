@@ -9,6 +9,13 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useMemo } from 'react'
 import { FormattedNumber } from 'react-intl'
+import { DepositsPdf, type DepositsPdfProps } from '@/pdf/deposit-pdf.tsx'
+import { printPdf } from '@/pdf/print.tsx'
+import {
+  CheckListingPdf,
+  type CheckListingProps,
+} from '@/pdf/check-listing-pdf.tsx'
+import { getYear } from '@/utils'
 
 export const Route = createFileRoute('/returns/checks')({
   beforeLoad: () => {
@@ -41,7 +48,7 @@ function RouteComponent() {
 
 function ChecksDataTable() {
   const deposits = useLiveQuery(() =>
-    db.deposits.offset(0).sortBy('depositIndex'),
+    db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
   )
   const contact = useLiveQuery(() => db.contacts.toArray())
   const contactMap: Map<string, Contact> = useMemo(() => {
@@ -64,7 +71,6 @@ function ChecksDataTable() {
             deposit.collectedAt as string | undefined
           )?.split('T')
           return {
-            depositId: deposit.id,
             index: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
             sellerAmount: deposit.sellerAmount,
@@ -95,7 +101,6 @@ function ChecksDataTable() {
 }
 
 export type CheckTableType = {
-  depositId: string
   index: number
   seller: string
   sellerAmount?: number
@@ -151,11 +156,23 @@ type ChecksDataTableHeaderActionProps = {
 function ChecksDataTableHeaderAction({
   table,
 }: ChecksDataTableHeaderActionProps) {
+  const print = async () => {
+    const rows = table
+      .getGlobalFacetedRowModel()
+      .rows.map((row) => row.original)
+
+    const pdfData: CheckListingProps['data']['checks'] = []
+    for (const row of rows) {
+      pdfData.push(row)
+    }
+
+    await printPdf(
+      <CheckListingPdf data={{ checks: pdfData, year: getYear() }} />,
+    )
+  }
   return (
     <div className="flex flex-row gap-3">
-      <CustomButton onClick={() => console.log('printing...')}>
-        Imprimer en PDF
-      </CustomButton>
+      <CustomButton onClick={() => print()}>Imprimer en PDF</CustomButton>
     </div>
   )
 }
