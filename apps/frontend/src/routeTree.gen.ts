@@ -23,6 +23,7 @@ import { Route as SalesAddRouteImport } from './routes/sales/add'
 import { Route as ReturnsProsRouteImport } from './routes/returns/pros'
 import { Route as ReturnsListingRouteImport } from './routes/returns/listing'
 import { Route as ReturnsIndividualsRouteImport } from './routes/returns/individuals'
+import { Route as ReturnsChecksRouteImport } from './routes/returns/checks'
 import { Route as HiddenPdfsSummaryReturnDepositsRouteImport } from './routes/hidden-pdfs/summary-return-deposits'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
 import { Route as HiddenPdfsSellerCheckRouteImport } from './routes/hidden-pdfs/seller-check'
@@ -106,6 +107,11 @@ const ReturnsListingRoute = ReturnsListingRouteImport.update({
 const ReturnsIndividualsRoute = ReturnsIndividualsRouteImport.update({
   id: '/returns/individuals',
   path: '/returns/individuals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnsChecksRoute = ReturnsChecksRouteImport.update({
+  id: '/returns/checks',
+  path: '/returns/checks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HiddenPdfsSummaryReturnDepositsRoute =
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
+  '/returns/checks': typeof ReturnsChecksRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
   '/returns/listing': typeof ReturnsListingRoute
   '/returns/pros': typeof ReturnsProsRoute
@@ -231,6 +238,7 @@ export interface FileRoutesByTo {
   '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
+  '/returns/checks': typeof ReturnsChecksRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
   '/returns/listing': typeof ReturnsListingRoute
   '/returns/pros': typeof ReturnsProsRoute
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/hidden-pdfs/seller-check': typeof HiddenPdfsSellerCheckRoute
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
+  '/returns/checks': typeof ReturnsChecksRoute
   '/returns/individuals': typeof ReturnsIndividualsRoute
   '/returns/listing': typeof ReturnsListingRoute
   '/returns/pros': typeof ReturnsProsRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
+    | '/returns/checks'
     | '/returns/individuals'
     | '/returns/listing'
     | '/returns/pros'
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
+    | '/returns/checks'
     | '/returns/individuals'
     | '/returns/listing'
     | '/returns/pros'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/seller-check'
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
+    | '/returns/checks'
     | '/returns/individuals'
     | '/returns/listing'
     | '/returns/pros'
@@ -385,6 +397,7 @@ export interface RootRouteChildren {
   HiddenPdfsSellerCheckRoute: typeof HiddenPdfsSellerCheckRoute
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   HiddenPdfsSummaryReturnDepositsRoute: typeof HiddenPdfsSummaryReturnDepositsRoute
+  ReturnsChecksRoute: typeof ReturnsChecksRoute
   ReturnsIndividualsRoute: typeof ReturnsIndividualsRoute
   ReturnsListingRoute: typeof ReturnsListingRoute
   ReturnsProsRoute: typeof ReturnsProsRoute
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/returns/individuals'
       fullPath: '/returns/individuals'
       preLoaderRoute: typeof ReturnsIndividualsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns/checks': {
+      id: '/returns/checks'
+      path: '/returns/checks'
+      fullPath: '/returns/checks'
+      preLoaderRoute: typeof ReturnsChecksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hidden-pdfs/summary-return-deposits': {
@@ -619,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   HiddenPdfsSellerCheckRoute: HiddenPdfsSellerCheckRoute,
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   HiddenPdfsSummaryReturnDepositsRoute: HiddenPdfsSummaryReturnDepositsRoute,
+  ReturnsChecksRoute: ReturnsChecksRoute,
   ReturnsIndividualsRoute: ReturnsIndividualsRoute,
   ReturnsListingRoute: ReturnsListingRoute,
   ReturnsProsRoute: ReturnsProsRoute,

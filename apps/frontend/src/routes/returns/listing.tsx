@@ -47,7 +47,7 @@ async function createReturnDepositPdfData(
 
   const articles = await db.articles
     .where({ depositId: deposit.id })
-    .sortBy('code')
+    .sortBy('articleIndex')
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 

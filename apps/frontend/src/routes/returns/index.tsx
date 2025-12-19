@@ -70,12 +70,20 @@ export function RouteComponent() {
               description="Retourner les pros"
             />
             {user.role === 'ADMIN' && (
-              <ClickableCard
-                onClick={() => navigate({ to: '/returns/listing' })}
-                icon={<FileBox className="w-8 h-8 text-green-600" />}
-                title="Fiches dépôts"
-                description="Gérer les fiches retours"
-              />
+              <>
+                <ClickableCard
+                  onClick={() => navigate({ to: '/returns/listing' })}
+                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  title="Fiches dépôts"
+                  description="Gérer les fiches retours"
+                />
+                <ClickableCard
+                  onClick={() => navigate({ to: '/returns/checks' })}
+                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  title="Chèques"
+                  description="Voir les chèques retours"
+                />
+              </>
             )}
           </div>
         </div>
