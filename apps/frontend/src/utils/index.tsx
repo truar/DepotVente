@@ -20,8 +20,11 @@ export function generateArticleCode(
   return `${year} ${depotIndex}${articleIndex}`
 }
 
-export function shortArticleCode(depositIndex: number, articleIndex: string) {
-  return `${depositIndex} ${articleIndex}`
+export function shortArticleCode(
+  depositIndex: number,
+  identificationLetter: string,
+) {
+  return `${depositIndex} ${identificationLetter}`
 }
 
 export function timeout(delay: number) {

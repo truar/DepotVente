@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const ArticleFormSchema = z.object({
   id: z.string(),
   articleCode: z.string(),
+  shortArticleCode: z.string(),
   discipline: z.string(),
   category: z.string(),
   brand: z.string(),
@@ -19,9 +20,9 @@ export const SaleFormSchema = z.object({
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
-  cardAmount: z.coerce.number<number>().nullable(),
-  cashAmount: z.coerce.number<number>().nullable(),
-  checkAmount: z.coerce.number<number>().nullable(),
+  cardAmount: z.coerce.number().nullable(),
+  cashAmount: z.coerce.number().nullable(),
+  checkAmount: z.coerce.number().nullable(),
   articles: z
     .array(ArticleFormSchema)
     .nonempty({ message: 'Au moins un article est requis' }),

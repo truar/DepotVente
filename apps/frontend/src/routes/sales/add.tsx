@@ -30,7 +30,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group.tsx'
-import { cities, citiesItems } from '@/types/cities.ts'
+import { cities } from '@/types/cities.ts'
 import { SaleFormSchema, type SaleFormType } from '@/types/saleForm.ts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/components/ui/input.tsx'
@@ -46,6 +46,9 @@ import {
 import { Euro, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCreateSale } from '@/hooks/useCreateSale.ts'
+import { getYear, shortArticleCode } from '@/utils'
+import { printPdf } from '@/pdf/print.tsx'
+import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -108,7 +111,7 @@ function SalesForm(props: SalesFormProps) {
       checkAmount: 0,
     },
   })
-  const { handleSubmit, reset, setError } = methods
+  const { handleSubmit, reset, setError, trigger, getValues } = methods
   const createSaleMutation = useCreateSale()
   const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
@@ -135,6 +138,36 @@ function SalesForm(props: SalesFormProps) {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
+  const print = useCallback(async () => {
+    const valid = await trigger()
+    if (!valid) {
+      return
+    }
+    const formData = getValues()
+    const year = getYear()
+    const data: InvoicePdfProps['data'] = {
+      sale: {
+        saleIndex: formData.saleIndex,
+        year,
+        date: new Date(),
+      },
+      contact: {
+        lastName: formData.lastName,
+        firstName: formData.firstName,
+        phoneNumber: formData.phoneNumber,
+      },
+      articles: formData.articles.map((article) => ({
+        code: article.articleCode,
+        category: article.category,
+        brand: article.brand,
+        model: article.model,
+        discipline: article.discipline,
+        price: article.price,
+      })),
+    }
+    await printPdf(<InvoicePdf data={data} copy={2} />)
+  }, [])
+
   return (
     <FormProvider {...methods}>
       <form
@@ -154,11 +187,7 @@ function SalesForm(props: SalesFormProps) {
             <Button type="button" onClick={() => reset()} variant="destructive">
               Annuler
             </Button>
-            <Button
-              type="button"
-              onClick={() => console.log('printing...')}
-              variant="secondary"
-            >
+            <Button type="button" onClick={print} variant="secondary">
               Facture
             </Button>
             <Button type="submit">Valider et enregistrer la vente</Button>
@@ -359,7 +388,11 @@ function SaleArticlesForm(props: SaleArticlesFormProps) {
     if (!articles?.some(({ id }) => id === article.id)) {
       append({
         id: article.id,
-        articleCode: article.depositIndex + ' ' + article.identificationLetter,
+        articleCode: article.code,
+        shortArticleCode: shortArticleCode(
+          article.depositIndex,
+          article.identificationLetter,
+        ),
         discipline: article.discipline,
         category: article.category,
         brand: article.brand,
@@ -443,7 +476,7 @@ function ScannedArticles() {
           {articles.map((article, index) => (
             <TableRow key={article.id}>
               <TableCell className="font-medium">
-                {article.articleCode}
+                {article.shortArticleCode}
               </TableCell>
               <TableCell>{article.discipline}</TableCell>
               <TableCell>{article.category}</TableCell>
