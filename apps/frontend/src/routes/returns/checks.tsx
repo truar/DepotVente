@@ -9,7 +9,6 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useMemo } from 'react'
 import { FormattedNumber } from 'react-intl'
-import { DepositsPdf, type DepositsPdfProps } from '@/pdf/deposit-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   CheckListingPdf,
@@ -62,7 +61,7 @@ function ChecksDataTable() {
 
   const data: CheckTableType[] = useMemo(
     () =>
-      deposits
+      (deposits
         ?.map((deposit) => {
           const seller = contactMap.get(deposit.sellerId)
           if (!seller) return
@@ -74,6 +73,7 @@ function ChecksDataTable() {
             index: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
             sellerAmount: deposit.sellerAmount,
+            collectWorkstationId: deposit.collectWorkstationId,
             checkId: deposit.checkId,
             signatory: deposit.signatory,
             collectedAt: `${collectedAt?.at(0) ?? ''} ${collectedAt?.at(1)?.split('.')[0] ?? ''}`,
@@ -82,7 +82,7 @@ function ChecksDataTable() {
         .filter(
           (deposit) =>
             !!deposit && !!deposit.sellerAmount && deposit.sellerAmount > 0,
-        ) ?? [],
+        ) as CheckTableType[]) ?? [],
     [contactMap, deposits],
   )
 
@@ -106,6 +106,7 @@ export type CheckTableType = {
   sellerAmount?: number
   checkId?: string
   collectedAt?: string
+  collectWorkstationId?: number
   signatory?: string
 }
 
@@ -117,6 +118,10 @@ export const columns: ColumnDef<CheckTableType>[] = [
   {
     accessorKey: 'seller',
     header: 'Déposant',
+  },
+  {
+    accessorKey: 'collectWorkstationId',
+    header: 'Poste retour',
   },
   {
     accessorKey: 'checkId',

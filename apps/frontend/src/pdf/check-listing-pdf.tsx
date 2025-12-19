@@ -61,8 +61,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: 'grey',
   },
+  tableColSmall: {
+    width: '7%',
+  },
   tableCol: {
-    width: '18%',
+    width: '17%',
   },
   tableColPrice: {
     textAlign: 'right',
@@ -75,7 +78,6 @@ const styles = StyleSheet.create({
   tableHeader: {
     backgroundColor: '#f3f4f6',
   },
-
   refundTable: {
     marginTop: 10,
     fontSize: 8,
@@ -122,6 +124,7 @@ export type CheckListingProps = {
       sellerAmount?: number
       checkId?: string
       collectedAt?: string
+      collectWorkstationId?: number
       signatory?: string
     }>
     year: number
@@ -149,11 +152,14 @@ export const CheckListingPdf = (props: CheckListingProps) => {
             <View style={styles.payments}>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <View style={styles.tableCol}>
+                  <View style={styles.tableColSmall}>
                     <Text style={styles.headerCell}>N° fiche</Text>
                   </View>
                   <View style={styles.tableCol}>
                     <Text style={styles.headerCell}>Nom</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={styles.headerCell}>Poste retour</Text>
                   </View>
                   <View style={styles.tableCol}>
                     <Text style={styles.headerCell}>N° chèque</Text>
@@ -171,11 +177,14 @@ export const CheckListingPdf = (props: CheckListingProps) => {
 
                 {checks.map((check, index) => (
                   <View style={styles.tableRow} key={index}>
-                    <View style={styles.tableCol}>
+                    <View style={styles.tableColSmall}>
                       <Text>{check.index}</Text>
                     </View>
                     <View style={styles.tableCol}>
                       <Text>{check.seller}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text>{check.collectWorkstationId}</Text>
                     </View>
                     <View style={styles.tableCol}>
                       <Text>{check.checkId}</Text>
@@ -211,233 +220,5 @@ export const CheckListingPdf = (props: CheckListingProps) => {
         ))}
       </Document>
     </IntlProvider>
-  )
-}
-
-function Payments({
-  payments,
-  title,
-  shouldBreak,
-}: {
-  shouldBreak?: boolean
-  title: string
-  payments:
-    | CheckListingProps['data']['cardPayments']
-    | CheckListingProps['data']['checkPayments']
-}) {
-  return (
-    <>
-      {payments.length > 0 && (
-        <View style={styles.payments} break={shouldBreak}>
-          <Text>{title}</Text>
-          <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Vente</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Acheteur</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Téléphone</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Ville</Text>
-              </View>
-              <View style={styles.tableColPrice}>
-                <Text style={styles.headerCell}>Montant</Text>
-              </View>
-            </View>
-
-            {payments.map((payment, index) => (
-              <View style={styles.tableRow} key={index}>
-                <View style={styles.tableCol}>
-                  <Text>{payment.saleIndex}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerName}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerPhoneNumber}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerCity}</Text>
-                </View>
-                <View style={styles.tableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={payment.amount}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-    </>
-  )
-}
-
-function CashPayment({
-  cashPayment,
-  shouldBreak,
-}: {
-  shouldBreak: boolean
-  cashPayment: CheckListingProps['data']['cashPayment']
-}) {
-  return (
-    <View break={shouldBreak}>
-      <Text>Paiement espèces</Text>
-
-      <View
-        style={{
-          marginTop: 10,
-          display: 'flex',
-          flexDirection: 'row-reverse',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View>
-          <Text style={styles.libelle}>
-            Fond de caisse:{' '}
-            <FormattedNumber
-              value={cashPayment.initialAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Montant réel:{' '}
-            <FormattedNumber
-              value={cashPayment.realAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Montant théorique:{' '}
-            <FormattedNumber
-              value={cashPayment.theoreticalAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Différence:{' '}
-            <FormattedNumber
-              value={cashPayment.realAmount - cashPayment.theoreticalAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-        </View>
-        <View style={styles.amountList}>
-          {cashPayment.amounts.map((amount, index) => {
-            return (
-              <View
-                style={{
-                  width: 100,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  borderBottom: '1px solid grey',
-                }}
-                key={index}
-              >
-                <Text style={{ width: 50, textAlign: 'right' }}>
-                  {amount.value}€{' '}
-                </Text>
-                <Text>: {amount.amount}</Text>
-              </View>
-            )
-          })}
-        </View>
-      </View>
-    </View>
-  )
-}
-
-function RefundPayments({
-  payments,
-  title,
-  shouldBreak,
-}: {
-  shouldBreak?: boolean
-  title: string
-  payments: CheckListingProps['data']['refundPayments']
-}) {
-  return (
-    <>
-      {payments.length > 0 && (
-        <View style={styles.payments} break={shouldBreak}>
-          <Text>{title}</Text>
-          <View style={styles.refundTable}>
-            <View style={[styles.refundTableRow, styles.refundTableHeader]}>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Vente</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Acheteur</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Téléphone</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Ville</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Type</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Commentaire</Text>
-              </View>
-              <View style={styles.refundTableColPrice}>
-                <Text style={styles.refundHeaderCell}>Montant</Text>
-              </View>
-            </View>
-
-            {payments.map((payment, index) => (
-              <View style={styles.refundTableRow} key={index}>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.saleIndex}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerName}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerPhoneNumber}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerCity}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.type}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.comment}</Text>
-                </View>
-                <View style={styles.refundTableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={payment.amount}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-    </>
   )
 }
