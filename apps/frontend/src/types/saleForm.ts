@@ -13,13 +13,17 @@ export const ArticleFormSchema = z.object({
   price: z.coerce.number(),
 })
 
-export const SaleFormSchema = z.object({
-  saleIndex: z.coerce.number(),
+const contactSchema = z.object({
   contactId: z.string().nullable(),
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
+})
+
+export const SaleFormSchema = z.object({
+  saleIndex: z.coerce.number(),
+  buyer: contactSchema,
   cardAmount: z.coerce.number().nullable(),
   cashAmount: z.coerce.number().nullable(),
   checkAmount: z.coerce.number().nullable(),

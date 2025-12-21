@@ -21,15 +21,15 @@ export function useCreateSale() {
       db.outbox,
       async () => {
         const currentDate = new Date()
-        let contactId = data.contactId
+        let contactId = data.buyer.contactId
         if (!contactId) {
           // Create contact
           contactId = await contactDb.insert({
             id: v4(),
-            lastName: data.lastName,
-            firstName: data.firstName,
-            phoneNumber: data.phoneNumber,
-            city: data.city,
+            lastName: data.buyer.lastName,
+            firstName: data.buyer.firstName,
+            phoneNumber: data.buyer.phoneNumber,
+            city: data.buyer.city,
             postalCode: null,
             createdAt: currentDate,
             updatedAt: currentDate,
@@ -38,10 +38,10 @@ export function useCreateSale() {
         } else {
           // Update contact
           await contactDb.update(contactId, {
-            lastName: data.lastName,
-            firstName: data.firstName,
-            phoneNumber: data.phoneNumber,
-            city: data.city,
+            lastName: data.buyer.lastName,
+            firstName: data.buyer.firstName,
+            phoneNumber: data.buyer.phoneNumber,
+            city: data.buyer.city,
             updatedAt: currentDate,
           })
         }

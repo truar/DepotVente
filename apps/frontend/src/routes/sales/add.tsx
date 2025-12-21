@@ -49,6 +49,8 @@ import { useCreateSale } from '@/hooks/useCreateSale.ts'
 import { getYear, shortArticleCode } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
+import { TextField } from '@/components/custom/input/TextField.tsx'
+import { DataListField } from '@/components/custom/input/DataListField.tsx'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -100,11 +102,13 @@ function SalesForm(props: SalesFormProps) {
     mode: 'onSubmit',
     defaultValues: {
       saleIndex,
-      contactId: null,
-      lastName: '',
-      firstName: '',
-      phoneNumber: '',
-      city: '',
+      buyer: {
+        contactId: null,
+        lastName: '',
+        firstName: '',
+        phoneNumber: '',
+        city: '',
+      },
       articles: [],
       cashAmount: 0,
       cardAmount: 0,
@@ -152,9 +156,9 @@ function SalesForm(props: SalesFormProps) {
         date: new Date(),
       },
       contact: {
-        lastName: formData.lastName,
-        firstName: formData.firstName,
-        phoneNumber: formData.phoneNumber,
+        lastName: formData.buyer.lastName,
+        firstName: formData.buyer.firstName,
+        phoneNumber: formData.buyer.phoneNumber,
       },
       articles: formData.articles.map((article) => ({
         code: article.articleCode,
@@ -199,7 +203,7 @@ function SalesForm(props: SalesFormProps) {
 }
 
 function ContactSearchForm() {
-  const { setValue, watch } = useFormContext()
+  const { setValue } = useFormContext()
   const contactsDb = useContactsDb()
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
@@ -211,19 +215,16 @@ function ContactSearchForm() {
       })),
     [contacts],
   )
-  const formContactId = watch('contactId')
-  useEffect(() => {
-    setContactId(formContactId)
-  }, [formContactId])
-  const [contactId, setContactId] = useState<string | null>(formContactId)
+
+  const [contactId, setContactId] = useState<string | null>(null)
   const prefillBuyerInformation = useCallback(async () => {
     if (!contactId) return
     const contact = await contactsDb.findById(contactId)
-    setValue('contactId', contact?.id)
-    setValue('lastName', contact?.lastName)
-    setValue('firstName', contact?.firstName)
-    setValue('phoneNumber', contact?.phoneNumber)
-    setValue('city', contact?.city)
+    setValue('buyer.contactId', contact?.id)
+    setValue('buyer.lastName', contact?.lastName)
+    setValue('buyer.firstName', contact?.firstName)
+    setValue('buyer.phoneNumber', contact?.phoneNumber)
+    setValue('buyer.city', contact?.city)
   }, [setValue, contactId, contactsDb])
 
   return (
@@ -249,94 +250,70 @@ function ContactSearchForm() {
 }
 
 function BuyerInformationForm() {
-  const cityOptions = useMemo(() => {
-    return cities.map((city) => <option key={city} value={city}></option>)
-  }, [cities])
+  const { setValue, watch, getFieldState } = useFormContext<SaleFormType>()
+  const buyer = watch('buyer')
+  useEffect(() => {
+    const state = getFieldState('buyer')
+    if (state.isDirty) {
+      setValue('buyer.contactId', null)
+    }
+  }, [
+    buyer.lastName,
+    buyer.firstName,
+    buyer.phoneNumber,
+    buyer.city,
+    setValue,
+    getFieldState,
+  ])
+
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Acheteur</h3>
       <div className="grid grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
-            name="lastName"
+            name="buyer.lastName"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="lastName">Nom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      id="lastName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <TextField invalid={fieldState.invalid} {...field} label="Nom" />
             )}
           />
         </div>
 
         <div className="grid gap-2">
           <Controller
-            name="firstName"
+            name="buyer.firstName"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="firstName">Prénom</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      id="firstName"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Prénom"
+              />
             )}
           />
         </div>
 
         <div className="grid gap-2">
           <Controller
-            name="phoneNumber"
+            name="buyer.phoneNumber"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="phoneNumber">Téléphone</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      id="phoneNumber"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                label="Téléphone"
+              />
             )}
           />
         </div>
         <div className="grid gap-2">
           <Controller
-            name="city"
+            name="buyer.city"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <Label htmlFor="city">Ville</Label>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      list="city-list"
-                      id="city"
-                      aria-invalid={fieldState.invalid}
-                      type="text"
-                    />
-                    <datalist id="city-list">{cityOptions}</datalist>
-                  </InputGroup>
-                </FieldContent>
-              </Field>
+              <DataListField
+                invalid={fieldState.invalid}
+                {...field}
+                items={cities}
+                label="Ville"
+              />
             )}
           />
         </div>
