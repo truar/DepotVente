@@ -71,18 +71,12 @@ export const Route = createFileRoute('/sales/add')({
 function RouteComponent() {
   const salesDb = useSalesDb()
   const [workstation] = useWorkstation()
-  const [currentSaleCount, setCurrentSaleCount] = useState<number | null>(null)
-  useEffect(() => {
-    async function getCount() {
-      if (workstation.incrementStart > 0) {
-        const count = await salesDb.count(workstation)
-        setCurrentSaleCount(count)
-      }
-    }
-    getCount()
-  }, [workstation, setCurrentSaleCount])
+  const currentSaleCount = useLiveQuery(
+    () => salesDb.count(workstation),
+    [workstation],
+  )
 
-  if (currentSaleCount === null) return null
+  if (currentSaleCount == null) return null
   const saleCurrentIndex = workstation.incrementStart + currentSaleCount + 1
   return (
     <Page navigation={<Link to={'..'}>Retour</Link>} title="Faire une vente">
@@ -101,7 +95,6 @@ function SalesForm(props: SalesFormProps) {
     resolver: zodResolver(SaleFormSchema),
     mode: 'onSubmit',
     defaultValues: {
-      saleIndex,
       buyer: {
         contactId: null,
         lastName: '',
@@ -115,7 +108,14 @@ function SalesForm(props: SalesFormProps) {
       checkAmount: 0,
     },
   })
-  const { handleSubmit, reset, setError, trigger, getValues } = methods
+  const { setValue, handleSubmit, reset, setError, trigger, getValues } =
+    methods
+
+  useEffect(() => {
+    console.log(saleIndex)
+    setValue('saleIndex', saleIndex)
+  }, [saleIndex])
+
   const createSaleMutation = useCreateSale()
   const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
@@ -185,10 +185,17 @@ function SalesForm(props: SalesFormProps) {
 
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <BuyerInformationForm />
-          <SaleArticlesForm saleIndex={saleIndex} />
+          <SaleArticlesForm />
           <PaymentForm />
           <div className="flex justify-end gap-4">
-            <Button type="button" onClick={() => reset()} variant="destructive">
+            <Button
+              type="button"
+              onClick={() => {
+                reset()
+                setValue('saleIndex', saleIndex)
+              }}
+              variant="destructive"
+            >
               Annuler
             </Button>
             <Button type="button" onClick={print} variant="secondary">
@@ -321,12 +328,8 @@ function BuyerInformationForm() {
     </div>
   )
 }
-type SaleArticlesFormProps = {
-  saleIndex: number
-}
-function SaleArticlesForm(props: SaleArticlesFormProps) {
-  const { saleIndex } = props
-  const { getValues } = useFormContext<SaleFormType>()
+function SaleArticlesForm() {
+  const { getValues, watch } = useFormContext<SaleFormType>()
   const { append } = useFieldArray<SaleFormType>({
     name: 'articles',
   })
@@ -340,6 +343,8 @@ function SaleArticlesForm(props: SaleArticlesFormProps) {
     },
     [articleCode, articlesDb],
   )
+
+  const saleIndex = watch('saleIndex')
 
   const addArticle = useCallback(async () => {
     const article = await articlesDb.findByCode(articleCode)
