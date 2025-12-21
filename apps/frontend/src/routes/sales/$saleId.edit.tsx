@@ -22,23 +22,22 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group.tsx'
 import { Euro, RotateCcwIcon, Trash2 } from 'lucide-react'
-import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
-import { printPdf } from '@/pdf/print.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type Article, type Contact, db, type Sale } from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
-import { type EditDepositFormType } from '@/types/EditDepositForm.ts'
 import { type EditSaleFormType, EditSaleSchema } from '@/types/EditSaleForm.ts'
 import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
 import { useEditSale } from '@/hooks/useEditSale.ts'
+import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
+import { printPdf } from '@/pdf/print.tsx'
+import { Button } from '@/components/ui/button.tsx'
 
 export const Route = createFileRoute('/sales/$saleId/edit')({
   beforeLoad: () => {
@@ -126,7 +125,7 @@ function SaleForm(props: SaleFormProps) {
       })),
     },
   })
-  const { handleSubmit, reset, setError } = methods
+  const { handleSubmit, reset, setError, trigger, getValues } = methods
   const onSubmit: SubmitHandler<EditSaleFormType> = async (data) => {
     const articles = data.articles
     const totalPrice =
@@ -163,6 +162,36 @@ function SaleForm(props: SaleFormProps) {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
+  const print = useCallback(async () => {
+    const valid = await trigger()
+    if (!valid) {
+      return
+    }
+    const formData = getValues()
+    const year = getYear()
+    const data: InvoicePdfProps['data'] = {
+      sale: {
+        saleIndex: formData.saleIndex,
+        year,
+        date: new Date(),
+      },
+      contact: {
+        lastName: formData.lastName,
+        firstName: formData.firstName,
+        phoneNumber: formData.phoneNumber,
+      },
+      articles: formData.articles.map((article) => ({
+        code: article.articleCode,
+        category: article.category,
+        brand: article.brand,
+        model: article.model,
+        discipline: article.discipline,
+        price: article.price,
+      })),
+    }
+    await printPdf(<InvoicePdf data={data} copy={2} />)
+  }, [])
+
   return (
     <FormProvider {...methods}>
       <form
@@ -185,7 +214,9 @@ function SaleForm(props: SaleFormProps) {
             >
               Annuler les modifications
             </CustomButton>
-            <SummaryPrintButton />
+            <Button type="button" onClick={print} variant="secondary">
+              Facture
+            </Button>
             <SubmitButton />
           </div>
         </div>
@@ -383,50 +414,6 @@ function ArticleForm() {
   )
 }
 
-function SummaryPrintButton() {
-  const { getValues, trigger, setValue } = useFormContext<EditDepositFormType>()
-  const print = async () => {
-    const valid = await trigger('deposit')
-    if (!valid) {
-      return
-    }
-    const formData = getValues('deposit')
-    const year = getYear()
-    const data: DepositPdfProps['data'] = {
-      deposit: {
-        depositIndex: formData.depotIndex,
-        year,
-        contributionStatus: formData.contributionStatus,
-        contributionAmount: formData.contributionAmount,
-      },
-      contact: {
-        lastName: formData.lastName,
-        firstName: formData.firstName,
-        city: formData.city,
-        phoneNumber: formData.phoneNumber,
-      },
-      articles: formData.articles.map((article) => ({
-        shortCode: `${formData.depotIndex} ${article.articleIndex}`,
-        category: article.type,
-        brand: article.brand,
-        model: article.model,
-        discipline: article.discipline,
-        size: article.size,
-        price: article.price,
-        color: article.color,
-      })),
-    }
-    await printPdf(<DepositPdf data={data} copy={2} />)
-    setValue('isSummaryPrinted', true)
-  }
-
-  return (
-    <CustomButton type="button" onClick={print} variant="secondary">
-      Imprimer
-    </CustomButton>
-  )
-}
-
 function PaymentForm() {
   return (
     <div className="flex flex-col gap-3">
@@ -603,7 +590,7 @@ function RefundForm() {
 function ErrorMessages() {
   const {
     formState: { errors },
-  } = useFormContext<EditDepositFormType>()
+  } = useFormContext<EditSaleFormType>()
 
   console.log(errors)
 

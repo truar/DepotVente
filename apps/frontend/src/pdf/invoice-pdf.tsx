@@ -102,7 +102,7 @@ export type Article = {
   discipline: string
   category: string
   brand: string
-  model: string
+  model?: string
   price: number
 }
 
