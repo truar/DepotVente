@@ -24,14 +24,17 @@ export function useComputeReturnMutation() {
         : 0
     const dueAmount =
       computeDueAmount(totalSale, deposit.type) + dueContributionAmount
+    const sellerAmount = totalSale - dueAmount
     const date = new Date()
     await depositsDb.update(depositId, {
       returnedCalculationDate: date,
       soldAmount: totalSale,
       clubAmount: dueAmount,
-      sellerAmount: totalSale - dueAmount,
+      sellerAmount: sellerAmount,
       contributionStatus:
-        dueContributionAmount > 0 ? 'DEDUITE' : deposit.contributionStatus,
+        dueContributionAmount > 0 && sellerAmount >= 0
+          ? 'DEDUITE'
+          : deposit.contributionStatus,
     })
   }
 
