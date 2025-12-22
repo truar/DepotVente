@@ -60,7 +60,7 @@ async function createReturnDepositPdfData(
       year: year,
       totalAmount: deposit.soldAmount ?? 0,
       clubAmount: deposit.clubAmount ?? 0,
-      dueAmount: deposit.sellerAmount ?? 0,
+      dueAmount: Math.max(deposit.sellerAmount ?? 0, 0),
       countSoldArticles: soldArticles.length,
     },
     contact: {
@@ -110,15 +110,6 @@ function DepositDataTable() {
     )
   }, [contact])
 
-  const contributionStatuses = useMemo(() => {
-    return new Map([
-      ['PAYEE', 'Payée'],
-      ['A_PAYER', 'A payer'],
-      ['PRO', 'Pro'],
-      ['GRATUIT', 'Gratuit'],
-    ])
-  }, [])
-
   const data: DepositTableType[] = useMemo(
     () =>
       deposits?.map((deposit) => {
@@ -127,9 +118,8 @@ function DepositDataTable() {
           depositId: deposit.id,
           index: deposit.depositIndex,
           type: deposit.type,
-          contributionStatus:
-            contributionStatuses.get(deposit.contributionStatus) ?? '',
           soldAmount: deposit.soldAmount,
+          sellerAmount: deposit.sellerAmount,
           returnStatus: deposit.returnedCalculationDate
             ? 'PRÊT'
             : 'RETOUR A CALCULER',
@@ -161,8 +151,8 @@ export type DepositTableType = {
   index: number
   type: Deposit['type']
   returnStatus: string
-  contributionStatus: string
   soldAmount?: number
+  sellerAmount?: number
   seller: string
 }
 
@@ -193,6 +183,17 @@ export const columns: ColumnDef<DepositTableType>[] = [
     ),
   },
   {
+    header: 'Doit cotisation ?',
+    cell: ({ row }) => {
+      const sellerAmount = row.original.sellerAmount
+      if (sellerAmount && sellerAmount < 0) {
+        return <p className="text-red-500">Oui</p>
+      } else {
+        return <p className="text-green-500">Non</p>
+      }
+    },
+  },
+  {
     accessorKey: 'index',
     header: 'Identifiant',
   },
@@ -207,10 +208,6 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     accessorKey: 'returnStatus',
     header: 'Statut du retour',
-  },
-  {
-    accessorKey: 'contributionStatus',
-    header: 'Statut de la contribution',
   },
   {
     id: 'amount',
