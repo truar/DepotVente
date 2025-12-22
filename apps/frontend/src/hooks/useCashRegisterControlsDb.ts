@@ -18,11 +18,7 @@ export function useCashRegisterControlsDb() {
   }
 
   function findByCashRegisterIdAndType(cashRegisterId: number, type: string) {
-    // TODO check why the request { cashRegisterId, type } throws an error, even if the compoundIndex was created
-    return db.cashRegisterControls
-      .where({ cashRegisterId })
-      .and((cashRegisterControl) => cashRegisterControl.type === type)
-      .first()
+    return db.cashRegisterControls.where({ cashRegisterId, type }).first()
   }
 
   return { insert, update, findByCashRegisterIdAndType }

@@ -12,10 +12,9 @@ const toCashRegisterControl = (
   data: CashRegisterControlFormType,
 ): Omit<
   CashRegisterControl,
-  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+  'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'type'
 > => ({
   cashRegisterId: data.cashRegisterId,
-  type: 'DEPOSIT',
   initialAmount: data.initialAmount,
   theoreticalCashAmount: data.theoreticalAmount,
   realCashAmount: data.realAmount,
@@ -37,7 +36,9 @@ const toCashRegisterControl = (
   cash001: getAmount(data.amounts, 0.01),
 })
 
-export function useSaveDepositCashRegisterControlMutation() {
+export function useSaveCashRegisterControlMutation(
+  type: CashRegisterControl['type'],
+) {
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   const mutate = async (data: CashRegisterControlFormType) => {
     const id = data.id
@@ -46,6 +47,7 @@ export function useSaveDepositCashRegisterControlMutation() {
       await cashRegisterControlsDb.insert({
         id: v4(),
         ...toCashRegisterControl(data),
+        type,
         createdAt: date,
         updatedAt: date,
         deletedAt: null,
@@ -53,6 +55,7 @@ export function useSaveDepositCashRegisterControlMutation() {
     } else {
       await cashRegisterControlsDb.update(id, {
         ...toCashRegisterControl(data),
+        type: type,
         updatedAt: date,
       })
     }

@@ -195,7 +195,7 @@ db.version(1).stores({
   predepositArticles: '++id, predepositId, articleIndex',
   sales: '++id, incrementStart, saleIndex',
   outbox: '++id, timestamp, status, collection',
-  cashRegisterControls: '++id, cashRegisterId',
+  cashRegisterControls: '++id, [cashRegisterId+type]',
   syncMetadata: 'key',
   workstation: 'key',
 })

@@ -27,7 +27,7 @@ import {
   CashRegisterControlFormSchema,
   type CashRegisterControlFormType,
 } from '@/types/SaveDepositCashRegisterControlForm.ts'
-import { useSaveDepositCashRegisterControlMutation } from '@/hooks/useSaveDepositCashRegisterControlMutation.ts'
+import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
 import { toast } from 'sonner'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
 
@@ -79,10 +79,11 @@ type CashRegisterControlFormProps = {
 
 function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   const { workstation, cashRegisterControl } = props
-  const mutation = useSaveDepositCashRegisterControlMutation()
+  const mutation = useSaveCashRegisterControlMutation('DEPOSIT')
   const methods = useForm<CashRegisterControlFormType>({
     resolver: zodResolver(CashRegisterControlFormSchema),
     defaultValues: {
+      cashRegisterId: workstation.incrementStart,
       initialAmount: 80,
       realAmount: 0,
       theoreticalAmount: 0,
@@ -107,30 +108,29 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   const { control, getValues, handleSubmit, setValue } = methods
 
   useEffect(() => {
-    setValue('id', cashRegisterControl?.id)
-    setValue('cashRegisterId', workstation.incrementStart)
-    setValue('initialAmount', cashRegisterControl?.initialAmount ?? 80)
-    setValue('realAmount', cashRegisterControl?.realCashAmount ?? 0)
-    setValue(
-      'theoreticalAmount',
-      cashRegisterControl?.theoreticalCashAmount ?? 0,
-    )
-    setValue('amounts', [
-      { amount: cashRegisterControl?.cash200 ?? 0, value: 200 },
-      { amount: cashRegisterControl?.cash100 ?? 0, value: 100 },
-      { amount: cashRegisterControl?.cash50 ?? 0, value: 50 },
-      { amount: cashRegisterControl?.cash20 ?? 0, value: 20 },
-      { amount: cashRegisterControl?.cash10 ?? 0, value: 10 },
-      { amount: cashRegisterControl?.cash5 ?? 0, value: 5 },
-      { amount: cashRegisterControl?.cash2 ?? 0, value: 2 },
-      { amount: cashRegisterControl?.cash1 ?? 0, value: 1 },
-      { amount: cashRegisterControl?.cash05 ?? 0, value: 0.5 },
-      { amount: cashRegisterControl?.cash02 ?? 0, value: 0.2 },
-      { amount: cashRegisterControl?.cash01 ?? 0, value: 0.1 },
-      { amount: cashRegisterControl?.cash005 ?? 0, value: 0.05 },
-      { amount: cashRegisterControl?.cash002 ?? 0, value: 0.02 },
-      { amount: cashRegisterControl?.cash001 ?? 0, value: 0.01 },
-    ])
+    if (cashRegisterControl) {
+      setValue('id', cashRegisterControl.id)
+      setValue('cashRegisterId', cashRegisterControl.cashRegisterId)
+      setValue('initialAmount', cashRegisterControl.initialAmount)
+      setValue('realAmount', cashRegisterControl.realCashAmount)
+      setValue('theoreticalAmount', cashRegisterControl.theoreticalCashAmount)
+      setValue('amounts', [
+        { amount: cashRegisterControl.cash200, value: 200 },
+        { amount: cashRegisterControl.cash100, value: 100 },
+        { amount: cashRegisterControl.cash50, value: 50 },
+        { amount: cashRegisterControl.cash20, value: 20 },
+        { amount: cashRegisterControl.cash10, value: 10 },
+        { amount: cashRegisterControl.cash5, value: 5 },
+        { amount: cashRegisterControl.cash2, value: 2 },
+        { amount: cashRegisterControl.cash1, value: 1 },
+        { amount: cashRegisterControl.cash05, value: 0.5 },
+        { amount: cashRegisterControl.cash02, value: 0.2 },
+        { amount: cashRegisterControl.cash01, value: 0.1 },
+        { amount: cashRegisterControl.cash005, value: 0.05 },
+        { amount: cashRegisterControl.cash002, value: 0.02 },
+        { amount: cashRegisterControl.cash001, value: 0.01 },
+      ])
+    }
   }, [cashRegisterControl])
 
   const { fields } = useFieldArray({

@@ -13,7 +13,12 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { type Contact, db, type Workstation } from '@/db.ts'
+import {
+  type CashRegisterControl,
+  type Contact,
+  db,
+  type Workstation,
+} from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { getYear } from '@/utils'
@@ -39,6 +44,10 @@ import {
 } from '@/pdf/sale-cash-register-control-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
+import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
+import { CashRegisterControlFormSchema } from '@/types/SaveDepositCashRegisterControlForm.ts'
+import { toast } from 'sonner'
+import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
 
 export const Route = createFileRoute('/sales/sales-control')({
   beforeLoad: () => {
@@ -56,7 +65,7 @@ export const Route = createFileRoute('/sales/sales-control')({
   ),
 })
 
-const CashRegisterControlFormSchema = z.object({
+const SalesCashRegisterControlFormSchema = z.object({
   cardPayments: z.array(
     z.object({
       saleIndex: z.number(),
@@ -86,20 +95,12 @@ const CashRegisterControlFormSchema = z.object({
       amount: z.number(),
     }),
   ),
-  cashPayment: z.object({
-    initialAmount: z.coerce.number(),
-    realAmount: z.coerce.number(),
-    theoreticalAmount: z.coerce.number(),
-    amounts: z.array(
-      z.object({
-        amount: z.coerce.number(),
-        value: z.coerce.number(),
-      }),
-    ),
-  }),
+  cashPayment: CashRegisterControlFormSchema,
 })
 
-type CashRegisterControlFormType = z.infer<typeof CashRegisterControlFormSchema>
+type CashRegisterControlFormType = z.infer<
+  typeof SalesCashRegisterControlFormSchema
+>
 
 function useCardPaymentData({
   setValue,
@@ -135,7 +136,7 @@ function useCardPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: payment.cardAmount || 0,
+          amount: parseInt(`${payment.cardAmount}`) || 0,
         }
       })
       .filter((sale) => !!sale)
@@ -177,7 +178,7 @@ function useCheckPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: payment.checkAmount || 0,
+          amount: parseInt(`${payment.checkAmount}`) || 0,
         }
       })
       .filter((sale) => !!sale)
@@ -225,38 +226,91 @@ function useRefundPaymentData({
           buyerCity: buyer.city || '',
           type: payment.refundCardAmount ? 'CB' : 'CASH',
           comment: payment.refundComment || '',
-          amount: payment.refundCardAmount || payment.refundCashAmount || 0,
+          amount:
+            parseInt(`${payment.refundCardAmount}`) ||
+            parseInt(`${payment.refundCashAmount}`) ||
+            0,
         }
       })
       .filter((sale) => !!sale)
     setValue('refundPayments', data)
   }, [sales, contactMap])
 }
-
+function useCashPaymentData({
+  setValue,
+  cashRegisterControl,
+}: {
+  setValue: (key: string, value: any) => void
+  cashRegisterControl: CashRegisterControl | undefined
+}) {
+  useEffect(() => {
+    if (cashRegisterControl) {
+      setValue('cashPayment.id', cashRegisterControl.id)
+      setValue('cashPayment.cashRegisterId', cashRegisterControl.cashRegisterId)
+      setValue('cashPayment.initialAmount', cashRegisterControl.initialAmount)
+      setValue('cashPayment.realAmount', cashRegisterControl.realCashAmount)
+      setValue(
+        'cashPayment.theoreticalAmount',
+        cashRegisterControl.theoreticalCashAmount,
+      )
+      setValue('cashPayment.amounts', [
+        { amount: cashRegisterControl.cash200, value: 200 },
+        { amount: cashRegisterControl.cash100, value: 100 },
+        { amount: cashRegisterControl.cash50, value: 50 },
+        { amount: cashRegisterControl.cash20, value: 20 },
+        { amount: cashRegisterControl.cash10, value: 10 },
+        { amount: cashRegisterControl.cash5, value: 5 },
+        { amount: cashRegisterControl.cash2, value: 2 },
+        { amount: cashRegisterControl.cash1, value: 1 },
+        { amount: cashRegisterControl.cash05, value: 0.5 },
+        { amount: cashRegisterControl.cash02, value: 0.2 },
+        { amount: cashRegisterControl.cash01, value: 0.1 },
+        { amount: cashRegisterControl.cash005, value: 0.05 },
+        { amount: cashRegisterControl.cash002, value: 0.02 },
+        { amount: cashRegisterControl.cash001, value: 0.01 },
+      ])
+    }
+  }, [cashRegisterControl])
+}
 function RouteComponent() {
   const [workstation] = useWorkstation()
-  if (!workstation) return null
+  const cashRegisterControlsDb = useCashRegisterControlsDb()
+  const cashRegisterControl = useLiveQuery(
+    () =>
+      cashRegisterControlsDb.findByCashRegisterIdAndType(
+        workstation.incrementStart,
+        'SALE',
+      ),
+    [workstation.incrementStart],
+  )
+  if (!workstation || !workstation.incrementStart) return null
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
       title="Controler les espèces"
     >
-      <SalesControlPage workstation={workstation} />
+      <SalesControlPage
+        workstation={workstation}
+        cashRegisterControl={cashRegisterControl}
+      />
     </Page>
   )
 }
 
 type SalesControlPageProps = {
   workstation: Workstation
+  cashRegisterControl?: CashRegisterControl
 }
 function SalesControlPage(props: SalesControlPageProps) {
-  const { workstation } = props
+  const { workstation, cashRegisterControl } = props
+  const mutation = useSaveCashRegisterControlMutation('SALE')
   const methods = useForm<CashRegisterControlFormType>({
-    resolver: zodResolver(CashRegisterControlFormSchema),
+    resolver: zodResolver(SalesCashRegisterControlFormSchema),
     defaultValues: {
       cardPayments: [],
       checkPayments: [],
       cashPayment: {
+        cashRegisterId: workstation.incrementStart,
         initialAmount: 80,
         realAmount: 0,
         theoreticalAmount: 0,
@@ -280,11 +334,12 @@ function SalesControlPage(props: SalesControlPageProps) {
     },
   })
 
-  const { getValues, setValue } = methods
+  const { getValues, setValue, handleSubmit } = methods
 
   useCardPaymentData({ setValue })
   useCheckPaymentData({ setValue })
   useRefundPaymentData({ setValue })
+  useCashPaymentData({ setValue, cashRegisterControl })
 
   const print = async () => {
     const formData = getValues()
@@ -300,10 +355,20 @@ function SalesControlPage(props: SalesControlPageProps) {
     await printPdf(<SaleCashRegisterControlPdf data={data} />)
   }
 
+  const onSubmit = async (data: CashRegisterControlFormType) => {
+    await mutation.mutate(data.cashPayment)
+    toast.success(`Caisse ${data.cashPayment.cashRegisterId} enregistrée`)
+  }
+
+  const onError = (error: any) => console.log(error)
+
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <FormProvider {...methods}>
-        <form className="flex flex-col gap-4">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={handleSubmit(onSubmit, onError)}
+        >
           <Accordion type="single" collapsible defaultValue="item-1">
             <AccordionItem value="card-payments">
               <AccordionTrigger>Carte bancaires</AccordionTrigger>
@@ -330,12 +395,13 @@ function SalesControlPage(props: SalesControlPageProps) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          <div className="flex justify-end gap-3">
+            <CustomButton type="button" onClick={print} variant="secondary">
+              Imprimer le rapport
+            </CustomButton>
+            <CustomButton type="submit">Valider</CustomButton>
+          </div>
         </form>
-        <div className="flex justify-end">
-          <CustomButton type="button" onClick={print}>
-            Imprimer le rapport
-          </CustomButton>
-        </div>
       </FormProvider>
     </div>
   )
@@ -540,7 +606,7 @@ function RealAmountInput() {
 
   return (
     <Controller
-      name="cashPayment.realAmount'"
+      name="cashPayment.realAmount"
       render={({ field }) => <MonetaryField {...field} label="Montant réel" />}
     />
   )
@@ -584,8 +650,10 @@ function TheoreticalAmount() {
 function DifferenceInput() {
   const { watch } = useFormContext<CashRegisterControlFormType>()
 
-  const realAmount = watch('cashPayment.realAmount')
-  const theoreticalAmount = watch('cashPayment.theoreticalAmount')
+  const [realAmount, theoreticalAmount] = watch([
+    'cashPayment.realAmount',
+    'cashPayment.theoreticalAmount',
+  ])
   const difference = realAmount - theoreticalAmount
 
   return (
