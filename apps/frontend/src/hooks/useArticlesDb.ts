@@ -1,5 +1,5 @@
 import { type Article, db } from '@/db.ts'
-import { syncService } from '@/sync-service.ts'
+import { syncService } from '@/services/sync-service.ts'
 
 export function useArticlesDb() {
   async function findByCode(code: string) {

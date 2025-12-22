@@ -1,4 +1,4 @@
-import { syncService } from '@/sync-service'
+import { syncService } from '@/services/sync-service.ts'
 let syncInterval: NodeJS.Timeout | null = null
 const DELTA_SYNC_INTERVAL = 20000
 

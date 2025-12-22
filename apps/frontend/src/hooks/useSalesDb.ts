@@ -1,5 +1,5 @@
 import { db, type Sale, type Workstation } from '@/db.ts'
-import { syncService } from '@/sync-service.ts'
+import { syncService } from '@/services/sync-service.ts'
 
 export function useSalesDb() {
   function count(workstation: Workstation) {

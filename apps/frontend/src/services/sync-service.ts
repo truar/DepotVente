@@ -1,4 +1,4 @@
-import { db, type OutboxOperation } from '@/db'
+import { db, type OutboxOperation } from '@/db.ts'
 import { v4 as uuid } from 'uuid'
 import { liveQuery } from 'dexie'
 

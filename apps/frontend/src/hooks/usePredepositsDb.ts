@@ -1,5 +1,5 @@
 import { db, type Predeposit } from '@/db.ts'
-import { syncService } from '@/sync-service.ts'
+import { syncService } from '@/services/sync-service.ts'
 
 export function usePredepositsDb() {
   async function update(id: string, data: Partial<Predeposit>) {
