@@ -100,6 +100,7 @@ enum ContributionStatus {
   A_PAYER
   GRATUIT
   PRO
+  DEDUITE
 }
 
 enum DepositType {
@@ -164,12 +165,12 @@ model Article {
   status               ArticleStatus @default(RECEPTION_PENDING)
 
   // Un article appartient forcément à un dépot
-  depositId String @map("deposit_id") @db.Uuid
+  depositId String  @map("deposit_id") @db.Uuid
   // Un article vendu appartient forcément à une vente
   saleId    String? @map("sale_id") @db.Uuid
 
   deposit Deposit @relation(fields: [depositId], references: [id], onDelete: SetNull)
-  sale    Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  sale    Sale?   @relation(fields: [saleId], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

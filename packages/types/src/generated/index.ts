@@ -58,7 +58,7 @@ export const UserRoleSchema = z.enum(['ADMIN','BENEVOLE']);
 
 export type UserRoleType = `${z.infer<typeof UserRoleSchema>}`
 
-export const ContributionStatusSchema = z.enum(['PAYEE','A_PAYER','GRATUIT','PRO']);
+export const ContributionStatusSchema = z.enum(['PAYEE','A_PAYER','GRATUIT','PRO','DEDUITE']);
 
 export type ContributionStatusType = `${z.infer<typeof ContributionStatusSchema>}`
 

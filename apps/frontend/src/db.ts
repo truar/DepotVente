@@ -22,7 +22,7 @@ export type Sale = {
 
 export type Deposit = {
   id: string
-  contributionStatus: 'A_PAYER' | 'PAYEE' | 'PRO' | 'GRATUIT'
+  contributionStatus: 'A_PAYER' | 'PAYEE' | 'PRO' | 'GRATUIT' | 'DEDUITE'
   contributionAmount: number
   sellerId: string
   incrementStart: number
