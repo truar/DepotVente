@@ -74,7 +74,7 @@ export function RouteComponent() {
                 <ClickableCard
                   onClick={() => navigate({ to: '/returns/listing' })}
                   icon={<FileBox className="w-8 h-8 text-green-600" />}
-                  title="Fiches dépôts"
+                  title="Fiches retours"
                   description="Gérer les fiches retours"
                 />
                 <ClickableCard

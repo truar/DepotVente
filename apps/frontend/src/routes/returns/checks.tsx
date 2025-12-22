@@ -175,8 +175,61 @@ function ChecksDataTableHeaderAction({
       <CheckListingPdf data={{ checks: pdfData, year: getYear() }} />,
     )
   }
+
+  const exportCsv = async () => {
+    // Convert the data array into a CSV string
+    const rows = table
+      .getGlobalFacetedRowModel()
+      .rows.map((row) => row.original)
+    const csvString = [
+      ['Cpte', 'Jal', 'Date', 'Libelle', 'Debit', 'Credit', 'N°CH'], // Specify your headers here
+      ...rows.flatMap((row) => {
+        const lines = []
+        const collectedAt = new Date(
+          row.collectedAt?.split(' ')?.at(0) || 0,
+        ).toLocaleDateString()
+        lines.push([
+          '512100',
+          'CAS',
+          collectedAt,
+          `${row.checkId} ${row.seller}`,
+          '',
+          row.sellerAmount,
+          row.checkId,
+        ])
+        lines.push([
+          '580000',
+          'CAS',
+          collectedAt,
+          `${row.checkId} ${row.seller}`,
+          row.sellerAmount,
+          '',
+          row.checkId,
+        ])
+        return lines
+      }),
+    ]
+      .map((row) => row.join(','))
+      .join('\n')
+
+    // Create a Blob from the CSV string
+    const blob = new Blob([csvString], { type: 'text/csv' })
+
+    // Generate a download link and initiate the download
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'export-comptable.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
   return (
     <div className="flex flex-row gap-3">
+      <CustomButton onClick={() => exportCsv()}>
+        Générer l'export comptable
+      </CustomButton>
       <CustomButton onClick={() => print()}>Imprimer en PDF</CustomButton>
     </div>
   )
