@@ -3,7 +3,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db.ts'
 import { Button } from '@/components/ui/button.tsx'
-import { syncService } from '@/sync-service.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { useState } from 'react'
@@ -11,6 +10,7 @@ import { Field } from '@/components/ui/field.tsx'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
+import { syncManager } from '@/sync-manager.ts'
 
 export const Route = createFileRoute('/settings')({
   beforeLoad: () => {
@@ -31,11 +31,11 @@ export const Route = createFileRoute('/settings')({
 function RouteComponent() {
   const lastSync = useLiveQuery(() => db.syncMetadata.get('lastSync'))
   const triggerInitialSync = async () => {
-    await syncService.initialSync()
+    await syncManager.triggerInitialSync()
     return
   }
   const triggerDeltaSync = async () => {
-    await syncService.deltaSync()
+    await syncManager.triggerDeltaSync()
     return
   }
   const [incrementStart, setIncrementStart] = useState(0)

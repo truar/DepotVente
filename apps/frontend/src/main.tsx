@@ -6,10 +6,10 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
-import { syncService } from '@/sync-service.ts'
 import { IntlProvider } from 'react-intl'
+import { syncManager } from '@/sync-manager.ts'
 
-syncService.startSync()
+syncManager.init()
 
 // Create a new router instance
 const router = createRouter({

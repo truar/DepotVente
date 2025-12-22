@@ -6,15 +6,19 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const MAX_RETRIES = 10
 const BASE_DELAY = 1000 // 1 second
 
-function getToken() {
-  const authStorage = localStorage.getItem('auth-storage')
-  return authStorage ? JSON.parse(authStorage).state?.token : null
-}
-
 class SyncService {
   private isSyncing = false
   private syncInProgress = false
   private retryTimeout: NodeJS.Timeout | null = null
+  private token: string | null = null
+
+  setToken(token: string) {
+    this.token = token
+  }
+
+  private getToken() {
+    return this.token
+  }
 
   /**
    * Start listening to outbox changes and sync automatically
@@ -77,7 +81,7 @@ class SyncService {
 
     this.syncInProgress = true
     console.log(' Starting initial sync...')
-    const token = getToken()
+    const token = this.getToken()
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/sync/initial`,
@@ -162,8 +166,8 @@ class SyncService {
     if (!lastSync) {
       return this.initialSync()
     }
-    const token = getToken()
 
+    const token = this.getToken()
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/sync/delta?since=${lastSync}`,
@@ -303,7 +307,7 @@ class SyncService {
 
     try {
       // ... existing auth and fetch setup ...
-      const token = getToken()
+      const token = this.getToken()
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (token) headers.Authorization = `Bearer ${token}`
 

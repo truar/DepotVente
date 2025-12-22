@@ -66,37 +66,37 @@ export function useSyncStatus() {
     }
   }, [])
 
-  // Initial sync on mount
-  useEffect(() => {
-    console.log('Initial sync triggered')
-    ;(async () => {
-      setStatus((prev) => ({ ...prev, isSyncing: true }))
-      try {
-        await syncService.softInitialSync()
-        // syncService.connectSSE(workstation.id, token)
-        setStatus((prev) => ({ ...prev, sseConnected: true }))
-      } catch (error) {
-        console.error('Failed to initialize sync:', error)
-      } finally {
-        setStatus((prev) => ({ ...prev, isSyncing: false }))
-      }
-    })()
+  // // Initial sync on mount
+  // useEffect(() => {
+  //   console.log('Initial sync triggered')
+  //   ;(async () => {
+  //     setStatus((prev) => ({ ...prev, isSyncing: true }))
+  //     try {
+  //       await syncService.softInitialSync()
+  //       // syncService.connectSSE(workstation.id, token)
+  //       setStatus((prev) => ({ ...prev, sseConnected: true }))
+  //     } catch (error) {
+  //       console.error('Failed to initialize sync:', error)
+  //     } finally {
+  //       setStatus((prev) => ({ ...prev, isSyncing: false }))
+  //     }
+  //   })()
+  //
+  //   return () => {
+  //     // syncService.disconnectSSE()
+  //   }
+  // }, [])
 
-    return () => {
-      // syncService.disconnectSSE()
-    }
-  }, [])
-
-  // Periodic outbox processing
-  useEffect(() => {
-    if (!navigator.onLine) return
-
-    const interval = setInterval(() => {
-      syncService.deltaSync()
-    }, 20000)
-
-    return () => clearInterval(interval)
-  }, [status.isOnline])
+  // // Periodic outbox processing
+  // useEffect(() => {
+  //   if (!navigator.onLine) return
+  //
+  //   const interval = setInterval(() => {
+  //     syncService.deltaSync()
+  //   }, 20000)
+  //
+  //   return () => clearInterval(interval)
+  // }, [status.isOnline])
 
   return status
 }

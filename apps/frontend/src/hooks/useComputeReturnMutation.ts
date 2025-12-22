@@ -49,11 +49,9 @@ export function useComputeReturnMutation() {
     const totalSale = articles
       .filter((article) => !!article.saleId)
       .reduce((acc, article) => acc + parseFloat(`${article.price}`), 0)
-    console.log(totalSale)
     const dueAmount = computeDueAmount(totalSale, deposit.type)
     const sellerAmount = totalSale - dueAmount
     const contributionAmount = parseInt(`${deposit.contributionAmount}`) ?? 0
-    console.log(contributionAmount)
     const { dueContributionAmount, contributionStatus } = computeContribution(
       sellerAmount,
       contributionAmount,
