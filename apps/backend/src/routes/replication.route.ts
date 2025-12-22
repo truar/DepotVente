@@ -13,7 +13,6 @@ type ReplicationRequest = {
 export async function replicationRoutes(fastify: FastifyInstance) {
   fastify.post<{ Body: ReplicationRequest }>('/push', async (request) => {
     const { collection, operation, data, recordId } = request.body
-
     // Map collection names to Prisma delegates
     const delegates = {
       deposits: prisma.deposit,

@@ -14,7 +14,7 @@ function getToken() {
 class SyncService {
   private isSyncing = false
   private syncInProgress = false
-  private retryTimeouts = new Map<string, NodeJS.Timeout>()
+  private retryTimeout: NodeJS.Timeout | null = null
 
   /**
    * Start listening to outbox changes and sync automatically
@@ -244,10 +244,15 @@ class SyncService {
         .sortBy('timestamp')
 
       for (const op of pendingOps) {
-        const success = await this.syncOperation(op)
-        // If an operation fails, stop processing the rest of the outbox
-        // to maintain FIFO order and avoid skipping messages.
-        if (!success) {
+        const result = await this.syncOperation(op)
+
+        if (!result.success) {
+          // Schedule a retry for the outbox based on the needed delay
+          if (result.retryDelay !== undefined) {
+            this.retryTimeout = setTimeout(() => {
+              this.processOutbox()
+            }, result.retryDelay)
+          }
           break
         }
       }
@@ -259,17 +264,21 @@ class SyncService {
   }
 
   /**
-   * Sync a single operation to the server
+   * Sync a single operation to the server. Returns status and potential retry delay.
    */
-  private async syncOperation(op: OutboxOperation) {
+  private async syncOperation(
+    op: OutboxOperation,
+  ): Promise<{ success: boolean; retryDelay?: number }> {
     // Check if we should retry based on exponential backoff
     if (op.lastAttempt) {
       const backoffDelay = this.calculateBackoff(op.retryCount)
       const timeSinceLastAttempt = Date.now() - op.lastAttempt
 
       if (timeSinceLastAttempt < backoffDelay) {
-        // Return false to stop the loop; the liveQuery or next manualSync will trigger this again later
-        return false
+        return {
+          success: false,
+          retryDelay: backoffDelay - timeSinceLastAttempt,
+        }
       }
     }
 
@@ -280,7 +289,10 @@ class SyncService {
         status: 'failed',
         error: 'Max retries exceeded',
       })
-      return false
+      // We return true here to "skip" this poisoned message and move to the next in FIFO
+      // or false if you want to block the queue until manual intervention.
+      // Usually, for FIFO strictly, we might want to block or alert.
+      return { success: true }
     }
 
     // Update status to syncing
@@ -290,18 +302,11 @@ class SyncService {
     })
 
     try {
-      // Get auth token
+      // ... existing auth and fetch setup ...
       const token = getToken()
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) headers.Authorization = `Bearer ${token}`
 
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
-      }
-
-      // Send to server
       const response = await fetch(`${API_BASE_URL}/push`, {
         method: 'POST',
         headers,
@@ -322,13 +327,12 @@ class SyncService {
       // Success - remove from outbox
       await db.outbox.delete(op.id)
       console.log(`✓ Successfully synced operation ${op.id}`)
-      return true
+      return { success: true }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
       console.error(`✗ Failed to sync operation ${op.id}:`, errorMessage)
 
-      // Update with error
       const newRetryCount = op.retryCount + 1
       await db.outbox.update(op.id, {
         status: 'failed',
@@ -336,7 +340,8 @@ class SyncService {
         error: errorMessage,
       })
 
-      return false
+      const nextDelay = this.calculateBackoff(newRetryCount)
+      return { success: false, retryDelay: nextDelay }
     }
   }
 
