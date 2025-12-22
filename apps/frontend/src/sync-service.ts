@@ -244,7 +244,12 @@ class SyncService {
         .sortBy('timestamp')
 
       for (const op of pendingOps) {
-        await this.syncOperation(op)
+        const success = await this.syncOperation(op)
+        // If an operation fails, stop processing the rest of the outbox
+        // to maintain FIFO order and avoid skipping messages.
+        if (!success) {
+          break
+        }
       }
     } catch (error) {
       console.error('Error processing outbox:', error)
@@ -263,9 +268,8 @@ class SyncService {
       const timeSinceLastAttempt = Date.now() - op.lastAttempt
 
       if (timeSinceLastAttempt < backoffDelay) {
-        // Schedule retry for later
-        this.scheduleRetry(op, backoffDelay - timeSinceLastAttempt)
-        return
+        // Return false to stop the loop; the liveQuery or next manualSync will trigger this again later
+        return false
       }
     }
 
@@ -276,7 +280,7 @@ class SyncService {
         status: 'failed',
         error: 'Max retries exceeded',
       })
-      return
+      return false
     }
 
     // Update status to syncing
@@ -318,12 +322,13 @@ class SyncService {
       // Success - remove from outbox
       await db.outbox.delete(op.id)
       console.log(`✓ Successfully synced operation ${op.id}`)
+      return true
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
       console.error(`✗ Failed to sync operation ${op.id}:`, errorMessage)
 
-      // Update with error and schedule retry
+      // Update with error
       const newRetryCount = op.retryCount + 1
       await db.outbox.update(op.id, {
         status: 'failed',
@@ -331,9 +336,7 @@ class SyncService {
         error: errorMessage,
       })
 
-      // Schedule retry with exponential backoff
-      const backoffDelay = this.calculateBackoff(newRetryCount)
-      this.scheduleRetry(op, backoffDelay)
+      return false
     }
   }
 
@@ -345,58 +348,6 @@ class SyncService {
     const delay = BASE_DELAY * Math.pow(2, retryCount)
     const maxDelay = 1000 * 60 * 17 // Max 17 minutes
     return Math.min(delay, maxDelay)
-  }
-
-  /**
-   * Schedule a retry for a failed operation
-   */
-  private scheduleRetry(op: OutboxOperation, delay: number) {
-    // Clear existing timeout if any
-    const existingTimeout = this.retryTimeouts.get(op.id)
-    if (existingTimeout) {
-      clearTimeout(existingTimeout)
-    }
-
-    console.log(
-      `Scheduling retry for ${op.id} in ${delay}ms (attempt ${op.retryCount + 1})`,
-    )
-
-    const timeout = setTimeout(() => {
-      this.retryTimeouts.delete(op.id)
-      this.syncOperation(op)
-    }, delay)
-
-    this.retryTimeouts.set(op.id, timeout)
-  }
-
-  /**
-   * Manually trigger a sync (useful for pull-to-refresh or retry buttons)
-   */
-  async manualSync() {
-    await this.processOutbox()
-  }
-
-  /**
-   * Clear all failed operations (useful for debugging or user action)
-   */
-  async clearFailedOperations() {
-    const failed = await db.outbox.where('status').equals('failed').toArray()
-    await db.outbox.bulkDelete(failed.map((op) => op.id))
-    console.log(`Cleared ${failed.length} failed operations`)
-  }
-
-  /**
-   * Get outbox statistics
-   */
-  async getStats() {
-    const [pending, syncing, failed, total] = await Promise.all([
-      db.outbox.where('status').equals('pending').count(),
-      db.outbox.where('status').equals('syncing').count(),
-      db.outbox.where('status').equals('failed').count(),
-      db.outbox.count(),
-    ])
-
-    return { pending, syncing, failed, total }
   }
 }
 
