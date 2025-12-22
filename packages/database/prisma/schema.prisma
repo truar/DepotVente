@@ -39,6 +39,35 @@ model User {
   @@map("users")
 }
 
+model CashRegisterControl {
+  id                    String  @id @default(uuid()) @db.Uuid
+  cashRegisterId        String  @map("cash_register_id")
+  initialAmount         Decimal @map("initial_amount") @db.Decimal(10, 2)
+  theoreticalCashAmount Decimal @map("theoretical_cash_amount") @db.Decimal(5, 2)
+  realCashAmount        Decimal @map("real_cash_amount") @db.Decimal(5, 2)
+  difference            Decimal @map("difference") @db.Decimal(5, 2)
+  totalAmount           Decimal @map("total_amount") @db.Decimal(5, 2)
+
+  cash200 Decimal @db.Decimal(3, 2)
+  cash100 Decimal @db.Decimal(3, 2)
+  cash50  Decimal @db.Decimal(3, 2)
+  cash20  Decimal @db.Decimal(3, 2)
+  cash10  Decimal @db.Decimal(3, 2)
+  cash5   Decimal @db.Decimal(3, 2)
+  cash2   Decimal @db.Decimal(3, 2)
+  cash1   Decimal @db.Decimal(3, 2)
+  cash05  Decimal @db.Decimal(3, 2)
+  cash02  Decimal @db.Decimal(3, 2)
+  cash01  Decimal @db.Decimal(3, 2)
+  cash005 Decimal @db.Decimal(3, 2)
+  cash002 Decimal @db.Decimal(3, 2)
+  cash001 Decimal @db.Decimal(3, 2)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+}
+
 // Contacts - Déposants et Acheteurs
 model Contact {
   id          String  @id @default(uuid()) @db.Uuid
