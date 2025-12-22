@@ -21,6 +21,10 @@ import {
 } from '@/pdf/return-deposit-pdf.tsx'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
 import { FormattedNumber } from 'react-intl'
+import {
+  DepositsMissingContributionPdf,
+  type DepositsMissingContributionProps,
+} from '@/pdf/deposits-missing-contributions-pdf.tsx'
 
 export const Route = createFileRoute('/returns/listing')({
   beforeLoad: () => {
@@ -313,13 +317,51 @@ function DepositsSummary() {
     ) ?? 0
   const count = articles?.length ?? 0
 
+  const printMissingContribution = async () => {
+    const deposits = await db.deposits
+      .offset(0)
+      .and((deposit) => deposit.contributionStatus === 'A_PAYER')
+      .sortBy('depositIndex')
+    const year = getYear()
+    const data: DepositsMissingContributionProps['data']['deposits'] = (
+      await Promise.all(
+        deposits.map(async (deposit) => {
+          const seller = await db.contacts.get(deposit.sellerId)
+          if (!seller) return
+          return {
+            contributionAmount: deposit.contributionAmount,
+            depositIndex: deposit.depositIndex,
+            seller: `${seller.lastName} ${seller.firstName}`,
+            withReturn: deposit.soldAmount && deposit.soldAmount > 0,
+          }
+        }),
+      )
+    ).filter((d) => !!d)
+
+    await printPdf(
+      <DepositsMissingContributionPdf
+        data={{
+          deposits: data,
+          year,
+        }}
+      />,
+    )
+  }
+
   return (
-    <div className="flex flew-row gap-5 font-bold">
-      <p>Nombre d'articles: {count}</p>
-      <p>
-        Montant total:{' '}
-        <FormattedNumber value={total} style="currency" currency="EUR" />
-      </p>
+    <div className="flex flex-row justify-between">
+      <div className="flex flew-row gap-5 font-bold">
+        <p>Nombre d'articles: {count}</p>
+        <p>
+          Montant total:{' '}
+          <FormattedNumber value={total} style="currency" currency="EUR" />
+        </p>
+      </div>
+      <div>
+        <CustomButton onClick={() => printMissingContribution()}>
+          Imprimer les retours avec cotisations
+        </CustomButton>
+      </div>
     </div>
   )
 }
