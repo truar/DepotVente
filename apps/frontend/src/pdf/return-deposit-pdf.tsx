@@ -136,6 +136,7 @@ type ReturnDepositsPdfData = {
     clubAmount: number
     totalAmount: number
     dueAmount: number
+    dueContributionAmount: number
     countSoldArticles: number
   }
   articles?: Article[]
@@ -186,6 +187,18 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
       )
     } else if (contributionStatus === 'PRO') {
       contribution = <>Pro</>
+    } else if (contributionStatus === 'DEDUITE') {
+      contribution = (
+        <>
+          <FormattedNumber
+            value={data.deposit.contributionAmount}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />{' '}
+          (Déduite)
+        </>
+      )
     } else {
       contribution = <>Gratuit</>
     }
@@ -265,6 +278,17 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
               Droit club:{' '}
               <FormattedNumber
                 value={data.deposit.clubAmount}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+          <View>
+            <Text>
+              Cotisation due:{' '}
+              <FormattedNumber
+                value={data.deposit.dueContributionAmount}
                 style="currency"
                 currency="EUR"
                 useGrouping={false}

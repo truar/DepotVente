@@ -75,6 +75,7 @@ model Deposit {
   returnedCalculationDate DateTime? @map("returned_calculation_date")
   soldAmount              Decimal?  @map("sold_amount") @db.Decimal(10, 2)
   clubAmount              Decimal?  @map("club_amount") @db.Decimal(10, 2)
+  dueContributionAmount   Decimal?  @map("due_contribution_amount") @db.Decimal(10, 2)
   sellerAmount            Decimal?  @map("seller_amount") @db.Decimal(10, 2)
 
   collectWorkstationId Int?      @map("collect_workstation_id")

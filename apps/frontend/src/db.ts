@@ -31,6 +31,7 @@ export type Deposit = {
   type: 'PRO' | 'PARTICULIER'
   returnedCalculationDate?: Date
   soldAmount?: number
+  dueContributionAmount?: number
   clubAmount?: number
   sellerAmount?: number
   signatory?: string

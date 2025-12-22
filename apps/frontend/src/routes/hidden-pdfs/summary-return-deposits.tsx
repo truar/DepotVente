@@ -24,6 +24,7 @@ function RouteComponent() {
             contributionStatus: 'PAYEE',
             totalAmount: 30000,
             clubAmount: 4.5,
+            dueContributionAmount: 0,
             countSoldArticles: 3,
             dueAmount: 40.5,
           },

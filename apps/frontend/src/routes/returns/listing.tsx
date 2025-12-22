@@ -60,7 +60,8 @@ async function createReturnDepositPdfData(
       year: year,
       totalAmount: deposit.soldAmount ?? 0,
       clubAmount: deposit.clubAmount ?? 0,
-      dueAmount: Math.max(deposit.sellerAmount ?? 0, 0),
+      dueContributionAmount: deposit.dueContributionAmount ?? 0,
+      dueAmount: Math.max(0, deposit.sellerAmount ?? 0),
       countSoldArticles: soldArticles.length,
     },
     contact: {
@@ -119,7 +120,7 @@ function DepositDataTable() {
           index: deposit.depositIndex,
           type: deposit.type,
           soldAmount: deposit.soldAmount,
-          sellerAmount: deposit.sellerAmount,
+          contributionStatus: deposit.contributionStatus,
           returnStatus: deposit.returnedCalculationDate
             ? 'PRÊT'
             : 'RETOUR A CALCULER',
@@ -152,7 +153,7 @@ export type DepositTableType = {
   type: Deposit['type']
   returnStatus: string
   soldAmount?: number
-  sellerAmount?: number
+  contributionStatus?: string
   seller: string
 }
 
@@ -185,8 +186,8 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     header: 'Doit cotisation ?',
     cell: ({ row }) => {
-      const sellerAmount = row.original.sellerAmount
-      if (sellerAmount && sellerAmount < 0) {
+      const contributionStatus = row.original.contributionStatus
+      if (contributionStatus === 'A_PAYER') {
         return <p className="text-red-500">Oui</p>
       } else {
         return <p className="text-green-500">Non</p>

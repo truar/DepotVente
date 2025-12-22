@@ -295,7 +295,6 @@ function ArticleForm(props: ArticleFormProps) {
 
   const contributionAmount = watch('deposit.contributionAmount')
   const articles = watch('deposit.articles')
-  const status = watch('deposit.contributionStatus')
   const countArticles = articles.filter((article) => !article.isDeleted).length
 
   useEffect(() => {

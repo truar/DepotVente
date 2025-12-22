@@ -483,7 +483,7 @@ function ScannedArticles() {
       <div className="flex flex-row justify-end">
         <div className="flex flex-row gap-5 items-baseline font-bold">
           <div>Nombre d'articles : {articles.length}</div>
-          <div>Montant droit de dépôt : {total}€</div>
+          <div>Montant total : {total}€</div>
         </div>
       </div>
     </>

@@ -7,6 +7,37 @@ function computeDueAmount(totalSale: number, depositType: Deposit['type']) {
   return totalSale * 0.15
 }
 
+function computeContribution(
+  sellerAmount: number,
+  contributionAmount: number,
+  contributionStatus: Deposit['contributionStatus'],
+): {
+  dueContributionAmount: number
+  contributionStatus: Deposit['contributionStatus']
+} {
+  const sellerCanRefundContribution = sellerAmount >= contributionAmount
+  if (
+    (contributionStatus === 'A_PAYER' || contributionStatus === 'DEDUITE') &&
+    sellerCanRefundContribution
+  ) {
+    return {
+      dueContributionAmount: contributionAmount,
+      contributionStatus: 'DEDUITE',
+    }
+  }
+  if (
+    (contributionStatus === 'A_PAYER' || contributionStatus === 'DEDUITE') &&
+    !sellerCanRefundContribution
+  ) {
+    return {
+      dueContributionAmount: 0,
+      contributionStatus: 'A_PAYER',
+    }
+  }
+
+  return { dueContributionAmount: 0, contributionStatus }
+}
+
 export function useComputeReturnMutation() {
   const depositsDb = useDepositsDb()
   const articlesDb = useArticlesDb()
@@ -17,24 +48,25 @@ export function useComputeReturnMutation() {
 
     const totalSale = articles
       .filter((article) => !!article.saleId)
-      .reduce((acc, article) => acc + parseInt(`${article.price}`), 0)
-    const dueContributionAmount =
-      deposit.contributionStatus === 'A_PAYER'
-        ? parseInt(`${deposit.contributionAmount}`)
-        : 0
-    const dueAmount =
-      computeDueAmount(totalSale, deposit.type) + dueContributionAmount
+      .reduce((acc, article) => acc + parseFloat(`${article.price}`), 0)
+    console.log(totalSale)
+    const dueAmount = computeDueAmount(totalSale, deposit.type)
     const sellerAmount = totalSale - dueAmount
+    const contributionAmount = parseInt(`${deposit.contributionAmount}`) ?? 0
+    console.log(contributionAmount)
+    const { dueContributionAmount, contributionStatus } = computeContribution(
+      sellerAmount,
+      contributionAmount,
+      deposit.contributionStatus,
+    )
     const date = new Date()
     await depositsDb.update(depositId, {
       returnedCalculationDate: date,
       soldAmount: totalSale,
       clubAmount: dueAmount,
-      sellerAmount: sellerAmount,
-      contributionStatus:
-        dueContributionAmount > 0 && sellerAmount >= 0
-          ? 'DEDUITE'
-          : deposit.contributionStatus,
+      dueContributionAmount: dueContributionAmount,
+      sellerAmount: sellerAmount - dueContributionAmount,
+      contributionStatus: contributionStatus,
     })
   }
 
