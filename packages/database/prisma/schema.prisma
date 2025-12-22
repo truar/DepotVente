@@ -39,33 +39,40 @@ model User {
   @@map("users")
 }
 
-model CashRegisterControl {
-  id                    String  @id @default(uuid()) @db.Uuid
-  cashRegisterId        String  @map("cash_register_id")
-  initialAmount         Decimal @map("initial_amount") @db.Decimal(10, 2)
-  theoreticalCashAmount Decimal @map("theoretical_cash_amount") @db.Decimal(5, 2)
-  realCashAmount        Decimal @map("real_cash_amount") @db.Decimal(5, 2)
-  difference            Decimal @map("difference") @db.Decimal(5, 2)
-  totalAmount           Decimal @map("total_amount") @db.Decimal(5, 2)
+enum CashRegisterControlType {
+  DEPOSIT
+  SALE
+}
 
-  cash200 Decimal @db.Decimal(3, 2)
-  cash100 Decimal @db.Decimal(3, 2)
-  cash50  Decimal @db.Decimal(3, 2)
-  cash20  Decimal @db.Decimal(3, 2)
-  cash10  Decimal @db.Decimal(3, 2)
-  cash5   Decimal @db.Decimal(3, 2)
-  cash2   Decimal @db.Decimal(3, 2)
-  cash1   Decimal @db.Decimal(3, 2)
-  cash05  Decimal @db.Decimal(3, 2)
-  cash02  Decimal @db.Decimal(3, 2)
-  cash01  Decimal @db.Decimal(3, 2)
-  cash005 Decimal @db.Decimal(3, 2)
-  cash002 Decimal @db.Decimal(3, 2)
-  cash001 Decimal @db.Decimal(3, 2)
+model CashRegisterControl {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  cashRegisterId        Int                     @map("cash_register_id")
+  type                  CashRegisterControlType
+  initialAmount         Decimal                 @map("initial_amount") @db.Decimal(10, 2)
+  theoreticalCashAmount Decimal                 @map("theoretical_cash_amount") @db.Decimal(5, 2)
+  realCashAmount        Decimal                 @map("real_cash_amount") @db.Decimal(5, 2)
+  difference            Decimal                 @map("difference") @db.Decimal(5, 2)
+  totalAmount           Decimal                 @map("total_amount") @db.Decimal(5, 2)
+
+  cash200 Int
+  cash100 Int
+  cash50  Int
+  cash20  Int
+  cash10  Int
+  cash5   Int
+  cash2   Int
+  cash1   Int
+  cash05  Int
+  cash02  Int
+  cash01  Int
+  cash005 Int
+  cash002 Int
+  cash001 Int
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  @@map("cashRegisterControls")
 }
 
 // Contacts - Déposants et Acheteurs

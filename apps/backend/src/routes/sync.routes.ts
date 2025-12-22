@@ -12,13 +12,14 @@ export async function syncRoutes(fastify: FastifyInstance) {
     async () => {
       const syncedAt = Date.now();
       // Fetch all relevant data for this workstation
-      const [deposits, articles, contacts, sales, predeposits, predepositArticles] = await Promise.all([
+      const [deposits, articles, contacts, sales, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
         prisma.deposit.findMany(),
         prisma.article.findMany(),
         prisma.contact.findMany(),
         prisma.sale.findMany(),
         prisma.predeposit.findMany(),
         prisma.predepositArticle.findMany(),
+        prisma.cashRegisterControl.findMany(),
       ]);
 
       return {
@@ -28,6 +29,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
         sales,
         predeposits,
         predepositArticles,
+        cashRegisterControls,
         syncedAt,
       };
     }
@@ -50,7 +52,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
       const sinceDate = new Date(parseInt(since));
 
       // Fetch changes since timestamp
-      const [deposits, articles, contacts, sales, predeposits, predepositArticles] = await Promise.all([
+      const [deposits, articles, contacts, sales, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
         prisma.deposit.findMany({
           where: {
             updatedAt: { gte: sinceDate },
@@ -81,6 +83,11 @@ export async function syncRoutes(fastify: FastifyInstance) {
             updatedAt: { gte: sinceDate },
           },
         }),
+        prisma.cashRegisterControl.findMany({
+          where: {
+            updatedAt: { gte: sinceDate },
+          },
+        }),
       ])
 
       return {
@@ -90,6 +97,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
         sales,
         predeposits,
         predepositArticles,
+        cashRegisterControls,
         syncedAt,
       };
     }

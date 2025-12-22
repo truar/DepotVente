@@ -1,10 +1,16 @@
 import { type CashRegisterControl, db } from '@/db.ts'
+import { syncService } from '@/sync-service.ts'
 
 export function useCashRegisterControlsDb() {
   async function insert(cashRegisterControl: CashRegisterControl) {
     const id = await db.cashRegisterControls.add(cashRegisterControl)
     // Add to outbox for syncing
-    // await syncService.addToOutbox('cashRegisterControls', 'create', id, cashRegisterControl)
+    await syncService.addToOutbox(
+      'cashRegisterControls',
+      'create',
+      id,
+      cashRegisterControl,
+    )
     return id
   }
 
@@ -14,7 +20,12 @@ export function useCashRegisterControlsDb() {
   ) {
     await db.cashRegisterControls.upsert(id, cashRegisterControl)
     // Add to outbox for syncing
-    // await syncService.addToOutbox('cashRegisterControls', 'update', id, cashRegisterControl)
+    await syncService.addToOutbox(
+      'cashRegisterControls',
+      'update',
+      id,
+      cashRegisterControl,
+    )
   }
 
   function findByCashRegisterIdAndType(cashRegisterId: number, type: string) {
