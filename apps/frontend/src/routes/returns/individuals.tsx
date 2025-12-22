@@ -212,7 +212,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
         (deposit) =>
           !deposit.signatory &&
           !!deposit.soldAmount &&
-          parseInt(`${deposit.soldAmount}`) > 0,
+          parseFloat(`${deposit.soldAmount}`) > 0,
       ) ?? [],
     [allDeposits],
   )
@@ -329,7 +329,7 @@ function ReturnedDepositSummary() {
     () =>
       allDeposits?.filter(
         (deposit) =>
-          !!deposit.soldAmount && parseInt(`${deposit.soldAmount}`) > 0,
+          !!deposit.soldAmount && parseFloat(`${deposit.soldAmount}`) > 0,
       ) ?? [],
     [allDeposits],
   )

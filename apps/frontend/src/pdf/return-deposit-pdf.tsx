@@ -262,6 +262,8 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
           <View>
             <Text>Nb Article vendus: {data.deposit.countSoldArticles}</Text>
           </View>
+        </View>
+        <View style={styles.salesSummary}>
           <View>
             <Text>
               Montant vente:{' '}

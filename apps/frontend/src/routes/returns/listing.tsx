@@ -307,8 +307,10 @@ function DepositDataTableHeaderAction({
 function DepositsSummary() {
   const articles = useLiveQuery(() => db.articles.toArray())
   const total =
-    articles?.reduce((acc, article) => acc + parseInt(`${article.price}`), 0) ??
-    0
+    articles?.reduce(
+      (acc, article) => acc + parseFloat(`${article.price}`),
+      0,
+    ) ?? 0
   const count = articles?.length ?? 0
 
   return (

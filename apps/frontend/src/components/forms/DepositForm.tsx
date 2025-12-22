@@ -117,7 +117,7 @@ export function DepositForm(props: DepositFormProps) {
           identificationLetter,
         )
         return {
-          price: parseInt(faker.commerce.price({ min: 10, max: 150 })),
+          price: parseFloat(faker.commerce.price({ min: 10, max: 150 })),
           discipline: faker.helpers.arrayElement(disciplines),
           brand: faker.helpers.arrayElement(brands),
           type: faker.helpers.arrayElement(categories),

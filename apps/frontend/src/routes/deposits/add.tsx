@@ -72,7 +72,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
       if (!predeposit) return
       const predepositArticles = await db.predepositArticles
         .where({ predepositId })
-        .toArray()
+        .sortBy('identificationLetter')
       const year = getYear()
       const data: DepositFormType['deposit'] = {
         depotIndex: depositIndex,

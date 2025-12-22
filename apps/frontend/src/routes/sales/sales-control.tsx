@@ -136,7 +136,7 @@ function useCardPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: parseInt(`${payment.cardAmount}`) || 0,
+          amount: parseFloat(`${payment.cardAmount}`) || 0,
         }
       })
       .filter((sale) => !!sale)
@@ -178,7 +178,7 @@ function useCheckPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: parseInt(`${payment.checkAmount}`) || 0,
+          amount: parseFloat(`${payment.checkAmount}`) || 0,
         }
       })
       .filter((sale) => !!sale)
@@ -227,8 +227,8 @@ function useRefundPaymentData({
           type: payment.refundCardAmount ? 'CB' : 'CASH',
           comment: payment.refundComment || '',
           amount:
-            parseInt(`${payment.refundCardAmount}`) ||
-            parseInt(`${payment.refundCashAmount}`) ||
+            parseFloat(`${payment.refundCardAmount}`) ||
+            parseFloat(`${payment.refundCashAmount}`) ||
             0,
         }
       })
@@ -630,7 +630,7 @@ function TheoreticalAmount() {
     const theoreticalAmount =
       sales?.reduce((acc, sale) => {
         const amount = sale.cashAmount
-          ? (parseInt(`${sale.cashAmount}`) ?? 0)
+          ? (parseFloat(`${sale.cashAmount}`) ?? 0)
           : 0
         return acc + amount
       }, 0) ?? 0

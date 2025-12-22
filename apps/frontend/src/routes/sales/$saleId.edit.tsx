@@ -130,7 +130,7 @@ function SaleForm(props: SaleFormProps) {
     const articles = data.articles
     const totalPrice =
       articles?.reduce(
-        (acc, cur) => acc + parseInt(`${!cur.isDeleted ? cur.price : 0}`),
+        (acc, cur) => acc + parseFloat(`${!cur.isDeleted ? cur.price : 0}`),
         0,
       ) ?? 0
     const cashAmount = data.cashAmount ?? 0
@@ -347,7 +347,7 @@ function ArticleForm() {
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const total = articles.reduce((acc, cur) => {
-    acc += parseInt(`${cur.isDeleted ? 0 : cur.price}`)
+    acc += parseFloat(`${cur.isDeleted ? 0 : cur.price}`)
     return acc
   }, 0)
   return (
@@ -496,7 +496,7 @@ function RefundForm() {
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const totalRefund = articles.reduce((acc, cur) => {
-    acc += parseInt(`${cur.isDeleted ? cur.price : 0}`)
+    acc += parseFloat(`${cur.isDeleted ? cur.price : 0}`)
     return acc
   }, 0)
   return (

@@ -120,7 +120,7 @@ function SalesForm(props: SalesFormProps) {
   const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
     const totalPrice =
-      articles?.reduce((acc, cur) => acc + parseInt(`${cur.price}`), 0) ?? 0
+      articles?.reduce((acc, cur) => acc + parseFloat(`${cur.price}`), 0) ?? 0
     const cashAmount = data.cashAmount ?? 0
     const cardAmount = data.cardAmount ?? 0
     const checkAmount = data.checkAmount ?? 0
@@ -436,7 +436,7 @@ function ScannedArticles() {
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const total = articles.reduce((acc, cur) => {
-    acc += parseInt(`${cur.price}`)
+    acc += parseFloat(`${cur.price}`)
     return acc
   }, 0)
   return (
@@ -496,7 +496,7 @@ function PaymentForm() {
   const cashAmount = watch('cashAmount')
   let cashReturned = Math.max(
     0,
-    parseInt(cashReceived, 10) - parseInt(`${cashAmount}`, 10),
+    parseFloat(cashReceived, 10) - parseFloat(`${cashAmount}`, 10),
   )
   if (Number.isNaN(cashReturned)) {
     cashReturned = 0
