@@ -8,7 +8,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useMemo } from 'react'
-import { FormattedNumber } from 'react-intl'
+import { FormattedNumber, useIntl } from 'react-intl'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   CheckListingPdf,
@@ -80,8 +80,7 @@ function ChecksDataTable() {
           }
         })
         .filter(
-          (deposit) =>
-            !!deposit && !!deposit.sellerAmount && deposit.sellerAmount > 0,
+          (deposit) => !!deposit && !!deposit.signatory,
         ) as CheckTableType[]) ?? [],
     [contactMap, deposits],
   )
@@ -161,6 +160,7 @@ type ChecksDataTableHeaderActionProps = {
 function ChecksDataTableHeaderAction({
   table,
 }: ChecksDataTableHeaderActionProps) {
+  const intl = useIntl()
   const print = async () => {
     const rows = table
       .getGlobalFacetedRowModel()
@@ -188,28 +188,30 @@ function ChecksDataTableHeaderAction({
         const collectedAt = new Date(
           row.collectedAt?.split(' ')?.at(0) || 0,
         ).toLocaleDateString()
+        const amount = intl.formatNumber(row.sellerAmount ?? 0)
+        const label = `${row.checkId} ${row.seller}`
         lines.push([
           '512100',
           'CAS',
           collectedAt,
-          `${row.checkId} ${row.seller}`,
+          label,
           '',
-          row.sellerAmount,
+          amount,
           row.checkId,
         ])
         lines.push([
           '580000',
           'CAS',
           collectedAt,
-          `${row.checkId} ${row.seller}`,
-          row.sellerAmount,
+          label,
+          amount,
           '',
           row.checkId,
         ])
         return lines
       }),
     ]
-      .map((row) => row.join(','))
+      .map((row) => row.join(';'))
       .join('\n')
 
     // Create a Blob from the CSV string
