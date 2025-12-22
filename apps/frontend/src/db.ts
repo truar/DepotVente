@@ -120,6 +120,34 @@ export type OutboxOperation = {
   status: 'pending' | 'syncing' | 'failed'
 }
 
+export type CashRegisterControl = {
+  id: string
+  cashRegisterId: number
+  type: 'DEPOSIT' | 'SALE'
+  totalAmount: number
+  realCashAmount: number
+  theoreticalCashAmount: number
+  initialAmount: number
+  difference: number
+  cash200: number
+  cash100: number
+  cash50: number
+  cash20: number
+  cash10: number
+  cash5: number
+  cash2: number
+  cash1: number
+  cash05: number
+  cash02: number
+  cash01: number
+  cash005: number
+  cash002: number
+  cash001: number
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
 export type SyncMetadata = {
   key: string
   value: unknown
@@ -152,6 +180,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
     'id' // primary key "id" (for the typings only)
   >
   sales: EntityTable<Sale, 'id'>
+  cashRegisterControls: EntityTable<CashRegisterControl, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
   syncMetadata: EntityTable<SyncMetadata, 'key'>
   workstation: EntityTable<WorkstationMetadata, 'key'>
@@ -166,6 +195,7 @@ db.version(1).stores({
   predepositArticles: '++id, predepositId, articleIndex',
   sales: '++id, incrementStart, saleIndex',
   outbox: '++id, timestamp, status, collection',
+  cashRegisterControls: '++id, cashRegisterId',
   syncMetadata: 'key',
   workstation: 'key',
 })

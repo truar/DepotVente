@@ -2,7 +2,6 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
-import { z } from 'zod'
 import {
   Controller,
   FormProvider,
@@ -11,17 +10,9 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Field } from '@/components/ui/field.tsx'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group.tsx'
-import { Label } from '@/components/ui/label.tsx'
-import { Euro } from 'lucide-react'
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Workstation } from '@/db.ts'
+import { type CashRegisterControl, db, type Workstation } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { getYear } from '@/utils'
@@ -32,6 +23,13 @@ import {
 import { printPdf } from '@/pdf/print.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
+import {
+  CashRegisterControlFormSchema,
+  type CashRegisterControlFormType,
+} from '@/types/SaveDepositCashRegisterControlForm.ts'
+import { useSaveDepositCashRegisterControlMutation } from '@/hooks/useSaveDepositCashRegisterControlMutation.ts'
+import { toast } from 'sonner'
+import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
   beforeLoad: () => {
@@ -49,39 +47,39 @@ export const Route = createFileRoute('/deposits/cash-register-control')({
   ),
 })
 
-const CashRegisterControlFormSchema = z.object({
-  initialAmount: z.coerce.number(),
-  realAmount: z.coerce.number(),
-  theoreticalAmount: z.coerce.number(),
-  amounts: z.array(
-    z.object({
-      amount: z.coerce.number(),
-      value: z.coerce.number(),
-    }),
-  ),
-})
-
-type CashRegisterControlFormType = z.infer<typeof CashRegisterControlFormSchema>
-
 function RouteComponent() {
   const [workstation] = useWorkstation()
-  if (!workstation) return null
+  const cashRegisterControlsDb = useCashRegisterControlsDb()
+  const cashRegisterControl = useLiveQuery(
+    () =>
+      cashRegisterControlsDb.findByCashRegisterIdAndType(
+        workstation.incrementStart,
+        'DEPOSIT',
+      ),
+    [workstation.incrementStart],
+  )
+  if (!workstation || !workstation.incrementStart) return null
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
       title="Controler les espèces"
     >
-      <CashRegisterControlForm workstation={workstation} />
+      <CashRegisterControlForm
+        workstation={workstation}
+        cashRegisterControl={cashRegisterControl}
+      />
     </Page>
   )
 }
 
 type CashRegisterControlFormProps = {
   workstation: Workstation
+  cashRegisterControl?: CashRegisterControl
 }
 
 function CashRegisterControlForm(props: CashRegisterControlFormProps) {
-  const { workstation } = props
+  const { workstation, cashRegisterControl } = props
+  const mutation = useSaveDepositCashRegisterControlMutation()
   const methods = useForm<CashRegisterControlFormType>({
     resolver: zodResolver(CashRegisterControlFormSchema),
     defaultValues: {
@@ -106,7 +104,34 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       ],
     },
   })
-  const { control, getValues } = methods
+  const { control, getValues, handleSubmit, setValue } = methods
+
+  useEffect(() => {
+    setValue('id', cashRegisterControl?.id)
+    setValue('cashRegisterId', workstation.incrementStart)
+    setValue('initialAmount', cashRegisterControl?.initialAmount ?? 80)
+    setValue('realAmount', cashRegisterControl?.realCashAmount ?? 0)
+    setValue(
+      'theoreticalAmount',
+      cashRegisterControl?.theoreticalCashAmount ?? 0,
+    )
+    setValue('amounts', [
+      { amount: cashRegisterControl?.cash200 ?? 0, value: 200 },
+      { amount: cashRegisterControl?.cash100 ?? 0, value: 100 },
+      { amount: cashRegisterControl?.cash50 ?? 0, value: 50 },
+      { amount: cashRegisterControl?.cash20 ?? 0, value: 20 },
+      { amount: cashRegisterControl?.cash10 ?? 0, value: 10 },
+      { amount: cashRegisterControl?.cash5 ?? 0, value: 5 },
+      { amount: cashRegisterControl?.cash2 ?? 0, value: 2 },
+      { amount: cashRegisterControl?.cash1 ?? 0, value: 1 },
+      { amount: cashRegisterControl?.cash05 ?? 0, value: 0.5 },
+      { amount: cashRegisterControl?.cash02 ?? 0, value: 0.2 },
+      { amount: cashRegisterControl?.cash01 ?? 0, value: 0.1 },
+      { amount: cashRegisterControl?.cash005 ?? 0, value: 0.05 },
+      { amount: cashRegisterControl?.cash002 ?? 0, value: 0.02 },
+      { amount: cashRegisterControl?.cash001 ?? 0, value: 0.01 },
+    ])
+  }, [cashRegisterControl])
 
   const { fields } = useFieldArray({
     control,
@@ -118,15 +143,19 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
     const year = getYear()
     const data: DepositCashRegisterControlProps['data'] = {
       year,
-      cashRegisterId: workstation.incrementStart,
       ...formData,
     }
     await printPdf(<DepositCashRegisterControlPdf data={data} />)
   }
 
+  const onSubmit = async (data: CashRegisterControlFormType) => {
+    await mutation.mutate(data)
+    toast.success(`Caisse ${data.cashRegisterId} enregistrée`)
+  }
+
   return (
     <FormProvider {...methods}>
-      <form className="flex flex-col gap-4">
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <div className="flex flex-row justify-between gap-6">
             <div className="grid grid-cols-6 gap-2">
@@ -160,10 +189,11 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
               <DifferenceInput />
             </div>
           </div>
-          <div className="flex justify-end">
-            <CustomButton type="button" onClick={print}>
+          <div className="flex justify-end gap-3">
+            <CustomButton type="button" onClick={print} variant="secondary">
               Imprimer le rapport
             </CustomButton>
+            <CustomButton type="submit">Valider</CustomButton>
           </div>
         </div>
       </form>
@@ -229,8 +259,10 @@ function TheoreticalAmount() {
 function DifferenceInput() {
   const { watch } = useFormContext<CashRegisterControlFormType>()
 
-  const realAmount = watch('realAmount')
-  const theoreticalAmount = watch('theoreticalAmount')
+  const [realAmount, theoreticalAmount] = watch([
+    'realAmount',
+    'theoreticalAmount',
+  ])
   const difference = realAmount - theoreticalAmount
 
   return (
