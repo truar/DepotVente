@@ -7,13 +7,15 @@ import { BuyerData, extractBuyers } from './extract-buyers';
 import { extractSoldArticles, SoldArticleData } from './extract-sold-articles';
 import { extractPredeposits, PredepositData } from './extract-predeposits';
 import { extractPredepositArticles, PredepositArticleData } from './extract-predepositArticles';
+import { CashRegisterDeposit, extractCashRegisterDeposits } from './extract-deposit-cash-register';
+import { extractCashRegisterSales } from './extract-sale-cash-register';
 
 async function importDeposits(fiches: DepositData[]) {
   let successCount = 0;
   let errorCount = 0;
 
   const deposits = new Map<number, Deposit>
-
+  const predeposits = new Map<number, string>()
   for (const fiche of fiches) {
     try {
       // First, create or find the contact
@@ -47,7 +49,9 @@ async function importDeposits(fiches: DepositData[]) {
         },
       });
       deposits.set(deposit.depositIndex, deposit)
-
+      if(fiche.predepositId) {
+        predeposits.set(fiche.predepositId, deposit.id)
+      }
       successCount++;
       console.log(`✅ Imported fiche for ${fiche.firstName} ${fiche.lastName}`);
     } catch (error) {
@@ -64,7 +68,7 @@ async function importDeposits(fiches: DepositData[]) {
   console.log(`❌ Failed: ${errorCount}`);
   console.log(`📊 Total: ${fiches.length}`);
   console.log('='.repeat(50));
-  return { deposits };
+  return { deposits, predeposits };
 }
 
 async function importArticles(articlesFromImport: ArticleData[], deposits: Map<number, Deposit>) {
@@ -137,7 +141,7 @@ async function importSales(buyers: BuyerData[]) {
       const sale = await prisma.sale.create({
         data: {
           buyerId: contact.id,
-          incrementStart: 1000,
+          incrementStart: buyer.incrementStart,
           saleIndex: parseInt(buyer.idBuyer),
           cardAmount: buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0,
           checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,
@@ -205,7 +209,7 @@ async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map
   console.log('='.repeat(50));
 }
 
-async function importPredeposits(fiches: PredepositData[]) {
+async function importPredeposits(fiches: PredepositData[], preDepositToDeposit: Map<number, string>) {
   let successCount = 0;
   let errorCount = 0;
 
@@ -221,6 +225,7 @@ async function importPredeposits(fiches: PredepositData[]) {
           sellerFirstName: fiche.firstName,
           sellerPhoneNumber: fiche.phoneNumber,
           sellerCity: fiche.city || '',
+          depositId: preDepositToDeposit.get(fiche.predepositIndex) || null,
           createdAt: fiche.createdAt,
           updatedAt: fiche.updatedAt,
         },
@@ -289,10 +294,63 @@ async function importPredepositArticles(articlesFromImport: PredepositArticleDat
   console.log('='.repeat(50));
 }
 
+async function importCashRegister(controls: CashRegisterDeposit[], type: 'DEPOSIT' | 'SALE') {
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const control of controls) {
+    try {
+      // Then create the deposit linked to this contact
+      await prisma.cashRegisterControl.create({
+        data: {
+          id: crypto.randomUUID(),
+          cashRegisterId: control.cashRegisterId,
+          type: type,
+          initialAmount: control.initialAmount,
+          theoreticalCashAmount: control.theoreticalAmount,
+          realCashAmount: control.realCashAmount,
+          totalAmount: control.totalAmount,
+          difference: control.difference,
+          cash200: control.cash200,
+          cash100: control.cash100,
+          cash50: control.cash50,
+          cash20: control.cash20,
+          cash10: control.cash10,
+          cash5: control.cash5,
+          cash2: control.cash2,
+          cash1: control.cash1,
+          cash05: control.cash050,
+          cash02: control.cash020,
+          cash01: control.cash010,
+          cash005: control.cash005,
+          cash002: control.cash002,
+          cash001: control.cash001,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      successCount++;
+      console.log(`✅ Imported cash register deposit for ${control.cashRegisterId}`);
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing fiche for ${control.cashRegisterId}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${controls.length}`);
+  console.log('='.repeat(50));
+}
+
 async function importAll() {
   try {
     const fiches = extractDeposits()
-    const { deposits } = await importDeposits(fiches)
+    const { deposits, predeposits: preDepositToDeposit } = await importDeposits(fiches)
 
     const articlesFromImport = extractArticles()
     const { articles } = await importArticles(articlesFromImport, deposits)
@@ -304,10 +362,16 @@ async function importAll() {
     await importSoldArticles(soldArticles, articles, sales)
 
     const predepositFiches = extractPredeposits()
-    const { predeposits } = await importPredeposits(predepositFiches)
+    const { predeposits } = await importPredeposits(predepositFiches, preDepositToDeposit)
 
     const predepositArticles = extractPredepositArticles()
     await importPredepositArticles(predepositArticles, predeposits)
+
+    const cashRegisterDeposits = await extractCashRegisterDeposits()
+    await importCashRegister(cashRegisterDeposits, 'DEPOSIT')
+
+    const cashRegisterSales = await extractCashRegisterSales()
+    await importCashRegister(cashRegisterSales, 'SALE')
   } catch (error) {
     console.error('❌ Fatal error during import:', error);
     throw error;

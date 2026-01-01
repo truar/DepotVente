@@ -17,3 +17,7 @@ export function parseToUTC(dateString: string): Date | undefined {
     return undefined;
   }
 }
+
+export function toFloat(frenchNumber: string) {
+  return parseFloat(frenchNumber.replace(/,/g, '.'));
+}

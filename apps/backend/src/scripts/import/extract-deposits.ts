@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
-import { parseToUTC } from './utils';
+import { parseToUTC, toFloat } from './utils';
 import fs from 'fs';
 
 export interface DepositData {
@@ -18,6 +18,7 @@ export interface DepositData {
   paymentAmount?: number;
   chequeNumber?: string;
   signature?: string;
+  predepositId?: number;
   createdAt?: Date;
   updatedAt?: Date
 }
@@ -34,6 +35,7 @@ const POSTE_RETOUR = 12
 const SIGNATURE = 13
 const HEURE_RETOUR = 14
 const TEL_VENDEUR = 15
+const PREDEPOSIT_ID = 18
 
 export const contributionStatuses = new Map(
   [
@@ -65,9 +67,10 @@ function parseCSV(content: string): DepositData[] {
       dropWorkstationId: parseInt(values[POSTE]),
       collectWorkstationId: parseInt(values[POSTE_RETOUR]),
       collectedAt: parseToUTC(values[HEURE_RETOUR]),
-      paymentAmount: parseFloat(values[MONTANT_REGLEMENT]),
+      paymentAmount: toFloat(values[MONTANT_REGLEMENT]),
       chequeNumber: values[N_CH],
       signature: values[SIGNATURE],
+      predepositId: values[PREDEPOSIT_ID] ? parseInt(values[PREDEPOSIT_ID]) : undefined,
       createdAt: parseToUTC(values[HEURE_RETOUR].split(' ')[0] + ' ' + values[HEURE]),
       updatedAt: parseToUTC(values[HEURE_RETOUR].split(' ')[0] + ' ' + values[HEURE]),
     } as DepositData;

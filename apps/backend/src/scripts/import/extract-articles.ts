@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { parseToUTC } from './utils';
+import { parseToUTC, toFloat } from './utils';
 import path from 'path';
 import fs from 'fs';
 import { types } from './types';
@@ -47,7 +47,7 @@ function parseCSV(content: string): ArticleData[] {
     const values = line.split('\t').map((v) => v.trim());
     const articleCode = values[IDENTIFIANT_ARTICLE]
     return {
-      price: parseFloat(values[PRIX]),
+      price: toFloat(values[PRIX]),
       category: materiels[values[ID_MATERIEL]],
       discipline: types[values[ID_TYPE]],
       brand: marques[values[ID_MARQUE]],

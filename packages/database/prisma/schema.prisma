@@ -39,20 +39,15 @@ model User {
   @@map("users")
 }
 
-enum CashRegisterControlType {
-  DEPOSIT
-  SALE
-}
-
 model CashRegisterControl {
-  id                    String                  @id @default(uuid()) @db.Uuid
-  cashRegisterId        Int                     @map("cash_register_id")
-  type                  CashRegisterControlType
-  initialAmount         Decimal                 @map("initial_amount") @db.Decimal(10, 2)
-  theoreticalCashAmount Decimal                 @map("theoretical_cash_amount") @db.Decimal(5, 2)
-  realCashAmount        Decimal                 @map("real_cash_amount") @db.Decimal(5, 2)
-  difference            Decimal                 @map("difference") @db.Decimal(5, 2)
-  totalAmount           Decimal                 @map("total_amount") @db.Decimal(5, 2)
+  id                    String  @id @default(uuid()) @db.Uuid
+  cashRegisterId        Int     @map("cash_register_id")
+  type                  String
+  initialAmount         Decimal @map("initial_amount") @db.Decimal(10, 2)
+  theoreticalCashAmount Decimal @map("theoretical_cash_amount") @db.Decimal(7, 2)
+  realCashAmount        Decimal @map("real_cash_amount") @db.Decimal(7, 2)
+  difference            Decimal @map("difference") @db.Decimal(7, 2)
+  totalAmount           Decimal @map("total_amount") @db.Decimal(7, 2)
 
   cash200 Int
   cash100 Int
@@ -72,6 +67,7 @@ model CashRegisterControl {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+
   @@map("cashRegisterControls")
 }
 
@@ -99,14 +95,14 @@ model Contact {
 
 // Deposit
 model Deposit {
-  id                 String             @id @default(uuid()) @db.Uuid
-  sellerId           String             @map("seller_id") @db.Uuid
-  contributionStatus ContributionStatus @default(A_PAYER) @map("contribution_status")
-  contributionAmount Decimal            @default(2) @map("contribution_amount") @db.Decimal(3, 2)
-  depositIndex       Int                @map("depot_index")
-  incrementStart     Int                @map("increment_start")
-  dropWorkstationId  Int                @map("deposit_workstation_id")
-  type               DepositType        @default(PARTICULIER)
+  id                 String  @id @default(uuid()) @db.Uuid
+  sellerId           String  @map("seller_id") @db.Uuid
+  contributionStatus String  @default("A_PAYER") @map("contribution_status")
+  contributionAmount Decimal @default(2) @map("contribution_amount") @db.Decimal(3, 2)
+  depositIndex       Int     @map("depot_index")
+  incrementStart     Int     @map("increment_start")
+  dropWorkstationId  Int     @map("deposit_workstation_id")
+  type               String  @default("PARTICULIER")
 
   returnedCalculationDate DateTime? @map("returned_calculation_date")
   soldAmount              Decimal?  @map("sold_amount") @db.Decimal(10, 2)
@@ -130,27 +126,6 @@ model Deposit {
   @@index([updatedAt])
   @@index([deletedAt])
   @@map("deposits")
-}
-
-enum ContributionStatus {
-  PAYEE
-  A_PAYER
-  GRATUIT
-  PRO
-  DEDUITE
-}
-
-enum DepositType {
-  PRO
-  PARTICULIER
-}
-
-enum ArticleStatus {
-  RECEPTION_PENDING
-  RECEPTION_OK
-  REFUSED
-  RETURNED
-  SOLD
 }
 
 // Sales - Ventes
@@ -187,19 +162,19 @@ model Article {
   id String @id @default(uuid()) @db.Uuid
 
   // Informations article
-  price                Decimal?      @db.Decimal(10, 2)
+  price                Decimal? @db.Decimal(10, 2)
   category             String
   discipline           String
   brand                String
   model                String?
   size                 String?
   color                String
-  code                 String        @unique // Code-barres
+  code                 String   @unique // Code-barres
   year                 Int
-  depositIndex         Int           @map("deposit_index")
-  identificationLetter String        @map("identification_letter")
-  articleIndex         Int           @map("article_index")
-  status               ArticleStatus @default(RECEPTION_PENDING)
+  depositIndex         Int      @map("deposit_index")
+  identificationLetter String   @map("identification_letter")
+  articleIndex         Int      @map("article_index")
+  status               String   @default("RECEPTION_PENDING")
 
   // Un article appartient forcément à un dépot
   depositId String  @map("deposit_id") @db.Uuid

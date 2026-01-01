@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import fs from 'fs';
-import { parseToUTC } from './utils';
+import { parseToUTC, toFloat } from './utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,6 +23,7 @@ export type BuyerData = {
   phoneNumber: string
   city?: string
   year: number
+  incrementStart: number
   paymentAmount: number
   paymentMethod: string
   createdAt: Date
@@ -44,11 +45,11 @@ function parseCSV(content: string): BuyerData[] {
       phoneNumber: values[TEL_ACHETEUR],
       city: values[ADRESSE_ACHETEUR],
       year: parseInt(values[ANNEE]),
-      incrementStart: parseInt(values[POSTE]),
+      incrementStart: parseInt(values[POSTE] || '2000'),
       soldAt: parseToUTC(values[DATE]),
       createdAt: parseToUTC(values[DATE]),
       updatedAt: parseToUTC(values[DATE]),
-      paymentAmount: parseFloat(values[MONTANT_ACHAT]),
+      paymentAmount: toFloat(values[MONTANT_ACHAT]),
       paymentMethod: values[REGLEMENT],
     } as BuyerData;
   });

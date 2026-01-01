@@ -60,22 +60,6 @@ export const UserRoleSchema = z.enum(['ADMIN','BENEVOLE']);
 
 export type UserRoleType = `${z.infer<typeof UserRoleSchema>}`
 
-export const CashRegisterControlTypeSchema = z.enum(['DEPOSIT','SALE']);
-
-export type CashRegisterControlTypeType = `${z.infer<typeof CashRegisterControlTypeSchema>}`
-
-export const ContributionStatusSchema = z.enum(['PAYEE','A_PAYER','GRATUIT','PRO','DEDUITE']);
-
-export type ContributionStatusType = `${z.infer<typeof ContributionStatusSchema>}`
-
-export const DepositTypeSchema = z.enum(['PRO','PARTICULIER']);
-
-export type DepositTypeType = `${z.infer<typeof DepositTypeSchema>}`
-
-export const ArticleStatusSchema = z.enum(['RECEPTION_PENDING','RECEPTION_OK','REFUSED','RETURNED','SOLD']);
-
-export type ArticleStatusType = `${z.infer<typeof ArticleStatusSchema>}`
-
 /////////////////////////////////////////
 // MODELS
 /////////////////////////////////////////
@@ -101,9 +85,9 @@ export type User = z.infer<typeof UserSchema>
 /////////////////////////////////////////
 
 export const CashRegisterControlSchema = z.object({
-  type: CashRegisterControlTypeSchema,
   id: z.uuid(),
   cashRegisterId: z.number().int(),
+  type: z.string(),
   initialAmount: z.instanceof(Prisma.Decimal, { message: "Field 'initialAmount' must be a Decimal. Location: ['Models', 'CashRegisterControl']"}),
   theoreticalCashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'theoreticalCashAmount' must be a Decimal. Location: ['Models', 'CashRegisterControl']"}),
   realCashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'realCashAmount' must be a Decimal. Location: ['Models', 'CashRegisterControl']"}),
@@ -153,14 +137,14 @@ export type Contact = z.infer<typeof ContactSchema>
 /////////////////////////////////////////
 
 export const DepositSchema = z.object({
-  contributionStatus: ContributionStatusSchema,
-  type: DepositTypeSchema,
   id: z.uuid(),
   sellerId: z.string(),
+  contributionStatus: z.string(),
   contributionAmount: z.instanceof(Prisma.Decimal, { message: "Field 'contributionAmount' must be a Decimal. Location: ['Models', 'Deposit']"}),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
+  type: z.string(),
   returnedCalculationDate: z.coerce.date().nullable(),
   soldAmount: z.instanceof(Prisma.Decimal, { message: "Field 'soldAmount' must be a Decimal. Location: ['Models', 'Deposit']"}).nullable(),
   clubAmount: z.instanceof(Prisma.Decimal, { message: "Field 'clubAmount' must be a Decimal. Location: ['Models', 'Deposit']"}).nullable(),
@@ -204,7 +188,6 @@ export type Sale = z.infer<typeof SaleSchema>
 /////////////////////////////////////////
 
 export const ArticleSchema = z.object({
-  status: ArticleStatusSchema,
   id: z.uuid(),
   price: z.instanceof(Prisma.Decimal, { message: "Field 'price' must be a Decimal. Location: ['Models', 'Article']"}).nullable(),
   category: z.string(),
@@ -218,6 +201,7 @@ export const ArticleSchema = z.object({
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
+  status: z.string(),
   depositId: z.string(),
   saleId: z.string().nullable(),
   createdAt: z.coerce.date(),
@@ -625,7 +609,7 @@ export const CashRegisterControlWhereInputSchema: z.ZodType<Prisma.CashRegisterC
   NOT: z.union([ z.lazy(() => CashRegisterControlWhereInputSchema), z.lazy(() => CashRegisterControlWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   cashRegisterId: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  type: z.union([ z.lazy(() => EnumCashRegisterControlTypeFilterSchema), z.lazy(() => CashRegisterControlTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   initialAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   theoreticalCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   realCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -687,7 +671,7 @@ export const CashRegisterControlWhereUniqueInputSchema: z.ZodType<Prisma.CashReg
   OR: z.lazy(() => CashRegisterControlWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => CashRegisterControlWhereInputSchema), z.lazy(() => CashRegisterControlWhereInputSchema).array() ]).optional(),
   cashRegisterId: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
-  type: z.union([ z.lazy(() => EnumCashRegisterControlTypeFilterSchema), z.lazy(() => CashRegisterControlTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   initialAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   theoreticalCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   realCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -751,7 +735,7 @@ export const CashRegisterControlScalarWhereWithAggregatesInputSchema: z.ZodType<
   NOT: z.union([ z.lazy(() => CashRegisterControlScalarWhereWithAggregatesInputSchema), z.lazy(() => CashRegisterControlScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   cashRegisterId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
-  type: z.union([ z.lazy(() => EnumCashRegisterControlTypeWithAggregatesFilterSchema), z.lazy(() => CashRegisterControlTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   initialAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   theoreticalCashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   realCashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
@@ -863,12 +847,12 @@ export const DepositWhereInputSchema: z.ZodType<Prisma.DepositWhereInput> = z.st
   NOT: z.union([ z.lazy(() => DepositWhereInputSchema), z.lazy(() => DepositWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
+  contributionStatus: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   contributionAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   dropWorkstationId: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  type: z.union([ z.lazy(() => EnumDepositTypeFilterSchema), z.lazy(() => DepositTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   returnedCalculationDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
   soldAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
   clubAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
@@ -919,12 +903,12 @@ export const DepositWhereUniqueInputSchema: z.ZodType<Prisma.DepositWhereUniqueI
   OR: z.lazy(() => DepositWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => DepositWhereInputSchema), z.lazy(() => DepositWhereInputSchema).array() ]).optional(),
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
+  contributionStatus: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   contributionAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   dropWorkstationId: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
-  type: z.union([ z.lazy(() => EnumDepositTypeFilterSchema), z.lazy(() => DepositTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   returnedCalculationDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
   soldAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
   clubAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
@@ -975,12 +959,12 @@ export const DepositScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Depos
   NOT: z.union([ z.lazy(() => DepositScalarWhereWithAggregatesInputSchema), z.lazy(() => DepositScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   sellerId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => EnumContributionStatusWithAggregatesFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
+  contributionStatus: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   contributionAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   depositIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   incrementStart: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   dropWorkstationId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
-  type: z.union([ z.lazy(() => EnumDepositTypeWithAggregatesFilterSchema), z.lazy(() => DepositTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   returnedCalculationDate: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
   soldAmount: z.union([ z.lazy(() => DecimalNullableWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
   clubAmount: z.union([ z.lazy(() => DecimalNullableWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
@@ -1115,7 +1099,7 @@ export const ArticleWhereInputSchema: z.ZodType<Prisma.ArticleWhereInput> = z.st
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   identificationLetter: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   articleIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  status: z.union([ z.lazy(() => EnumArticleStatusFilterSchema), z.lazy(() => ArticleStatusSchema) ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   depositId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -1178,7 +1162,7 @@ export const ArticleWhereUniqueInputSchema: z.ZodType<Prisma.ArticleWhereUniqueI
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   identificationLetter: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   articleIndex: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
-  status: z.union([ z.lazy(() => EnumArticleStatusFilterSchema), z.lazy(() => ArticleStatusSchema) ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   depositId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -1232,7 +1216,7 @@ export const ArticleScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Artic
   depositIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   identificationLetter: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   articleIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
-  status: z.union([ z.lazy(() => EnumArticleStatusWithAggregatesFilterSchema), z.lazy(() => ArticleStatusSchema) ]).optional(),
+  status: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   depositId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   saleId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
@@ -1508,7 +1492,7 @@ export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedU
 export const CashRegisterControlCreateInputSchema: z.ZodType<Prisma.CashRegisterControlCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   cashRegisterId: z.number().int(),
-  type: z.lazy(() => CashRegisterControlTypeSchema),
+  type: z.string(),
   initialAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   theoreticalCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   realCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
@@ -1536,7 +1520,7 @@ export const CashRegisterControlCreateInputSchema: z.ZodType<Prisma.CashRegister
 export const CashRegisterControlUncheckedCreateInputSchema: z.ZodType<Prisma.CashRegisterControlUncheckedCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   cashRegisterId: z.number().int(),
-  type: z.lazy(() => CashRegisterControlTypeSchema),
+  type: z.string(),
   initialAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   theoreticalCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   realCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
@@ -1564,7 +1548,7 @@ export const CashRegisterControlUncheckedCreateInputSchema: z.ZodType<Prisma.Cas
 export const CashRegisterControlUpdateInputSchema: z.ZodType<Prisma.CashRegisterControlUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cashRegisterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => EnumCashRegisterControlTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   initialAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   theoreticalCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   realCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1592,7 +1576,7 @@ export const CashRegisterControlUpdateInputSchema: z.ZodType<Prisma.CashRegister
 export const CashRegisterControlUncheckedUpdateInputSchema: z.ZodType<Prisma.CashRegisterControlUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cashRegisterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => EnumCashRegisterControlTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   initialAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   theoreticalCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   realCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1620,7 +1604,7 @@ export const CashRegisterControlUncheckedUpdateInputSchema: z.ZodType<Prisma.Cas
 export const CashRegisterControlCreateManyInputSchema: z.ZodType<Prisma.CashRegisterControlCreateManyInput> = z.strictObject({
   id: z.uuid().optional(),
   cashRegisterId: z.number().int(),
-  type: z.lazy(() => CashRegisterControlTypeSchema),
+  type: z.string(),
   initialAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   theoreticalCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
   realCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),
@@ -1648,7 +1632,7 @@ export const CashRegisterControlCreateManyInputSchema: z.ZodType<Prisma.CashRegi
 export const CashRegisterControlUpdateManyMutationInputSchema: z.ZodType<Prisma.CashRegisterControlUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cashRegisterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => EnumCashRegisterControlTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   initialAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   theoreticalCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   realCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1676,7 +1660,7 @@ export const CashRegisterControlUpdateManyMutationInputSchema: z.ZodType<Prisma.
 export const CashRegisterControlUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CashRegisterControlUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   cashRegisterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => EnumCashRegisterControlTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   initialAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   theoreticalCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   realCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
@@ -1795,12 +1779,12 @@ export const ContactUncheckedUpdateManyInputSchema: z.ZodType<Prisma.ContactUnch
 
 export const DepositCreateInputSchema: z.ZodType<Prisma.DepositCreateInput> = z.strictObject({
   id: z.uuid().optional(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -1820,12 +1804,12 @@ export const DepositCreateInputSchema: z.ZodType<Prisma.DepositCreateInput> = z.
 export const DepositUncheckedCreateInputSchema: z.ZodType<Prisma.DepositUncheckedCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   sellerId: z.string(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -1843,12 +1827,12 @@ export const DepositUncheckedCreateInputSchema: z.ZodType<Prisma.DepositUnchecke
 
 export const DepositUpdateInputSchema: z.ZodType<Prisma.DepositUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1868,12 +1852,12 @@ export const DepositUpdateInputSchema: z.ZodType<Prisma.DepositUpdateInput> = z.
 export const DepositUncheckedUpdateInputSchema: z.ZodType<Prisma.DepositUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1892,12 +1876,12 @@ export const DepositUncheckedUpdateInputSchema: z.ZodType<Prisma.DepositUnchecke
 export const DepositCreateManyInputSchema: z.ZodType<Prisma.DepositCreateManyInput> = z.strictObject({
   id: z.uuid().optional(),
   sellerId: z.string(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -1914,12 +1898,12 @@ export const DepositCreateManyInputSchema: z.ZodType<Prisma.DepositCreateManyInp
 
 export const DepositUpdateManyMutationInputSchema: z.ZodType<Prisma.DepositUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -1937,12 +1921,12 @@ export const DepositUpdateManyMutationInputSchema: z.ZodType<Prisma.DepositUpdat
 export const DepositUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DepositUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2086,7 +2070,7 @@ export const ArticleCreateInputSchema: z.ZodType<Prisma.ArticleCreateInput> = z.
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -2108,7 +2092,7 @@ export const ArticleUncheckedCreateInputSchema: z.ZodType<Prisma.ArticleUnchecke
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   depositId: z.string(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
@@ -2130,7 +2114,7 @@ export const ArticleUpdateInputSchema: z.ZodType<Prisma.ArticleUpdateInput> = z.
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2152,7 +2136,7 @@ export const ArticleUncheckedUpdateInputSchema: z.ZodType<Prisma.ArticleUnchecke
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   depositId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2174,7 +2158,7 @@ export const ArticleCreateManyInputSchema: z.ZodType<Prisma.ArticleCreateManyInp
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   depositId: z.string(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
@@ -2196,7 +2180,7 @@ export const ArticleUpdateManyMutationInputSchema: z.ZodType<Prisma.ArticleUpdat
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2216,7 +2200,7 @@ export const ArticleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.ArticleUnch
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   depositId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2617,13 +2601,6 @@ export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.strictObject({
   not: z.union([ z.number(),z.lazy(() => NestedIntFilterSchema) ]).optional(),
 });
 
-export const EnumCashRegisterControlTypeFilterSchema: z.ZodType<Prisma.EnumCashRegisterControlTypeFilter> = z.strictObject({
-  equals: z.lazy(() => CashRegisterControlTypeSchema).optional(),
-  in: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  notIn: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema) ]).optional(),
-});
-
 export const DecimalFilterSchema: z.ZodType<Prisma.DecimalFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
@@ -2781,16 +2758,6 @@ export const IntWithAggregatesFilterSchema: z.ZodType<Prisma.IntWithAggregatesFi
   _max: z.lazy(() => NestedIntFilterSchema).optional(),
 });
 
-export const EnumCashRegisterControlTypeWithAggregatesFilterSchema: z.ZodType<Prisma.EnumCashRegisterControlTypeWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => CashRegisterControlTypeSchema).optional(),
-  in: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  notIn: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => NestedEnumCashRegisterControlTypeWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema).optional(),
-});
-
 export const DecimalWithAggregatesFilterSchema: z.ZodType<Prisma.DecimalWithAggregatesFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
@@ -2894,20 +2861,6 @@ export const StringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.StringNu
   _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
   _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
-});
-
-export const EnumContributionStatusFilterSchema: z.ZodType<Prisma.EnumContributionStatusFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusFilterSchema) ]).optional(),
-});
-
-export const EnumDepositTypeFilterSchema: z.ZodType<Prisma.EnumDepositTypeFilter> = z.strictObject({
-  equals: z.lazy(() => DepositTypeSchema).optional(),
-  in: z.lazy(() => DepositTypeSchema).array().optional(),
-  notIn: z.lazy(() => DepositTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => NestedEnumDepositTypeFilterSchema) ]).optional(),
 });
 
 export const DecimalNullableFilterSchema: z.ZodType<Prisma.DecimalNullableFilter> = z.strictObject({
@@ -3040,26 +2993,6 @@ export const DepositSumOrderByAggregateInputSchema: z.ZodType<Prisma.DepositSumO
   collectWorkstationId: z.lazy(() => SortOrderSchema).optional(),
 });
 
-export const EnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.EnumContributionStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-});
-
-export const EnumDepositTypeWithAggregatesFilterSchema: z.ZodType<Prisma.EnumDepositTypeWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => DepositTypeSchema).optional(),
-  in: z.lazy(() => DepositTypeSchema).array().optional(),
-  notIn: z.lazy(() => DepositTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => NestedEnumDepositTypeWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumDepositTypeFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumDepositTypeFilterSchema).optional(),
-});
-
 export const DecimalNullableWithAggregatesFilterSchema: z.ZodType<Prisma.DecimalNullableWithAggregatesFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -3158,13 +3091,6 @@ export const SaleSumOrderByAggregateInputSchema: z.ZodType<Prisma.SaleSumOrderBy
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
   refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
   refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const EnumArticleStatusFilterSchema: z.ZodType<Prisma.EnumArticleStatusFilter> = z.strictObject({
-  equals: z.lazy(() => ArticleStatusSchema).optional(),
-  in: z.lazy(() => ArticleStatusSchema).array().optional(),
-  notIn: z.lazy(() => ArticleStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => NestedEnumArticleStatusFilterSchema) ]).optional(),
 });
 
 export const UuidNullableFilterSchema: z.ZodType<Prisma.UuidNullableFilter> = z.strictObject({
@@ -3267,16 +3193,6 @@ export const ArticleSumOrderByAggregateInputSchema: z.ZodType<Prisma.ArticleSumO
   year: z.lazy(() => SortOrderSchema).optional(),
   depositIndex: z.lazy(() => SortOrderSchema).optional(),
   articleIndex: z.lazy(() => SortOrderSchema).optional(),
-});
-
-export const EnumArticleStatusWithAggregatesFilterSchema: z.ZodType<Prisma.EnumArticleStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => ArticleStatusSchema).optional(),
-  in: z.lazy(() => ArticleStatusSchema).array().optional(),
-  notIn: z.lazy(() => ArticleStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => NestedEnumArticleStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumArticleStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumArticleStatusFilterSchema).optional(),
 });
 
 export const UuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.UuidNullableWithAggregatesFilter> = z.strictObject({
@@ -3446,10 +3362,6 @@ export const IntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.IntFieldUpdat
   divide: z.number().optional(),
 });
 
-export const EnumCashRegisterControlTypeFieldUpdateOperationsInputSchema: z.ZodType<Prisma.EnumCashRegisterControlTypeFieldUpdateOperationsInput> = z.strictObject({
-  set: z.lazy(() => CashRegisterControlTypeSchema).optional(),
-});
-
 export const DecimalFieldUpdateOperationsInputSchema: z.ZodType<Prisma.DecimalFieldUpdateOperationsInput> = z.strictObject({
   set: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   increment: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
@@ -3564,14 +3476,6 @@ export const ArticleUncheckedCreateNestedManyWithoutDepositInputSchema: z.ZodTyp
   connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutDepositInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutDepositInputSchema).array() ]).optional(),
   createMany: z.lazy(() => ArticleCreateManyDepositInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
-});
-
-export const EnumContributionStatusFieldUpdateOperationsInputSchema: z.ZodType<Prisma.EnumContributionStatusFieldUpdateOperationsInput> = z.strictObject({
-  set: z.lazy(() => ContributionStatusSchema).optional(),
-});
-
-export const EnumDepositTypeFieldUpdateOperationsInputSchema: z.ZodType<Prisma.EnumDepositTypeFieldUpdateOperationsInput> = z.strictObject({
-  set: z.lazy(() => DepositTypeSchema).optional(),
 });
 
 export const NullableDecimalFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableDecimalFieldUpdateOperationsInput> = z.strictObject({
@@ -3692,10 +3596,6 @@ export const SaleCreateNestedOneWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   create: z.union([ z.lazy(() => SaleCreateWithoutArticlesInputSchema), z.lazy(() => SaleUncheckedCreateWithoutArticlesInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => SaleCreateOrConnectWithoutArticlesInputSchema).optional(),
   connect: z.lazy(() => SaleWhereUniqueInputSchema).optional(),
-});
-
-export const EnumArticleStatusFieldUpdateOperationsInputSchema: z.ZodType<Prisma.EnumArticleStatusFieldUpdateOperationsInput> = z.strictObject({
-  set: z.lazy(() => ArticleStatusSchema).optional(),
 });
 
 export const DepositUpdateOneRequiredWithoutArticlesNestedInputSchema: z.ZodType<Prisma.DepositUpdateOneRequiredWithoutArticlesNestedInput> = z.strictObject({
@@ -3919,13 +3819,6 @@ export const NestedIntNullableFilterSchema: z.ZodType<Prisma.NestedIntNullableFi
   not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
 });
 
-export const NestedEnumCashRegisterControlTypeFilterSchema: z.ZodType<Prisma.NestedEnumCashRegisterControlTypeFilter> = z.strictObject({
-  equals: z.lazy(() => CashRegisterControlTypeSchema).optional(),
-  in: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  notIn: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema) ]).optional(),
-});
-
 export const NestedDecimalFilterSchema: z.ZodType<Prisma.NestedDecimalFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional(),
@@ -3962,16 +3855,6 @@ export const NestedFloatFilterSchema: z.ZodType<Prisma.NestedFloatFilter> = z.st
   gt: z.number().optional(),
   gte: z.number().optional(),
   not: z.union([ z.number(),z.lazy(() => NestedFloatFilterSchema) ]).optional(),
-});
-
-export const NestedEnumCashRegisterControlTypeWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumCashRegisterControlTypeWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => CashRegisterControlTypeSchema).optional(),
-  in: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  notIn: z.lazy(() => CashRegisterControlTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => CashRegisterControlTypeSchema), z.lazy(() => NestedEnumCashRegisterControlTypeWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumCashRegisterControlTypeFilterSchema).optional(),
 });
 
 export const NestedDecimalWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDecimalWithAggregatesFilter> = z.strictObject({
@@ -4021,20 +3904,6 @@ export const NestedStringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.Ne
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
 });
 
-export const NestedEnumContributionStatusFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusFilterSchema) ]).optional(),
-});
-
-export const NestedEnumDepositTypeFilterSchema: z.ZodType<Prisma.NestedEnumDepositTypeFilter> = z.strictObject({
-  equals: z.lazy(() => DepositTypeSchema).optional(),
-  in: z.lazy(() => DepositTypeSchema).array().optional(),
-  notIn: z.lazy(() => DepositTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => NestedEnumDepositTypeFilterSchema) ]).optional(),
-});
-
 export const NestedDecimalNullableFilterSchema: z.ZodType<Prisma.NestedDecimalNullableFilter> = z.strictObject({
   equals: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   in: z.union([z.number().array(),z.string().array(),z.instanceof(Decimal).array(),z.instanceof(Prisma.Decimal).array(),DecimalJsLikeSchema.array(),]).refine((v) => Array.isArray(v) && (v as any[]).every((v) => isValidDecimalInput(v)), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -4044,26 +3913,6 @@ export const NestedDecimalNullableFilterSchema: z.ZodType<Prisma.NestedDecimalNu
   gt: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   gte: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   not: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NestedDecimalNullableFilterSchema) ]).optional().nullable(),
-});
-
-export const NestedEnumContributionStatusWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumContributionStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => ContributionStatusSchema).optional(),
-  in: z.lazy(() => ContributionStatusSchema).array().optional(),
-  notIn: z.lazy(() => ContributionStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => NestedEnumContributionStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumContributionStatusFilterSchema).optional(),
-});
-
-export const NestedEnumDepositTypeWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumDepositTypeWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => DepositTypeSchema).optional(),
-  in: z.lazy(() => DepositTypeSchema).array().optional(),
-  notIn: z.lazy(() => DepositTypeSchema).array().optional(),
-  not: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => NestedEnumDepositTypeWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumDepositTypeFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumDepositTypeFilterSchema).optional(),
 });
 
 export const NestedDecimalNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDecimalNullableWithAggregatesFilter> = z.strictObject({
@@ -4109,13 +3958,6 @@ export const NestedFloatNullableFilterSchema: z.ZodType<Prisma.NestedFloatNullab
   not: z.union([ z.number(),z.lazy(() => NestedFloatNullableFilterSchema) ]).optional().nullable(),
 });
 
-export const NestedEnumArticleStatusFilterSchema: z.ZodType<Prisma.NestedEnumArticleStatusFilter> = z.strictObject({
-  equals: z.lazy(() => ArticleStatusSchema).optional(),
-  in: z.lazy(() => ArticleStatusSchema).array().optional(),
-  notIn: z.lazy(() => ArticleStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => NestedEnumArticleStatusFilterSchema) ]).optional(),
-});
-
 export const NestedUuidNullableFilterSchema: z.ZodType<Prisma.NestedUuidNullableFilter> = z.strictObject({
   equals: z.string().optional().nullable(),
   in: z.string().array().optional().nullable(),
@@ -4125,16 +3967,6 @@ export const NestedUuidNullableFilterSchema: z.ZodType<Prisma.NestedUuidNullable
   gt: z.string().optional(),
   gte: z.string().optional(),
   not: z.union([ z.string(),z.lazy(() => NestedUuidNullableFilterSchema) ]).optional().nullable(),
-});
-
-export const NestedEnumArticleStatusWithAggregatesFilterSchema: z.ZodType<Prisma.NestedEnumArticleStatusWithAggregatesFilter> = z.strictObject({
-  equals: z.lazy(() => ArticleStatusSchema).optional(),
-  in: z.lazy(() => ArticleStatusSchema).array().optional(),
-  notIn: z.lazy(() => ArticleStatusSchema).array().optional(),
-  not: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => NestedEnumArticleStatusWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedEnumArticleStatusFilterSchema).optional(),
-  _max: z.lazy(() => NestedEnumArticleStatusFilterSchema).optional(),
 });
 
 export const NestedUuidNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedUuidNullableWithAggregatesFilter> = z.strictObject({
@@ -4195,12 +4027,12 @@ export const SaleCreateManyBuyerInputEnvelopeSchema: z.ZodType<Prisma.SaleCreate
 
 export const DepositCreateWithoutSellerInputSchema: z.ZodType<Prisma.DepositCreateWithoutSellerInput> = z.strictObject({
   id: z.uuid().optional(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -4218,12 +4050,12 @@ export const DepositCreateWithoutSellerInputSchema: z.ZodType<Prisma.DepositCrea
 
 export const DepositUncheckedCreateWithoutSellerInputSchema: z.ZodType<Prisma.DepositUncheckedCreateWithoutSellerInput> = z.strictObject({
   id: z.uuid().optional(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -4306,12 +4138,12 @@ export const DepositScalarWhereInputSchema: z.ZodType<Prisma.DepositScalarWhereI
   NOT: z.union([ z.lazy(() => DepositScalarWhereInputSchema), z.lazy(() => DepositScalarWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   sellerId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => EnumContributionStatusFilterSchema), z.lazy(() => ContributionStatusSchema) ]).optional(),
+  contributionStatus: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   contributionAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   dropWorkstationId: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  type: z.union([ z.lazy(() => EnumDepositTypeFilterSchema), z.lazy(() => DepositTypeSchema) ]).optional(),
+  type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   returnedCalculationDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
   soldAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
   clubAmount: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
@@ -4371,7 +4203,7 @@ export const ArticleCreateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleCre
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4392,7 +4224,7 @@ export const ArticleUncheckedCreateWithoutDepositInputSchema: z.ZodType<Prisma.A
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -4479,7 +4311,7 @@ export const ArticleScalarWhereInputSchema: z.ZodType<Prisma.ArticleScalarWhereI
   depositIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   identificationLetter: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   articleIndex: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  status: z.union([ z.lazy(() => EnumArticleStatusFilterSchema), z.lazy(() => ArticleStatusSchema) ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   depositId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
   saleId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -4532,7 +4364,7 @@ export const ArticleCreateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleCreate
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4553,7 +4385,7 @@ export const ArticleUncheckedCreateWithoutSaleInputSchema: z.ZodType<Prisma.Arti
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   depositId: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -4625,12 +4457,12 @@ export const ArticleUpdateManyWithWhereWithoutSaleInputSchema: z.ZodType<Prisma.
 
 export const DepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -4649,12 +4481,12 @@ export const DepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCr
 export const DepositUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUncheckedCreateWithoutArticlesInput> = z.strictObject({
   id: z.uuid().optional(),
   sellerId: z.string(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -4724,12 +4556,12 @@ export const DepositUpdateToOneWithWhereWithoutArticlesInputSchema: z.ZodType<Pr
 
 export const DepositUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUpdateWithoutArticlesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -4748,12 +4580,12 @@ export const DepositUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUp
 export const DepositUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositUncheckedUpdateWithoutArticlesInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   sellerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -4977,12 +4809,12 @@ export const SaleCreateManyBuyerInputSchema: z.ZodType<Prisma.SaleCreateManyBuye
 
 export const DepositCreateManySellerInputSchema: z.ZodType<Prisma.DepositCreateManySellerInput> = z.strictObject({
   id: z.uuid().optional(),
-  contributionStatus: z.lazy(() => ContributionStatusSchema).optional(),
+  contributionStatus: z.string().optional(),
   contributionAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   depositIndex: z.number().int(),
   incrementStart: z.number().int(),
   dropWorkstationId: z.number().int(),
-  type: z.lazy(() => DepositTypeSchema).optional(),
+  type: z.string().optional(),
   returnedCalculationDate: z.coerce.date().optional().nullable(),
   soldAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
   clubAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional().nullable(),
@@ -5046,12 +4878,12 @@ export const SaleUncheckedUpdateManyWithoutBuyerInputSchema: z.ZodType<Prisma.Sa
 
 export const DepositUpdateWithoutSellerInputSchema: z.ZodType<Prisma.DepositUpdateWithoutSellerInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5069,12 +4901,12 @@ export const DepositUpdateWithoutSellerInputSchema: z.ZodType<Prisma.DepositUpda
 
 export const DepositUncheckedUpdateWithoutSellerInputSchema: z.ZodType<Prisma.DepositUncheckedUpdateWithoutSellerInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5092,12 +4924,12 @@ export const DepositUncheckedUpdateWithoutSellerInputSchema: z.ZodType<Prisma.De
 
 export const DepositUncheckedUpdateManyWithoutSellerInputSchema: z.ZodType<Prisma.DepositUncheckedUpdateManyWithoutSellerInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  contributionStatus: z.union([ z.lazy(() => ContributionStatusSchema), z.lazy(() => EnumContributionStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  contributionStatus: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   contributionAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   dropWorkstationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  type: z.union([ z.lazy(() => DepositTypeSchema), z.lazy(() => EnumDepositTypeFieldUpdateOperationsInputSchema) ]).optional(),
+  type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   returnedCalculationDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   soldAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   clubAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5126,7 +4958,7 @@ export const ArticleCreateManyDepositInputSchema: z.ZodType<Prisma.ArticleCreate
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   saleId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5147,7 +4979,7 @@ export const ArticleUpdateWithoutDepositInputSchema: z.ZodType<Prisma.ArticleUpd
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5168,7 +5000,7 @@ export const ArticleUncheckedUpdateWithoutDepositInputSchema: z.ZodType<Prisma.A
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5189,7 +5021,7 @@ export const ArticleUncheckedUpdateManyWithoutDepositInputSchema: z.ZodType<Pris
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   saleId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5210,7 +5042,7 @@ export const ArticleCreateManySaleInputSchema: z.ZodType<Prisma.ArticleCreateMan
   depositIndex: z.number().int(),
   identificationLetter: z.string(),
   articleIndex: z.number().int(),
-  status: z.lazy(() => ArticleStatusSchema).optional(),
+  status: z.string().optional(),
   depositId: z.string(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5231,7 +5063,7 @@ export const ArticleUpdateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpdate
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5252,7 +5084,7 @@ export const ArticleUncheckedUpdateWithoutSaleInputSchema: z.ZodType<Prisma.Arti
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   depositId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -5273,7 +5105,7 @@ export const ArticleUncheckedUpdateManyWithoutSaleInputSchema: z.ZodType<Prisma.
   depositIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   identificationLetter: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  status: z.union([ z.lazy(() => ArticleStatusSchema), z.lazy(() => EnumArticleStatusFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   depositId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),

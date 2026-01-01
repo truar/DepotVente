@@ -4,6 +4,7 @@ import fs from 'fs';
 import { types } from './types';
 import { materiels } from './materiels';
 import { marques } from './marques';
+import { toFloat } from './utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,7 +42,7 @@ function parseCSV(content: string): PredepositArticleData[] {
     const values = line.split('\t').map((v) => v.trim());
     return {
       vendeurId: parseInt(values[VENDEUR]),
-      price: parseFloat(values[PRIX]),
+      price: toFloat(values[PRIX]),
       category: materiels[values[ID_MATERIEL]],
       discipline: types[values[ID_TYPE]],
       brand: marques[values[ID_MARQUE]],
