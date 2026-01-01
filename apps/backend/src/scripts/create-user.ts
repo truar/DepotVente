@@ -18,7 +18,7 @@ async function createUser(args: CreateUserArgs) {
       data: {
         email: args.email,
         password: hashedPassword,
-        role: args.role ?? 'BENEVOLE',
+        role: (args.role as 'ADMIN' | 'BENEVOLE') ?? 'BENEVOLE',
       },
     });
 
