@@ -138,14 +138,17 @@ async function importSales(buyers: BuyerData[]) {
         }
       })
 
+      const cardAmount = buyer.splitCardAmount ? buyer.splitCardAmount : buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0
+      const cashAmount = buyer.splitCashAmount ? buyer.splitCashAmount : buyer.paymentMethod === 'Liquide' ? buyer.paymentAmount : 0
+
       const sale = await prisma.sale.create({
         data: {
           buyerId: contact.id,
           incrementStart: buyer.incrementStart,
           saleIndex: parseInt(buyer.idBuyer),
-          cardAmount: buyer.paymentMethod === 'CB' ? buyer.paymentAmount : 0,
+          cardAmount: cardAmount,
           checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,
-          cashAmount: buyer.paymentMethod === 'Liquide' ? buyer.paymentAmount : 0,
+          cashAmount: cashAmount,
           updatedAt: buyer.updatedAt,
           createdAt: buyer.createdAt,
         }

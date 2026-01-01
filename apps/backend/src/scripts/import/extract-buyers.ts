@@ -15,6 +15,8 @@ const POSTE = 5
 const DATE = 6
 const TEL_ACHETEUR = 7
 const ADRESSE_ACHETEUR = 10
+const MONTANT_CHEQUE = 11
+const MONTANT_LIQ = 12
 
 export type BuyerData = {
   idBuyer: string
@@ -26,6 +28,8 @@ export type BuyerData = {
   incrementStart: number
   paymentAmount: number
   paymentMethod: string
+  splitCardAmount?: number;
+  splitCashAmount?: number;
   createdAt: Date
   updatedAt: Date
   soldAt: Date
@@ -50,6 +54,8 @@ function parseCSV(content: string): BuyerData[] {
       createdAt: parseToUTC(values[DATE]),
       updatedAt: parseToUTC(values[DATE]),
       paymentAmount: toFloat(values[MONTANT_ACHAT]),
+      splitCardAmount: toFloat(values[MONTANT_CHEQUE]),
+      splitCashAmount: toFloat(values[MONTANT_LIQ]),
       paymentMethod: values[REGLEMENT],
     } as BuyerData;
   });

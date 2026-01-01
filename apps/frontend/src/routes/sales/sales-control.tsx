@@ -248,7 +248,7 @@ function useCashPaymentData({
       setValue('cashPayment.id', cashRegisterControl.id)
       setValue('cashPayment.cashRegisterId', cashRegisterControl.cashRegisterId)
       setValue('cashPayment.initialAmount', cashRegisterControl.initialAmount)
-      setValue('cashPayment.realAmount', cashRegisterControl.realCashAmount)
+      setValue('cashPayment.realAmount', cashRegisterControl.totalAmount)
       setValue(
         'cashPayment.theoreticalAmount',
         cashRegisterControl.theoreticalCashAmount,
@@ -650,11 +650,12 @@ function TheoreticalAmount() {
 function DifferenceInput() {
   const { watch } = useFormContext<CashRegisterControlFormType>()
 
-  const [realAmount, theoreticalAmount] = watch([
+  const [realAmount, theoreticalAmount, initialAmount] = watch([
     'cashPayment.realAmount',
     'cashPayment.theoreticalAmount',
+    'cashPayment.initialAmount',
   ])
-  const difference = realAmount - theoreticalAmount
+  const difference = realAmount - theoreticalAmount - initialAmount
 
   return (
     <MonetaryField
