@@ -196,7 +196,10 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: "Nombre d'articles",
     cell: ({ row }) => {
       const articlesCount = useLiveQuery(() =>
-        db.articles.where({ depositId: row.original.depositId }).count(),
+        db.articles
+          .where({ depositId: row.original.depositId })
+          .and((article) => article.status !== 'REFUSED')
+          .count(),
       )
 
       return <p>{articlesCount}</p>
@@ -211,7 +214,10 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: 'Montant',
     cell: ({ row }) => {
       const articles = useLiveQuery(() =>
-        db.articles.where({ depositId: row.original.depositId }).toArray(),
+        db.articles
+          .where({ depositId: row.original.depositId })
+          .and((article) => article.status !== 'REFUSED')
+          .toArray(),
       )
       const sum =
         articles?.reduce(
@@ -284,7 +290,12 @@ function DepositDataTableHeaderAction({
 }
 
 function DepositsSummary() {
-  const articles = useLiveQuery(() => db.articles.toArray())
+  const articles = useLiveQuery(() =>
+    db.articles
+      .offset(0)
+      .and((article) => article.status !== 'REFUSED')
+      .toArray(),
+  )
   const total =
     articles?.reduce(
       (acc, article) => acc + parseFloat(`${article.price}`),
