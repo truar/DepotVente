@@ -76,7 +76,7 @@ export function RouteComponent() {
               }}
               icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
               title="Caisse"
-              description="Controler les espèces"
+              description="Contrôler les espèces"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/deposits/pros' })}

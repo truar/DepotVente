@@ -50,7 +50,7 @@ export function RouteComponent() {
             <ClickableCard
               onClick={() => navigate({ to: '/deposits' })}
               icon={<Package className="w-8 h-8 text-green-600" />}
-              title="Dépôt"
+              title="Dépôts"
               description="Gérer les dépots"
             />
             <ClickableCard
