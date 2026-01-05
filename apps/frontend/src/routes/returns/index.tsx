@@ -61,13 +61,13 @@ export function RouteComponent() {
               onClick={() => navigate({ to: '/returns/individuals' })}
               icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
               title="Particulier"
-              description="Retourner les particuliers"
+              description="Retour des particuliers"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/returns/pros' })}
               icon={<ShoppingBasket className="w-8 h-8 text-green-600" />}
               title="Pros"
-              description="Retourner les pros"
+              description="Retour des pros"
             />
             {user.role === 'ADMIN' && (
               <>

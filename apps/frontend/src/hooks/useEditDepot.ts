@@ -39,12 +39,18 @@ export function useEditDepot() {
           data.articles
             .map((articleForm) => {
               if (!articleForm.id) return
+              let status = articleForm.status
+              if (articleForm.isDeleted) {
+                if (articleForm.status === 'REFUSED') {
+                  status = 'RECEPTION_OK'
+                } else {
+                  status = 'REFUSED'
+                }
+              }
               return {
                 key: articleForm.id,
                 changes: {
-                  status: articleForm.isDeleted
-                    ? 'REFUSED'
-                    : articleForm.status,
+                  status,
                   price: articleForm.price,
                   discipline: articleForm.discipline,
                   brand: articleForm.brand,

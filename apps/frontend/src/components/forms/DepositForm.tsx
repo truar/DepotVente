@@ -19,11 +19,10 @@ import {
   generateIdentificationLetter,
   getYear,
 } from '@/utils'
-import { fakerFR as faker } from '@faker-js/faker'
 import { cities } from '@/types/cities.ts'
-import { disciplineItems, disciplines } from '@/types/disciplines.ts'
-import { brands, brandsItems } from '@/types/brands.ts'
-import { categories, categoriesItems } from '@/types/categories.ts'
+import { disciplineItems } from '@/types/disciplines.ts'
+import { brandsItems } from '@/types/brands.ts'
+import { categoriesItems } from '@/types/categories.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { Combobox } from '@/components/Combobox.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -76,7 +75,7 @@ export function DepositForm(props: DepositFormProps) {
       },
     },
   })
-  const { handleSubmit, setValue, reset } = methods
+  const { handleSubmit, setValue, reset, setError } = methods
 
   useEffect(() => {
     setValue('deposit.depotIndex', depositIndex)
@@ -91,51 +90,17 @@ export function DepositForm(props: DepositFormProps) {
   }, [formData, setValue])
 
   const onSubmit: SubmitHandler<DepositFormType> = async (data) => {
+    if (!data.isSummaryPrinted) {
+      setError('root.summary', {
+        message: 'Veuillez imprimer la fiche',
+      })
+      return
+    }
     await mutation.mutate(data.deposit)
     reset()
     setCountArticle(0)
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
-
-  const generateFakeDeposit = useCallback(() => {
-    if (!depositIndex) return
-    setValue('isSummaryPrinted', true)
-    setValue('deposit.lastName', faker.person.lastName())
-    setValue('deposit.firstName', faker.person.firstName())
-    setValue('deposit.phoneNumber', faker.phone.number({ style: 'national' }))
-    setValue('deposit.city', faker.helpers.arrayElement(cities))
-    setValue('deposit.contributionStatus', 'PAYEE')
-    const nbArticles = 11
-    setValue(
-      'deposit.articles',
-      Array.from({ length: nbArticles }).map((_, index) => {
-        const year = getYear()
-        const identificationLetter = generateIdentificationLetter(index)
-        const articleCode = generateArticleCode(
-          year,
-          depositIndex,
-          identificationLetter,
-        )
-        return {
-          price: parseFloat(faker.commerce.price({ min: 10, max: 150 })),
-          discipline: faker.helpers.arrayElement(disciplines),
-          brand: faker.helpers.arrayElement(brands),
-          type: faker.helpers.arrayElement(categories),
-          size: faker.number.int({ min: 1, max: 180 }) + '',
-          color: faker.color.human(),
-          model: faker.commerce.productName(),
-          articleCode,
-          year,
-          depotIndex: depositIndex,
-          identificationLetter,
-          softDeletionEnabled: false,
-          articleIndex: index,
-          shortArticleCode: `${depositIndex} ${identificationLetter}`,
-        }
-      }) as DepositFormType['deposit']['articles'],
-    )
-    setCountArticle(nbArticles)
-  }, [depositIndex, setValue])
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
@@ -159,13 +124,6 @@ export function DepositForm(props: DepositFormProps) {
           />
 
           <div className="flex justify-end gap-4">
-            <CustomButton
-              type="button"
-              onClick={() => generateFakeDeposit()}
-              variant="secondary"
-            >
-              Générer une fausse vente
-            </CustomButton>
             <SummaryPrintButton />
             <CustomButton
               type="button"
