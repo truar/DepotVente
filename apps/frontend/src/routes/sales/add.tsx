@@ -305,6 +305,7 @@ function BuyerInformationForm() {
             render={({ field, fieldState }) => (
               <TextField
                 invalid={fieldState.invalid}
+                errorMessage={fieldState.error?.message}
                 {...field}
                 label="Téléphone"
               />
@@ -496,7 +497,7 @@ function PaymentForm() {
   const cashAmount = watch('cashAmount')
   let cashReturned = Math.max(
     0,
-    parseFloat(cashReceived, 10) - parseFloat(`${cashAmount}`, 10),
+    parseFloat(cashReceived) - parseFloat(`${cashAmount}`),
   )
   if (Number.isNaN(cashReturned)) {
     cashReturned = 0
@@ -521,6 +522,7 @@ function PaymentForm() {
                     id="checkAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -542,6 +544,7 @@ function PaymentForm() {
                     id="cardAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -563,6 +566,7 @@ function PaymentForm() {
                     id="cashAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -581,6 +585,7 @@ function PaymentForm() {
                 type="text"
                 value={cashReceived}
                 onChange={(e) => setCashReceived(e.target.value)}
+                autoComplete="off"
               />
               <InputGroupAddon align="inline-end">
                 <Euro />
@@ -597,6 +602,7 @@ function PaymentForm() {
                 type="text"
                 value={cashReturned}
                 readOnly
+                autoComplete="off"
               />
               <InputGroupAddon align="inline-end">
                 <Euro />

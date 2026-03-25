@@ -34,9 +34,9 @@ class ApiClient {
     const token = authStorage ? JSON.parse(authStorage).state?.token : null
 
     // Headers par défaut
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...fetchOptions.headers,
+      ...(fetchOptions.headers as Record<string, string>),
     }
 
     // Ajouter le token si disponible

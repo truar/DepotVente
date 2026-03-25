@@ -20,11 +20,11 @@ export function useEditSale() {
       db.outbox,
       async () => {
         const currentDate = new Date()
-        await contactDb.update(data.contactId, {
-          lastName: data.lastName,
-          firstName: data.firstName,
-          phoneNumber: data.phoneNumber,
-          city: data.city,
+        await contactDb.update(data.buyer.contactId!, {
+          lastName: data.buyer.lastName,
+          firstName: data.buyer.firstName,
+          phoneNumber: data.buyer.phoneNumber,
+          city: data.buyer.city,
           updatedAt: currentDate,
         })
 

@@ -1,9 +1,9 @@
 export const categories = [
   'Chaussures',
   'Snowboard',
-  'Vetements',
+  'Vêtements',
   'Fixations',
-  'Batons',
+  'Bâtons',
   'Divers',
   'Raquettes',
   'Skis',
@@ -13,7 +13,7 @@ export const categories = [
   'Masque Ski',
   'Housse Ski',
   'Boots',
-  'Lunette',
+  'Lunettes',
   'Gants',
   'Polaire',
 ]

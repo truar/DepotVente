@@ -225,7 +225,7 @@ function useRefundPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          type: payment.refundCardAmount ? 'CB' : 'CASH',
+          type: payment.refundCardAmount ? 'CB' as const : 'CASH' as const,
           comment: payment.refundComment || '',
           amount:
             parseFloat(`${payment.refundCardAmount}`) ||

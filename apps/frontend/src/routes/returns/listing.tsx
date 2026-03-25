@@ -332,7 +332,7 @@ function DepositsSummary() {
             contributionAmount: deposit.contributionAmount,
             depositIndex: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
-            withReturn: deposit.soldAmount && deposit.soldAmount > 0,
+            withReturn: !!(deposit.soldAmount && deposit.soldAmount > 0),
           }
         }),
       )

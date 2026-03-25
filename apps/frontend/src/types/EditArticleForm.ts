@@ -12,6 +12,15 @@ export const EditArticleSchema = z.object({
   articleCode: z.string(),
   shortArticleCode: z.string(),
   isDeleted: z.boolean().optional(),
+  status: z
+    .union([
+      z.literal('REFUSED'),
+      z.literal('RECEPTION_OK'),
+      z.literal('RECEPTION_PENDING'),
+      z.literal('SOLD'),
+      z.literal('RETURNED'),
+    ])
+    .optional(),
 })
 
 export type EditArticleFormType = z.infer<typeof EditArticleSchema>

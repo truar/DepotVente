@@ -71,7 +71,7 @@ function EditDepositComponent(props: EditDepositComponentProps) {
       firstName: contact.firstName,
       phoneNumber: contact.phoneNumber,
       city: contact.city ?? '',
-      contributionStatus: deposit.contributionStatus,
+      contributionStatus: deposit.contributionStatus as DepositFormType['deposit']['contributionStatus'],
       contributionAmount: deposit.contributionAmount,
       articles: (articles.map((article) => ({
         id: article.id,

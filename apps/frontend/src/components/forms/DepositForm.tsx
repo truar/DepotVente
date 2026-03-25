@@ -96,7 +96,7 @@ export function DepositForm(props: DepositFormProps) {
   const onSubmit: SubmitHandler<DepositFormType> = async (data) => {
     if (!data.isSummaryPrinted) {
       setError('root.summary', {
-        message: 'Veuillez imprimer la fiche',
+        message: "Merci d'imprimer la fiche dépôt avant de valider",
       })
       return
     }
@@ -191,6 +191,7 @@ function SellerInformationForm() {
             render={({ field, fieldState }) => (
               <TextField
                 invalid={fieldState.invalid}
+                errorMessage={fieldState.error?.message}
                 {...field}
                 label="Téléphone"
               />
@@ -242,9 +243,9 @@ function ArticleForm(props: ArticleFormProps) {
     )
     append({
       price: 0,
-      discipline: null,
-      brand: null,
-      type: null,
+      discipline: '',
+      brand: '',
+      type: '',
       size: '',
       color: '',
       model: '',
@@ -552,12 +553,12 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
     dymo.print({
       color: field.color,
       brand: field.brand,
-      size: field.size,
+      size: field.size ?? '',
       category: field.type,
       code: field.articleCode,
       price: `${field.price}`,
       shortCode: field.shortArticleCode,
-      model: field.model,
+      model: field.model ?? '',
     })
   }, [dymo, getValues, index])
 
@@ -603,9 +604,9 @@ function SummaryPrintButton() {
           shortCode: `${formData.depotIndex} ${article.identificationLetter}`,
           category: article.type,
           brand: article.brand,
-          model: article.model,
+          model: article.model ?? '',
           discipline: article.discipline,
-          size: article.size,
+          size: article.size ?? '',
           price: article.price,
           color: article.color,
         })),
@@ -625,17 +626,25 @@ function ErrorMessages() {
   const {
     formState: { errors },
   } = useFormContext<DepositFormType>()
-  // console.log(errors)
-  const errorsDisplayed = Object.keys(errors).map((key, index) => {
-    if (typeof errors[key]?.message === 'string') {
-      return <li key={index}>{errors[key]?.message}</li>
-    }
-    return null
-  })
-  if (errorsDisplayed.length === 0) return null
+
+  const printError = errors.root?.summary?.message
+  const fieldErrors = Object.keys(errors)
+    .filter((key) => key !== 'root')
+    .map((key, index) => {
+      if (typeof (errors as any)[key]?.message === 'string') {
+        return <li key={index}>{(errors as any)[key]?.message}</li>
+      }
+      return null
+    })
+    .filter(Boolean)
+
+  if (!printError && fieldErrors.length === 0) return null
+
   return (
     <ul className="pl-3 text-red-600">
-      Merci de compléter les champs obligatoires
+      {printError && <li>{printError}</li>}
+      {fieldErrors.length > 0 && 'Merci de compléter les champs obligatoires'}
+      {fieldErrors}
     </ul>
   )
 }

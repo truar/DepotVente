@@ -1,10 +1,11 @@
 import type { Noop, RefCallBack } from 'react-hook-form'
-import { Field, FieldContent } from '@/components/ui/field.tsx'
+import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 
 type TextInputProps = {
   invalid?: boolean
+  errorMessage?: string
   label?: string
   onChange: (...event: any[]) => void
   onBlur: Noop
@@ -16,7 +17,7 @@ type TextInputProps = {
 }
 
 export function TextField(props: TextInputProps) {
-  const { invalid, onChange, onBlur, value, disabled, name, label, readOnly } =
+  const { invalid, errorMessage, onChange, onBlur, value, disabled, name, label, readOnly } =
     props
   return (
     <Field data-invalid={invalid}>
@@ -35,6 +36,7 @@ export function TextField(props: TextInputProps) {
             type="text"
           />
         </InputGroup>
+        {invalid && errorMessage && <FieldError>{errorMessage}</FieldError>}
       </FieldContent>
     </Field>
   )

@@ -99,11 +99,13 @@ function SaleForm(props: SaleFormProps) {
       refundCardAmount: sale.refundCardAmount || 0,
       refundCashAmount: sale.refundCashAmount || 0,
       refundComment: sale.refundComment,
-      city: buyer.city,
-      lastName: buyer.lastName,
-      contactId: buyer.id,
-      firstName: buyer.firstName,
-      phoneNumber: buyer.phoneNumber,
+      buyer: {
+        city: buyer.city,
+        lastName: buyer.lastName,
+        contactId: buyer.id,
+        firstName: buyer.firstName,
+        phoneNumber: buyer.phoneNumber,
+      },
       articles: articles.map((article) => ({
         id: article.id,
         articleCode: article.code,
@@ -176,9 +178,9 @@ function SaleForm(props: SaleFormProps) {
         date: new Date(),
       },
       contact: {
-        lastName: formData.lastName,
-        firstName: formData.firstName,
-        phoneNumber: formData.phoneNumber,
+        lastName: formData.buyer.lastName,
+        firstName: formData.buyer.firstName,
+        phoneNumber: formData.buyer.phoneNumber,
       },
       articles: formData.articles.map((article) => ({
         code: article.articleCode,
@@ -235,7 +237,7 @@ function BuyerInformationForm() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="grid gap-2">
           <Controller
-            name="lastName"
+            name="buyer.lastName"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -256,7 +258,7 @@ function BuyerInformationForm() {
 
         <div className="grid gap-2">
           <Controller
-            name="firstName"
+            name="buyer.firstName"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -277,7 +279,7 @@ function BuyerInformationForm() {
 
         <div className="grid gap-2">
           <Controller
-            name="phoneNumber"
+            name="buyer.phoneNumber"
             render={({ field: controllerField, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -290,6 +292,9 @@ function BuyerInformationForm() {
                       type="text"
                     />
                   </InputGroup>
+                  {fieldState.invalid && fieldState.error?.message && (
+                    <FieldError>{fieldState.error.message}</FieldError>
+                  )}
                 </FieldContent>
               </Field>
             )}
@@ -297,7 +302,7 @@ function BuyerInformationForm() {
         </div>
         <div className="grid gap-2">
           <Controller
-            name="city"
+            name="buyer.city"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
@@ -435,6 +440,7 @@ function PaymentForm() {
                     id="checkAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -456,6 +462,7 @@ function PaymentForm() {
                     id="cardAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -477,6 +484,7 @@ function PaymentForm() {
                     id="cashAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -534,6 +542,7 @@ function RefundForm() {
                     id="refundCardAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -555,6 +564,7 @@ function RefundForm() {
                     id="refundCashAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
                     <Euro />
@@ -595,8 +605,8 @@ function ErrorMessages() {
   console.log(errors)
 
   const errorsDisplayed = Object.keys(errors).map((key, index) => {
-    if (typeof errors[key]?.message === 'string') {
-      return <li key={index}>{errors[key]?.message}</li>
+    if (typeof (errors as any)[key]?.message === 'string') {
+      return <li key={index}>{(errors as any)[key]?.message}</li>
     }
     return null
   })
