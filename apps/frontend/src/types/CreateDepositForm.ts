@@ -35,7 +35,7 @@ export const DepositSchema = z.object({
   depotIndex: z.number(),
   lastName: z.string().nonempty({ message: 'Le nom est requis' }),
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
-  phoneNumber: z.string().regex(/^\d{10}$/, { message: 'Le téléphone doit contenir exactement 10 chiffres' }),
+  phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
   contributionStatus: z.union([
     z.literal('A_PAYER'),

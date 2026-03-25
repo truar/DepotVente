@@ -49,9 +49,10 @@ type DepositFormProps = {
   depositIndex: number
   formData?: DepositFormType['deposit']
   mutation: { mutate: (param: DepositFormType['deposit']) => Promise<void> }
+  onReset?: () => void
 }
 export function DepositForm(props: DepositFormProps) {
-  const { depositIndex, formData, mutation } = props
+  const { depositIndex, formData, mutation, onReset } = props
   const [countArticle, setCountArticle] = useState(
     formData?.articles?.length ?? 0,
   )
@@ -105,6 +106,7 @@ export function DepositForm(props: DepositFormProps) {
       // Create mode: clear form for next deposit
       reset()
       setCountArticle(0)
+      onReset?.()
     }
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
@@ -134,7 +136,7 @@ export function DepositForm(props: DepositFormProps) {
             <SummaryPrintButton />
             <CustomButton
               type="button"
-              onClick={() => reset()}
+              onClick={() => { reset(); onReset?.() }}
               variant="destructive"
             >
               Annuler

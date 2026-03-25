@@ -65,6 +65,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
   const [formData, setFormData] = useState<
     DepositFormType['deposit'] | undefined
   >(undefined)
+  const [predepositId, setPredepositId] = useState<string | null>(null)
   const loadPredeposit = useCallback(
     async (predepositId: string) => {
       if (!depositIndex) return
@@ -120,11 +121,12 @@ function DepositAddComponent(props: DepositAddComponentProps) {
   )
   return (
     <div className="flex flex-col gap-5">
-      <PredepositComboBox onChange={loadPredeposit} />
+      <PredepositComboBox onChange={loadPredeposit} value={predepositId} onSelect={setPredepositId} />
       <DepositForm
         depositIndex={depositIndex}
         formData={formData}
         mutation={createDepotMutation}
+        onReset={() => { setFormData(undefined); setPredepositId(null) }}
       />
     </div>
   )
@@ -132,10 +134,11 @@ function DepositAddComponent(props: DepositAddComponentProps) {
 
 type PredepositComboBoxProps = {
   onChange?: (id: string) => void
+  value: string | null
+  onSelect: (id: string | null) => void
 }
 function PredepositComboBox(props: PredepositComboBoxProps) {
-  const { onChange } = props
-  const [predepositId, setPredepositId] = useState<string | null>(null)
+  const { onChange, value: predepositId, onSelect: setPredepositId } = props
   const predeposits = useLiveQuery(() => db.predeposits.toArray())
   const predepositItems = useMemo(() => {
     return (
