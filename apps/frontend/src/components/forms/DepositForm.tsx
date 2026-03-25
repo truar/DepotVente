@@ -97,7 +97,7 @@ export function DepositForm(props: DepositFormProps) {
       return
     }
     await mutation.mutate(data.deposit)
-    reset()
+    reset(data)
     setCountArticle(0)
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }

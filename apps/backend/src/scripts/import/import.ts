@@ -92,7 +92,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           color: articleFromImport.color,
           code: articleFromImport.code,
           year: articleFromImport.year,
-          status: 'RECEPTION_OK',
+          status: 'RECEPTION_PENDING',
           depositIndex: articleFromImport.depositIndex,
           identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
@@ -352,29 +352,30 @@ async function importCashRegister(controls: CashRegisterDeposit[], type: 'DEPOSI
 
 async function importAll() {
   try {
-    const fiches = extractDeposits()
-    const { deposits, predeposits: preDepositToDeposit } = await importDeposits(fiches)
-
+    let fiches = extractDeposits()
+    fiches = fiches.filter(f => f.depositIndex < 10)
+    let { deposits, predeposits: preDepositToDeposit } = await importDeposits(fiches)
     const articlesFromImport = extractArticles()
     const { articles } = await importArticles(articlesFromImport, deposits)
+    //
+    // const buyersFromImport = await extractBuyers()
+    // const { sales } = await importSales(buyersFromImport)
+    //
+    // const soldArticles = await extractSoldArticles()
+    // await importSoldArticles(soldArticles, articles, sales)
 
-    const buyersFromImport = await extractBuyers()
-    const { sales } = await importSales(buyersFromImport)
-
-    const soldArticles = await extractSoldArticles()
-    await importSoldArticles(soldArticles, articles, sales)
-
+    // const preDepositToDeposit = new Map<number, string>()
     const predepositFiches = extractPredeposits()
     const { predeposits } = await importPredeposits(predepositFiches, preDepositToDeposit)
 
     const predepositArticles = extractPredepositArticles()
     await importPredepositArticles(predepositArticles, predeposits)
-
-    const cashRegisterDeposits = await extractCashRegisterDeposits()
-    await importCashRegister(cashRegisterDeposits, 'DEPOSIT')
-
-    const cashRegisterSales = await extractCashRegisterSales()
-    await importCashRegister(cashRegisterSales, 'SALE')
+    //
+    // const cashRegisterDeposits = await extractCashRegisterDeposits()
+    // await importCashRegister(cashRegisterDeposits, 'DEPOSIT')
+    //
+    // const cashRegisterSales = await extractCashRegisterSales()
+    // await importCashRegister(cashRegisterSales, 'SALE')
   } catch (error) {
     console.error('❌ Fatal error during import:', error);
     throw error;
