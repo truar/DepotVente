@@ -82,7 +82,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
         firstName: predeposit.sellerFirstName,
         phoneNumber: predeposit.sellerPhoneNumber,
         city: predeposit.sellerCity,
-        contributionStatus: 'A_PAYER',
+        contributionStatus: null,
         contributionAmount: computeContributionAmount(
           predepositArticles.length,
         ),

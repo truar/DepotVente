@@ -14,6 +14,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
   computeContributionAmount,
   generateArticleCode,
   generateIdentificationLetter,
@@ -70,8 +81,8 @@ export function DepositForm(props: DepositFormProps) {
         city: formData?.city ?? '',
         predepositId: formData?.predepositId,
         sellerId: formData?.sellerId,
-        contributionStatus: formData?.contributionStatus ?? 'A_PAYER',
-        contributionAmount: formData?.contributionAmount ?? 2,
+        contributionStatus: formData?.contributionStatus ?? null,
+        contributionAmount: formData?.contributionAmount ?? 0,
         articles: formData?.articles ?? [],
       },
     },
@@ -104,12 +115,16 @@ export function DepositForm(props: DepositFormProps) {
     await mutation.mutate(data.deposit)
     if (!formData?.id) {
       // Create mode: clear form for next deposit
-      reset()
-      setCountArticle(0)
-      onReset?.()
+      resetForm()
     }
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
+
+  const resetForm = useCallback(() => {
+    reset()
+    setCountArticle(0)
+    onReset?.()
+  }, [reset, onReset])
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter') e.preventDefault()
@@ -134,13 +149,27 @@ export function DepositForm(props: DepositFormProps) {
 
           <div className="flex justify-end gap-4">
             <SummaryPrintButton />
-            <CustomButton
-              type="button"
-              onClick={() => { reset(); onReset?.() }}
-              variant="destructive"
-            >
-              Annuler
-            </CustomButton>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <CustomButton type="button" variant="destructive">
+                  Annuler
+                </CustomButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Etes vous sur de vouloir annuler ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Non</AlertDialogCancel>
+                  <AlertDialogAction onClick={resetForm}>
+                    Oui
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <SubmitButton />
           </div>
         </div>
@@ -232,9 +261,11 @@ function ArticleForm(props: ArticleFormProps) {
   const { trigger, setValue, watch } = useFormContext<DepositFormType>()
 
   const addArticle = useCallback(async () => {
-    const valid = await trigger(`deposit.articles.${fields.length - 1}`)
-    if (!valid) {
-      return
+    if (fields.length > 0) {
+      const valid = await trigger(`deposit.articles.${fields.length - 1}`)
+      if (!valid) {
+        return
+      }
     }
     const year = getYear()
     const identificationLetter = generateIdentificationLetter(articleCount)
@@ -341,7 +372,7 @@ function ArticleForm(props: ArticleFormProps) {
                 >
                   <Select
                     name={controllerField.name}
-                    value={controllerField.value}
+                    value={controllerField.value ?? ''}
                     onValueChange={controllerField.onChange}
                   >
                     <SelectTrigger
@@ -591,7 +622,7 @@ function SummaryPrintButton() {
       deposit: {
         depositIndex: formData.depotIndex,
         year,
-        contributionStatus: formData.contributionStatus,
+        contributionStatus: formData.contributionStatus!,
         contributionAmount: formData.contributionAmount,
       },
       contact: {

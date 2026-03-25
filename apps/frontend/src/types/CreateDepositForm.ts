@@ -37,12 +37,17 @@ export const DepositSchema = z.object({
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
-  contributionStatus: z.union([
-    z.literal('A_PAYER'),
-    z.literal('PAYEE'),
-    z.literal('PRO'),
-    z.literal('GRATUIT'),
-  ]),
+  contributionStatus: z
+    .union([
+      z.literal('A_PAYER'),
+      z.literal('PAYEE'),
+      z.literal('PRO'),
+      z.literal('GRATUIT'),
+    ])
+    .nullable()
+    .refine((val) => val !== null, {
+      message: 'Le statut de cotisation est requis',
+    }),
   contributionAmount: z.coerce.number(),
   articles: z
     .array(ArticleSchema)

@@ -29,7 +29,7 @@ export function useEditDepot() {
 
         if (data.id) {
           await depotDb.update(data.id, {
-            contributionStatus: data.contributionStatus,
+            contributionStatus: data.contributionStatus!,
             contributionAmount: data.contributionAmount,
             updatedAt: currentDate,
           })

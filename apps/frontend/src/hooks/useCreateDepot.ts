@@ -37,7 +37,7 @@ export function useCreateDepot() {
           id: v4(),
           type: 'PARTICULIER',
           sellerId: contactId,
-          contributionStatus: data.contributionStatus,
+          contributionStatus: data.contributionStatus!,
           contributionAmount: data.contributionAmount,
           depositIndex: data.depotIndex,
           incrementStart: workstation.incrementStart,
