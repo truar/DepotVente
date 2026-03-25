@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite --port 5173",
     "build": "vite build && tsc",
+    "typecheck": "tsc --noEmit",
     "serve": "vite preview",
     "test": "vitest run",
     "lint": "eslint",

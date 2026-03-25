@@ -66,43 +66,49 @@ export function RouteComponent() {
           <div className="grid grid-cols-3 max-w-3xl gap-3 mx-auto">
             <ClickableCard
               onClick={() => navigate({ to: '/deposits/add' })}
-              icon={<Tag className="w-8 h-8 text-green-600" />}
+              icon={<Tag className="w-8 h-8 text-blue-600" />}
               title="Dépôt"
               description="Enregistrer des articles"
+              variant="blue"
             />
             <ClickableCard
               onClick={() => {
                 navigate({ to: '/deposits/cash-register-control' })
               }}
-              icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
+              icon={<ReceiptEuro className="w-8 h-8 text-blue-600" />}
               title="Caisse"
               description="Contrôler les espèces"
+              variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/deposits/pros' })}
-              icon={<SearchCheck className="w-8 h-8 text-green-600" />}
+              icon={<SearchCheck className="w-8 h-8 text-blue-600" />}
               title="Pros"
               description="Réceptionner les articles"
+              variant="blue"
             />
             {user.role === 'ADMIN' && (
               <>
                 <ClickableCard
                   onClick={() => navigate({ to: '/deposits/listing' })}
-                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  icon={<FileBox className="w-8 h-8 text-blue-600" />}
                   title="Fiches dépôts"
                   description="Gérer les fiches"
+                  variant="blue"
                 />
                 <ClickableCard
                   onClick={() => navigate({ to: '/deposits/predeposits' })}
-                  icon={<FileCog className="w-8 h-8 text-green-600" />}
+                  icon={<FileCog className="w-8 h-8 text-blue-600" />}
                   title="Fiches pré-dépôts"
                   description="Gérer les fiches"
+                  variant="blue"
                 />
                 <ClickableCard
                   onClick={() => navigate({ to: '/deposits/articles' })}
-                  icon={<SquarePen className="w-8 h-8 text-green-600" />}
+                  icon={<SquarePen className="w-8 h-8 text-blue-600" />}
                   title="Article"
                   description="Modifier un article"
+                  variant="blue"
                 />
               </>
             )}

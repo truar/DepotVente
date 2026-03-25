@@ -59,29 +59,33 @@ export function RouteComponent() {
           <div className="grid grid-cols-3 max-w-3xl gap-3 mx-auto">
             <ClickableCard
               onClick={() => navigate({ to: '/returns/individuals' })}
-              icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
+              icon={<ReceiptEuro className="w-8 h-8 text-blue-600" />}
               title="Particulier"
               description="Retour des particuliers"
+              variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/returns/pros' })}
-              icon={<ShoppingBasket className="w-8 h-8 text-green-600" />}
+              icon={<ShoppingBasket className="w-8 h-8 text-blue-600" />}
               title="Pros"
               description="Retour des pros"
+              variant="blue"
             />
             {user.role === 'ADMIN' && (
               <>
                 <ClickableCard
                   onClick={() => navigate({ to: '/returns/listing' })}
-                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  icon={<FileBox className="w-8 h-8 text-blue-600" />}
                   title="Fiches retours"
                   description="Gérer les fiches retours"
+                  variant="blue"
                 />
                 <ClickableCard
                   onClick={() => navigate({ to: '/returns/checks' })}
-                  icon={<FileBox className="w-8 h-8 text-green-600" />}
+                  icon={<FileBox className="w-8 h-8 text-blue-600" />}
                   title="Chèques"
                   description="Voir les chèques retours"
+                  variant="blue"
                 />
               </>
             )}

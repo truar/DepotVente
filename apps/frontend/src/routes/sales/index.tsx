@@ -60,21 +60,24 @@ export function RouteComponent() {
           <div className="grid grid-cols-3 max-w-3xl gap-3 mx-auto">
             <ClickableCard
               onClick={() => navigate({ to: '/sales/add' })}
-              icon={<ShoppingBasket className="w-8 h-8 text-green-600" />}
+              icon={<ShoppingBasket className="w-8 h-8 text-blue-600" />}
               title="Vente"
               description="Faire une vente"
+              variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/sales/sales-control' })}
-              icon={<ReceiptEuro className="w-8 h-8 text-green-600" />}
+              icon={<ReceiptEuro className="w-8 h-8 text-blue-600" />}
               title="Caisse"
               description="Controler la caisse"
+              variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/sales/listing' })}
-              icon={<ClipboardList className="w-8 h-8 text-green-600" />}
+              icon={<ClipboardList className="w-8 h-8 text-blue-600" />}
               title="Ventes"
               description="Gérer les ventes"
+              variant="blue"
             />
           </div>
         </div>

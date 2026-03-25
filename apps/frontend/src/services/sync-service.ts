@@ -9,7 +9,7 @@ const BASE_DELAY = 1000 // 1 second
 class SyncService {
   private isSyncing = false
   private syncInProgress = false
-  private retryTimeout: NodeJS.Timeout | null = null
+  private _retryTimeout: NodeJS.Timeout | null = null
   private token: string | null = null
 
   setToken(token: string) {
@@ -253,7 +253,7 @@ class SyncService {
         if (!result.success) {
           // Schedule a retry for the outbox based on the needed delay
           if (result.retryDelay !== undefined) {
-            this.retryTimeout = setTimeout(() => {
+            this._retryTimeout = setTimeout(() => {
               this.processOutbox()
             }, result.retryDelay)
           }

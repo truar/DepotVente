@@ -74,6 +74,10 @@ export function DepositForm(props: DepositFormProps) {
         articles: formData?.articles ?? [],
       },
     },
+    // In edit mode, keep form in sync with DB via deep comparison (no blink)
+    ...(formData?.id
+      ? { values: { isSummaryPrinted: true, deposit: formData } }
+      : {}),
   })
   const { handleSubmit, setValue, reset, setError } = methods
 
@@ -81,9 +85,9 @@ export function DepositForm(props: DepositFormProps) {
     setValue('deposit.depotIndex', depositIndex)
   }, [depositIndex, setValue])
 
-  // TODO Checkme, setValue does not seem to update fieldArray
+  // Sync form data from predeposit loading (create mode only)
   useEffect(() => {
-    if (formData) {
+    if (formData && !formData.id) {
       setValue('deposit', formData)
       setValue('deposit.articles', formData.articles)
     }
@@ -97,8 +101,11 @@ export function DepositForm(props: DepositFormProps) {
       return
     }
     await mutation.mutate(data.deposit)
-    reset(data)
-    setCountArticle(0)
+    if (!formData?.id) {
+      // Create mode: clear form for next deposit
+      reset()
+      setCountArticle(0)
+    }
     toast.success(`Dépôt ${depositIndex} enregistré`)
   }
 

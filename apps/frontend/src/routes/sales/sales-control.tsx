@@ -6,6 +6,7 @@ import { z } from 'zod'
 import {
   Controller,
   FormProvider,
+  type UseFormSetValue,
   useFieldArray,
   useForm,
   useFormContext,
@@ -105,7 +106,7 @@ type CashRegisterControlFormType = z.infer<
 function useCardPaymentData({
   setValue,
 }: {
-  setValue: (key: string, value: any) => void
+  setValue: UseFormSetValue<CashRegisterControlFormType>
 }) {
   const [workstation] = useWorkstation()
   const sales = useLiveQuery(
@@ -147,7 +148,7 @@ function useCardPaymentData({
 function useCheckPaymentData({
   setValue,
 }: {
-  setValue: (key: string, value: any) => void
+  setValue: UseFormSetValue<CashRegisterControlFormType>
 }) {
   const [workstation] = useWorkstation()
   const sales = useLiveQuery(
@@ -189,7 +190,7 @@ function useCheckPaymentData({
 function useRefundPaymentData({
   setValue,
 }: {
-  setValue: (key: string, value: any) => void
+  setValue: UseFormSetValue<CashRegisterControlFormType>
 }) {
   const [workstation] = useWorkstation()
   const sales = useLiveQuery(
@@ -240,7 +241,7 @@ function useCashPaymentData({
   setValue,
   cashRegisterControl,
 }: {
-  setValue: (key: string, value: any) => void
+  setValue: UseFormSetValue<CashRegisterControlFormType>
   cashRegisterControl: CashRegisterControl | undefined
 }) {
   useEffect(() => {
@@ -552,7 +553,7 @@ function RefundPaymentDetails() {
 }
 
 function CashRegisterControlForm() {
-  const { fields } = useFieldArray<CashRegisterControlFormType>({
+  const { fields } = useFieldArray<CashRegisterControlFormType, 'cashPayment.amounts'>({
     name: 'cashPayment.amounts',
   })
   return (

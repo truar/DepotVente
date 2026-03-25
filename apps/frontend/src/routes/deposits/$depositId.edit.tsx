@@ -31,7 +31,7 @@ function RouteComponent() {
   const deposit = useLiveQuery(() => db.deposits.get(depositId))
   const contact = useLiveQuery(
     () => db.contacts.get(deposit?.sellerId ?? ''),
-    [deposit],
+    [deposit?.sellerId],
   )
   const articles = useLiveQuery(
     () => db.articles.where({ depositId }).sortBy('articleIndex'),
