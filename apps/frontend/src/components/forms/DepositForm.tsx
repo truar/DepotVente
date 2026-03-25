@@ -61,9 +61,10 @@ type DepositFormProps = {
   formData?: DepositFormType['deposit']
   mutation: { mutate: (param: DepositFormType['deposit']) => Promise<void> }
   onReset?: () => void
+  onSuccess?: () => void
 }
 export function DepositForm(props: DepositFormProps) {
-  const { depositIndex, formData, mutation, onReset } = props
+  const { depositIndex, formData, mutation, onReset, onSuccess } = props
   const [countArticle, setCountArticle] = useState(
     formData?.articles?.length ?? 0,
   )
@@ -81,7 +82,7 @@ export function DepositForm(props: DepositFormProps) {
         city: formData?.city ?? '',
         predepositId: formData?.predepositId,
         sellerId: formData?.sellerId,
-        contributionStatus: formData?.contributionStatus ?? null,
+        contributionStatus: formData?.contributionStatus ?? (null as any),
         contributionAmount: formData?.contributionAmount ?? 0,
         articles: formData?.articles ?? [],
       },
@@ -118,6 +119,7 @@ export function DepositForm(props: DepositFormProps) {
       resetForm()
     }
     toast.success(`Dépôt ${depositIndex} enregistré`)
+    onSuccess?.()
   }
 
   const resetForm = useCallback(() => {
@@ -157,16 +159,17 @@ export function DepositForm(props: DepositFormProps) {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Etes vous sur de vouloir annuler ?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Etes vous sur de vouloir annuler ?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues.
+                    Cette action va réinitialiser le formulaire. Les données non
+                    enregistrées seront perdues.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Non</AlertDialogCancel>
-                  <AlertDialogAction onClick={resetForm}>
-                    Oui
-                  </AlertDialogAction>
+                  <AlertDialogAction onClick={resetForm}>Oui</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -622,7 +625,7 @@ function SummaryPrintButton() {
       deposit: {
         depositIndex: formData.depotIndex,
         year,
-        contributionStatus: formData.contributionStatus!,
+        contributionStatus: formData.contributionStatus,
         contributionAmount: formData.contributionAmount,
       },
       contact: {
@@ -661,23 +664,14 @@ function ErrorMessages() {
   } = useFormContext<DepositFormType>()
 
   const printError = errors.root?.summary?.message
-  const fieldErrors = Object.keys(errors)
-    .filter((key) => key !== 'root')
-    .map((key, index) => {
-      if (typeof (errors as any)[key]?.message === 'string') {
-        return <li key={index}>{(errors as any)[key]?.message}</li>
-      }
-      return null
-    })
-    .filter(Boolean)
+  const hasFieldErrors = Object.keys(errors).some((key) => key !== 'root')
 
-  if (!printError && fieldErrors.length === 0) return null
+  if (!printError && !hasFieldErrors) return null
 
   return (
     <ul className="pl-3 text-red-600">
       {printError && <li>{printError}</li>}
-      {fieldErrors.length > 0 && 'Merci de compléter les champs obligatoires'}
-      {fieldErrors}
+      {hasFieldErrors && <li>Merci de compléter les champs obligatoires</li>}
     </ul>
   )
 }

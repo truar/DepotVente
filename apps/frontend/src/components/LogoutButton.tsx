@@ -8,10 +8,13 @@ export function LogoutButton() {
   const authStore = useAuthStore()
   const navigate = useNavigate()
   const logout = useCallback(async () => {
-    await authStore.logout()
-    await navigate({
-      to: '/login',
-    })
+    try {
+      await authStore.logout()
+    } finally {
+      await navigate({
+        to: '/login',
+      })
+    }
   }, [navigate, authStore])
 
   return (

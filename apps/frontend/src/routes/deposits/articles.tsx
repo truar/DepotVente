@@ -103,17 +103,20 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
     setCode('')
   }, [code])
   return (
-    <div className="flex gap-3">
-      <div>
-        <Input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Rechercher un article"
-          onKeyDown={checkKeyDown}
-        />
-      </div>
-      <div>
-        <CustomButton onClick={submit}>Modifier</CustomButton>
+    <div className="flex flex-col gap-1">
+      <div className="flex gap-3">
+        <div>
+          <Input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Ex: 2025 1A"
+            onKeyDown={checkKeyDown}
+            autoFocus
+          />
+        </div>
+        <div>
+          <CustomButton onClick={submit}>Modifier</CustomButton>
+        </div>
       </div>
     </div>
   )
@@ -310,7 +313,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
-                  <Label htmlFor="model">Modèle</Label>
+                  <Label htmlFor="model">Descriptif</Label>
                   <InputGroup>
                     <InputGroupInput
                       {...field}
@@ -430,7 +433,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
           onClick={() => reset()}
           variant="destructive"
         >
-          Réinitialiser
+          Annuler
         </CustomButton>
         <CustomButton
           type="button"

@@ -46,7 +46,7 @@ async function createDepositPdfData(
 
   const articles = await db.articles
     .where({ depositId: deposit.id })
-    .sortBy('articleIndex')
+    .sortBy('identificationLetter')
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 
@@ -122,6 +122,7 @@ function DepositDataTable() {
           type: deposit.type,
           contributionStatus:
             contributionStatuses.get(deposit.contributionStatus) ?? '',
+          contributionAmount: deposit.contributionAmount,
           seller: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
@@ -150,6 +151,7 @@ export type DepositTableType = {
   index: number
   type: Deposit['type']
   contributionStatus: string
+  contributionAmount: number
   seller: string
 }
 
@@ -208,6 +210,15 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     accessorKey: 'contributionStatus',
     header: 'Statut de la contribution',
+  },
+  {
+    accessorKey: 'contributionAmount',
+    header: 'Montant cotisation',
+    cell: ({ row }) => (
+      <p className="text-right pr-3">
+        <FormattedNumber value={row.original.contributionAmount} style="currency" currency="EUR" />
+      </p>
+    ),
   },
   {
     id: 'amount',
@@ -296,12 +307,18 @@ function DepositsSummary() {
       .and((article) => article.status !== 'REFUSED')
       .toArray(),
   )
+  const deposits = useLiveQuery(() => db.deposits.toArray())
   const total =
     articles?.reduce(
       (acc, article) => acc + parseFloat(`${article.price}`),
       0,
     ) ?? 0
   const count = articles?.length ?? 0
+  const totalContributions =
+    deposits?.reduce(
+      (acc, deposit) => acc + (deposit.contributionAmount ?? 0),
+      0,
+    ) ?? 0
 
   return (
     <div className="flex flew-row gap-5 font-bold">
@@ -309,6 +326,10 @@ function DepositsSummary() {
       <p>
         Montant total:{' '}
         <FormattedNumber value={total} style="currency" currency="EUR" />
+      </p>
+      <p>
+        Total cotisations:{' '}
+        <FormattedNumber value={totalContributions} style="currency" currency="EUR" />
       </p>
     </div>
   )

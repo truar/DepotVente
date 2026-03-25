@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -34,7 +34,7 @@ function RouteComponent() {
     [deposit?.sellerId],
   )
   const articles = useLiveQuery(
-    () => db.articles.where({ depositId }).sortBy('articleIndex'),
+    () => db.articles.where({ depositId }).sortBy('identificationLetter'),
     [depositId],
   )
   if (!deposit || !contact || !articles) return
@@ -62,6 +62,7 @@ type EditDepositComponentProps = {
 function EditDepositComponent(props: EditDepositComponentProps) {
   const { deposit, articles, contact } = props
   const mutation = useEditDepot()
+  const navigate = useNavigate()
   const formData: DepositFormType['deposit'] = useMemo(() => {
     return {
       id: deposit.id,
@@ -102,6 +103,7 @@ function EditDepositComponent(props: EditDepositComponentProps) {
       depositIndex={deposit.depositIndex}
       formData={formData}
       mutation={mutation}
+      onSuccess={() => navigate({ to: '/deposits/listing' })}
     />
   )
 }

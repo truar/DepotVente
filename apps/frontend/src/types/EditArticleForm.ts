@@ -8,7 +8,7 @@ export const EditArticleSchema = z.object({
   type: z.string().nonempty({ message: 'Le type est requis' }),
   size: z.string().nonempty({ message: 'La taille est requise' }),
   color: z.string().optional(),
-  model: z.string().nonempty({ message: 'Le model est requis' }),
+  model: z.string().optional(),
   articleCode: z.string(),
   shortArticleCode: z.string(),
   isDeleted: z.boolean().optional(),
