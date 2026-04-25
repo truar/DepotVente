@@ -2,7 +2,7 @@
  * Client HTTP générique pour les appels API
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>
@@ -22,7 +22,7 @@ class ApiClient {
     const { params, ...fetchOptions } = options
 
     // Construire l'URL avec les paramètres query
-    const url = new URL(`${this.baseURL}${endpoint}`)
+    const url = new URL(`${this.baseURL}${endpoint}`, window.location.origin)
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value)

@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: cmr_password
       POSTGRES_DB: cmr_db
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -43,10 +43,27 @@ services:
     container_name: cmr_frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "15173:80"
     depends_on:
       - backend
 
+  # Caddy reverse proxy with self-signed TLS
+  caddy:
+    image: caddy:2-alpine
+    container_name: cmr_caddy
+    restart: unless-stopped
+    ports:
+      - "15174:15174"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   postgres_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local

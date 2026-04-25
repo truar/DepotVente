@@ -2,7 +2,7 @@ import { db, type OutboxOperation } from '@/db.ts'
 import { v4 as uuid } from 'uuid'
 import { liveQuery } from 'dexie'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 const MAX_RETRIES = 10
 const BASE_DELAY = 1000 // 1 second
 
@@ -83,7 +83,7 @@ class SyncService {
     const token = this.getToken()
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/sync/initial`,
+        `${API_BASE_URL}/sync/initial`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -169,7 +169,7 @@ class SyncService {
     const token = this.getToken()
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/sync/delta?since=${lastSync}`,
+        `${API_BASE_URL}/sync/delta?since=${lastSync}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

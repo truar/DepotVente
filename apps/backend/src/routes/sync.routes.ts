@@ -5,7 +5,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
 
   // Initial sync: Full data dump for a workstation
   fastify.get(
-    '/api/sync/initial',
+    '/sync/initial',
     {
       onRequest: [fastify.authenticate],
     },
@@ -37,7 +37,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
 
   // Delta sync: Changes since timestamp
   fastify.get<{ Querystring: { since?: string } }>(
-    '/api/sync/delta',
+    '/sync/delta',
     {
       onRequest: [fastify.authenticate],
     },
@@ -103,7 +103,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
     }
   );
   // Health check endpoint
-  fastify.get('/api/sync/ping', async () => {
+  fastify.get('/sync/ping', async () => {
     return { status: 'ok', timestamp: Date.now() };
   });
 }

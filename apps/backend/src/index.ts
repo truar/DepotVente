@@ -50,10 +50,10 @@ fastify.get("/api/health", async () => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
 
-// Register routes
-await fastify.register(authRoutes);
-await fastify.register(replicationRoutes);
-await fastify.register(syncRoutes);
+// Register routes (all mounted under /api)
+await fastify.register(authRoutes, { prefix: "/api" });
+await fastify.register(replicationRoutes, { prefix: "/api" });
+await fastify.register(syncRoutes, { prefix: "/api" });
 
 // Graceful shutdown
 const signals = ["SIGINT", "SIGTERM"];

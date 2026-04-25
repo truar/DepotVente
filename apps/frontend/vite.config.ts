@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { fileURLToPath, URL } from 'node:url'
-import mkcert from 'vite-plugin-mkcert'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -18,11 +17,10 @@ export default defineConfig({
     }),
     viteReact(),
     tailwindcss(),
-    mkcert(),
   ],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 15173,
     strictPort: true,
     watch: {
       usePolling: true,
@@ -30,13 +28,6 @@ export default defineConfig({
     },
     hmr: {
       overlay: true,
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000', // Backend server
-        changeOrigin: true, // Ensure the request appears to come from the frontend server
-        rewrite: (path) => path.replace(/^\/api/, ''), // Optional: Remove '/api' prefix
-      },
     },
   },
   resolve: {

@@ -1,4 +1,5 @@
 import { PrismaClient } from '../generated/client'
+import { decimalToNumberExtension } from './extensions/decimal-to-number'
 import { softDeleteExtension } from './extensions/soft-delete'
 
 // Extension du type global pour le stockage du client Prisma
@@ -12,8 +13,9 @@ function createPrismaClient() {
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
-  // Appliquer l'extension de soft delete
-  return client.$extends(softDeleteExtension)
+  return client
+    .$extends(softDeleteExtension)
+    .$extends(decimalToNumberExtension)
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
