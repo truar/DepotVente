@@ -212,7 +212,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
         (deposit) =>
           !deposit.signatory &&
           !!deposit.soldAmount &&
-          parseFloat(`${deposit.soldAmount}`) > 0,
+          deposit.soldAmount > 0,
       ) ?? [],
     [allDeposits],
   )
@@ -328,8 +328,7 @@ function ReturnedDepositSummary() {
   const toBeTreated = useMemo(
     () =>
       allDeposits?.filter(
-        (deposit) =>
-          !!deposit.soldAmount && parseFloat(`${deposit.soldAmount}`) > 0,
+        (deposit) => !!deposit.soldAmount && deposit.soldAmount > 0,
       ) ?? [],
     [allDeposits],
   )

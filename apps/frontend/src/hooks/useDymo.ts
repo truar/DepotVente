@@ -732,15 +732,16 @@ const droppedArticleLabelXml =
   '</DesktopLabel>'
 
 export function useDymo() {
-  const print = useCallback((param: ArticlePrintParam) => {
+  const print = useCallback((param: ArticlePrintParam): boolean => {
     const printers = getPrinters()
     const replacedXml = replacePlaceholders(droppedArticleLabelXml, param)
 
     const label = window.dymo.label.framework.openLabelXml(replacedXml)
 
     const printer = printers.at(0)
-    if (!printer) return
+    if (!printer) return false
     label.print(printer.name)
+    return true
   }, [])
 
   return { print }

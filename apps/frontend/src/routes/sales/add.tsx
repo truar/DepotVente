@@ -119,8 +119,7 @@ function SalesForm(props: SalesFormProps) {
   const createSaleMutation = useCreateSale()
   const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
     const articles = data.articles
-    const totalPrice =
-      articles?.reduce((acc, cur) => acc + parseFloat(`${cur.price}`), 0) ?? 0
+    const totalPrice = articles?.reduce((acc, cur) => acc + cur.price, 0) ?? 0
     const cashAmount = data.cashAmount ?? 0
     const cardAmount = data.cardAmount ?? 0
     const checkAmount = data.checkAmount ?? 0
@@ -437,7 +436,7 @@ function ScannedArticles() {
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
   const total = articles.reduce((acc, cur) => {
-    acc += parseFloat(`${cur.price}`)
+    acc += cur.price
     return acc
   }, 0)
   return (
@@ -497,7 +496,7 @@ function PaymentForm() {
   const cashAmount = watch('cashAmount')
   let cashReturned = Math.max(
     0,
-    parseFloat(cashReceived) - parseFloat(`${cashAmount}`),
+    parseFloat(cashReceived) - (cashAmount ?? 0),
   )
   if (Number.isNaN(cashReturned)) {
     cashReturned = 0

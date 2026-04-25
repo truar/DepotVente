@@ -39,7 +39,14 @@ import { Combobox } from '@/components/Combobox.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
-import { Plus, Printer, RotateCcwIcon, Trash2 } from 'lucide-react'
+import {
+  CheckCircle2,
+  Plus,
+  Printer,
+  RotateCcwIcon,
+  Trash2,
+  Undo2,
+} from 'lucide-react'
 import { Field } from '@/components/ui/field.tsx'
 import {
   Select,
@@ -408,18 +415,37 @@ type ArticleLineFormProps = {
   onRemove: () => void
 }
 
+type ArticleLineLockState = 'editable' | 'refused' | 'sold' | 'returned'
+
+const articleLineBgClass: Record<ArticleLineLockState, string> = {
+  editable: '',
+  refused: 'bg-gray-100 opacity-60',
+  sold: 'bg-green-50',
+  returned: 'bg-blue-50',
+}
+
 function ArticleLineForm(props: ArticleLineFormProps) {
   const { index, onRemove } = props
   const { setValue, watch } = useFormContext<DepositFormType>()
   const softDeletionEnabled = watch(
     `deposit.articles.${index}.softDeletionEnabled`,
   )
-  const isLineDisabled = watch(`deposit.articles.${index}.isDeleted`)
+  const labelPrinted = watch(`deposit.articles.${index}.labelPrinted`)
+  const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
+  const status = watch(`deposit.articles.${index}.status`)
+  const lockState: ArticleLineLockState =
+    status === 'SOLD'
+      ? 'sold'
+      : status === 'RETURNED'
+        ? 'returned'
+        : isDeleted
+          ? 'refused'
+          : 'editable'
+  const isLocked = lockState !== 'editable'
+  const cellClass = `py-1 px-1 ${articleLineBgClass[lockState]}`
   return (
     <tr className="border-b border-gray-100">
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.shortArticleCode`}
           render={({ field, fieldState }) => (
@@ -431,9 +457,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.discipline`}
           render={({ field, fieldState }) => (
@@ -442,14 +466,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={disciplineItems}
               onSelect={field.onChange}
               value={field.value}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.type`}
           render={({ field, fieldState }) => (
@@ -458,14 +480,12 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={categoriesItems}
               onSelect={field.onChange}
               value={field.value}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.brand`}
           render={({ field, fieldState }) => (
@@ -474,28 +494,24 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               items={brandsItems}
               onSelect={field.onChange}
               value={field.value}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.model`}
           render={({ field, fieldState }) => (
             <TextField
               invalid={fieldState.invalid}
               {...field}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.color`}
           render={({ field, fieldState }) => (
@@ -503,28 +519,24 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               invalid={fieldState.invalid}
               {...field}
               items={colors}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.size`}
           render={({ field, fieldState }) => (
             <TextField
               invalid={fieldState.invalid}
               {...field}
-              readOnly={isLineDisabled}
+              readOnly={isLocked}
             />
           )}
         />
       </td>
-      <td
-        className={`py-1 px-1 ${isLineDisabled ? 'bg-gray-100 opacity-60' : ''}`}
-      >
+      <td className={cellClass}>
         <div className="flex items-center gap-1">
           <Controller
             name={`deposit.articles.${index}.price`}
@@ -532,7 +544,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
               <MonetaryField
                 invalid={fieldState.invalid}
                 {...field}
-                readOnly={isLineDisabled}
+                readOnly={isLocked}
               />
             )}
           />
@@ -540,31 +552,45 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
       <td className="py-1 px-1">
         <div className="flex items-center">
-          <PrintArticleButton index={index} disabled={isLineDisabled} />
-          {isLineDisabled ? (
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() =>
-                setValue(`deposit.articles.${index}.isDeleted`, false)
-              }
-              className="p-2 text-green-800 hover:bg-green-50 rounded-lg transition-colors"
-            >
-              <RotateCcwIcon className="w-4 h-4" />
-            </Button>
+          {lockState === 'sold' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-md">
+              <CheckCircle2 className="w-3 h-3" />
+              Vendu
+            </span>
+          ) : lockState === 'returned' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-md">
+              <Undo2 className="w-3 h-3" />
+              Rendu
+            </span>
           ) : (
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() =>
-                softDeletionEnabled
-                  ? setValue(`deposit.articles.${index}.isDeleted`, true)
-                  : onRemove()
-              }
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <>
+              <PrintArticleButton index={index} disabled={isLocked} />
+              {lockState === 'refused' ? (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() =>
+                    setValue(`deposit.articles.${index}.isDeleted`, false)
+                  }
+                  className="p-2 text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                >
+                  <RotateCcwIcon className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() =>
+                    labelPrinted || softDeletionEnabled
+                      ? setValue(`deposit.articles.${index}.isDeleted`, true)
+                      : onRemove()
+                  }
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       </td>
@@ -580,13 +606,13 @@ type PrintArticleButtonProps = {
 function PrintArticleButton(props: PrintArticleButtonProps) {
   const { index } = props
   const dymo = useDymo()
-  const { trigger, getValues } = useFormContext<DepositFormType>()
+  const { trigger, getValues, setValue } = useFormContext<DepositFormType>()
 
   const printDymo = useCallback(async () => {
     const valid = await trigger(`deposit.articles.${index}`)
     if (!valid) return
     const field = getValues(`deposit.articles.${index}`)
-    dymo.print({
+    const printed = dymo.print({
       color: field.color,
       brand: field.brand,
       size: field.size ?? '',
@@ -596,7 +622,10 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
       shortCode: field.shortArticleCode,
       model: field.model ?? '',
     })
-  }, [dymo, getValues, index])
+    if (printed) {
+      setValue(`deposit.articles.${index}.labelPrinted`, true)
+    }
+  }, [dymo, getValues, setValue, index])
 
   const debouncedPrintDymo = useDebouncedCallback(printDymo, 1000)
 

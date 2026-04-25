@@ -137,7 +137,7 @@ function useCardPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: parseFloat(`${payment.cardAmount}`) || 0,
+          amount: payment.cardAmount ?? 0,
         }
       })
       .filter((sale) => !!sale)
@@ -179,7 +179,7 @@ function useCheckPaymentData({
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          amount: parseFloat(`${payment.checkAmount}`) || 0,
+          amount: payment.checkAmount ?? 0,
         }
       })
       .filter((sale) => !!sale)
@@ -228,9 +228,7 @@ function useRefundPaymentData({
           type: payment.refundCardAmount ? 'CB' as const : 'CASH' as const,
           comment: payment.refundComment || '',
           amount:
-            parseFloat(`${payment.refundCardAmount}`) ||
-            parseFloat(`${payment.refundCashAmount}`) ||
-            0,
+            payment.refundCardAmount ?? payment.refundCashAmount ?? 0,
         }
       })
       .filter((sale) => !!sale)
@@ -629,12 +627,7 @@ function TheoreticalAmount() {
   )
   useEffect(() => {
     const theoreticalAmount =
-      sales?.reduce((acc, sale) => {
-        const amount = sale.cashAmount
-          ? (parseFloat(`${sale.cashAmount}`) ?? 0)
-          : 0
-        return acc + amount
-      }, 0) ?? 0
+      sales?.reduce((acc, sale) => acc + (sale.cashAmount ?? 0), 0) ?? 0
     setValue('cashPayment.theoreticalAmount', theoreticalAmount)
   }, [sales, setValue])
 

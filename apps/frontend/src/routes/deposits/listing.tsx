@@ -231,10 +231,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
           .toArray(),
       )
       const sum =
-        articles?.reduce(
-          (acc, article) => acc + parseFloat(`${article.price}`),
-          0,
-        ) ?? 0
+        articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
 
       return (
         <p className="text-right pr-3">
@@ -309,10 +306,7 @@ function DepositsSummary() {
   )
   const deposits = useLiveQuery(() => db.deposits.toArray())
   const total =
-    articles?.reduce(
-      (acc, article) => acc + parseFloat(`${article.price}`),
-      0,
-    ) ?? 0
+    articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
   const count = articles?.length ?? 0
   const totalContributions =
     deposits?.reduce(

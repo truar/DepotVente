@@ -106,7 +106,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
             type: article.category,
             model: article.model,
             brand: article.brand,
-            softDeletionEnabled: true,
+            softDeletionEnabled: false,
             identificationLetter: article.identificationLetter,
             shortArticleCode: shortArticleCode(
               depositIndex,

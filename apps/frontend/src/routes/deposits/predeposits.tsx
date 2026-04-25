@@ -199,10 +199,7 @@ export const columns: ColumnDef<TableType>[] = [
           .toArray(),
       )
       const sum =
-        articles?.reduce(
-          (acc, article) => acc + parseFloat(`${article.price}`),
-          0,
-        ) ?? 0
+        articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
 
       return (
         <p className="text-right pr-3">
@@ -265,10 +262,7 @@ function PredepositsSummary() {
   const notConfirmed =
     predeposits?.filter((predeposit) => !predeposit.depositId).length ?? 0
   const total =
-    predepositArticles?.reduce(
-      (acc, article) => acc + parseFloat(`${article.price}`),
-      0,
-    ) ?? 0
+    predepositArticles?.reduce((acc, article) => acc + article.price, 0) ?? 0
   const count = predepositArticles?.length ?? 0
 
   return (

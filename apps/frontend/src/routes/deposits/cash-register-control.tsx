@@ -239,7 +239,7 @@ function TheoreticalAmount() {
       deposits?.reduce((acc, deposit) => {
         const amount =
           deposit.contributionStatus === 'PAYEE'
-            ? (parseFloat(`${deposit.contributionAmount}`) ?? 0)
+            ? deposit.contributionAmount
             : 0
         return acc + amount
       }, 0) ?? 0
