@@ -186,7 +186,7 @@ export const columns: ColumnDef<TableType>[] = [
   },
   {
     id: 'status',
-    header: 'Status',
+    header: 'Statut',
     accessorKey: 'status',
   },
   {

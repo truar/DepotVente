@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+const isFakeDymo = import.meta.env.VITE_FAKE_DYMO === 'true'
+
 const getPrinters = () => {
   return window.dymo.label.framework.getPrinters()
 }
@@ -21,8 +23,9 @@ const isDymoEnabled = () => {
 }
 
 export function useDymoHealthCheck() {
-  const [isEnabled, setEnabled] = useState(false)
+  const [isEnabled, setEnabled] = useState(isFakeDymo)
   useEffect(() => {
+    if (isFakeDymo) return
     const healthCheckInterval = setInterval(() => {
       const isEnabled = isDymoEnabled()
       setEnabled(isEnabled)

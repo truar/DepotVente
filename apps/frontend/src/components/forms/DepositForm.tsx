@@ -10,7 +10,7 @@ import {
   DepositFormSchema,
   type DepositFormType,
 } from '@/types/CreateDepositForm.ts'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -76,7 +76,7 @@ export function DepositForm(props: DepositFormProps) {
     formData?.articles?.length ?? 0,
   )
   const methods = useForm<DepositFormType>({
-    resolver: zodResolver(DepositFormSchema),
+    resolver: typedZodResolver(DepositFormSchema),
     mode: 'onSubmit',
     defaultValues: {
       isSummaryPrinted: !!formData && !!formData.id,
@@ -389,7 +389,7 @@ function ArticleForm(props: ArticleFormProps) {
                       className="w-full"
                       aria-invalid={fieldState.invalid}
                     >
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder="Statut" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -649,6 +649,10 @@ function SummaryPrintButton() {
       return
     }
     const formData = getValues('deposit')
+    if (formData.contributionStatus == null) {
+      // unreachable: trigger() returned valid, so the schema's refine passed
+      throw new Error('contributionStatus must be set before printing')
+    }
     const year = getYear()
     const data: DepositPdfProps['data'] = {
       deposit: {

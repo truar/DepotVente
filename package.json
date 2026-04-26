@@ -8,6 +8,7 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm --filter database db:generate && pnpm run --filter './apps/*' build",
+    "typecheck": "pnpm run --parallel --filter './apps/*' typecheck",
     "db:generate": "pnpm --filter database db:generate",
     "db:migrate": "pnpm --filter database db:migrate",
     "db:reset": "pnpm --filter database db:reset",

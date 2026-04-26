@@ -8,7 +8,7 @@ import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useCallback, useMemo, useState } from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -72,7 +72,7 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
   const mutation = useReturnDepositMutation()
   const { workstation } = props
   const methods = useForm<IndividualReturnFormType>({
-    resolver: zodResolver(IndividualReturnForm),
+    resolver: typedZodResolver(IndividualReturnForm),
     defaultValues: {
       workstation: workstation.incrementStart,
     },

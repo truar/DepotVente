@@ -731,8 +731,14 @@ const droppedArticleLabelXml =
   '  </DataTable>\n' +
   '</DesktopLabel>'
 
+const isFakeDymo = import.meta.env.VITE_FAKE_DYMO === 'true'
+
 export function useDymo() {
   const print = useCallback((param: ArticlePrintParam): boolean => {
+    if (isFakeDymo) {
+      console.info('[fake-dymo] print', param)
+      return true
+    }
     const printers = getPrinters()
     const replacedXml = replacePlaceholders(droppedArticleLabelXml, param)
 

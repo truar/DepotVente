@@ -7,7 +7,7 @@ import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Page } from '@/components/Page.tsx'
 import { DepositForm } from '@/components/forms/DepositForm.tsx'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { db } from '@/db.ts'
 import { Combobox } from '@/components/Combobox.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -139,18 +139,22 @@ type PredepositComboBoxProps = {
 }
 function PredepositComboBox(props: PredepositComboBoxProps) {
   const { onChange, value: predepositId, onSelect: setPredepositId } = props
-  const predeposits = useLiveQuery(() => db.predeposits.toArray())
-  const predepositItems = useMemo(() => {
-    return (
-      predeposits
-        ?.filter((predeposit) => !predeposit.depositId)
-        .map((predeposit) => ({
-          value: predeposit.id,
-          label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
-          keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
-        })) ?? []
-    )
-  }, [predeposits])
+  const predepositItems = useLiveQuery(async () => {
+    const collator = new Intl.Collator('fr', { sensitivity: 'base' })
+    const predeposits = await db.predeposits
+      .filter((predeposit) => !predeposit.depositId)
+      .toArray()
+    predeposits.sort((a, b) => {
+      const lastNameCmp = collator.compare(a.sellerLastName, b.sellerLastName)
+      if (lastNameCmp !== 0) return lastNameCmp
+      return collator.compare(a.sellerFirstName, b.sellerFirstName)
+    })
+    return predeposits.map((predeposit) => ({
+      value: predeposit.id,
+      label: `${predeposit.sellerLastName} ${predeposit.sellerFirstName}`,
+      keywords: [predeposit.sellerLastName, predeposit.sellerFirstName],
+    }))
+  }, [])
 
   const handleClick = useCallback(
     () => onChange?.(predepositId ?? ''),
@@ -161,7 +165,7 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
     <div className="grid grid-cols-6 gap-2 w-[500px]">
       <div className="col-span-4">
         <Combobox
-          items={predepositItems}
+          items={predepositItems ?? []}
           value={predepositId}
           onSelect={setPredepositId}
           placeholder="Rechercher une fiche de pré-dépot"
@@ -173,7 +177,7 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
         variant="secondary"
         onClick={handleClick}
       >
-        Rechercher
+        Valider
       </Button>
     </div>
   )

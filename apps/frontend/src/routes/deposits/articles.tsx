@@ -24,7 +24,7 @@ import { Euro, FolderXIcon } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import type { EditArticleFormType } from '@/types/EditArticleForm.ts'
 import { EditArticleSchema } from '@/types/EditArticleForm.ts'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { shortArticleCode } from '@/utils'
 import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
@@ -161,7 +161,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
   const dymo = useDymo()
   const articleEditMutation = useEditArticle()
   const methods = useForm<EditArticleFormType>({
-    resolver: zodResolver(EditArticleSchema),
+    resolver: typedZodResolver(EditArticleSchema),
     mode: 'onSubmit',
     defaultValues: {
       id: article.id,
@@ -222,7 +222,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       code: field.articleCode,
       price: `${field.price}`,
       shortCode: field.shortArticleCode,
-      model: field.model,
+      model: field.model ?? '',
     })
   }, [dymo, getValues])
   return (
@@ -399,7 +399,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">Statut</Label>
                   <Select
                     name={field.name}
                     value={field.value}

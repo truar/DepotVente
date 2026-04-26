@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/input-group.tsx'
 import { cities } from '@/types/cities.ts'
 import { SaleFormSchema, type SaleFormType } from '@/types/saleForm.ts'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import {
@@ -92,7 +92,7 @@ type SalesFormProps = {
 function SalesForm(props: SalesFormProps) {
   const { saleIndex } = props
   const methods = useForm<SaleFormType>({
-    resolver: zodResolver(SaleFormSchema),
+    resolver: typedZodResolver(SaleFormSchema),
     mode: 'onSubmit',
     defaultValues: {
       buyer: {

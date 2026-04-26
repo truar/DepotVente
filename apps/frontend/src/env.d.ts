@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_API_URL: string
   readonly VITE_AUTH_PROVIDER?: 'api' | 'supabase' | 'firebase'
+  readonly VITE_FAKE_DYMO?: string
   // Ajoutez d'autres variables d'environnement ici
 }
 

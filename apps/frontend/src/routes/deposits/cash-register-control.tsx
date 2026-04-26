@@ -9,7 +9,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type CashRegisterControl, db, type Workstation } from '@/db.ts'
@@ -81,7 +81,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   const { workstation, cashRegisterControl } = props
   const mutation = useSaveCashRegisterControlMutation('DEPOSIT')
   const methods = useForm<CashRegisterControlFormType>({
-    resolver: zodResolver(CashRegisterControlFormSchema),
+    resolver: typedZodResolver(CashRegisterControlFormSchema),
     defaultValues: {
       cashRegisterId: workstation.incrementStart,
       initialAmount: 80,

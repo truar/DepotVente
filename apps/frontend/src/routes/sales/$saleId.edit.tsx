@@ -8,7 +8,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { type KeyboardEvent, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
@@ -88,7 +88,7 @@ function SaleForm(props: SaleFormProps) {
   const { sale, articles, buyer } = props
   const mutation = useEditSale()
   const methods = useForm<EditSaleFormType>({
-    resolver: zodResolver(EditSaleSchema),
+    resolver: typedZodResolver(EditSaleSchema),
     mode: 'onSubmit',
     defaultValues: {
       id: sale.id,

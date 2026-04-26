@@ -11,7 +11,7 @@ import {
   useForm,
   useFormContext,
 } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useEffect, useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -304,7 +304,7 @@ function SalesControlPage(props: SalesControlPageProps) {
   const { workstation, cashRegisterControl } = props
   const mutation = useSaveCashRegisterControlMutation('SALE')
   const methods = useForm<CashRegisterControlFormType>({
-    resolver: zodResolver(SalesCashRegisterControlFormSchema),
+    resolver: typedZodResolver(SalesCashRegisterControlFormSchema),
     defaultValues: {
       cardPayments: [],
       checkPayments: [],
