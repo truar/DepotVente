@@ -5,13 +5,14 @@ import {
   useFieldArray,
   useForm,
   useFormContext,
+  useWatch,
 } from 'react-hook-form'
 import {
   DepositFormSchema,
   type DepositFormType,
 } from '@/types/CreateDepositForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
+import { type KeyboardEvent, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -72,9 +73,6 @@ type DepositFormProps = {
 }
 export function DepositForm(props: DepositFormProps) {
   const { depositIndex, formData, mutation, onReset, onSuccess } = props
-  const [countArticle, setCountArticle] = useState(
-    formData?.articles?.length ?? 0,
-  )
   const methods = useForm<DepositFormType>({
     resolver: typedZodResolver(DepositFormSchema),
     mode: 'onSubmit',
@@ -131,7 +129,6 @@ export function DepositForm(props: DepositFormProps) {
 
   const resetForm = useCallback(() => {
     reset()
-    setCountArticle(0)
     onReset?.()
   }, [reset, onReset])
 
@@ -150,11 +147,7 @@ export function DepositForm(props: DepositFormProps) {
 
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-3 py-6 shadow-lg border border-gray-100">
           <SellerInformationForm />
-          <ArticleForm
-            onArticleAdd={() => setCountArticle(countArticle + 1)}
-            articleCount={countArticle}
-            depositIndex={depositIndex}
-          />
+          <ArticleForm depositIndex={depositIndex} />
 
           <div className="flex justify-end gap-4">
             <SummaryPrintButton />
@@ -258,17 +251,16 @@ function SellerInformationForm() {
 }
 
 type ArticleFormProps = {
-  onArticleAdd: () => void
-  articleCount: number
   depositIndex: number
 }
 
 function ArticleForm(props: ArticleFormProps) {
-  const { onArticleAdd, articleCount, depositIndex } = props
+  const { depositIndex } = props
   const { fields, append, remove } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
-  const { trigger, setValue, watch } = useFormContext<DepositFormType>()
+  const { trigger, setValue, getValues, control } =
+    useFormContext<DepositFormType>()
 
   const addArticle = useCallback(async () => {
     if (fields.length > 0) {
@@ -278,7 +270,7 @@ function ArticleForm(props: ArticleFormProps) {
       }
     }
     const year = getYear()
-    const identificationLetter = generateIdentificationLetter(articleCount)
+    const identificationLetter = generateIdentificationLetter(fields.length)
     const articleCode = generateArticleCode(
       year,
       depositIndex,
@@ -299,19 +291,22 @@ function ArticleForm(props: ArticleFormProps) {
       articleIndex: 1,
       shortArticleCode: `${depositIndex} ${identificationLetter}`,
     })
-    onArticleAdd()
-  }, [fields, depositIndex, articleCount])
+  }, [fields, depositIndex, trigger, append])
 
-  const contributionAmount = watch('deposit.contributionAmount')
-  const articles = watch('deposit.articles')
+  const contributionAmount = useWatch({
+    control,
+    name: 'deposit.contributionAmount',
+  })
+  const articles = useWatch({ control, name: 'deposit.articles' })
   const countArticles = articles.filter((article) => !article.isDeleted).length
 
   useEffect(() => {
+    if (getValues('deposit.contributionStatus') === 'GRATUIT') return
     setValue(
       'deposit.contributionAmount',
       computeContributionAmount(countArticles),
     )
-  }, [countArticles])
+  }, [countArticles, getValues, setValue])
 
   return (
     <div className="flex flex-col gap-3">
@@ -383,7 +378,15 @@ function ArticleForm(props: ArticleFormProps) {
                   <Select
                     name={controllerField.name}
                     value={controllerField.value ?? ''}
-                    onValueChange={controllerField.onChange}
+                    onValueChange={(value) => {
+                      controllerField.onChange(value)
+                      setValue(
+                        'deposit.contributionAmount',
+                        value === 'GRATUIT'
+                          ? 0
+                          : computeContributionAmount(countArticles),
+                      )
+                    }}
                   >
                     <SelectTrigger
                       className="w-full"
@@ -433,6 +436,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
   const labelPrinted = watch(`deposit.articles.${index}.labelPrinted`)
   const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
   const status = watch(`deposit.articles.${index}.status`)
+  const articlesLength = watch('deposit.articles').length
+  const isLast = index === articlesLength - 1
+  const canHardDelete = isLast && !labelPrinted && !softDeletionEnabled
   const lockState: ArticleLineLockState =
     status === 'SOLD'
       ? 'sold'
@@ -581,9 +587,9 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                   variant="ghost"
                   type="button"
                   onClick={() =>
-                    labelPrinted || softDeletionEnabled
-                      ? setValue(`deposit.articles.${index}.isDeleted`, true)
-                      : onRemove()
+                    canHardDelete
+                      ? onRemove()
+                      : setValue(`deposit.articles.${index}.isDeleted`, true)
                   }
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
