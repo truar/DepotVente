@@ -9,10 +9,11 @@ import {
 } from 'react-hook-form'
 import {
   DepositFormSchema,
+  DepositFormSchemaPro,
   type DepositFormType,
 } from '@/types/CreateDepositForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { type KeyboardEvent, useCallback, useEffect } from 'react'
+import { type KeyboardEvent, memo, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -66,15 +67,25 @@ import { printPdf } from '@/pdf/print.tsx'
 
 type DepositFormProps = {
   depositIndex: number
+  depositType?: 'PARTICULIER' | 'PRO'
   formData?: DepositFormType['deposit']
   mutation: { mutate: (param: DepositFormType['deposit']) => Promise<void> }
   onReset?: () => void
   onSuccess?: () => void
 }
 export function DepositForm(props: DepositFormProps) {
-  const { depositIndex, formData, mutation, onReset, onSuccess } = props
+  const {
+    depositIndex,
+    depositType = 'PARTICULIER',
+    formData,
+    mutation,
+    onReset,
+    onSuccess,
+  } = props
   const methods = useForm<DepositFormType>({
-    resolver: typedZodResolver(DepositFormSchema),
+    resolver: typedZodResolver(
+      depositType === 'PRO' ? DepositFormSchemaPro : DepositFormSchema,
+    ),
     mode: 'onSubmit',
     defaultValues: {
       isSummaryPrinted: !!formData && !!formData.id,
@@ -92,10 +103,6 @@ export function DepositForm(props: DepositFormProps) {
         articles: formData?.articles ?? [],
       },
     },
-    // In edit mode, keep form in sync with DB via deep comparison (no blink)
-    ...(formData?.id
-      ? { values: { isSummaryPrinted: true, deposit: formData } }
-      : {}),
   })
   const { handleSubmit, setValue, reset, setError } = methods
 
@@ -259,18 +266,18 @@ function ArticleForm(props: ArticleFormProps) {
   const { fields, append, remove } = useFieldArray<DepositFormType>({
     name: 'deposit.articles',
   })
-  const { trigger, setValue, getValues, control } =
-    useFormContext<DepositFormType>()
+  const { trigger, getValues } = useFormContext<DepositFormType>()
 
   const addArticle = useCallback(async () => {
-    if (fields.length > 0) {
-      const valid = await trigger(`deposit.articles.${fields.length - 1}`)
+    const articles = getValues('deposit.articles')
+    if (articles.length > 0) {
+      const valid = await trigger(`deposit.articles.${articles.length - 1}`)
       if (!valid) {
         return
       }
     }
     const year = getYear()
-    const identificationLetter = generateIdentificationLetter(fields.length)
+    const identificationLetter = generateIdentificationLetter(articles.length)
     const articleCode = generateArticleCode(
       year,
       depositIndex,
@@ -291,22 +298,14 @@ function ArticleForm(props: ArticleFormProps) {
       articleIndex: 1,
       shortArticleCode: `${depositIndex} ${identificationLetter}`,
     })
-  }, [fields, depositIndex, trigger, append])
+  }, [depositIndex, trigger, append, getValues])
 
-  const contributionAmount = useWatch({
-    control,
-    name: 'deposit.contributionAmount',
-  })
-  const articles = useWatch({ control, name: 'deposit.articles' })
-  const countArticles = articles.filter((article) => !article.isDeleted).length
+  const removeArticle = useCallback(
+    (index: number) => remove(index),
+    [remove],
+  )
 
-  useEffect(() => {
-    if (getValues('deposit.contributionStatus') === 'GRATUIT') return
-    setValue(
-      'deposit.contributionAmount',
-      computeContributionAmount(countArticles),
-    )
-  }, [countArticles, getValues, setValue])
+  const lastIndex = fields.length - 1
 
   return (
     <div className="flex flex-col gap-3">
@@ -350,72 +349,105 @@ function ArticleForm(props: ArticleFormProps) {
               <ArticleLineForm
                 key={field.id}
                 index={index}
-                onRemove={() => remove(index)}
+                isLast={index === lastIndex}
+                onRemove={removeArticle}
               />
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="flex flex-row justify-between">
-        <div>
-          <Button type="button" variant="ghost" onClick={addArticle}>
-            <Plus className="w-5 h-5" />
-            Ajouter un nouvel article
-          </Button>
-        </div>
-        <div className="flex flex-row gap-5 items-baseline font-bold">
-          <div>Nombre d'articles : {countArticles}</div>
-          <div>Montant droit de dépôt : {contributionAmount}€</div>
-          <div>
-            <Controller
-              name="deposit.contributionStatus"
-              render={({ field: controllerField, fieldState }) => (
-                <Field
-                  orientation="responsive"
-                  data-invalid={fieldState.invalid}
-                >
-                  <Select
-                    name={controllerField.name}
-                    value={controllerField.value ?? ''}
-                    onValueChange={(value) => {
-                      controllerField.onChange(value)
-                      setValue(
-                        'deposit.contributionAmount',
-                        value === 'GRATUIT'
-                          ? 0
-                          : computeContributionAmount(countArticles),
-                      )
-                    }}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-invalid={fieldState.invalid}
-                    >
-                      <SelectValue placeholder="Statut" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="A_PAYER">A payer</SelectItem>
-                        <SelectItem value="PAYEE">Payée</SelectItem>
-                        <SelectItem value="PRO">Pro</SelectItem>
-                        <SelectItem value="GRATUIT">Gratuit</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            />
-          </div>
-        </div>
-      </div>
+      <ArticleFormFooter onAddArticle={addArticle} />
     </div>
   )
 }
 
+type ArticleFormFooterProps = {
+  onAddArticle: () => void
+}
+
+const ArticleFormFooter = memo(function ArticleFormFooter(
+  props: ArticleFormFooterProps,
+) {
+  const { onAddArticle } = props
+  const { control, setValue, getValues } = useFormContext<DepositFormType>()
+
+  const contributionAmount = useWatch({
+    control,
+    name: 'deposit.contributionAmount',
+  })
+  const articles = useWatch({ control, name: 'deposit.articles' })
+  const countArticles = articles.filter((article) => !article.isDeleted).length
+
+  useEffect(() => {
+    const status = getValues('deposit.contributionStatus')
+    if (status === 'GRATUIT' || status === 'PRO') return
+    setValue(
+      'deposit.contributionAmount',
+      computeContributionAmount(countArticles),
+    )
+  }, [countArticles, getValues, setValue])
+
+  return (
+    <div className="flex flex-row justify-between">
+      <div>
+        <Button type="button" variant="ghost" onClick={onAddArticle}>
+          <Plus className="w-5 h-5" />
+          Ajouter un nouvel article
+        </Button>
+      </div>
+      <div className="flex flex-row gap-5 items-baseline font-bold">
+        <div>Nombre d'articles : {countArticles}</div>
+        <div>Montant droit de dépôt : {contributionAmount}€</div>
+        <div>
+          <Controller
+            name="deposit.contributionStatus"
+            render={({ field: controllerField, fieldState }) => (
+              <Field
+                orientation="responsive"
+                data-invalid={fieldState.invalid}
+              >
+                <Select
+                  name={controllerField.name}
+                  value={controllerField.value ?? ''}
+                  onValueChange={(value) => {
+                    controllerField.onChange(value)
+                    setValue(
+                      'deposit.contributionAmount',
+                      value === 'GRATUIT' || value === 'PRO'
+                        ? 0
+                        : computeContributionAmount(countArticles),
+                    )
+                  }}
+                >
+                  <SelectTrigger
+                    className="w-full"
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="A_PAYER">A payer</SelectItem>
+                      <SelectItem value="PAYEE">Payée</SelectItem>
+                      <SelectItem value="PRO">Pro</SelectItem>
+                      <SelectItem value="GRATUIT">Gratuit</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
+})
+
 type ArticleLineFormProps = {
   index: number
-  onRemove: () => void
+  isLast: boolean
+  onRemove: (index: number) => void
 }
 
 type ArticleLineLockState = 'editable' | 'refused' | 'sold' | 'returned'
@@ -427,8 +459,10 @@ const articleLineBgClass: Record<ArticleLineLockState, string> = {
   returned: 'bg-blue-50',
 }
 
-function ArticleLineForm(props: ArticleLineFormProps) {
-  const { index, onRemove } = props
+const ArticleLineForm = memo(function ArticleLineForm(
+  props: ArticleLineFormProps,
+) {
+  const { index, isLast, onRemove } = props
   const { setValue, watch } = useFormContext<DepositFormType>()
   const softDeletionEnabled = watch(
     `deposit.articles.${index}.softDeletionEnabled`,
@@ -436,8 +470,6 @@ function ArticleLineForm(props: ArticleLineFormProps) {
   const labelPrinted = watch(`deposit.articles.${index}.labelPrinted`)
   const isDeleted = watch(`deposit.articles.${index}.isDeleted`)
   const status = watch(`deposit.articles.${index}.status`)
-  const articlesLength = watch('deposit.articles').length
-  const isLast = index === articlesLength - 1
   const canHardDelete = isLast && !labelPrinted && !softDeletionEnabled
   const lockState: ArticleLineLockState =
     status === 'SOLD'
@@ -588,7 +620,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
                   type="button"
                   onClick={() =>
                     canHardDelete
-                      ? onRemove()
+                      ? onRemove(index)
                       : setValue(`deposit.articles.${index}.isDeleted`, true)
                   }
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -602,7 +634,7 @@ function ArticleLineForm(props: ArticleLineFormProps) {
       </td>
     </tr>
   )
-}
+})
 
 type PrintArticleButtonProps = {
   index: number

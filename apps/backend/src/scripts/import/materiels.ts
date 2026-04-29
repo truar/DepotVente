@@ -1,7 +1,7 @@
 export const materiels: Record<string, string> = {
   '2': 'Chaussures',
   '3': 'Surf',
-  '4': 'Vêtements',
+  '4': 'Vêtement',
   '5': 'Fixations',
   '6': 'Bâtons',
   '7': 'Divers',

@@ -60,4 +60,24 @@ export const DepositFormSchema = z.object({
   deposit: DepositSchema,
 })
 
+// Pro deposits come from imports with looser data: color may be missing on
+// articles, and firstName/phoneNumber may be missing on the seller. We relax
+// only those three fields; everything else stays required.
+export const ArticleSchemaPro = ArticleSchema.extend({
+  color: z.string(),
+})
+
+export const DepositSchemaPro = DepositSchema.extend({
+  firstName: z.string(),
+  phoneNumber: z.string(),
+  articles: z
+    .array(ArticleSchemaPro)
+    .nonempty({ message: 'Au moins un article est requis' }),
+})
+
+export const DepositFormSchemaPro = z.object({
+  isSummaryPrinted: z.boolean(),
+  deposit: DepositSchemaPro,
+})
+
 export type DepositFormType = z.infer<typeof DepositFormSchema>

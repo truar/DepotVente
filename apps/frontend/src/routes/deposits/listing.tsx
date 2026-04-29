@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
-import { getYear } from '@/utils'
+import { getYear, sortByIdentificationLetter } from '@/utils'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,9 +44,9 @@ async function createDepositPdfData(
   const deposit = await db.deposits.get(id)
   if (!deposit) return undefined
 
-  const articles = await db.articles
-    .where({ depositId: deposit.id })
-    .sortBy('identificationLetter')
+  const articles = sortByIdentificationLetter(
+    await db.articles.where({ depositId: deposit.id }).toArray(),
+  )
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 
@@ -252,13 +252,11 @@ export const columns: ColumnDef<DepositTableType>[] = [
       }, [])
       return (
         <div>
-          {row.original.type === 'PARTICULIER' && (
-            <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
-              <Button variant="ghost" size="icon">
-                <SquarePenIcon />
-              </Button>
-            </Link>
-          )}
+          <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
+            <Button variant="ghost" size="icon">
+              <SquarePenIcon />
+            </Button>
+          </Link>
           <Button variant="ghost" size="icon" onClick={() => print(id)}>
             <EyeIcon />
           </Button>

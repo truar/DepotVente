@@ -17,6 +17,7 @@ import {
   generateIdentificationLetter,
   getYear,
   shortArticleCode,
+  sortByIdentificationLetter,
 } from '@/utils'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 
@@ -71,9 +72,9 @@ function DepositAddComponent(props: DepositAddComponentProps) {
       if (!depositIndex) return
       const predeposit = await db.predeposits.get(predepositId)
       if (!predeposit) return
-      const predepositArticles = await db.predepositArticles
-        .where({ predepositId })
-        .sortBy('identificationLetter')
+      const predepositArticles = sortByIdentificationLetter(
+        await db.predepositArticles.where({ predepositId }).toArray(),
+      )
       const year = getYear()
       const data: DepositFormType['deposit'] = {
         depotIndex: depositIndex,

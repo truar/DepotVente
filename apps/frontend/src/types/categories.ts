@@ -1,7 +1,7 @@
 export const categories = [
   'Chaussures',
   'Snowboard',
-  'Vêtements',
+  'Vêtement',
   'Fixations',
   'Bâtons',
   'Divers',

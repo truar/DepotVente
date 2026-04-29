@@ -27,6 +27,21 @@ export function shortArticleCode(
   return `${depositIndex} ${identificationLetter}`
 }
 
+// Order: A..Z, then AA..ZZ, then AAA..ZZZ. A plain lexicographic sort
+// would interleave (AA before B), which is wrong for our labels.
+export function compareIdentificationLetters(a: string, b: string): number {
+  if (a.length !== b.length) return a.length - b.length
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+export function sortByIdentificationLetter<
+  T extends { identificationLetter: string },
+>(items: T[]): T[] {
+  return [...items].sort((a, b) =>
+    compareIdentificationLetters(a.identificationLetter, b.identificationLetter),
+  )
+}
+
 export function timeout(delay: number) {
   return new Promise((res) => setTimeout(res, delay))
 }

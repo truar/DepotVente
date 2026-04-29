@@ -8,7 +8,7 @@ import { useEditDepot } from '@/hooks/useEditDepot.ts'
 import { DepositForm } from '@/components/forms/DepositForm.tsx'
 import { useMemo } from 'react'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
-import { shortArticleCode } from '@/utils'
+import { shortArticleCode, sortByIdentificationLetter } from '@/utils'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
   beforeLoad: () => {
@@ -34,7 +34,10 @@ function RouteComponent() {
     [deposit?.sellerId],
   )
   const articles = useLiveQuery(
-    () => db.articles.where({ depositId }).sortBy('identificationLetter'),
+    async () =>
+      sortByIdentificationLetter(
+        await db.articles.where({ depositId }).toArray(),
+      ),
     [depositId],
   )
   if (!deposit || !contact || !articles) return
@@ -101,8 +104,10 @@ function EditDepositComponent(props: EditDepositComponentProps) {
   return (
     <DepositForm
       depositIndex={deposit.depositIndex}
+      depositType={deposit.type}
       formData={formData}
       mutation={mutation}
+      onReset={() => navigate({ to: '/deposits/listing' })}
       onSuccess={() => navigate({ to: '/deposits/listing' })}
     />
   )
