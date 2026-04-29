@@ -200,7 +200,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
       const articlesCount = useLiveQuery(() =>
         db.articles
           .where({ depositId: row.original.depositId })
-          .and((article) => article.status !== 'REFUSED')
+          .and((article) => article.status !== 'DELETED')
           .count(),
       )
 
@@ -227,7 +227,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
       const articles = useLiveQuery(() =>
         db.articles
           .where({ depositId: row.original.depositId })
-          .and((article) => article.status !== 'REFUSED')
+          .and((article) => article.status !== 'DELETED')
           .toArray(),
       )
       const sum =
@@ -299,7 +299,7 @@ function DepositsSummary() {
   const articles = useLiveQuery(() =>
     db.articles
       .offset(0)
-      .and((article) => article.status !== 'REFUSED')
+      .and((article) => article.status !== 'DELETED')
       .toArray(),
   )
   const deposits = useLiveQuery(() => db.deposits.toArray())

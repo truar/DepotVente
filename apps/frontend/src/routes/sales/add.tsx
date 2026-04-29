@@ -358,7 +358,7 @@ function SaleArticlesForm() {
       setArticleCode('')
       return
     }
-    if (article.status === 'REFUSED') {
+    if (article.status === 'DELETED') {
       toast.error(
         `Article ${articleCode} invendable, contactez l'administrateur`,
       )

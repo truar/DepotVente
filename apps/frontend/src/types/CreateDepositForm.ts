@@ -5,7 +5,7 @@ export const ArticleSchema = z.object({
   isDeleted: z.boolean().optional(),
   status: z
     .union([
-      z.literal('REFUSED'),
+      z.literal('DELETED'),
       z.literal('RECEPTION_OK'),
       z.literal('RECEPTION_PENDING'),
       z.literal('SOLD'),

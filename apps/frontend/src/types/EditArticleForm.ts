@@ -15,7 +15,7 @@ export const EditArticleSchema = z
     isDeleted: z.boolean().optional(),
     status: z
       .union([
-        z.literal('REFUSED'),
+        z.literal('DELETED'),
         z.literal('RECEPTION_OK'),
         z.literal('RECEPTION_PENDING'),
         z.literal('SOLD'),
@@ -24,11 +24,11 @@ export const EditArticleSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.status === 'REFUSED' && !data.model?.trim()) {
+    if (data.status === 'DELETED' && !data.model?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['model'],
-        message: 'Le motif du refus est requis',
+        message: 'La description est requise lors de la suppression',
       })
     }
   })

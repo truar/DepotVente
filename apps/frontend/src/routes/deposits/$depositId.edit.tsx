@@ -82,7 +82,7 @@ function EditDepositComponent(props: EditDepositComponentProps) {
         articleCode: article.code,
         price: article.price,
         color: article.color,
-        isDeleted: article.status === 'REFUSED',
+        isDeleted: article.status === 'DELETED',
         status: article.status,
         depotIndex: deposit.depositIndex,
         articleIndex: article.articleIndex,

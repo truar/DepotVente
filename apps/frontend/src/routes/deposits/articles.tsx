@@ -439,7 +439,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                       </SelectItem>
                       <SelectItem value="RECEPTION_OK">Réception OK</SelectItem>
                       <SelectItem value="SOLD">Vendu</SelectItem>
-                      <SelectItem value="REFUSED">Refusé</SelectItem>
+                      <SelectItem value="DELETED">Supprimé</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
@@ -477,7 +477,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
           type="button"
           onClick={() => printDymo()}
           variant="secondary"
-          disabled={status === 'REFUSED'}
+          disabled={status === 'DELETED'}
         >
           Imprimer l'étiquette
         </CustomButton>

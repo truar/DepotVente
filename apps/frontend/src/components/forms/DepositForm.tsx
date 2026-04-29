@@ -450,11 +450,11 @@ type ArticleLineFormProps = {
   onRemove: (index: number) => void
 }
 
-type ArticleLineLockState = 'editable' | 'refused' | 'sold' | 'returned'
+type ArticleLineLockState = 'editable' | 'deleted' | 'sold' | 'returned'
 
 const articleLineBgClass: Record<ArticleLineLockState, string> = {
   editable: '',
-  refused: 'bg-gray-100 opacity-60',
+  deleted: 'bg-gray-100 opacity-60',
   sold: 'bg-green-50',
   returned: 'bg-blue-50',
 }
@@ -477,7 +477,7 @@ const ArticleLineForm = memo(function ArticleLineForm(
       : status === 'RETURNED'
         ? 'returned'
         : isDeleted
-          ? 'refused'
+          ? 'deleted'
           : 'editable'
   const isLocked = lockState !== 'editable'
   const cellClass = `py-1 px-1 ${articleLineBgClass[lockState]}`
@@ -603,7 +603,7 @@ const ArticleLineForm = memo(function ArticleLineForm(
           ) : (
             <>
               <PrintArticleButton index={index} disabled={isLocked} />
-              {lockState === 'refused' ? (
+              {lockState === 'deleted' ? (
                 <Button
                   variant="ghost"
                   type="button"
