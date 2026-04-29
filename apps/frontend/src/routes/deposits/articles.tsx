@@ -1,4 +1,21 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
@@ -21,7 +38,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Euro, FolderXIcon } from 'lucide-react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import type { EditArticleFormType } from '@/types/EditArticleForm.ts'
 import { EditArticleSchema } from '@/types/EditArticleForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
@@ -158,6 +175,7 @@ type ArticleEditFormProps = {
 
 function ArticleEditForm(props: ArticleEditFormProps) {
   const { article } = props
+  const navigate = useNavigate()
   const dymo = useDymo()
   const articleEditMutation = useEditArticle()
   const methods = useForm<EditArticleFormType>({
@@ -181,6 +199,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
     },
   })
   const { handleSubmit, control, reset, trigger, getValues } = methods
+  const status = useWatch({ control, name: 'status' })
   useEffect(() => {
     reset({
       id: article.id,
@@ -207,8 +226,10 @@ function ArticleEditForm(props: ArticleEditFormProps) {
     async (data: EditArticleFormType) => {
       await articleEditMutation.mutate(data)
       if (props.onSubmit) props.onSubmit()
+      toast.success(`Article ${data.articleCode} mis à jour`)
+      navigate({ to: '..' })
     },
-    [articleEditMutation],
+    [articleEditMutation, navigate],
   )
   const printDymo = useCallback(async () => {
     const valid = await trigger()
@@ -428,21 +449,39 @@ function ArticleEditForm(props: ArticleEditFormProps) {
         </div>
       </div>
       <div className="flex justify-end gap-4">
-        <CustomButton
-          type="button"
-          onClick={() => reset()}
-          variant="destructive"
-        >
-          Annuler
-        </CustomButton>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <CustomButton type="button" variant="destructive">
+              Annuler
+            </CustomButton>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Etes vous sur de vouloir annuler ?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action va annuler les modifications. Les données non
+                enregistrées seront perdues.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Non</AlertDialogCancel>
+              <AlertDialogAction onClick={() => navigate({ to: '..' })}>
+                Oui
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <CustomButton
           type="button"
           onClick={() => printDymo()}
           variant="secondary"
+          disabled={status === 'REFUSED'}
         >
           Imprimer l'étiquette
         </CustomButton>
-        <CustomButton type="submit">Sauvegarder</CustomButton>
+        <CustomButton type="submit">Valider</CustomButton>
       </div>
     </form>
   )
