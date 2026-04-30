@@ -2,6 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfCommentSection } from '@/pdf/comment-section.tsx'
 
 const styles = StyleSheet.create({
   page: {
@@ -81,7 +82,7 @@ export const DepositCashRegisterControlPdf = (
                 <View style={styles.title}>
                   <Text>Bourse au skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
-                  <Text>Contrôle caisse dépôt</Text>
+                  <Text>Contrôle caisse dépôts</Text>
                 </View>
               </View>
               <View>
@@ -167,12 +168,7 @@ export const DepositCashRegisterControlPdf = (
                 })}
               </View>
             </View>
-            {data.comment ? (
-              <View style={{ marginTop: 10, gap: 6 }}>
-                <Text>Commentaire:</Text>
-                <Text>{data.comment}</Text>
-              </View>
-            ) : null}
+            <PdfCommentSection comment={data.comment} />
             <View fixed style={styles.pageInformation}>
               <Text
                 render={({ subPageNumber, subPageTotalPages }) =>

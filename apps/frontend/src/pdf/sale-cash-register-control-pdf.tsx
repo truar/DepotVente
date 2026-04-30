@@ -2,6 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfCommentSection } from '@/pdf/comment-section.tsx'
 
 const styles = StyleSheet.create({
   page: {
@@ -164,13 +165,13 @@ export const SaleCashRegisterControlPdf = (
       <Document>
         {Array.from({ length: copy }).map((_, index) => (
           <Page size="A4" style={styles.page} key={`page-${index}`}>
-            <View style={styles.header}>
+            <View style={styles.header} fixed>
               <View style={{ flexDirection: 'row', gap: 5 }}>
                 <CMRLogo />
                 <View style={styles.title}>
                   <Text>Bourse au skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
-                  <Text>Règlements des ventes</Text>
+                  <Text>Contrôle caisse ventes</Text>
                 </View>
               </View>
               <View>
@@ -195,6 +196,7 @@ export const SaleCashRegisterControlPdf = (
               payments={data.refundPayments}
               shouldBreak={true}
             />
+            <PdfCommentSection comment={cashPayment.comment} />
             <View fixed style={styles.pageInformation}>
               <Text
                 render={({ subPageNumber, subPageTotalPages }) =>
@@ -365,12 +367,6 @@ function CashPayment({
           })}
         </View>
       </View>
-      {cashPayment.comment ? (
-        <View style={{ marginTop: 10, gap: 6 }}>
-          <Text>Commentaire:</Text>
-          <Text>{cashPayment.comment}</Text>
-        </View>
-      ) : null}
     </View>
   )
 }

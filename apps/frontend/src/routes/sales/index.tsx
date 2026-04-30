@@ -69,7 +69,7 @@ export function RouteComponent() {
               onClick={() => navigate({ to: '/sales/sales-control' })}
               icon={<ReceiptEuro className="w-8 h-8 text-blue-600" />}
               title="Caisse"
-              description="Controler la caisse"
+              description="Contrôler la caisse"
               variant="blue"
             />
             <ClickableCard

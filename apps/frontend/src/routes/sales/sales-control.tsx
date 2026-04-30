@@ -416,7 +416,7 @@ function SalesControlPage(props: SalesControlPageProps) {
         >
           <Accordion type="single" collapsible defaultValue="item-1">
             <AccordionItem value="card-payments">
-              <AccordionTrigger>Carte bancaires</AccordionTrigger>
+              <AccordionTrigger>Cartes bancaires</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CardPaymentDetails />
               </AccordionContent>
@@ -440,6 +440,7 @@ function SalesControlPage(props: SalesControlPageProps) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          <CommentField />
           {printError && (
             <p className="text-red-600 text-sm text-right">
               Merci d'imprimer le rapport avant de valider le contrôle
@@ -657,19 +658,24 @@ function CashRegisterControlForm() {
           <DifferenceInput />
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="cashPayment-comment">Commentaire</Label>
-        <Controller
-          name="cashPayment.comment"
-          render={({ field }) => (
-            <Textarea
-              id="cashPayment-comment"
-              {...field}
-              value={field.value ?? ''}
-            />
-          )}
-        />
-      </div>
+    </div>
+  )
+}
+
+function CommentField() {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor="cashPayment-comment">Commentaire</Label>
+      <Controller
+        name="cashPayment.comment"
+        render={({ field }) => (
+          <Textarea
+            id="cashPayment-comment"
+            {...field}
+            value={field.value ?? ''}
+          />
+        )}
+      />
     </div>
   )
 }
@@ -677,10 +683,10 @@ function CashRegisterControlForm() {
 function RealAmountInput() {
   const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
   const amounts = watch('cashPayment.amounts', [])
-  const realAmount = amounts.reduce(
-    (acc, cur) => acc + cur.amount * cur.value,
-    0,
-  )
+  const initialAmount = watch('cashPayment.initialAmount', 0)
+  const realAmount =
+    amounts.reduce((acc, cur) => acc + cur.amount * cur.value, 0) -
+    initialAmount
   useEffect(() => {
     setValue('cashPayment.realAmount', realAmount)
   }, [realAmount, setValue])
@@ -726,12 +732,11 @@ function TheoreticalAmount() {
 function DifferenceInput() {
   const { watch } = useFormContext<CashRegisterControlFormType>()
 
-  const [realAmount, theoreticalAmount, initialAmount] = watch([
+  const [realAmount, theoreticalAmount] = watch([
     'cashPayment.realAmount',
     'cashPayment.theoreticalAmount',
-    'cashPayment.initialAmount',
   ])
-  const difference = realAmount - theoreticalAmount - initialAmount
+  const difference = realAmount - theoreticalAmount
 
   return (
     <MonetaryField
