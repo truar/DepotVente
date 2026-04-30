@@ -105,6 +105,7 @@ class SyncService {
           db.articles,
           db.contacts,
           db.sales,
+          db.refunds,
           db.predeposits,
           db.predepositArticles,
           db.cashRegisterControls,
@@ -121,6 +122,9 @@ class SyncService {
 
           await db.sales.clear()
           await db.sales.bulkPut(data.sales)
+
+          await db.refunds.clear()
+          await db.refunds.bulkPut(data.refunds ?? [])
 
           await db.predeposits.clear()
           await db.predeposits.bulkPut(data.predeposits)
@@ -191,6 +195,7 @@ class SyncService {
           db.articles,
           db.contacts,
           db.sales,
+          db.refunds,
           db.predeposits,
           db.predepositArticles,
           db.cashRegisterControls,
@@ -200,6 +205,8 @@ class SyncService {
           if (data.articles.length > 0) await db.articles.bulkPut(data.articles)
           if (data.contacts.length > 0) await db.contacts.bulkPut(data.contacts)
           if (data.sales.length > 0) await db.sales.bulkPut(data.sales)
+          if (data.refunds && data.refunds.length > 0)
+            await db.refunds.bulkPut(data.refunds)
           if (data.predeposits.length > 0)
             await db.predeposits.bulkPut(data.predeposits)
           if (data.predepositArticles.length > 0)
@@ -212,7 +219,7 @@ class SyncService {
       await this.setMetadata('lastSync', data.syncedAt)
 
       console.log(
-        `✅ Delta sync complete: ${data.deposits.length + data.articles.length + data.contacts.length + data.sales.length + data.predeposits.length + data.predepositArticles.length + data.cashRegisterControls.length} changes`,
+        `✅ Delta sync complete: ${data.deposits.length + data.articles.length + data.contacts.length + data.sales.length + (data.refunds?.length ?? 0) + data.predeposits.length + data.predepositArticles.length + data.cashRegisterControls.length} changes`,
       )
     } catch (error) {
       console.error('❌ Delta sync failed:', error)

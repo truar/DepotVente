@@ -139,16 +139,14 @@ model Sale {
   incrementStart Int @default(1) @map("increment_start")
 
   // Montants des différents moyens de paiement
-  cardAmount       Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
-  cashAmount       Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
-  checkAmount      Decimal @default(0) @map("check_amount") @db.Decimal(10, 2)
-  refundCardAmount Decimal @default(0) @map("refund_card_amount") @db.Decimal(10, 2)
-  refundCashAmount Decimal @default(0) @map("refund_cash_amount") @db.Decimal(10, 2)
-  refundComment    String  @default("") @map("refund_comment")
+  cardAmount  Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
+  cashAmount  Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
+  checkAmount Decimal @default(0) @map("check_amount") @db.Decimal(10, 2)
 
   // Relations
   buyer    Contact   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   articles Article[]
+  refunds  Refund[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -157,6 +155,29 @@ model Sale {
   @@index([updatedAt])
   @@index([deletedAt])
   @@map("sales")
+}
+
+// Refund - linked to a Sale, but pinned to the caisse that processed the
+// refund (which may differ from the caisse that took the original sale).
+model Refund {
+  id             String  @id @default(uuid()) @db.Uuid
+  saleId         String  @map("sale_id") @db.Uuid
+  incrementStart Int     @map("increment_start")
+  cardAmount     Decimal @default(0) @map("card_amount") @db.Decimal(10, 2)
+  cashAmount     Decimal @default(0) @map("cash_amount") @db.Decimal(10, 2)
+  comment        String  @default("")
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([saleId])
+  @@index([incrementStart])
+  @@index([updatedAt])
+  @@index([deletedAt])
+  @@map("refunds")
 }
 
 // Articles

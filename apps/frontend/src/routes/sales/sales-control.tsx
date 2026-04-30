@@ -23,6 +23,7 @@ import {
   type CashRegisterControl,
   type Contact,
   db,
+  type Sale,
   type Workstation,
 } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
@@ -211,21 +212,20 @@ function useRefundPaymentData({
   setValue: UseFormSetValue<CashRegisterControlFormType>
 }) {
   const [workstation] = useWorkstation()
-  const sales = useLiveQuery(
+  const refunds = useLiveQuery(
     () =>
-      db.sales
-        .where({
-          incrementStart: workstation.incrementStart,
-        })
-        .and(
-          (sale) =>
-            (sale.refundCashAmount != null && sale.refundCashAmount > 0) ||
-            (sale.refundCardAmount != null && sale.refundCardAmount > 0),
-        )
-        .sortBy('saleIndex'),
+      db.refunds
+        .where({ incrementStart: workstation.incrementStart })
+        .and((refund) => refund.deletedAt == null)
+        .toArray(),
     [workstation],
   )
+  const sales = useLiveQuery(() => db.sales.toArray())
   const contacts = useLiveQuery(() => db.contacts.toArray())
+  const saleMap = useMemo(
+    () => new Map<string, Sale>(sales?.map((sale) => [sale.id, sale])),
+    [sales],
+  )
   const contactMap = useMemo(
     () =>
       new Map<string, Contact>(
@@ -234,24 +234,27 @@ function useRefundPaymentData({
     [contacts],
   )
   useEffect(() => {
-    const data = (sales ?? [])
-      .map((payment) => {
-        const buyer = contactMap.get(payment.buyerId)
+    const data = (refunds ?? [])
+      .map((refund) => {
+        const sale = saleMap.get(refund.saleId)
+        if (!sale) return
+        const buyer = contactMap.get(sale.buyerId)
         if (!buyer) return
         return {
-          saleIndex: payment.saleIndex,
+          saleIndex: sale.saleIndex,
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          type: payment.refundCardAmount ? 'CB' as const : 'CASH' as const,
-          comment: payment.refundComment || '',
-          amount:
-            payment.refundCardAmount ?? payment.refundCashAmount ?? 0,
+          type:
+            refund.cardAmount > 0 ? ('CB' as const) : ('CASH' as const),
+          comment: refund.comment || '',
+          amount: refund.cardAmount > 0 ? refund.cardAmount : refund.cashAmount,
         }
       })
-      .filter((sale) => !!sale)
-    setValue('refundPayments', data)
-  }, [sales, contactMap])
+      .filter((row) => !!row)
+      .sort((a, b) => a!.saleIndex - b!.saleIndex)
+    setValue('refundPayments', data as CashRegisterControlFormType['refundPayments'])
+  }, [refunds, saleMap, contactMap])
 }
 function buildCashPaymentValues(
   cashRegisterControl: CashRegisterControl,

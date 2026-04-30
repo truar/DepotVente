@@ -42,7 +42,9 @@ export const ContactScalarFieldEnumSchema = z.enum(['id','lastName','firstName',
 
 export const DepositScalarFieldEnumSchema = z.enum(['id','sellerId','contributionStatus','contributionAmount','depositIndex','incrementStart','dropWorkstationId','type','returnedCalculationDate','soldAmount','clubAmount','dueContributionAmount','sellerAmount','collectWorkstationId','collectedAt','checkId','signatory','createdAt','updatedAt','deletedAt']);
 
-export const SaleScalarFieldEnumSchema = z.enum(['id','buyerId','saleIndex','incrementStart','cardAmount','cashAmount','checkAmount','refundCardAmount','refundCashAmount','refundComment','createdAt','updatedAt','deletedAt']);
+export const SaleScalarFieldEnumSchema = z.enum(['id','buyerId','saleIndex','incrementStart','cardAmount','cashAmount','checkAmount','createdAt','updatedAt','deletedAt']);
+
+export const RefundScalarFieldEnumSchema = z.enum(['id','saleId','incrementStart','cardAmount','cashAmount','comment','createdAt','updatedAt','deletedAt']);
 
 export const ArticleScalarFieldEnumSchema = z.enum(['id','price','category','discipline','brand','model','size','color','code','year','depositIndex','identificationLetter','articleIndex','status','depositId','saleId','createdAt','updatedAt','deletedAt']);
 
@@ -174,15 +176,30 @@ export const SaleSchema = z.object({
   cardAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cardAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
   cashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cashAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
   checkAmount: z.instanceof(Prisma.Decimal, { message: "Field 'checkAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
-  refundCardAmount: z.instanceof(Prisma.Decimal, { message: "Field 'refundCardAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
-  refundCashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'refundCashAmount' must be a Decimal. Location: ['Models', 'Sale']"}),
-  refundComment: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().nullable(),
 })
 
 export type Sale = z.infer<typeof SaleSchema>
+
+/////////////////////////////////////////
+// REFUND SCHEMA
+/////////////////////////////////////////
+
+export const RefundSchema = z.object({
+  id: z.uuid(),
+  saleId: z.string(),
+  incrementStart: z.number().int(),
+  cardAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cardAmount' must be a Decimal. Location: ['Models', 'Refund']"}),
+  cashAmount: z.instanceof(Prisma.Decimal, { message: "Field 'cashAmount' must be a Decimal. Location: ['Models', 'Refund']"}),
+  comment: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  deletedAt: z.coerce.date().nullable(),
+})
+
+export type Refund = z.infer<typeof RefundSchema>
 
 /////////////////////////////////////////
 // ARTICLE SCHEMA
@@ -396,6 +413,7 @@ export const DepositSelectSchema: z.ZodType<Prisma.DepositSelect> = z.object({
 export const SaleIncludeSchema: z.ZodType<Prisma.SaleInclude> = z.object({
   buyer: z.union([z.boolean(),z.lazy(() => ContactArgsSchema)]).optional(),
   articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
+  refunds: z.union([z.boolean(),z.lazy(() => RefundFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SaleCountOutputTypeArgsSchema)]).optional(),
 }).strict();
 
@@ -410,6 +428,7 @@ export const SaleCountOutputTypeArgsSchema: z.ZodType<Prisma.SaleCountOutputType
 
 export const SaleCountOutputTypeSelectSchema: z.ZodType<Prisma.SaleCountOutputTypeSelect> = z.object({
   articles: z.boolean().optional(),
+  refunds: z.boolean().optional(),
 }).strict();
 
 export const SaleSelectSchema: z.ZodType<Prisma.SaleSelect> = z.object({
@@ -420,15 +439,38 @@ export const SaleSelectSchema: z.ZodType<Prisma.SaleSelect> = z.object({
   cardAmount: z.boolean().optional(),
   cashAmount: z.boolean().optional(),
   checkAmount: z.boolean().optional(),
-  refundCardAmount: z.boolean().optional(),
-  refundCashAmount: z.boolean().optional(),
-  refundComment: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   deletedAt: z.boolean().optional(),
   buyer: z.union([z.boolean(),z.lazy(() => ContactArgsSchema)]).optional(),
   articles: z.union([z.boolean(),z.lazy(() => ArticleFindManyArgsSchema)]).optional(),
+  refunds: z.union([z.boolean(),z.lazy(() => RefundFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SaleCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+// REFUND
+//------------------------------------------------------
+
+export const RefundIncludeSchema: z.ZodType<Prisma.RefundInclude> = z.object({
+  sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
+}).strict();
+
+export const RefundArgsSchema: z.ZodType<Prisma.RefundDefaultArgs> = z.object({
+  select: z.lazy(() => RefundSelectSchema).optional(),
+  include: z.lazy(() => RefundIncludeSchema).optional(),
+}).strict();
+
+export const RefundSelectSchema: z.ZodType<Prisma.RefundSelect> = z.object({
+  id: z.boolean().optional(),
+  saleId: z.boolean().optional(),
+  incrementStart: z.boolean().optional(),
+  cardAmount: z.boolean().optional(),
+  cashAmount: z.boolean().optional(),
+  comment: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  deletedAt: z.boolean().optional(),
+  sale: z.union([z.boolean(),z.lazy(() => SaleArgsSchema)]).optional(),
 }).strict()
 
 // ARTICLE
@@ -997,14 +1039,12 @@ export const SaleWhereInputSchema: z.ZodType<Prisma.SaleWhereInput> = z.strictOb
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundComment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
   buyer: z.union([ z.lazy(() => ContactScalarRelationFilterSchema), z.lazy(() => ContactWhereInputSchema) ]).optional(),
   articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
+  refunds: z.lazy(() => RefundListRelationFilterSchema).optional(),
 });
 
 export const SaleOrderByWithRelationInputSchema: z.ZodType<Prisma.SaleOrderByWithRelationInput> = z.strictObject({
@@ -1015,14 +1055,12 @@ export const SaleOrderByWithRelationInputSchema: z.ZodType<Prisma.SaleOrderByWit
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundComment: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   buyer: z.lazy(() => ContactOrderByWithRelationInputSchema).optional(),
   articles: z.lazy(() => ArticleOrderByRelationAggregateInputSchema).optional(),
+  refunds: z.lazy(() => RefundOrderByRelationAggregateInputSchema).optional(),
 });
 
 export const SaleWhereUniqueInputSchema: z.ZodType<Prisma.SaleWhereUniqueInput> = z.object({
@@ -1039,14 +1077,12 @@ export const SaleWhereUniqueInputSchema: z.ZodType<Prisma.SaleWhereUniqueInput> 
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundComment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
   buyer: z.union([ z.lazy(() => ContactScalarRelationFilterSchema), z.lazy(() => ContactWhereInputSchema) ]).optional(),
   articles: z.lazy(() => ArticleListRelationFilterSchema).optional(),
+  refunds: z.lazy(() => RefundListRelationFilterSchema).optional(),
 }));
 
 export const SaleOrderByWithAggregationInputSchema: z.ZodType<Prisma.SaleOrderByWithAggregationInput> = z.strictObject({
@@ -1057,9 +1093,6 @@ export const SaleOrderByWithAggregationInputSchema: z.ZodType<Prisma.SaleOrderBy
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundComment: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
@@ -1081,9 +1114,86 @@ export const SaleScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.SaleScal
   cardAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCardAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundComment: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
+});
+
+export const RefundWhereInputSchema: z.ZodType<Prisma.RefundWhereInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => RefundWhereInputSchema), z.lazy(() => RefundWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RefundWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RefundWhereInputSchema), z.lazy(() => RefundWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  comment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+  sale: z.union([ z.lazy(() => SaleScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional(),
+});
+
+export const RefundOrderByWithRelationInputSchema: z.ZodType<Prisma.RefundOrderByWithRelationInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  saleId: z.lazy(() => SortOrderSchema).optional(),
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+  comment: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  sale: z.lazy(() => SaleOrderByWithRelationInputSchema).optional(),
+});
+
+export const RefundWhereUniqueInputSchema: z.ZodType<Prisma.RefundWhereUniqueInput> = z.object({
+  id: z.uuid(),
+})
+.and(z.strictObject({
+  id: z.uuid().optional(),
+  AND: z.union([ z.lazy(() => RefundWhereInputSchema), z.lazy(() => RefundWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RefundWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RefundWhereInputSchema), z.lazy(() => RefundWhereInputSchema).array() ]).optional(),
+  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
+  cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  comment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+  sale: z.union([ z.lazy(() => SaleScalarRelationFilterSchema), z.lazy(() => SaleWhereInputSchema) ]).optional(),
+}));
+
+export const RefundOrderByWithAggregationInputSchema: z.ZodType<Prisma.RefundOrderByWithAggregationInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  saleId: z.lazy(() => SortOrderSchema).optional(),
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+  comment: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  _count: z.lazy(() => RefundCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => RefundAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => RefundMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => RefundMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => RefundSumOrderByAggregateInputSchema).optional(),
+});
+
+export const RefundScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.RefundScalarWhereWithAggregatesInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => RefundScalarWhereWithAggregatesInputSchema), z.lazy(() => RefundScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RefundScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RefundScalarWhereWithAggregatesInputSchema), z.lazy(() => RefundScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
+  saleId: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
+  incrementStart: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
+  cardAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  cashAmount: z.union([ z.lazy(() => DecimalWithAggregatesFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  comment: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -1962,14 +2072,12 @@ export const SaleCreateInputSchema: z.ZodType<Prisma.SaleCreateInput> = z.strict
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
+  refunds: z.lazy(() => RefundCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUncheckedCreateInputSchema: z.ZodType<Prisma.SaleUncheckedCreateInput> = z.strictObject({
@@ -1980,13 +2088,11 @@ export const SaleUncheckedCreateInputSchema: z.ZodType<Prisma.SaleUncheckedCreat
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
+  refunds: z.lazy(() => RefundUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUpdateInputSchema: z.ZodType<Prisma.SaleUpdateInput> = z.strictObject({
@@ -1996,14 +2102,12 @@ export const SaleUpdateInputSchema: z.ZodType<Prisma.SaleUpdateInput> = z.strict
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
+  refunds: z.lazy(() => RefundUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateInput> = z.strictObject({
@@ -2014,13 +2118,11 @@ export const SaleUncheckedUpdateInputSchema: z.ZodType<Prisma.SaleUncheckedUpdat
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
+  refunds: z.lazy(() => RefundUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleCreateManyInputSchema: z.ZodType<Prisma.SaleCreateManyInput> = z.strictObject({
@@ -2031,9 +2133,6 @@ export const SaleCreateManyInputSchema: z.ZodType<Prisma.SaleCreateManyInput> = 
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -2046,9 +2145,6 @@ export const SaleUpdateManyMutationInputSchema: z.ZodType<Prisma.SaleUpdateManyM
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2062,9 +2158,89 @@ export const SaleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.SaleUncheckedU
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundCreateInputSchema: z.ZodType<Prisma.RefundCreateInput> = z.strictObject({
+  id: z.uuid().optional(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+  sale: z.lazy(() => SaleCreateNestedOneWithoutRefundsInputSchema),
+});
+
+export const RefundUncheckedCreateInputSchema: z.ZodType<Prisma.RefundUncheckedCreateInput> = z.strictObject({
+  id: z.uuid().optional(),
+  saleId: z.string(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const RefundUpdateInputSchema: z.ZodType<Prisma.RefundUpdateInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  sale: z.lazy(() => SaleUpdateOneRequiredWithoutRefundsNestedInputSchema).optional(),
+});
+
+export const RefundUncheckedUpdateInputSchema: z.ZodType<Prisma.RefundUncheckedUpdateInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  saleId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundCreateManyInputSchema: z.ZodType<Prisma.RefundCreateManyInput> = z.strictObject({
+  id: z.uuid().optional(),
+  saleId: z.string(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const RefundUpdateManyMutationInputSchema: z.ZodType<Prisma.RefundUpdateManyMutationInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundUncheckedUpdateManyInputSchema: z.ZodType<Prisma.RefundUncheckedUpdateManyInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  saleId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -3042,6 +3218,16 @@ export const IntNullableWithAggregatesFilterSchema: z.ZodType<Prisma.IntNullable
   _max: z.lazy(() => NestedIntNullableFilterSchema).optional(),
 });
 
+export const RefundListRelationFilterSchema: z.ZodType<Prisma.RefundListRelationFilter> = z.strictObject({
+  every: z.lazy(() => RefundWhereInputSchema).optional(),
+  some: z.lazy(() => RefundWhereInputSchema).optional(),
+  none: z.lazy(() => RefundWhereInputSchema).optional(),
+});
+
+export const RefundOrderByRelationAggregateInputSchema: z.ZodType<Prisma.RefundOrderByRelationAggregateInput> = z.strictObject({
+  _count: z.lazy(() => SortOrderSchema).optional(),
+});
+
 export const SaleCountOrderByAggregateInputSchema: z.ZodType<Prisma.SaleCountOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   buyerId: z.lazy(() => SortOrderSchema).optional(),
@@ -3050,9 +3236,6 @@ export const SaleCountOrderByAggregateInputSchema: z.ZodType<Prisma.SaleCountOrd
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundComment: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3064,8 +3247,6 @@ export const SaleAvgOrderByAggregateInputSchema: z.ZodType<Prisma.SaleAvgOrderBy
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const SaleMaxOrderByAggregateInputSchema: z.ZodType<Prisma.SaleMaxOrderByAggregateInput> = z.strictObject({
@@ -3076,9 +3257,6 @@ export const SaleMaxOrderByAggregateInputSchema: z.ZodType<Prisma.SaleMaxOrderBy
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundComment: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3092,9 +3270,6 @@ export const SaleMinOrderByAggregateInputSchema: z.ZodType<Prisma.SaleMinOrderBy
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundComment: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   deletedAt: z.lazy(() => SortOrderSchema).optional(),
@@ -3106,8 +3281,59 @@ export const SaleSumOrderByAggregateInputSchema: z.ZodType<Prisma.SaleSumOrderBy
   cardAmount: z.lazy(() => SortOrderSchema).optional(),
   cashAmount: z.lazy(() => SortOrderSchema).optional(),
   checkAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCardAmount: z.lazy(() => SortOrderSchema).optional(),
-  refundCashAmount: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const SaleScalarRelationFilterSchema: z.ZodType<Prisma.SaleScalarRelationFilter> = z.strictObject({
+  is: z.lazy(() => SaleWhereInputSchema).optional(),
+  isNot: z.lazy(() => SaleWhereInputSchema).optional(),
+});
+
+export const RefundCountOrderByAggregateInputSchema: z.ZodType<Prisma.RefundCountOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  saleId: z.lazy(() => SortOrderSchema).optional(),
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+  comment: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const RefundAvgOrderByAggregateInputSchema: z.ZodType<Prisma.RefundAvgOrderByAggregateInput> = z.strictObject({
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const RefundMaxOrderByAggregateInputSchema: z.ZodType<Prisma.RefundMaxOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  saleId: z.lazy(() => SortOrderSchema).optional(),
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+  comment: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const RefundMinOrderByAggregateInputSchema: z.ZodType<Prisma.RefundMinOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  saleId: z.lazy(() => SortOrderSchema).optional(),
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
+  comment: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const RefundSumOrderByAggregateInputSchema: z.ZodType<Prisma.RefundSumOrderByAggregateInput> = z.strictObject({
+  incrementStart: z.lazy(() => SortOrderSchema).optional(),
+  cardAmount: z.lazy(() => SortOrderSchema).optional(),
+  cashAmount: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const UuidNullableFilterSchema: z.ZodType<Prisma.UuidNullableFilter> = z.strictObject({
@@ -3560,11 +3786,25 @@ export const ArticleCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.Art
   connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
 });
 
+export const RefundCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.RefundCreateNestedManyWithoutSaleInput> = z.strictObject({
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundCreateWithoutSaleInputSchema).array(), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema), z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RefundCreateManySaleInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+});
+
 export const ArticleUncheckedCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUncheckedCreateNestedManyWithoutSaleInput> = z.strictObject({
   create: z.union([ z.lazy(() => ArticleCreateWithoutSaleInputSchema), z.lazy(() => ArticleCreateWithoutSaleInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
   createMany: z.lazy(() => ArticleCreateManySaleInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => ArticleWhereUniqueInputSchema), z.lazy(() => ArticleWhereUniqueInputSchema).array() ]).optional(),
+});
+
+export const RefundUncheckedCreateNestedManyWithoutSaleInputSchema: z.ZodType<Prisma.RefundUncheckedCreateNestedManyWithoutSaleInput> = z.strictObject({
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundCreateWithoutSaleInputSchema).array(), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema), z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RefundCreateManySaleInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
 });
 
 export const ContactUpdateOneRequiredWithoutSalesNestedInputSchema: z.ZodType<Prisma.ContactUpdateOneRequiredWithoutSalesNestedInput> = z.strictObject({
@@ -3589,6 +3829,20 @@ export const ArticleUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.Art
   deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
 });
 
+export const RefundUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.RefundUpdateManyWithoutSaleNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundCreateWithoutSaleInputSchema).array(), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema), z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RefundUpsertWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => RefundUpsertWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RefundCreateManySaleInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RefundUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => RefundUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RefundUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => RefundUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RefundScalarWhereInputSchema), z.lazy(() => RefundScalarWhereInputSchema).array() ]).optional(),
+});
+
 export const ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.ArticleUncheckedUpdateManyWithoutSaleNestedInput> = z.strictObject({
   create: z.union([ z.lazy(() => ArticleCreateWithoutSaleInputSchema), z.lazy(() => ArticleCreateWithoutSaleInputSchema).array(), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema), z.lazy(() => ArticleUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema), z.lazy(() => ArticleCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
@@ -3601,6 +3855,34 @@ export const ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema: z.ZodType<P
   update: z.union([ z.lazy(() => ArticleUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => ArticleUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => ArticleUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => ArticleUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => ArticleScalarWhereInputSchema), z.lazy(() => ArticleScalarWhereInputSchema).array() ]).optional(),
+});
+
+export const RefundUncheckedUpdateManyWithoutSaleNestedInputSchema: z.ZodType<Prisma.RefundUncheckedUpdateManyWithoutSaleNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundCreateWithoutSaleInputSchema).array(), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema), z.lazy(() => RefundCreateOrConnectWithoutSaleInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RefundUpsertWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => RefundUpsertWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RefundCreateManySaleInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RefundWhereUniqueInputSchema), z.lazy(() => RefundWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RefundUpdateWithWhereUniqueWithoutSaleInputSchema), z.lazy(() => RefundUpdateWithWhereUniqueWithoutSaleInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RefundUpdateManyWithWhereWithoutSaleInputSchema), z.lazy(() => RefundUpdateManyWithWhereWithoutSaleInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RefundScalarWhereInputSchema), z.lazy(() => RefundScalarWhereInputSchema).array() ]).optional(),
+});
+
+export const SaleCreateNestedOneWithoutRefundsInputSchema: z.ZodType<Prisma.SaleCreateNestedOneWithoutRefundsInput> = z.strictObject({
+  create: z.union([ z.lazy(() => SaleCreateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutRefundsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => SaleCreateOrConnectWithoutRefundsInputSchema).optional(),
+  connect: z.lazy(() => SaleWhereUniqueInputSchema).optional(),
+});
+
+export const SaleUpdateOneRequiredWithoutRefundsNestedInputSchema: z.ZodType<Prisma.SaleUpdateOneRequiredWithoutRefundsNestedInput> = z.strictObject({
+  create: z.union([ z.lazy(() => SaleCreateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutRefundsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => SaleCreateOrConnectWithoutRefundsInputSchema).optional(),
+  upsert: z.lazy(() => SaleUpsertWithoutRefundsInputSchema).optional(),
+  connect: z.lazy(() => SaleWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => SaleUpdateToOneWithWhereWithoutRefundsInputSchema), z.lazy(() => SaleUpdateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutRefundsInputSchema) ]).optional(),
 });
 
 export const DepositCreateNestedOneWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCreateNestedOneWithoutArticlesInput> = z.strictObject({
@@ -4007,13 +4289,11 @@ export const SaleCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleCreateWitho
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
+  refunds: z.lazy(() => RefundCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUncheckedCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutBuyerInput> = z.strictObject({
@@ -4023,13 +4303,11 @@ export const SaleUncheckedCreateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
+  refunds: z.lazy(() => RefundUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutBuyerInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutBuyerInput> = z.strictObject({
@@ -4125,9 +4403,6 @@ export const SaleScalarWhereInputSchema: z.ZodType<Prisma.SaleScalarWhereInput> 
   cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
   checkAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundCashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
-  refundComment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -4419,6 +4694,38 @@ export const ArticleCreateManySaleInputEnvelopeSchema: z.ZodType<Prisma.ArticleC
   skipDuplicates: z.boolean().optional(),
 });
 
+export const RefundCreateWithoutSaleInputSchema: z.ZodType<Prisma.RefundCreateWithoutSaleInput> = z.strictObject({
+  id: z.uuid().optional(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const RefundUncheckedCreateWithoutSaleInputSchema: z.ZodType<Prisma.RefundUncheckedCreateWithoutSaleInput> = z.strictObject({
+  id: z.uuid().optional(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const RefundCreateOrConnectWithoutSaleInputSchema: z.ZodType<Prisma.RefundCreateOrConnectWithoutSaleInput> = z.strictObject({
+  where: z.lazy(() => RefundWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema) ]),
+});
+
+export const RefundCreateManySaleInputEnvelopeSchema: z.ZodType<Prisma.RefundCreateManySaleInputEnvelope> = z.strictObject({
+  data: z.union([ z.lazy(() => RefundCreateManySaleInputSchema), z.lazy(() => RefundCreateManySaleInputSchema).array() ]),
+  skipDuplicates: z.boolean().optional(),
+});
+
 export const ContactUpsertWithoutSalesInputSchema: z.ZodType<Prisma.ContactUpsertWithoutSalesInput> = z.strictObject({
   update: z.union([ z.lazy(() => ContactUpdateWithoutSalesInputSchema), z.lazy(() => ContactUncheckedUpdateWithoutSalesInputSchema) ]),
   create: z.union([ z.lazy(() => ContactCreateWithoutSalesInputSchema), z.lazy(() => ContactUncheckedCreateWithoutSalesInputSchema) ]),
@@ -4470,6 +4777,109 @@ export const ArticleUpdateWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prism
 export const ArticleUpdateManyWithWhereWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpdateManyWithWhereWithoutSaleInput> = z.strictObject({
   where: z.lazy(() => ArticleScalarWhereInputSchema),
   data: z.union([ z.lazy(() => ArticleUpdateManyMutationInputSchema), z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleInputSchema) ]),
+});
+
+export const RefundUpsertWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prisma.RefundUpsertWithWhereUniqueWithoutSaleInput> = z.strictObject({
+  where: z.lazy(() => RefundWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => RefundUpdateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedUpdateWithoutSaleInputSchema) ]),
+  create: z.union([ z.lazy(() => RefundCreateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedCreateWithoutSaleInputSchema) ]),
+});
+
+export const RefundUpdateWithWhereUniqueWithoutSaleInputSchema: z.ZodType<Prisma.RefundUpdateWithWhereUniqueWithoutSaleInput> = z.strictObject({
+  where: z.lazy(() => RefundWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => RefundUpdateWithoutSaleInputSchema), z.lazy(() => RefundUncheckedUpdateWithoutSaleInputSchema) ]),
+});
+
+export const RefundUpdateManyWithWhereWithoutSaleInputSchema: z.ZodType<Prisma.RefundUpdateManyWithWhereWithoutSaleInput> = z.strictObject({
+  where: z.lazy(() => RefundScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => RefundUpdateManyMutationInputSchema), z.lazy(() => RefundUncheckedUpdateManyWithoutSaleInputSchema) ]),
+});
+
+export const RefundScalarWhereInputSchema: z.ZodType<Prisma.RefundScalarWhereInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => RefundScalarWhereInputSchema), z.lazy(() => RefundScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RefundScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RefundScalarWhereInputSchema), z.lazy(() => RefundScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  saleId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  incrementStart: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  cardAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  cashAmount: z.union([ z.lazy(() => DecimalFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional(),
+  comment: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+});
+
+export const SaleCreateWithoutRefundsInputSchema: z.ZodType<Prisma.SaleCreateWithoutRefundsInput> = z.strictObject({
+  id: z.uuid().optional(),
+  saleIndex: z.number().int(),
+  incrementStart: z.number().int().optional(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+  buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
+  articles: z.lazy(() => ArticleCreateNestedManyWithoutSaleInputSchema).optional(),
+});
+
+export const SaleUncheckedCreateWithoutRefundsInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutRefundsInput> = z.strictObject({
+  id: z.uuid().optional(),
+  buyerId: z.string(),
+  saleIndex: z.number().int(),
+  incrementStart: z.number().int().optional(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+  articles: z.lazy(() => ArticleUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
+});
+
+export const SaleCreateOrConnectWithoutRefundsInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutRefundsInput> = z.strictObject({
+  where: z.lazy(() => SaleWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => SaleCreateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutRefundsInputSchema) ]),
+});
+
+export const SaleUpsertWithoutRefundsInputSchema: z.ZodType<Prisma.SaleUpsertWithoutRefundsInput> = z.strictObject({
+  update: z.union([ z.lazy(() => SaleUpdateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutRefundsInputSchema) ]),
+  create: z.union([ z.lazy(() => SaleCreateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedCreateWithoutRefundsInputSchema) ]),
+  where: z.lazy(() => SaleWhereInputSchema).optional(),
+});
+
+export const SaleUpdateToOneWithWhereWithoutRefundsInputSchema: z.ZodType<Prisma.SaleUpdateToOneWithWhereWithoutRefundsInput> = z.strictObject({
+  where: z.lazy(() => SaleWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => SaleUpdateWithoutRefundsInputSchema), z.lazy(() => SaleUncheckedUpdateWithoutRefundsInputSchema) ]),
+});
+
+export const SaleUpdateWithoutRefundsInputSchema: z.ZodType<Prisma.SaleUpdateWithoutRefundsInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  saleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
+  articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
+});
+
+export const SaleUncheckedUpdateWithoutRefundsInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutRefundsInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  buyerId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  saleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const DepositCreateWithoutArticlesInputSchema: z.ZodType<Prisma.DepositCreateWithoutArticlesInput> = z.strictObject({
@@ -4530,13 +4940,11 @@ export const SaleCreateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleCreateWi
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
   buyer: z.lazy(() => ContactCreateNestedOneWithoutSalesInputSchema),
+  refunds: z.lazy(() => RefundCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleUncheckedCreateWithoutArticlesInput> = z.strictObject({
@@ -4547,12 +4955,10 @@ export const SaleUncheckedCreateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
+  refunds: z.lazy(() => RefundUncheckedCreateNestedManyWithoutSaleInputSchema).optional(),
 });
 
 export const SaleCreateOrConnectWithoutArticlesInputSchema: z.ZodType<Prisma.SaleCreateOrConnectWithoutArticlesInput> = z.strictObject({
@@ -4635,13 +5041,11 @@ export const SaleUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleUpdateWi
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   buyer: z.lazy(() => ContactUpdateOneRequiredWithoutSalesNestedInputSchema).optional(),
+  refunds: z.lazy(() => RefundUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutArticlesInput> = z.strictObject({
@@ -4652,12 +5056,10 @@ export const SaleUncheckedUpdateWithoutArticlesInputSchema: z.ZodType<Prisma.Sal
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  refunds: z.lazy(() => RefundUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const PredepositArticleCreateWithoutPredepositInputSchema: z.ZodType<Prisma.PredepositArticleCreateWithoutPredepositInput> = z.strictObject({
@@ -4816,9 +5218,6 @@ export const SaleCreateManyBuyerInputSchema: z.ZodType<Prisma.SaleCreateManyBuye
   cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
   checkAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundCashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
-  refundComment: z.string().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   deletedAt: z.coerce.date().optional().nullable(),
@@ -4853,13 +5252,11 @@ export const SaleUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUpdateWitho
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUpdateManyWithoutSaleNestedInputSchema).optional(),
+  refunds: z.lazy(() => RefundUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateWithoutBuyerInput> = z.strictObject({
@@ -4869,13 +5266,11 @@ export const SaleUncheckedUpdateWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUn
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   articles: z.lazy(() => ArticleUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
+  refunds: z.lazy(() => RefundUncheckedUpdateManyWithoutSaleNestedInputSchema).optional(),
 });
 
 export const SaleUncheckedUpdateManyWithoutBuyerInputSchema: z.ZodType<Prisma.SaleUncheckedUpdateManyWithoutBuyerInput> = z.strictObject({
@@ -4885,9 +5280,6 @@ export const SaleUncheckedUpdateManyWithoutBuyerInputSchema: z.ZodType<Prisma.Sa
   cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
   checkAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundCashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
-  refundComment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5066,6 +5458,17 @@ export const ArticleCreateManySaleInputSchema: z.ZodType<Prisma.ArticleCreateMan
   deletedAt: z.coerce.date().optional().nullable(),
 });
 
+export const RefundCreateManySaleInputSchema: z.ZodType<Prisma.RefundCreateManySaleInput> = z.strictObject({
+  id: z.uuid().optional(),
+  incrementStart: z.number().int(),
+  cardAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  cashAmount: z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }).optional(),
+  comment: z.string().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
 export const ArticleUpdateWithoutSaleInputSchema: z.ZodType<Prisma.ArticleUpdateWithoutSaleInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   price: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => NullableDecimalFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5124,6 +5527,39 @@ export const ArticleUncheckedUpdateManyWithoutSaleInputSchema: z.ZodType<Prisma.
   articleIndex: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   depositId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundUpdateWithoutSaleInputSchema: z.ZodType<Prisma.RefundUpdateWithoutSaleInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundUncheckedUpdateWithoutSaleInputSchema: z.ZodType<Prisma.RefundUncheckedUpdateWithoutSaleInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const RefundUncheckedUpdateManyWithoutSaleInputSchema: z.ZodType<Prisma.RefundUncheckedUpdateManyWithoutSaleInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  incrementStart: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  cardAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  cashAmount: z.union([ z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }),z.lazy(() => DecimalFieldUpdateOperationsInputSchema) ]).optional(),
+  comment: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -5499,6 +5935,68 @@ export const SaleFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.SaleFindUniqueOrT
   select: SaleSelectSchema.optional(),
   include: SaleIncludeSchema.optional(),
   where: SaleWhereUniqueInputSchema, 
+}).strict();
+
+export const RefundFindFirstArgsSchema: z.ZodType<Prisma.RefundFindFirstArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereInputSchema.optional(), 
+  orderBy: z.union([ RefundOrderByWithRelationInputSchema.array(), RefundOrderByWithRelationInputSchema ]).optional(),
+  cursor: RefundWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RefundScalarFieldEnumSchema, RefundScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const RefundFindFirstOrThrowArgsSchema: z.ZodType<Prisma.RefundFindFirstOrThrowArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereInputSchema.optional(), 
+  orderBy: z.union([ RefundOrderByWithRelationInputSchema.array(), RefundOrderByWithRelationInputSchema ]).optional(),
+  cursor: RefundWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RefundScalarFieldEnumSchema, RefundScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const RefundFindManyArgsSchema: z.ZodType<Prisma.RefundFindManyArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereInputSchema.optional(), 
+  orderBy: z.union([ RefundOrderByWithRelationInputSchema.array(), RefundOrderByWithRelationInputSchema ]).optional(),
+  cursor: RefundWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RefundScalarFieldEnumSchema, RefundScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const RefundAggregateArgsSchema: z.ZodType<Prisma.RefundAggregateArgs> = z.object({
+  where: RefundWhereInputSchema.optional(), 
+  orderBy: z.union([ RefundOrderByWithRelationInputSchema.array(), RefundOrderByWithRelationInputSchema ]).optional(),
+  cursor: RefundWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict();
+
+export const RefundGroupByArgsSchema: z.ZodType<Prisma.RefundGroupByArgs> = z.object({
+  where: RefundWhereInputSchema.optional(), 
+  orderBy: z.union([ RefundOrderByWithAggregationInputSchema.array(), RefundOrderByWithAggregationInputSchema ]).optional(),
+  by: RefundScalarFieldEnumSchema.array(), 
+  having: RefundScalarWhereWithAggregatesInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict();
+
+export const RefundFindUniqueArgsSchema: z.ZodType<Prisma.RefundFindUniqueArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereUniqueInputSchema, 
+}).strict();
+
+export const RefundFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.RefundFindUniqueOrThrowArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereUniqueInputSchema, 
 }).strict();
 
 export const ArticleFindFirstArgsSchema: z.ZodType<Prisma.ArticleFindFirstArgs> = z.object({
@@ -5946,6 +6444,60 @@ export const SaleUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.SaleUpdateManyA
 
 export const SaleDeleteManyArgsSchema: z.ZodType<Prisma.SaleDeleteManyArgs> = z.object({
   where: SaleWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const RefundCreateArgsSchema: z.ZodType<Prisma.RefundCreateArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  data: z.union([ RefundCreateInputSchema, RefundUncheckedCreateInputSchema ]),
+}).strict();
+
+export const RefundUpsertArgsSchema: z.ZodType<Prisma.RefundUpsertArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereUniqueInputSchema, 
+  create: z.union([ RefundCreateInputSchema, RefundUncheckedCreateInputSchema ]),
+  update: z.union([ RefundUpdateInputSchema, RefundUncheckedUpdateInputSchema ]),
+}).strict();
+
+export const RefundCreateManyArgsSchema: z.ZodType<Prisma.RefundCreateManyArgs> = z.object({
+  data: z.union([ RefundCreateManyInputSchema, RefundCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict();
+
+export const RefundCreateManyAndReturnArgsSchema: z.ZodType<Prisma.RefundCreateManyAndReturnArgs> = z.object({
+  data: z.union([ RefundCreateManyInputSchema, RefundCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict();
+
+export const RefundDeleteArgsSchema: z.ZodType<Prisma.RefundDeleteArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  where: RefundWhereUniqueInputSchema, 
+}).strict();
+
+export const RefundUpdateArgsSchema: z.ZodType<Prisma.RefundUpdateArgs> = z.object({
+  select: RefundSelectSchema.optional(),
+  include: RefundIncludeSchema.optional(),
+  data: z.union([ RefundUpdateInputSchema, RefundUncheckedUpdateInputSchema ]),
+  where: RefundWhereUniqueInputSchema, 
+}).strict();
+
+export const RefundUpdateManyArgsSchema: z.ZodType<Prisma.RefundUpdateManyArgs> = z.object({
+  data: z.union([ RefundUpdateManyMutationInputSchema, RefundUncheckedUpdateManyInputSchema ]),
+  where: RefundWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const RefundUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.RefundUpdateManyAndReturnArgs> = z.object({
+  data: z.union([ RefundUpdateManyMutationInputSchema, RefundUncheckedUpdateManyInputSchema ]),
+  where: RefundWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const RefundDeleteManyArgsSchema: z.ZodType<Prisma.RefundDeleteManyArgs> = z.object({
+  where: RefundWhereInputSchema.optional(), 
   limit: z.number().optional(),
 }).strict();
 

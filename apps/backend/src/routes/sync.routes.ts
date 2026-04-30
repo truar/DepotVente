@@ -12,11 +12,12 @@ export async function syncRoutes(fastify: FastifyInstance) {
     async () => {
       const syncedAt = Date.now();
       // Fetch all relevant data for this workstation
-      const [deposits, articles, contacts, sales, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
+      const [deposits, articles, contacts, sales, refunds, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
         prisma.deposit.findMany(),
         prisma.article.findMany(),
         prisma.contact.findMany(),
         prisma.sale.findMany(),
+        prisma.refund.findMany(),
         prisma.predeposit.findMany(),
         prisma.predepositArticle.findMany(),
         prisma.cashRegisterControl.findMany(),
@@ -27,6 +28,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
         articles,
         contacts,
         sales,
+        refunds,
         predeposits,
         predepositArticles,
         cashRegisterControls,
@@ -52,7 +54,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
       const sinceDate = new Date(parseInt(since));
 
       // Fetch changes since timestamp
-      const [deposits, articles, contacts, sales, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
+      const [deposits, articles, contacts, sales, refunds, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
         prisma.deposit.findMany({
           where: {
             updatedAt: { gte: sinceDate },
@@ -69,6 +71,11 @@ export async function syncRoutes(fastify: FastifyInstance) {
           },
         }),
         prisma.sale.findMany({
+          where: {
+            updatedAt: { gte: sinceDate },
+          },
+        }),
+        prisma.refund.findMany({
           where: {
             updatedAt: { gte: sinceDate },
           },
@@ -95,6 +102,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
         articles,
         contacts,
         sales,
+        refunds,
         predeposits,
         predepositArticles,
         cashRegisterControls,

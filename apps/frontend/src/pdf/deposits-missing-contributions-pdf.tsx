@@ -141,13 +141,16 @@ export const DepositsMissingContributionPdf = (
               <View style={styles.title}>
                 <Text>Bourse au skis {data.year}</Text>
                 <Text>Club Montagnard Rumillien</Text>
-                <Text>
-                  Liste des cotisations à encaisser sans récupération de chèques
-                </Text>
+                <Text>Retours</Text>
               </View>
             </View>
           </View>
           <View style={styles.payments}>
+            <View style={{ textAlign: 'center' }}>
+              <Text>
+                Liste des cotisations à encaisser sans récupération de chèque
+              </Text>
+            </View>
             <View style={styles.table}>
               <View style={[styles.tableRow, styles.tableHeader]}>
                 <View style={styles.tableCol}>

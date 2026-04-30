@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { HandCoinsIcon, ScanEyeIcon } from 'lucide-react'
+import { EyeIcon, RefreshCwIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import {
   ReturnDepositPdf,
@@ -252,10 +252,10 @@ export const columns: ColumnDef<DepositTableType>[] = [
       return (
         <div>
           <Button variant="ghost" size="icon" onClick={() => computeReturn(id)}>
-            <HandCoinsIcon />
+            <RefreshCwIcon />
           </Button>
           <Button variant="ghost" size="icon" onClick={() => printReturn(id)}>
-            <ScanEyeIcon />
+            <EyeIcon />
           </Button>
         </div>
       )
@@ -356,7 +356,7 @@ function DepositsSummary() {
       </div>
       <div>
         <CustomButton onClick={() => printMissingContribution()}>
-          Imprimer les retours avec cotisations
+          Récapitulatif des cotisations à encaisser
         </CustomButton>
       </div>
     </div>

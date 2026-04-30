@@ -19,6 +19,7 @@ export async function replicationRoutes(fastify: FastifyInstance) {
       contacts: prisma.contact,
       articles: prisma.article,
       sales: prisma.sale,
+      refunds: prisma.refund,
       predeposits: prisma.predeposit,
       cashRegisterControls: prisma.cashRegisterControl,
     }

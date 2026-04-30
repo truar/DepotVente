@@ -68,6 +68,11 @@ export const Route = createFileRoute('/sales/add')({
   ),
 })
 
+function toNumber(value: unknown) {
+  const n = typeof value === 'number' ? value : parseFloat(value as string)
+  return Number.isNaN(n) ? 0 : n
+}
+
 function RouteComponent() {
   const salesDb = useSalesDb()
   const [workstation] = useWorkstation()
@@ -112,25 +117,28 @@ function SalesForm(props: SalesFormProps) {
     methods
 
   useEffect(() => {
-    console.log(saleIndex)
     setValue('saleIndex', saleIndex)
   }, [saleIndex])
 
-  const createSaleMutation = useCreateSale()
-  const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
-    const articles = data.articles
-    const totalPrice = articles?.reduce((acc, cur) => acc + cur.price, 0) ?? 0
-    const cashAmount = data.cashAmount ?? 0
-    const cardAmount = data.cardAmount ?? 0
-    const checkAmount = data.checkAmount ?? 0
-
+  const checkPaymentTotal = (data: SaleFormType) => {
+    const totalPrice =
+      data.articles?.reduce((acc, cur) => acc + toNumber(cur.price), 0) ?? 0
+    const cashAmount = toNumber(data.cashAmount)
+    const cardAmount = toNumber(data.cardAmount)
+    const checkAmount = toNumber(data.checkAmount)
     if (totalPrice !== cashAmount + cardAmount + checkAmount) {
       setError('root.totalPrice', {
         type: 'value',
         message: `Merci de vérifier que le montant total est couvert par les 3 modes de règlements.`,
       })
-      return
+      return false
     }
+    return true
+  }
+
+  const createSaleMutation = useCreateSale()
+  const onSubmit: SubmitHandler<SaleFormType> = async (data) => {
+    if (!checkPaymentTotal(data)) return
 
     await createSaleMutation.mutate(data)
     reset()
@@ -147,6 +155,7 @@ function SalesForm(props: SalesFormProps) {
       return
     }
     const formData = getValues()
+    if (!checkPaymentTotal(formData)) return
     const year = getYear()
     const data: InvoicePdfProps['data'] = {
       sale: {
@@ -168,7 +177,7 @@ function SalesForm(props: SalesFormProps) {
         price: article.price,
       })),
     }
-    await printPdf(<InvoicePdf data={data} copy={2} />)
+    await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
 
   return (
@@ -501,43 +510,23 @@ function PaymentForm() {
   const { watch } = useFormContext<SaleFormType>()
   const [cashReceived, setCashReceived] = useState<string>('')
   const cashAmount = watch('cashAmount')
-  let cashReturned = Math.max(
-    0,
-    parseFloat(cashReceived) - (cashAmount ?? 0),
-  )
+  const cardAmount = watch('cardAmount')
+  const checkAmount = watch('checkAmount')
+  const totalPayment =
+    toNumber(cashAmount) + toNumber(cardAmount) + toNumber(checkAmount)
+  const cashReceivedNumber = parseFloat(cashReceived)
+  let cashReturned = Math.max(0, cashReceivedNumber - toNumber(cashAmount))
   if (Number.isNaN(cashReturned)) {
     cashReturned = 0
   }
+  const cashReceivedInvalid =
+    cashReceived !== '' &&
+    !Number.isNaN(cashReceivedNumber) &&
+    toNumber(cashAmount) > cashReceivedNumber
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Règlements</h3>
-      <Controller
-        name="root.totalPrice"
-        render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
-      />
       <div className="grid grid-cols-8 gap-6 align-baseline">
-        <Controller
-          name="checkAmount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <Label htmlFor="checkAmount">Montant chèque</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    {...field}
-                    id="checkAmount"
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    autoComplete="off"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <Euro />
-                  </InputGroupAddon>
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
         <Controller
           name="cardAmount"
           render={({ field, fieldState }) => (
@@ -561,11 +550,33 @@ function PaymentForm() {
           )}
         />
         <Controller
+          name="checkAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="checkAmount">Montant chèque</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="checkAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                    autoComplete="off"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
           name="cashAmount"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
-                <Label htmlFor="cashAmount">Montant espèce</Label>
+                <Label htmlFor="cashAmount">Montant espèces</Label>
                 <InputGroup>
                   <InputGroupInput
                     {...field}
@@ -582,12 +593,13 @@ function PaymentForm() {
             </Field>
           )}
         />
-        <Field>
+        <Field data-invalid={cashReceivedInvalid}>
           <FieldContent>
             <Label htmlFor="cashReceived">Espèces reçues</Label>
             <InputGroup>
               <InputGroupInput
                 id="cashReceived"
+                aria-invalid={cashReceivedInvalid}
                 type="text"
                 value={cashReceived}
                 onChange={(e) => setCashReceived(e.target.value)}
@@ -617,8 +629,18 @@ function PaymentForm() {
           </FieldContent>
         </Field>
       </div>
+      <div className="font-bold">Total règlement : {totalPayment}€</div>
     </div>
   )
+}
+
+function collectErrorMessages(node: unknown): string[] {
+  if (!node || typeof node !== 'object') return []
+  const record = node as Record<string, unknown>
+  if (typeof record.message === 'string' && record.message.length > 0) {
+    return [record.message]
+  }
+  return Object.values(record).flatMap(collectErrorMessages)
 }
 
 function ErrorMessages() {
@@ -626,14 +648,13 @@ function ErrorMessages() {
     formState: { errors },
   } = useFormContext()
 
-  console.log(errors)
-
-  const errorsDisplayed = Object.keys(errors).map((key, index) => {
-    if (typeof errors[key]?.message === 'string') {
-      return <li key={index}>{errors[key]?.message}</li>
-    }
-    return null
-  })
-  if (errorsDisplayed.length === 0) return null
-  return <ul className="pl-3 text-red-600 list-disc">{errorsDisplayed}</ul>
+  const messages = collectErrorMessages(errors)
+  if (messages.length === 0) return null
+  return (
+    <ul className="pl-5 text-red-600 list-disc">
+      {messages.map((message, index) => (
+        <li key={index}>{message}</li>
+      ))}
+    </ul>
+  )
 }

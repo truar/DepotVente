@@ -23,7 +23,13 @@ import {
 } from '@/components/ui/input-group.tsx'
 import { Euro, RotateCcwIcon, Trash2 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { type Article, type Contact, db, type Sale } from '@/db.ts'
+import {
+  type Article,
+  type Contact,
+  db,
+  type Refund,
+  type Sale,
+} from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { type EditSaleFormType, EditSaleSchema } from '@/types/EditSaleForm.ts'
 import {
@@ -67,7 +73,12 @@ function RouteComponent() {
     () => db.articles.where({ saleId }).sortBy('code'),
     [saleId],
   )
+  const refund = useLiveQuery(
+    () => db.refunds.where({ saleId }).first(),
+    [saleId],
+  )
   if (!sale || !contact || !articles) return
+  const activeRefund = refund && refund.deletedAt == null ? refund : null
   return (
     <Page
       navigation={
@@ -75,7 +86,12 @@ function RouteComponent() {
       }
       title={`Modifier la vente n°${sale.saleIndex}`}
     >
-      <SaleForm sale={sale} buyer={contact} articles={articles} />
+      <SaleForm
+        sale={sale}
+        buyer={contact}
+        articles={articles}
+        refund={activeRefund}
+      />
     </Page>
   )
 }
@@ -83,9 +99,10 @@ type SaleFormProps = {
   sale: Sale
   articles: Article[]
   buyer: Contact
+  refund: Refund | null
 }
 function SaleForm(props: SaleFormProps) {
-  const { sale, articles, buyer } = props
+  const { sale, articles, buyer, refund } = props
   const mutation = useEditSale()
   const methods = useForm<EditSaleFormType>({
     resolver: typedZodResolver(EditSaleSchema),
@@ -96,9 +113,9 @@ function SaleForm(props: SaleFormProps) {
       checkAmount: sale.checkAmount,
       cashAmount: sale.cashAmount,
       cardAmount: sale.cardAmount,
-      refundCardAmount: sale.refundCardAmount || 0,
-      refundCashAmount: sale.refundCashAmount || 0,
-      refundComment: sale.refundComment,
+      refundCardAmount: refund?.cardAmount || 0,
+      refundCashAmount: refund?.cashAmount || 0,
+      refundComment: refund?.comment ?? '',
       buyer: {
         city: buyer.city,
         lastName: buyer.lastName,
@@ -128,19 +145,21 @@ function SaleForm(props: SaleFormProps) {
     },
   })
   const { handleSubmit, reset, setError, trigger, getValues } = methods
-  const onSubmit: SubmitHandler<EditSaleFormType> = async (data) => {
-    const articles = data.articles
+  const toNumber = (value: unknown) => {
+    const n = typeof value === 'number' ? value : parseFloat(value as string)
+    return Number.isNaN(n) ? 0 : n
+  }
+  const checkPaymentTotal = (data: EditSaleFormType) => {
     const totalPrice =
-      articles?.reduce(
-        (acc, cur) => acc + (cur.isDeleted ? 0 : cur.price),
+      data.articles?.reduce(
+        (acc, cur) => acc + (cur.isDeleted ? 0 : toNumber(cur.price)),
         0,
       ) ?? 0
-    const cashAmount = data.cashAmount ?? 0
-    const cardAmount = data.cardAmount ?? 0
-    const checkAmount = data.checkAmount ?? 0
-    const refundCardAmount = data.refundCardAmount ?? 0
-    const refundCashAmount = data.refundCashAmount ?? 0
-
+    const cashAmount = toNumber(data.cashAmount)
+    const cardAmount = toNumber(data.cardAmount)
+    const checkAmount = toNumber(data.checkAmount)
+    const refundCardAmount = toNumber(data.refundCardAmount)
+    const refundCashAmount = toNumber(data.refundCashAmount)
     if (
       totalPrice !==
       cashAmount +
@@ -153,8 +172,13 @@ function SaleForm(props: SaleFormProps) {
         message:
           'Merci de vérifier que le montant total et le montant de remboursement soient couverts par tous les modes de paiement',
       })
-      return
+      return false
     }
+    return true
+  }
+
+  const onSubmit: SubmitHandler<EditSaleFormType> = async (data) => {
+    if (!checkPaymentTotal(data)) return
 
     await mutation.mutate(data)
     toast.success(`Vente ${data.saleIndex} enregistré`)
@@ -170,6 +194,7 @@ function SaleForm(props: SaleFormProps) {
       return
     }
     const formData = getValues()
+    if (!checkPaymentTotal(formData)) return
     const year = getYear()
     const data: InvoicePdfProps['data'] = {
       sale: {
@@ -191,7 +216,7 @@ function SaleForm(props: SaleFormProps) {
         price: article.price,
       })),
     }
-    await printPdf(<InvoicePdf data={data} copy={2} />)
+    await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
 
   return (
@@ -477,7 +502,7 @@ function PaymentForm() {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
-                <Label htmlFor="cashAmount">Montant espèce</Label>
+                <Label htmlFor="cashAmount">Montant espèces</Label>
                 <InputGroup>
                   <InputGroupInput
                     {...field}

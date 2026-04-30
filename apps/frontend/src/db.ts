@@ -12,9 +12,18 @@ export type Sale = {
   cardAmount: number | null | undefined
   cashAmount: number | null | undefined
   checkAmount: number | null | undefined
-  refundCardAmount: number | null | undefined
-  refundCashAmount: number | null | undefined
-  refundComment: string | null | undefined
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
+}
+
+export type Refund = {
+  id: string
+  saleId: string
+  incrementStart: number
+  cardAmount: number
+  cashAmount: number
+  comment: string
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -182,6 +191,7 @@ const db = new Dexie('DepotVenteDatabase') as Dexie & {
     'id' // primary key "id" (for the typings only)
   >
   sales: EntityTable<Sale, 'id'>
+  refunds: EntityTable<Refund, 'id'>
   cashRegisterControls: EntityTable<CashRegisterControl, 'id'>
   outbox: EntityTable<OutboxOperation, 'id'>
   syncMetadata: EntityTable<SyncMetadata, 'key'>
@@ -200,6 +210,10 @@ db.version(1).stores({
   cashRegisterControls: '++id, [cashRegisterId+type]',
   syncMetadata: 'key',
   workstation: 'key',
+})
+
+db.version(2).stores({
+  refunds: '++id, saleId, incrementStart, updatedAt',
 })
 
 export { db }
