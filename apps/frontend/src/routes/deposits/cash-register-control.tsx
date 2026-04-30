@@ -185,10 +185,11 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
     await navigate({ to: '..' })
   }
 
-  const onCancel = () => {
+  const onCancel = async () => {
     reset()
     setHasPrinted(false)
     setPrintError(false)
+    await navigate({ to: '..' })
   }
 
   return (

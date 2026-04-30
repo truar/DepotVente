@@ -394,7 +394,7 @@ function SalesControlPage(props: SalesControlPageProps) {
     await navigate({ to: '..' })
   }
 
-  const onCancel = () => {
+  const onCancel = async () => {
     if (cashRegisterControl) {
       setValue('cashPayment', buildCashPaymentValues(cashRegisterControl))
     } else {
@@ -402,6 +402,7 @@ function SalesControlPage(props: SalesControlPageProps) {
     }
     setHasPrinted(false)
     setPrintError(false)
+    await navigate({ to: '..' })
   }
 
   const onError = (error: any) => console.log(error)
