@@ -214,11 +214,18 @@ function ContactSearchForm() {
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
     () =>
-      (contacts ?? []).map((contact) => ({
-        label: `${contact.firstName} ${contact.lastName}`,
-        value: contact.id,
-        keywords: [contact.firstName, contact.lastName],
-      })),
+      (contacts ?? [])
+        .slice()
+        .sort(
+          (a, b) =>
+            a.lastName.localeCompare(b.lastName, 'fr') ||
+            a.firstName.localeCompare(b.firstName, 'fr'),
+        )
+        .map((contact) => ({
+          label: `${contact.lastName} ${contact.firstName}`,
+          value: contact.id,
+          keywords: [contact.lastName, contact.firstName],
+        })),
     [contacts],
   )
 
@@ -240,7 +247,7 @@ function ContactSearchForm() {
           items={contactItems}
           value={contactId}
           onSelect={setContactId}
-          placeholder="Rechercher un vendeur"
+          placeholder="Rechercher un nom"
         />
       </div>
       <Button
@@ -249,7 +256,7 @@ function ContactSearchForm() {
         variant="secondary"
         onClick={prefillBuyerInformation}
       >
-        Rechercher
+        Valider
       </Button>
     </div>
   )

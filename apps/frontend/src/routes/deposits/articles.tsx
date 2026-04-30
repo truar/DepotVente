@@ -126,7 +126,7 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
           <Input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Ex: 2025 1A"
+            placeholder="Ex: 2026 1001A"
             onKeyDown={checkKeyDown}
             autoFocus
           />

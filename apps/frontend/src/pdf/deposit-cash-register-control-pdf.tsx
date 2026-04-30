@@ -77,6 +77,7 @@ export const DepositCashRegisterControlPdf = (
                 <View style={styles.title}>
                   <Text>Bourse au skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
+                  <Text>Dépôt</Text>
                 </View>
               </View>
               <View>
@@ -92,7 +93,7 @@ export const DepositCashRegisterControlPdf = (
                 justifyContent: 'space-between',
               }}
             >
-              <View>
+              <View style={{ gap: 8 }}>
                 <Text style={styles.libelle}>
                   Fond de caisse:{' '}
                   <FormattedNumber

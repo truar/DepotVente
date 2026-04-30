@@ -286,7 +286,7 @@ function RouteComponent() {
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
-      title="Controler les espèces"
+      title="Contrôler les espèces"
     >
       <SalesControlPage
         workstation={workstation}
@@ -576,11 +576,7 @@ function CashRegisterControlForm() {
           <Controller
             name="cashPayment.initialAmount"
             render={({ field }) => (
-              <MonetaryField
-                {...field}
-                label="Fonds de caisse"
-                readOnly={true}
-              />
+              <MonetaryField {...field} label="Fonds de caisse" />
             )}
           />
           <RealAmountInput />

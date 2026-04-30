@@ -62,7 +62,7 @@ function RouteComponent() {
   return (
     <Page
       navigation={<Link to={'..'}>Retour au menu</Link>}
-      title="Controler les espèces"
+      title="Contrôler les espèces"
     >
       <CashRegisterControlForm
         workstation={workstation}
@@ -177,11 +177,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
               <Controller
                 name="initialAmount"
                 render={({ field }) => (
-                  <MonetaryField
-                    {...field}
-                    label="Fonds de caisse"
-                    readOnly={true}
-                  />
+                  <MonetaryField {...field} label="Fonds de caisse" />
                 )}
               />
               <RealAmountInput />
@@ -204,10 +200,10 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
 function RealAmountInput() {
   const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
   const amounts = watch('amounts', [])
-  const realAmount = amounts.reduce(
-    (acc, cur) => acc + cur.amount * cur.value,
-    0,
-  )
+  const initialAmount = watch('initialAmount', 0)
+  const realAmount =
+    amounts.reduce((acc, cur) => acc + cur.amount * cur.value, 0) -
+    initialAmount
   useEffect(() => {
     setValue('realAmount', realAmount)
   }, [realAmount, setValue])
