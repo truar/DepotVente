@@ -1,4 +1,9 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
@@ -10,7 +15,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type CashRegisterControl, db, type Workstation } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
@@ -23,6 +28,8 @@ import {
 import { printPdf } from '@/pdf/print.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
+import { Textarea } from '@/components/ui/textarea.tsx'
+import { Label } from '@/components/ui/label.tsx'
 import {
   CashRegisterControlFormSchema,
   type CashRegisterControlFormType,
@@ -30,6 +37,17 @@ import {
 import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
 import { toast } from 'sonner'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog.tsx'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
   beforeLoad: () => {
@@ -103,35 +121,42 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
         { amount: 0, value: 0.02 },
         { amount: 0, value: 0.01 },
       ],
+      comment: '',
     },
   })
-  const { control, getValues, handleSubmit, setValue } = methods
+  const { control, getValues, handleSubmit, reset } = methods
+  const [hasPrinted, setHasPrinted] = useState(false)
+  const [printError, setPrintError] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (cashRegisterControl) {
-      setValue('id', cashRegisterControl.id)
-      setValue('cashRegisterId', cashRegisterControl.cashRegisterId)
-      setValue('initialAmount', cashRegisterControl.initialAmount)
-      setValue('realAmount', cashRegisterControl.realCashAmount)
-      setValue('theoreticalAmount', cashRegisterControl.theoreticalCashAmount)
-      setValue('amounts', [
-        { amount: cashRegisterControl.cash200, value: 200 },
-        { amount: cashRegisterControl.cash100, value: 100 },
-        { amount: cashRegisterControl.cash50, value: 50 },
-        { amount: cashRegisterControl.cash20, value: 20 },
-        { amount: cashRegisterControl.cash10, value: 10 },
-        { amount: cashRegisterControl.cash5, value: 5 },
-        { amount: cashRegisterControl.cash2, value: 2 },
-        { amount: cashRegisterControl.cash1, value: 1 },
-        { amount: cashRegisterControl.cash05, value: 0.5 },
-        { amount: cashRegisterControl.cash02, value: 0.2 },
-        { amount: cashRegisterControl.cash01, value: 0.1 },
-        { amount: cashRegisterControl.cash005, value: 0.05 },
-        { amount: cashRegisterControl.cash002, value: 0.02 },
-        { amount: cashRegisterControl.cash001, value: 0.01 },
-      ])
+      reset({
+        id: cashRegisterControl.id,
+        cashRegisterId: cashRegisterControl.cashRegisterId,
+        initialAmount: cashRegisterControl.initialAmount,
+        realAmount: cashRegisterControl.realCashAmount,
+        theoreticalAmount: cashRegisterControl.theoreticalCashAmount,
+        amounts: [
+          { amount: cashRegisterControl.cash200, value: 200 },
+          { amount: cashRegisterControl.cash100, value: 100 },
+          { amount: cashRegisterControl.cash50, value: 50 },
+          { amount: cashRegisterControl.cash20, value: 20 },
+          { amount: cashRegisterControl.cash10, value: 10 },
+          { amount: cashRegisterControl.cash5, value: 5 },
+          { amount: cashRegisterControl.cash2, value: 2 },
+          { amount: cashRegisterControl.cash1, value: 1 },
+          { amount: cashRegisterControl.cash05, value: 0.5 },
+          { amount: cashRegisterControl.cash02, value: 0.2 },
+          { amount: cashRegisterControl.cash01, value: 0.1 },
+          { amount: cashRegisterControl.cash005, value: 0.05 },
+          { amount: cashRegisterControl.cash002, value: 0.02 },
+          { amount: cashRegisterControl.cash001, value: 0.01 },
+        ],
+        comment: cashRegisterControl.comment ?? '',
+      })
     }
-  }, [cashRegisterControl])
+  }, [cashRegisterControl, reset])
 
   const { fields } = useFieldArray({
     control,
@@ -146,11 +171,24 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       ...formData,
     }
     await printPdf(<DepositCashRegisterControlPdf data={data} />)
+    setHasPrinted(true)
+    setPrintError(false)
   }
 
   const onSubmit = async (data: CashRegisterControlFormType) => {
+    if (!hasPrinted) {
+      setPrintError(true)
+      return
+    }
     await mutation.mutate(data)
     toast.success(`Caisse ${data.cashRegisterId} enregistrée`)
+    await navigate({ to: '..' })
+  }
+
+  const onCancel = () => {
+    reset()
+    setHasPrinted(false)
+    setPrintError(false)
   }
 
   return (
@@ -167,7 +205,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
                     <TextField
                       invalid={fieldState.invalid}
                       {...controlledField}
-                      label={`${field.value}`}
+                      label={field.value < 1 ? field.value.toFixed(2) : `${field.value}`}
                     />
                   )}
                 />
@@ -185,10 +223,50 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
               <DifferenceInput />
             </div>
           </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="comment">Commentaire</Label>
+            <Controller
+              name="comment"
+              render={({ field }) => (
+                <Textarea
+                  id="comment"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
+            />
+          </div>
+          {printError && (
+            <p className="text-red-600 text-sm text-right">
+              Merci d'imprimer le rapport avant de valider le contrôle
+            </p>
+          )}
           <div className="flex justify-end gap-3">
             <CustomButton type="button" onClick={print} variant="secondary">
-              Imprimer le rapport
+              Imprimer
             </CustomButton>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <CustomButton type="button" variant="destructive">
+                  Annuler
+                </CustomButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Etes vous sur de vouloir annuler ?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action va réinitialiser le formulaire. Les données non
+                    enregistrées seront perdues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Non</AlertDialogCancel>
+                  <AlertDialogAction onClick={onCancel}>Oui</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <CustomButton type="submit">Valider</CustomButton>
           </div>
         </div>

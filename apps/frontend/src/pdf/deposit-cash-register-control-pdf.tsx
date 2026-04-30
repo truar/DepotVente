@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 
 const styles = StyleSheet.create({
   page: {
@@ -37,6 +38,8 @@ const styles = StyleSheet.create({
   },
   libelle: {
     width: 250,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   amountList: {
     display: 'flex',
@@ -59,6 +62,7 @@ export type DepositCashRegisterControlProps = {
     realAmount: number
     theoreticalAmount: number
     amounts: Array<{ value: number; amount: number }>
+    comment?: string | null
   }
 }
 
@@ -77,7 +81,7 @@ export const DepositCashRegisterControlPdf = (
                 <View style={styles.title}>
                   <Text>Bourse au skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
-                  <Text>Dépôt</Text>
+                  <Text>Contrôle caisse dépôt</Text>
                 </View>
               </View>
               <View>
@@ -94,42 +98,50 @@ export const DepositCashRegisterControlPdf = (
               }}
             >
               <View style={{ gap: 8 }}>
-                <Text style={styles.libelle}>
-                  Fond de caisse:{' '}
-                  <FormattedNumber
-                    value={data.initialAmount}
-                    style="currency"
-                    currency="EUR"
-                    useGrouping={false}
-                  />
-                </Text>
-                <Text style={styles.libelle}>
-                  Montant réel:{' '}
-                  <FormattedNumber
-                    value={data.realAmount}
-                    style="currency"
-                    currency="EUR"
-                    useGrouping={false}
-                  />
-                </Text>
-                <Text style={styles.libelle}>
-                  Montant théorique:{' '}
-                  <FormattedNumber
-                    value={data.theoreticalAmount}
-                    style="currency"
-                    currency="EUR"
-                    useGrouping={false}
-                  />
-                </Text>
-                <Text style={styles.libelle}>
-                  Différence:{' '}
-                  <FormattedNumber
-                    value={data.realAmount - data.theoreticalAmount}
-                    style="currency"
-                    currency="EUR"
-                    useGrouping={false}
-                  />
-                </Text>
+                <View style={styles.libelle}>
+                  <Text>Fond de caisse:</Text>
+                  <Text>
+                    <FormattedNumber
+                      value={data.initialAmount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+                <View style={styles.libelle}>
+                  <Text>Montant réel:</Text>
+                  <Text>
+                    <FormattedNumber
+                      value={data.realAmount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+                <View style={styles.libelle}>
+                  <Text>Montant théorique:</Text>
+                  <Text>
+                    <FormattedNumber
+                      value={data.theoreticalAmount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+                <View style={styles.libelle}>
+                  <Text>Différence:</Text>
+                  <Text>
+                    <FormattedNumber
+                      value={data.realAmount - data.theoreticalAmount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
               </View>
               <View style={styles.amountList}>
                 {data.amounts.map((amount, index) => {
@@ -144,7 +156,10 @@ export const DepositCashRegisterControlPdf = (
                       key={index}
                     >
                       <Text style={{ width: 50, textAlign: 'right' }}>
-                        {amount.value}€{' '}
+                        {amount.value < 1
+                          ? amount.value.toFixed(2)
+                          : amount.value}{' '}
+                        €{' '}
                       </Text>
                       <Text>: {amount.amount}</Text>
                     </View>
@@ -152,6 +167,12 @@ export const DepositCashRegisterControlPdf = (
                 })}
               </View>
             </View>
+            {data.comment ? (
+              <View style={{ marginTop: 10, gap: 6 }}>
+                <Text>Commentaire:</Text>
+                <Text>{data.comment}</Text>
+              </View>
+            ) : null}
             <View fixed style={styles.pageInformation}>
               <Text
                 render={({ subPageNumber, subPageTotalPages }) =>
@@ -159,6 +180,7 @@ export const DepositCashRegisterControlPdf = (
                 }
               />
             </View>
+            <PdfTimestampFooter />
           </Page>
         ))}
       </Document>

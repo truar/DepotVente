@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 
 const styles = StyleSheet.create({
   page: {
@@ -37,6 +38,8 @@ const styles = StyleSheet.create({
   },
   libelle: {
     width: 250,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   amountList: {
     display: 'flex',
@@ -144,6 +147,7 @@ export type SaleCashRegisterControlProps = {
       realAmount: number
       theoreticalAmount: number
       amounts: Array<{ value: number; amount: number }>
+      comment?: string | null
     }
     year: number
     cashRegisterId: number
@@ -198,6 +202,7 @@ export const SaleCashRegisterControlPdf = (
                 }
               />
             </View>
+            <PdfTimestampFooter />
           </Page>
         ))}
       </Document>
@@ -292,43 +297,51 @@ function CashPayment({
           justifyContent: 'space-between',
         }}
       >
-        <View>
-          <Text style={styles.libelle}>
-            Fond de caisse:{' '}
-            <FormattedNumber
-              value={cashPayment.initialAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Montant réel:{' '}
-            <FormattedNumber
-              value={cashPayment.realAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Montant théorique:{' '}
-            <FormattedNumber
-              value={cashPayment.theoreticalAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
-          <Text style={styles.libelle}>
-            Différence:{' '}
-            <FormattedNumber
-              value={cashPayment.realAmount - cashPayment.theoreticalAmount}
-              style="currency"
-              currency="EUR"
-              useGrouping={false}
-            />
-          </Text>
+        <View style={{ gap: 8 }}>
+          <View style={styles.libelle}>
+            <Text>Fond de caisse:</Text>
+            <Text>
+              <FormattedNumber
+                value={cashPayment.initialAmount}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+          <View style={styles.libelle}>
+            <Text>Montant réel:</Text>
+            <Text>
+              <FormattedNumber
+                value={cashPayment.realAmount}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+          <View style={styles.libelle}>
+            <Text>Montant théorique:</Text>
+            <Text>
+              <FormattedNumber
+                value={cashPayment.theoreticalAmount}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+          <View style={styles.libelle}>
+            <Text>Différence:</Text>
+            <Text>
+              <FormattedNumber
+                value={cashPayment.realAmount - cashPayment.theoreticalAmount}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
         </View>
         <View style={styles.amountList}>
           {cashPayment.amounts.map((amount, index) => {
@@ -343,7 +356,8 @@ function CashPayment({
                 key={index}
               >
                 <Text style={{ width: 50, textAlign: 'right' }}>
-                  {amount.value}€{' '}
+                  {amount.value < 1 ? amount.value.toFixed(2) : amount.value}{' '}
+                  €{' '}
                 </Text>
                 <Text>: {amount.amount}</Text>
               </View>
@@ -351,6 +365,12 @@ function CashPayment({
           })}
         </View>
       </View>
+      {cashPayment.comment ? (
+        <View style={{ marginTop: 10, gap: 6 }}>
+          <Text>Commentaire:</Text>
+          <Text>{cashPayment.comment}</Text>
+        </View>
+      ) : null}
     </View>
   )
 }

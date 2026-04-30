@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 
 const styles = StyleSheet.create({
   page: {
@@ -216,6 +217,7 @@ export const CheckListingPdf = (props: CheckListingProps) => {
                 }
               />
             </View>
+            <PdfTimestampFooter />
           </Page>
         ))}
       </Document>

@@ -1,4 +1,9 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Page } from '@/components/Page.tsx'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
@@ -12,7 +17,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   type CashRegisterControl,
@@ -31,6 +36,17 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog.tsx'
+import {
   Table,
   TableBody,
   TableCell,
@@ -45,6 +61,8 @@ import {
 } from '@/pdf/sale-cash-register-control-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
+import { Textarea } from '@/components/ui/textarea.tsx'
+import { Label } from '@/components/ui/label.tsx'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
 import { CashRegisterControlFormSchema } from '@/types/SaveDepositCashRegisterControlForm.ts'
 import { toast } from 'sonner'
@@ -235,6 +253,35 @@ function useRefundPaymentData({
     setValue('refundPayments', data)
   }, [sales, contactMap])
 }
+function buildCashPaymentValues(
+  cashRegisterControl: CashRegisterControl,
+): CashRegisterControlFormType['cashPayment'] {
+  return {
+    id: cashRegisterControl.id,
+    cashRegisterId: cashRegisterControl.cashRegisterId,
+    initialAmount: cashRegisterControl.initialAmount,
+    realAmount: cashRegisterControl.totalAmount,
+    theoreticalAmount: cashRegisterControl.theoreticalCashAmount,
+    amounts: [
+      { amount: cashRegisterControl.cash200, value: 200 },
+      { amount: cashRegisterControl.cash100, value: 100 },
+      { amount: cashRegisterControl.cash50, value: 50 },
+      { amount: cashRegisterControl.cash20, value: 20 },
+      { amount: cashRegisterControl.cash10, value: 10 },
+      { amount: cashRegisterControl.cash5, value: 5 },
+      { amount: cashRegisterControl.cash2, value: 2 },
+      { amount: cashRegisterControl.cash1, value: 1 },
+      { amount: cashRegisterControl.cash05, value: 0.5 },
+      { amount: cashRegisterControl.cash02, value: 0.2 },
+      { amount: cashRegisterControl.cash01, value: 0.1 },
+      { amount: cashRegisterControl.cash005, value: 0.05 },
+      { amount: cashRegisterControl.cash002, value: 0.02 },
+      { amount: cashRegisterControl.cash001, value: 0.01 },
+    ],
+    comment: cashRegisterControl.comment ?? '',
+  }
+}
+
 function useCashPaymentData({
   setValue,
   cashRegisterControl,
@@ -244,30 +291,7 @@ function useCashPaymentData({
 }) {
   useEffect(() => {
     if (cashRegisterControl) {
-      setValue('cashPayment.id', cashRegisterControl.id)
-      setValue('cashPayment.cashRegisterId', cashRegisterControl.cashRegisterId)
-      setValue('cashPayment.initialAmount', cashRegisterControl.initialAmount)
-      setValue('cashPayment.realAmount', cashRegisterControl.totalAmount)
-      setValue(
-        'cashPayment.theoreticalAmount',
-        cashRegisterControl.theoreticalCashAmount,
-      )
-      setValue('cashPayment.amounts', [
-        { amount: cashRegisterControl.cash200, value: 200 },
-        { amount: cashRegisterControl.cash100, value: 100 },
-        { amount: cashRegisterControl.cash50, value: 50 },
-        { amount: cashRegisterControl.cash20, value: 20 },
-        { amount: cashRegisterControl.cash10, value: 10 },
-        { amount: cashRegisterControl.cash5, value: 5 },
-        { amount: cashRegisterControl.cash2, value: 2 },
-        { amount: cashRegisterControl.cash1, value: 1 },
-        { amount: cashRegisterControl.cash05, value: 0.5 },
-        { amount: cashRegisterControl.cash02, value: 0.2 },
-        { amount: cashRegisterControl.cash01, value: 0.1 },
-        { amount: cashRegisterControl.cash005, value: 0.05 },
-        { amount: cashRegisterControl.cash002, value: 0.02 },
-        { amount: cashRegisterControl.cash001, value: 0.01 },
-      ])
+      setValue('cashPayment', buildCashPaymentValues(cashRegisterControl))
     }
   }, [cashRegisterControl])
 }
@@ -329,11 +353,15 @@ function SalesControlPage(props: SalesControlPageProps) {
           { amount: 0, value: 0.02 },
           { amount: 0, value: 0.01 },
         ],
+        comment: '',
       },
     },
   })
 
-  const { getValues, setValue, handleSubmit } = methods
+  const { getValues, setValue, handleSubmit, reset } = methods
+  const [hasPrinted, setHasPrinted] = useState(false)
+  const [printError, setPrintError] = useState(false)
+  const navigate = useNavigate()
 
   useCardPaymentData({ setValue })
   useCheckPaymentData({ setValue })
@@ -352,11 +380,28 @@ function SalesControlPage(props: SalesControlPageProps) {
       refundPayments: formData.refundPayments,
     }
     await printPdf(<SaleCashRegisterControlPdf data={data} />)
+    setHasPrinted(true)
+    setPrintError(false)
   }
 
   const onSubmit = async (data: CashRegisterControlFormType) => {
+    if (!hasPrinted) {
+      setPrintError(true)
+      return
+    }
     await mutation.mutate(data.cashPayment)
     toast.success(`Caisse ${data.cashPayment.cashRegisterId} enregistrée`)
+    await navigate({ to: '..' })
+  }
+
+  const onCancel = () => {
+    if (cashRegisterControl) {
+      setValue('cashPayment', buildCashPaymentValues(cashRegisterControl))
+    } else {
+      reset()
+    }
+    setHasPrinted(false)
+    setPrintError(false)
   }
 
   const onError = (error: any) => console.log(error)
@@ -394,10 +439,37 @@ function SalesControlPage(props: SalesControlPageProps) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          {printError && (
+            <p className="text-red-600 text-sm text-right">
+              Merci d'imprimer le rapport avant de valider le contrôle
+            </p>
+          )}
           <div className="flex justify-end gap-3">
             <CustomButton type="button" onClick={print} variant="secondary">
-              Imprimer le rapport
+              Imprimer
             </CustomButton>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <CustomButton type="button" variant="destructive">
+                  Annuler
+                </CustomButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Etes vous sur de vouloir annuler ?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action va réinitialiser le formulaire. Les données non
+                    enregistrées seront perdues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Non</AlertDialogCancel>
+                  <AlertDialogAction onClick={onCancel}>Oui</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <CustomButton type="submit">Valider</CustomButton>
           </div>
         </form>
@@ -566,7 +638,7 @@ function CashRegisterControlForm() {
                 <TextField
                   invalid={fieldState.invalid}
                   {...controllerField}
-                  label={`${field.value}`}
+                  label={field.value < 1 ? field.value.toFixed(2) : `${field.value}`}
                 />
               )}
             />
@@ -583,6 +655,19 @@ function CashRegisterControlForm() {
           <TheoreticalAmount />
           <DifferenceInput />
         </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cashPayment-comment">Commentaire</Label>
+        <Controller
+          name="cashPayment.comment"
+          render={({ field }) => (
+            <Textarea
+              id="cashPayment-comment"
+              {...field}
+              value={field.value ?? ''}
+            />
+          )}
+        />
       </div>
     </div>
   )

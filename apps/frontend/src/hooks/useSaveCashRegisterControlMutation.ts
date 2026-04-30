@@ -34,6 +34,7 @@ const toCashRegisterControl = (
   cash005: getAmount(data.amounts, 0.05),
   cash002: getAmount(data.amounts, 0.02),
   cash001: getAmount(data.amounts, 0.01),
+  comment: data.comment ?? null,
 })
 
 export function useSaveCashRegisterControlMutation(

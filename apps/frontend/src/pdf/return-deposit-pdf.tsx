@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 
 // Create styles
 const styles = StyleSheet.create({
@@ -396,6 +397,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             }
           />
         </View>
+        <PdfTimestampFooter />
       </Page>
     ))
   })

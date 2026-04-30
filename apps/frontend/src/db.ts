@@ -144,6 +144,7 @@ export type CashRegisterControl = {
   cash005: number
   cash002: number
   cash001: number
+  comment?: string | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null

@@ -12,6 +12,7 @@ export const CashRegisterControlFormSchema = z.object({
       value: z.coerce.number(),
     }),
   ),
+  comment: z.string().optional(),
 })
 
 export type CashRegisterControlFormType = z.infer<
