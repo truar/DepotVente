@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from 'database';
+import { Prisma } from 'database';
 
 type ReplicationRequest = {
   operationId: string
@@ -35,13 +36,30 @@ export async function replicationRoutes(fastify: FastifyInstance) {
     const entityData = data as any
 
     if (operation === 'create') {
-      await delegate.create({
-        data: {
-          ...entityData,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      })
+      try {
+        await delegate.create({
+          data: {
+            ...entityData,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        })
+      } catch (err) {
+        // P2002 = unique constraint. The original push reached the DB but the
+        // client never saw the 200 (network drop). Treat the retry as success
+        // so the outbox can drop the operation.
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          fastify.log.info(
+            { collection, recordId },
+            'Duplicate create ignored (idempotent retry)',
+          )
+        } else {
+          throw err
+        }
+      }
     } else if (operation === 'update') {
       await delegate.update({
         where: { id: recordId },

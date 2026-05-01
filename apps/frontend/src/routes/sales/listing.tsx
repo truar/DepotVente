@@ -9,6 +9,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { SquarePenIcon } from 'lucide-react'
 import { useMemo } from 'react'
+import { FormattedNumber } from 'react-intl'
 
 export const Route = createFileRoute('/sales/listing')({
   beforeLoad: () => {
@@ -65,13 +66,47 @@ function SalesDataTable() {
   )
 
   return (
-    <DataTable
-      columnVisibility={{
-        saleId: false,
-      }}
-      columns={columns}
-      data={data}
-    />
+    <>
+      <DataTable
+        columnVisibility={{
+          saleId: false,
+        }}
+        columns={columns}
+        data={data}
+        hideSelectionCount
+      />
+      <SalesSummary />
+    </>
+  )
+}
+
+function SalesSummary() {
+  const sales = useLiveQuery(() => db.sales.toArray())
+  const soldArticlesCount = useLiveQuery(() =>
+    db.articles.filter((article) => article.status === 'SOLD').count(),
+  )
+  const count = sales?.length ?? 0
+  const total =
+    sales?.reduce(
+      (acc, sale) =>
+        acc +
+        (sale.cardAmount ?? 0) +
+        (sale.cashAmount ?? 0) +
+        (sale.checkAmount ?? 0) +
+        (sale.deferredAmount ?? 0) -
+        (sale.totalRefundAmount ?? 0),
+      0,
+    ) ?? 0
+
+  return (
+    <div className="flex flew-row gap-5 font-bold">
+      <p>Nombre de ventes: {count}</p>
+      <p>Nombre d'articles vendus: {soldArticlesCount ?? 0}</p>
+      <p>
+        Montant total:{' '}
+        <FormattedNumber value={total} style="currency" currency="EUR" />
+      </p>
+    </div>
   )
 }
 
@@ -93,6 +128,23 @@ export const columns: ColumnDef<DataTableType>[] = [
   {
     accessorKey: 'buyer',
     header: 'Acheteur',
+  },
+  {
+    id: 'amount',
+    header: 'Montant',
+    cell: ({ row }) => {
+      const articles = useLiveQuery(() =>
+        db.articles.where({ saleId: row.original.saleId }).toArray(),
+      )
+      const sum =
+        articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
+
+      return (
+        <p className="text-right pr-3">
+          <FormattedNumber value={sum} style="currency" currency="EUR" />
+        </p>
+      )
+    },
   },
   {
     id: 'actions',

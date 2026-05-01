@@ -11,6 +11,7 @@ import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
 import { syncManager } from '@/sync-manager.ts'
+import { syncService } from '@/services/sync-service.ts'
 
 export const Route = createFileRoute('/settings')({
   beforeLoad: () => {
@@ -30,6 +31,11 @@ export const Route = createFileRoute('/settings')({
 
 function RouteComponent() {
   const lastSync = useLiveQuery(() => db.syncMetadata.get('lastSync'))
+  const failedOps = useLiveQuery(
+    () => db.outbox.where('status').equals('failed').sortBy('timestamp'),
+    [],
+    [],
+  )
   const triggerInitialSync = async () => {
     await syncManager.triggerInitialSync()
     return
@@ -68,6 +74,50 @@ function RouteComponent() {
               Récupérer les données récentes du serveur
             </CustomButton>
           </div>
+        </div>
+        <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow border-2 border-red-400">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 text-xs font-bold rounded bg-red-600 text-white">
+              EXPERT
+            </span>
+            <h2 className="text-2xl">Outbox — opérations échouées</h2>
+          </div>
+          <p className="text-sm text-red-700 bg-red-50 p-3 rounded">
+            Réservé aux administrateurs. Forcer une réémission peut créer des
+            doublons côté serveur si l'opération avait en réalité abouti.
+            N'utilisez ce bouton que si vous comprenez les conséquences.
+          </p>
+          {failedOps && failedOps.length === 0 ? (
+            <p className="text-gray-600">Aucune opération en échec.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {failedOps?.map((op) => (
+                <li
+                  key={op.id}
+                  className="flex items-start justify-between gap-4 border rounded p-3"
+                >
+                  <div className="flex flex-col text-sm">
+                    <code className="text-xs text-gray-500">{op.id}</code>
+                    <span>
+                      {op.operation} · {op.collection} · {op.recordId}
+                    </span>
+                    <span className="text-gray-600">
+                      tentatives : {op.retryCount}
+                    </span>
+                    {op.error && (
+                      <span className="text-red-600">{op.error}</span>
+                    )}
+                  </div>
+                  <Button
+                    variant="destructive"
+                    onClick={() => syncService.retry(op.id)}
+                  >
+                    Réessayer
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow">
           <h2 className="text-2xl">Numéro de caisse</h2>

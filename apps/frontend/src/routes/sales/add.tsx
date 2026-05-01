@@ -516,7 +516,7 @@ function ScannedArticles() {
           {articles.map((article, index) => (
             <TableRow key={article.id}>
               <TableCell className="font-medium">
-                {article.shortArticleCode}
+                {article.articleCode}
               </TableCell>
               <TableCell>{article.discipline}</TableCell>
               <TableCell>{article.category}</TableCell>

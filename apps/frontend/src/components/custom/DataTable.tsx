@@ -25,6 +25,7 @@ interface DataTableProps<TData, TValue> {
   columnVisibility: VisibilityState
   data: TData[]
   headerActions?: (table: TableDef<TData>) => ReactNode
+  hideSelectionCount?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -32,6 +33,7 @@ export function DataTable<TData, TValue>({
   data,
   headerActions,
   columnVisibility,
+  hideSelectionCount,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState<any>([])
 
@@ -121,7 +123,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} hideSelectionCount={hideSelectionCount} />
     </div>
   )
 }

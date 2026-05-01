@@ -356,8 +356,19 @@ class SyncService {
   }
 
   /**
-   * Calculate exponential backoff delay
+   * Manually retry a single outbox operation, bypassing backoff and the
+   * max-retries cutoff. Resets retry bookkeeping and re-kicks the queue.
    */
+  async retry(operationId: string) {
+    await db.outbox.update(operationId, {
+      status: 'pending',
+      retryCount: 0,
+      lastAttempt: undefined,
+      error: undefined,
+    })
+    await this.processOutbox()
+  }
+
   private calculateBackoff(retryCount: number): number {
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, 64s, ... up to ~17 minutes
     const delay = BASE_DELAY * Math.pow(2, retryCount)

@@ -261,7 +261,7 @@ function SaleForm(props: SaleFormProps) {
           <BuyerInformationForm />
           <ArticleForm />
           <PaymentForm />
-          <RefundForm />
+          <RefundForm previousTotalRefund={sale.totalRefundAmount ?? 0} />
           <div className="flex justify-end gap-4">
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -447,7 +447,7 @@ function ArticleForm() {
               }
             >
               <TableCell className="font-medium">
-                {article.shortArticleCode}
+                {article.articleCode}
               </TableCell>
               <TableCell>{article.discipline}</TableCell>
               <TableCell>{article.category}</TableCell>
@@ -594,13 +594,14 @@ function PaymentForm() {
   )
 }
 
-function RefundForm() {
+function RefundForm({ previousTotalRefund }: { previousTotalRefund: number }) {
   const { watch } = useFormContext<EditSaleFormType>()
   const articles = watch('articles')
-  const totalRefund = (articles ?? []).reduce((acc, cur) => {
+  const newRefundDelta = (articles ?? []).reduce((acc, cur) => {
     acc += cur.isDeleted ? cur.price : 0
     return acc
   }, 0)
+  const totalRefund = previousTotalRefund + newRefundDelta
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Remboursement</h3>
