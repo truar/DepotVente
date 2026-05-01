@@ -155,7 +155,7 @@ export const PredepositsPdf = (props: PdfsProps) => {
           </View>
           <View>
             <View>
-              <Text>Fiche N° {data.deposit.depositIndex}</Text>
+              <Text>Pré-dépôt n° {data.deposit.depositIndex}</Text>
             </View>
           </View>
         </View>

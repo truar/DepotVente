@@ -27,6 +27,7 @@ export const SaleFormSchema = z.object({
   cardAmount: z.coerce.number().nullable(),
   cashAmount: z.coerce.number().nullable(),
   checkAmount: z.coerce.number().nullable(),
+  deferredAmount: z.coerce.number().nullable(),
   articles: z
     .array(ArticleFormSchema)
     .nonempty({ message: 'Au moins un article est requis' }),

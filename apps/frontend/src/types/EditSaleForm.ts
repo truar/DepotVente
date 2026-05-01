@@ -22,6 +22,16 @@ export const EditSaleSchema = SaleFormSchema.extend({
   refundCashAmount: z.coerce.number().nullable(),
   refundComment: z.string().nullable().optional(),
   articles: z.array(EditArticleSchema),
+}).superRefine((data, ctx) => {
+  const refundTotal =
+    (data.refundCardAmount ?? 0) + (data.refundCashAmount ?? 0)
+  if (refundTotal > 0 && !data.refundComment?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['refundComment'],
+      message: 'Merci de saisir un commentaire pour le remboursement',
+    })
+  }
 })
 
 export type EditSaleFormType = z.infer<typeof EditSaleSchema>

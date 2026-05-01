@@ -2,6 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfLegalFooter } from '@/pdf/legal-footer.tsx'
 
 // Create styles
 const styles = StyleSheet.create({
@@ -64,6 +65,34 @@ const styles = StyleSheet.create({
   },
   articleCount: {
     fontWeight: 'bold',
+  },
+  summary: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  summaryBox: {
+    width: 220,
+    fontSize: 10,
+    flexDirection: 'column',
+    gap: 4,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  summaryLabel: {
+    fontStyle: 'italic',
+  },
+  summaryTotal: {
+    fontWeight: 'bold',
+    fontSize: 11,
+  },
+  summaryDivider: {
+    borderBottomWidth: 1,
+    borderColor: 'grey',
+    marginTop: 2,
+    marginBottom: 2,
   },
   table: {
     fontSize: 8,
@@ -129,6 +158,11 @@ type InvoicePdfData = {
     firstName: string
     phoneNumber: string
   }
+  payments: {
+    cash: number
+    card: number
+    check: number
+  }
 }
 
 export type InvoicesPdfProps = {
@@ -139,7 +173,8 @@ export type InvoicesPdfProps = {
 export const InvoicesPdf = (props: InvoicesPdfProps) => {
   const { data: sales, copy = 1 } = props
   const invoicePages = sales.map((data) => {
-    const { articles = [], sale, contact } = data
+    const { articles = [], sale, contact, payments } = data
+    const totalAmount = articles.reduce((acc, a) => acc + a.price, 0)
     return Array.from({ length: copy }).map((_, index) => (
       <Page key={`page-${index}`} size="A4" style={styles.page}>
         <View style={styles.header}>
@@ -230,6 +265,61 @@ export const InvoicesPdf = (props: InvoicesPdfProps) => {
               </View>
             ))}
           </View>
+          <View style={styles.summary} wrap={false}>
+            <View style={styles.summaryBox}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Nombre d'articles :</Text>
+                <Text>{articles.length}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, styles.summaryTotal]}>
+                  Total :
+                </Text>
+                <Text style={styles.summaryTotal}>
+                  <FormattedNumber
+                    value={totalAmount}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Espèces :</Text>
+                <Text>
+                  <FormattedNumber
+                    value={payments.cash}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Carte :</Text>
+                <Text>
+                  <FormattedNumber
+                    value={payments.card}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Chèque :</Text>
+                <Text>
+                  <FormattedNumber
+                    value={payments.check}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
         <View
           fixed
@@ -238,6 +328,7 @@ export const InvoicesPdf = (props: InvoicesPdfProps) => {
             bottom: 20,
             left: 20,
             fontSize: 8,
+            color: '#9ca3af',
           }}
         >
           <Text
@@ -247,6 +338,7 @@ export const InvoicesPdf = (props: InvoicesPdfProps) => {
           />
         </View>
         <PdfTimestampFooter />
+        <PdfLegalFooter />
       </Page>
     ))
   })

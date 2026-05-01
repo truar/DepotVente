@@ -1,4 +1,9 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import {
@@ -13,7 +18,17 @@ import { type KeyboardEvent, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
 import { getYear, shortArticleCode } from '@/utils'
-import { CustomButton } from '@/components/custom/Button.tsx'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog.tsx'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -104,6 +119,7 @@ type SaleFormProps = {
 function SaleForm(props: SaleFormProps) {
   const { sale, articles, buyer, refund } = props
   const mutation = useEditSale()
+  const navigate = useNavigate()
   const methods = useForm<EditSaleFormType>({
     resolver: typedZodResolver(EditSaleSchema),
     mode: 'onSubmit',
@@ -113,6 +129,7 @@ function SaleForm(props: SaleFormProps) {
       checkAmount: sale.checkAmount,
       cashAmount: sale.cashAmount,
       cardAmount: sale.cardAmount,
+      deferredAmount: sale.deferredAmount,
       refundCardAmount: refund?.cardAmount || 0,
       refundCashAmount: refund?.cashAmount || 0,
       refundComment: refund?.comment ?? '',
@@ -144,7 +161,9 @@ function SaleForm(props: SaleFormProps) {
       })),
     },
   })
-  const { handleSubmit, reset, setError, trigger, getValues } = methods
+  const { handleSubmit, setError, trigger, getValues, watch } = methods
+  const watchedArticles = watch('articles')
+  const hasArticles = (watchedArticles ?? []).some((a) => !a.isDeleted)
   const toNumber = (value: unknown) => {
     const n = typeof value === 'number' ? value : parseFloat(value as string)
     return Number.isNaN(n) ? 0 : n
@@ -158,19 +177,21 @@ function SaleForm(props: SaleFormProps) {
     const cashAmount = toNumber(data.cashAmount)
     const cardAmount = toNumber(data.cardAmount)
     const checkAmount = toNumber(data.checkAmount)
+    const deferredAmount = toNumber(data.deferredAmount)
     const refundCardAmount = toNumber(data.refundCardAmount)
     const refundCashAmount = toNumber(data.refundCashAmount)
     if (
       totalPrice !==
       cashAmount +
         cardAmount +
-        checkAmount -
+        checkAmount +
+        deferredAmount -
         (refundCardAmount + refundCashAmount)
     ) {
       setError('root.totalPrice', {
         type: 'value',
         message:
-          'Merci de vérifier que le montant total et le montant de remboursement soient couverts par tous les modes de paiement',
+          'Les montants saisis sont incohérents. Vérifiez les règlements et remboursements.',
       })
       return false
     }
@@ -182,6 +203,11 @@ function SaleForm(props: SaleFormProps) {
 
     await mutation.mutate(data)
     toast.success(`Vente ${data.saleIndex} enregistré`)
+    await navigate({ to: '/sales/listing' })
+  }
+
+  const onCancel = async () => {
+    await navigate({ to: '/sales/listing' })
   }
 
   const checkKeyDown = useCallback((e: KeyboardEvent) => {
@@ -215,6 +241,11 @@ function SaleForm(props: SaleFormProps) {
         discipline: article.discipline,
         price: article.price,
       })),
+      payments: {
+        cash: toNumber(formData.cashAmount) - toNumber(formData.refundCashAmount),
+        card: toNumber(formData.cardAmount) - toNumber(formData.refundCardAmount),
+        check: toNumber(formData.checkAmount),
+      },
     }
     await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
@@ -226,25 +257,42 @@ function SaleForm(props: SaleFormProps) {
         onKeyDown={checkKeyDown}
         className="flex flex-col gap-4"
       >
-        <ErrorMessages />
-
         <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
           <BuyerInformationForm />
           <ArticleForm />
           <PaymentForm />
           <RefundForm />
           <div className="flex justify-end gap-4">
-            <CustomButton
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="destructive">
+                  Annuler
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Etes vous sur de vouloir annuler ?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Les modifications non enregistrées seront perdues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Non</AlertDialogCancel>
+                  <AlertDialogAction onClick={onCancel}>Oui</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button
               type="button"
-              onClick={() => reset()}
-              variant="destructive"
+              onClick={print}
+              variant="secondary"
+              disabled={!hasArticles}
             >
-              Annuler les modifications
-            </CustomButton>
-            <Button type="button" onClick={print} variant="secondary">
               Facture
             </Button>
-            <SubmitButton />
+            <Button type="submit">Valider</Button>
           </div>
         </div>
       </form>
@@ -352,17 +400,6 @@ function BuyerInformationForm() {
   )
 }
 
-function SubmitButton() {
-  const { formState } = useFormContext<EditSaleFormType>()
-  const { isSubmitting } = formState
-
-  return (
-    <CustomButton type="submit" loading={isSubmitting}>
-      Valider et enregistrer la vente
-    </CustomButton>
-  )
-}
-
 function ArticleForm() {
   const { watch, setValue } = useFormContext<EditSaleFormType>()
 
@@ -375,7 +412,13 @@ function ArticleForm() {
   }, [])
 
   const articles = watch('articles')
-  if (!articles || articles.length === 0) return null
+  if (!articles || articles.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-gray-300 px-6 py-8 text-center text-gray-500">
+        Aucun article dans cette vente.
+      </div>
+    )
+  }
   const total = articles.reduce((acc, cur) => {
     acc += cur.isDeleted ? 0 : cur.price
     return acc
@@ -399,7 +442,9 @@ function ArticleForm() {
           {articles.map((article, index) => (
             <TableRow
               key={article.id}
-              className={`${article.isDeleted ? 'line-through' : ''}`}
+              className={
+                article.isDeleted ? 'bg-gray-100 opacity-60' : ''
+              }
             >
               <TableCell className="font-medium">
                 {article.shortArticleCode}
@@ -436,7 +481,10 @@ function ArticleForm() {
       </Table>
       <div className="flex flex-row justify-end">
         <div className="flex flex-row gap-5 items-baseline font-bold">
-          <div>Nombre d'articles : {articles.length}</div>
+          <div>
+            Nombre d'articles :{' '}
+            {articles.filter((a) => !a.isDeleted).length}
+          </div>
           <div>Montant total : {total}€</div>
         </div>
       </div>
@@ -453,6 +501,28 @@ function PaymentForm() {
       />
       <h3 className="text-2xl font-bold">Règlements</h3>
       <div className="grid grid-cols-6 gap-6 align-baseline">
+        <Controller
+          name="cardAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="cardAmount">Montant CB</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="cardAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                    autoComplete="off"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
         <Controller
           name="checkAmount"
           render={({ field, fieldState }) => (
@@ -476,15 +546,15 @@ function PaymentForm() {
           )}
         />
         <Controller
-          name="cardAmount"
+          name="deferredAmount"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldContent>
-                <Label htmlFor="cardAmount">Montant CB</Label>
+                <Label htmlFor="deferredAmount">Montant différé</Label>
                 <InputGroup>
                   <InputGroupInput
                     {...field}
-                    id="cardAmount"
+                    id="deferredAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
                     autoComplete="off"
@@ -527,18 +597,13 @@ function PaymentForm() {
 function RefundForm() {
   const { watch } = useFormContext<EditSaleFormType>()
   const articles = watch('articles')
-  if (!articles || articles.length === 0) return null
-  const totalRefund = articles.reduce((acc, cur) => {
+  const totalRefund = (articles ?? []).reduce((acc, cur) => {
     acc += cur.isDeleted ? cur.price : 0
     return acc
   }, 0)
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Remboursement</h3>
-      <Controller
-        name="root.incorretRefund"
-        render={({ fieldState }) => <FieldError errors={[fieldState.error]} />}
-      />
       <div className="grid grid-cols-6 gap-6 align-baseline">
         <Field>
           <FieldContent>
@@ -613,32 +678,14 @@ function RefundForm() {
                     type="text"
                   />
                 </InputGroup>
+                {fieldState.invalid && fieldState.error?.message && (
+                  <FieldError>{fieldState.error.message}</FieldError>
+                )}
               </FieldContent>
             </Field>
           )}
         />
       </div>
     </div>
-  )
-}
-
-function ErrorMessages() {
-  const {
-    formState: { errors },
-  } = useFormContext<EditSaleFormType>()
-
-  console.log(errors)
-
-  const errorsDisplayed = Object.keys(errors).map((key, index) => {
-    if (typeof (errors as any)[key]?.message === 'string') {
-      return <li key={index}>{(errors as any)[key]?.message}</li>
-    }
-    return null
-  })
-  if (errorsDisplayed.length === 0) return null
-  return (
-    <ul className="pl-3 text-red-600">
-      Merci de compléter les champs obligatoires
-    </ul>
   )
 }

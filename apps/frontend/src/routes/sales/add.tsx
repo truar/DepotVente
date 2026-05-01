@@ -51,6 +51,17 @@ import { printPdf } from '@/pdf/print.tsx'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog.tsx'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: () => {
@@ -111,6 +122,7 @@ function SalesForm(props: SalesFormProps) {
       cashAmount: 0,
       cardAmount: 0,
       checkAmount: 0,
+      deferredAmount: 0,
     },
   })
   const { setValue, handleSubmit, reset, setError, trigger, getValues } =
@@ -126,10 +138,11 @@ function SalesForm(props: SalesFormProps) {
     const cashAmount = toNumber(data.cashAmount)
     const cardAmount = toNumber(data.cardAmount)
     const checkAmount = toNumber(data.checkAmount)
-    if (totalPrice !== cashAmount + cardAmount + checkAmount) {
+    const deferredAmount = toNumber(data.deferredAmount)
+    if (totalPrice !== cashAmount + cardAmount + checkAmount + deferredAmount) {
       setError('root.totalPrice', {
         type: 'value',
-        message: `Merci de vérifier que le montant total est couvert par les 3 modes de règlements.`,
+        message: `Merci de vérifier que le montant total est couvert par les 4 modes de règlements.`,
       })
       return false
     }
@@ -176,6 +189,11 @@ function SalesForm(props: SalesFormProps) {
         discipline: article.discipline,
         price: article.price,
       })),
+      payments: {
+        cash: toNumber(formData.cashAmount),
+        card: toNumber(formData.cardAmount),
+        check: toNumber(formData.checkAmount),
+      },
     }
     await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
@@ -196,16 +214,35 @@ function SalesForm(props: SalesFormProps) {
           <SaleArticlesForm />
           <PaymentForm />
           <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              onClick={() => {
-                reset()
-                setValue('saleIndex', saleIndex)
-              }}
-              variant="destructive"
-            >
-              Annuler
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="destructive">
+                  Annuler
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Etes vous sur de vouloir annuler ?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action va réinitialiser le formulaire. Les données non
+                    enregistrées seront perdues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Non</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      reset()
+                      setValue('saleIndex', saleIndex)
+                    }}
+                  >
+                    Oui
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button type="button" onClick={print} variant="secondary">
               Facture
             </Button>
@@ -218,7 +255,7 @@ function SalesForm(props: SalesFormProps) {
 }
 
 function ContactSearchForm() {
-  const { setValue } = useFormContext()
+  const { setValue, watch } = useFormContext<SaleFormType>()
   const contactsDb = useContactsDb()
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
@@ -239,14 +276,19 @@ function ContactSearchForm() {
   )
 
   const [contactId, setContactId] = useState<string | null>(null)
+  const formContactId = watch('buyer.contactId')
+  useEffect(() => {
+    if (formContactId == null) setContactId(null)
+  }, [formContactId])
   const prefillBuyerInformation = useCallback(async () => {
     if (!contactId) return
     const contact = await contactsDb.findById(contactId)
-    setValue('buyer.contactId', contact?.id)
-    setValue('buyer.lastName', contact?.lastName)
-    setValue('buyer.firstName', contact?.firstName)
-    setValue('buyer.phoneNumber', contact?.phoneNumber)
-    setValue('buyer.city', contact?.city)
+    if (!contact) return
+    setValue('buyer.contactId', contact.id)
+    setValue('buyer.lastName', contact.lastName)
+    setValue('buyer.firstName', contact.firstName)
+    setValue('buyer.phoneNumber', contact.phoneNumber)
+    setValue('buyer.city', contact.city)
   }, [setValue, contactId, contactsDb])
 
   return (
@@ -507,13 +549,21 @@ function ScannedArticles() {
 }
 
 function PaymentForm() {
-  const { watch } = useFormContext<SaleFormType>()
+  const {
+    watch,
+    formState: { errors },
+  } = useFormContext<SaleFormType>()
+  const totalPriceError = errors.root?.totalPrice?.message
   const [cashReceived, setCashReceived] = useState<string>('')
   const cashAmount = watch('cashAmount')
   const cardAmount = watch('cardAmount')
   const checkAmount = watch('checkAmount')
+  const deferredAmount = watch('deferredAmount')
   const totalPayment =
-    toNumber(cashAmount) + toNumber(cardAmount) + toNumber(checkAmount)
+    toNumber(cashAmount) +
+    toNumber(cardAmount) +
+    toNumber(checkAmount) +
+    toNumber(deferredAmount)
   const cashReceivedNumber = parseFloat(cashReceived)
   let cashReturned = Math.max(0, cashReceivedNumber - toNumber(cashAmount))
   if (Number.isNaN(cashReturned)) {
@@ -526,6 +576,9 @@ function PaymentForm() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Règlements</h3>
+      {totalPriceError && (
+        <p className="text-red-600">{totalPriceError}</p>
+      )}
       <div className="grid grid-cols-8 gap-6 align-baseline">
         <Controller
           name="cardAmount"
@@ -559,6 +612,28 @@ function PaymentForm() {
                   <InputGroupInput
                     {...field}
                     id="checkAmount"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                    autoComplete="off"
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Euro />
+                  </InputGroupAddon>
+                </InputGroup>
+              </FieldContent>
+            </Field>
+          )}
+        />
+        <Controller
+          name="deferredAmount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <Label htmlFor="deferredAmount">Montant différé</Label>
+                <InputGroup>
+                  <InputGroupInput
+                    {...field}
+                    id="deferredAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
                     autoComplete="off"
@@ -648,7 +723,8 @@ function ErrorMessages() {
     formState: { errors },
   } = useFormContext()
 
-  const messages = collectErrorMessages(errors)
+  const { root: _root, ...fieldErrors } = errors
+  const messages = collectErrorMessages(fieldErrors)
   if (messages.length === 0) return null
   return (
     <ul className="pl-5 text-red-600 list-disc">

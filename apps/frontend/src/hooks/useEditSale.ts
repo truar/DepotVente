@@ -28,10 +28,18 @@ export function useEditSale() {
           updatedAt: currentDate,
         })
 
+        const existingSale = await db.sales.get(data.id)
+        const previousTotalRefund = existingSale?.totalRefundAmount ?? 0
+        const newRefundDelta = data.articles
+          .filter((a) => a.isDeleted)
+          .reduce((sum, a) => sum + (a.price ?? 0), 0)
+
         await salesDb.update(data.id, {
           checkAmount: data.checkAmount,
           cashAmount: data.cashAmount,
           cardAmount: data.cardAmount,
+          deferredAmount: data.deferredAmount,
+          totalRefundAmount: previousTotalRefund + newRefundDelta,
           updatedAt: currentDate,
         })
 

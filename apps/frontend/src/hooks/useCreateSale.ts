@@ -54,6 +54,8 @@ export function useCreateSale() {
           cardAmount: data.cardAmount,
           cashAmount: data.cashAmount,
           checkAmount: data.checkAmount,
+          deferredAmount: data.deferredAmount,
+          totalRefundAmount: 0,
           incrementStart: workstation.incrementStart,
           createdAt: currentDate,
           updatedAt: currentDate,

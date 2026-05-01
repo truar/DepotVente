@@ -29,6 +29,11 @@ function RouteComponent() {
             discipline: 'Alpin',
             price: 15,
           })),
+          payments: {
+            cash: 50,
+            card: 70,
+            check: 30,
+          },
         }}
       />
     </PDFViewer>
