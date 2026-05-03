@@ -1,9 +1,9 @@
 import {
   createFileRoute,
   Link,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
 import {
@@ -62,14 +61,7 @@ import {
 } from '@/components/ui/select.tsx'
 
 export const Route = createFileRoute('/deposits/articles')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

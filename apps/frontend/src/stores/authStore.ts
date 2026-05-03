@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authService, type User } from '@/services/auth.service'
+import { syncManager } from '@/sync-manager'
 
 interface AuthState {
   user: User | null
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Stocker le token
           set({ token })
+          syncManager.setToken(token)
 
           // Récupérer les infos de l'utilisateur
           const userData = await authService.getCurrentUser()
@@ -33,6 +35,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Login error:', error)
           set({ user: null, token: null, isAuthenticated: false })
+          syncManager.setToken(null)
           throw error
         }
       },
@@ -42,6 +45,7 @@ export const useAuthStore = create<AuthState>()(
           await authService.logout()
         } finally {
           set({ user: null, token: null, isAuthenticated: false })
+          syncManager.setToken(null)
         }
       },
 

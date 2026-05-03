@@ -1,10 +1,9 @@
 import {
   createFileRoute,
   Link,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore.ts'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import {
   Controller,
@@ -61,14 +60,7 @@ import { printPdf } from '@/pdf/print.tsx'
 import { Button } from '@/components/ui/button.tsx'
 
 export const Route = createFileRoute('/sales/$saleId/edit')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

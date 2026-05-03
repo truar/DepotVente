@@ -1,5 +1,5 @@
-import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore.ts'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type Article, type Contact, db, type Deposit } from '@/db.ts'
@@ -11,14 +11,7 @@ import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 import { shortArticleCode, sortByIdentificationLetter } from '@/utils'
 
 export const Route = createFileRoute('/deposits/$depositId/edit')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

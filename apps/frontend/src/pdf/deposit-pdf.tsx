@@ -96,6 +96,13 @@ const styles = StyleSheet.create({
   tableHeader: {
     backgroundColor: '#f3f4f6',
   },
+  tableRowDeleted: {
+    backgroundColor: '#f3f4f6',
+  },
+  deletedCell: {
+    color: '#9ca3af',
+    textDecoration: 'line-through',
+  },
 })
 
 export type Article = {
@@ -107,6 +114,7 @@ export type Article = {
   discipline: string
   color: string
   category: string
+  isDeleted?: boolean
 }
 
 export type DepositPdfProps = {
@@ -212,7 +220,9 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             </View>
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Nb articles :</Text>
-              <Text style={styles.articleCount}>{articles.length}</Text>
+              <Text style={styles.articleCount}>
+                {articles.filter((a) => !a.isDeleted).length}
+              </Text>
             </View>
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Cotisations :</Text>
@@ -266,41 +276,47 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
               </View>
             </View>
 
-            {articles.map((article, index) => (
-              <View style={styles.tableRow} key={index}>
-                <View style={styles.tableCol}>
-                  <Text>{article.shortCode}</Text>
+            {articles.map((article, index) => {
+              const cellStyle = article.isDeleted ? styles.deletedCell : undefined
+              const rowStyle = article.isDeleted
+                ? [styles.tableRow, styles.tableRowDeleted]
+                : styles.tableRow
+              return (
+                <View style={rowStyle} key={index}>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.shortCode}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.discipline}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.category}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.brand}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.color}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.size}</Text>
+                  </View>
+                  <View style={styles.tableColDesc}>
+                    <Text style={cellStyle}>{article.model}</Text>
+                  </View>
+                  <View style={styles.tableColPrice}>
+                    <Text style={cellStyle}>
+                      <FormattedNumber
+                        value={article.price}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.discipline}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.category}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.brand}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.color}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.size}</Text>
-                </View>
-                <View style={styles.tableColDesc}>
-                  <Text>{article.model}</Text>
-                </View>
-                <View style={styles.tableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={article.price}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              </View>
-            ))}
+              )
+            })}
           </View>
         </View>
         <View

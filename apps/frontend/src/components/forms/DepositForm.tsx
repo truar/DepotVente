@@ -705,18 +705,17 @@ function SummaryPrintButton() {
         city: formData.city,
         phoneNumber: formData.phoneNumber,
       },
-      articles: formData.articles
-        .filter((article) => !article.isDeleted)
-        .map((article) => ({
-          shortCode: `${formData.depotIndex} ${article.identificationLetter}`,
-          category: article.type,
-          brand: article.brand,
-          model: article.model ?? '',
-          discipline: article.discipline,
-          size: article.size ?? '',
-          price: article.price,
-          color: article.color,
-        })),
+      articles: formData.articles.map((article) => ({
+        shortCode: `${formData.depotIndex} ${article.identificationLetter}`,
+        category: article.type,
+        brand: article.brand,
+        model: article.model ?? '',
+        discipline: article.discipline,
+        size: article.size ?? '',
+        price: article.price,
+        color: article.color,
+        isDeleted: article.isDeleted,
+      })),
     }
     await printPdf(<DepositPdf data={data} copy={2} />)
     setValue('isSummaryPrinted', true)

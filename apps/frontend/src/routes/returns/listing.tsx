@@ -1,6 +1,6 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
-import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { getYear } from '@/utils'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
@@ -27,14 +27,7 @@ import {
 } from '@/pdf/deposits-missing-contributions-pdf.tsx'
 
 export const Route = createFileRoute('/returns/listing')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />
@@ -188,14 +181,14 @@ export const columns: ColumnDef<DepositTableType>[] = [
     ),
   },
   {
+    id: 'mustPayContribution',
     header: 'Doit cotisation ?',
-    cell: ({ row }) => {
-      const contributionStatus = row.original.contributionStatus
-      if (contributionStatus === 'A_PAYER') {
-        return <p className="text-red-500">Oui</p>
-      } else {
-        return <p className="text-green-500">Non</p>
-      }
+    accessorFn: (row) => (row.contributionStatus === 'A_PAYER' ? 'Oui' : 'Non'),
+    cell: ({ getValue }) => {
+      const v = getValue() as string
+      return (
+        <p className={v === 'Oui' ? 'text-red-500' : 'text-green-500'}>{v}</p>
+      )
     },
   },
   {

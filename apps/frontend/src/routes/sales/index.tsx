@@ -1,9 +1,9 @@
 import {
   createFileRoute,
   Link,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import {
   ChevronLeft,
   ClipboardList,
@@ -11,20 +11,12 @@ import {
   ShoppingBasket,
 } from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
-import { useAuthStore } from '@/stores/authStore.ts'
 import { Button } from '@/components/ui/button.tsx'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
 import { ClickableCard } from '@/components/ClickableCard.tsx'
 
 export const Route = createFileRoute('/sales/')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

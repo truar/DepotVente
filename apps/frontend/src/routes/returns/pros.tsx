@@ -1,6 +1,6 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout'
-import { useAuthStore } from '@/stores/authStore.ts'
 import { Page } from '@/components/Page.tsx'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -22,14 +22,7 @@ import {
 } from '@/components/ui/table.tsx'
 
 export const Route = createFileRoute('/returns/pros')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

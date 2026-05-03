@@ -20,6 +20,10 @@ class SyncManager {
     }
   }
 
+  setToken(token: string | null) {
+    this.worker?.postMessage({ type: 'SET_TOKEN', payload: token })
+  }
+
   triggerInitialSync() {
     this.worker?.postMessage({ type: 'INITIAL_SYNC' })
   }

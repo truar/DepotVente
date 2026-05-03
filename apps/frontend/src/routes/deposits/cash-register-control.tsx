@@ -1,11 +1,10 @@
 import {
   createFileRoute,
   Link,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
-import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import {
   Controller,
@@ -50,14 +49,7 @@ import {
 } from '@/components/ui/alert-dialog.tsx'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

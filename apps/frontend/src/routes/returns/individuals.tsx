@@ -1,8 +1,8 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { db, type Workstation } from '@/db.ts'
-import { useAuthStore } from '@/stores/authStore.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -10,6 +10,7 @@ import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useCallback, useMemo, useState } from 'react'
+import { FieldError } from '@/components/ui/field.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
@@ -37,14 +38,7 @@ import {
 } from '@/types/ReturnDepositForm.ts'
 
 export const Route = createFileRoute('/returns/individuals')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />
@@ -77,12 +71,14 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
       workstation: workstation.incrementStart,
     },
   })
-  const { control, handleSubmit, watch, setValue } = methods
+  const { control, handleSubmit, watch, setValue, trigger } = methods
 
   const depositId = watch('depositId')
 
   const printCheck = useCallback(async () => {
     if (!depositId) return
+    const isValid = await trigger(['signatory', 'checkId'])
+    if (!isValid) return
     const deposit = await db.deposits.get(depositId)
     if (!deposit) return
     const contact = await db.contacts.get(deposit.sellerId)
@@ -95,7 +91,7 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
       date: new Date(),
     }
     await printPdf(<SellerCheckPdf data={data} />)
-  }, [depositId])
+  }, [depositId, trigger])
 
   const onSubmit: SubmitHandler<IndividualReturnFormType> = useCallback(
     async (formData) => {
@@ -133,13 +129,20 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
               <Controller
                 name="signatory"
                 control={control}
-                render={({ field }) => (
-                  <Field>
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldContent>
                       <Label>Édition chèque signé par</Label>
                       <InputGroup>
-                        <InputGroupInput {...field} type="text" />
+                        <InputGroupInput
+                          {...field}
+                          type="text"
+                          aria-invalid={fieldState.invalid}
+                        />
                       </InputGroup>
+                      {fieldState.invalid && fieldState.error?.message && (
+                        <FieldError>{fieldState.error.message}</FieldError>
+                      )}
                     </FieldContent>
                   </Field>
                 )}
@@ -149,13 +152,20 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
               <Controller
                 name="checkId"
                 control={control}
-                render={({ field }) => (
-                  <Field>
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldContent>
                       <Label>N° de chèque</Label>
                       <InputGroup>
-                        <InputGroupInput {...field} type="text" />
+                        <InputGroupInput
+                          {...field}
+                          type="text"
+                          aria-invalid={fieldState.invalid}
+                        />
                       </InputGroup>
+                      {fieldState.invalid && fieldState.error?.message && (
+                        <FieldError>{fieldState.error.message}</FieldError>
+                      )}
                     </FieldContent>
                   </Field>
                 )}

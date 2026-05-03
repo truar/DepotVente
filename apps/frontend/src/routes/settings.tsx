@@ -1,5 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireAdmin } from '@/lib/route-guards'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db.ts'
 import { Button } from '@/components/ui/button.tsx'
@@ -14,14 +14,7 @@ import { syncManager } from '@/sync-manager.ts'
 import { syncService } from '@/services/sync-service.ts'
 
 export const Route = createFileRoute('/settings')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAdmin,
   component: () => (
     <PublicLayout>
       <RouteComponent />

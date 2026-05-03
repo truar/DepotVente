@@ -1,5 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore.ts'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useSalesDb } from '@/hooks/useSalesDb.ts'
@@ -64,14 +64,7 @@ import {
 } from '@/components/ui/alert-dialog.tsx'
 
 export const Route = createFileRoute('/sales/add')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

@@ -6,17 +6,29 @@ type ClickableCardProps = {
   title: string
   description?: string
   variant?: 'green' | 'blue'
+  disabled?: boolean
 }
 export function ClickableCard(props: ClickableCardProps) {
-  const { onClick, icon, title, description, variant = 'green' } = props
+  const {
+    onClick,
+    icon,
+    title,
+    description,
+    variant = 'green',
+    disabled = false,
+  } = props
   const bgClass =
     variant === 'blue'
       ? 'bg-blue-100 group-hover:bg-blue-200'
       : 'bg-green-100 group-hover:bg-green-200'
+  const interactionClass = disabled
+    ? 'opacity-50 cursor-not-allowed'
+    : 'hover:shadow-xl hover:scale-105 cursor-pointer group'
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100 text-center group hover:scale-105 duration-200 cursor-pointer"
+      disabled={disabled}
+      className={`bg-white rounded-2xl p-6 shadow-lg transition-all border border-gray-100 text-center duration-200 ${interactionClass}`}
     >
       <div className="flex justify-center mb-3">
         <div

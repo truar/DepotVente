@@ -1,9 +1,9 @@
 import {
   createFileRoute,
   Link,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router'
+import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import {
   ChevronLeft,
   FileBox,
@@ -20,14 +20,7 @@ import { ClickableCard } from '@/components/ClickableCard.tsx'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
 
 export const Route = createFileRoute('/deposits/')({
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-  },
+  beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />
