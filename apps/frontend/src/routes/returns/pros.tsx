@@ -251,6 +251,8 @@ type ArticleListProps = {
   depositId: string
   mode: 'RETURNED' | 'RECEPTION_OK'
 }
+type SortMode = 'recent' | 'code' | 'category'
+
 function ArticleList(props: ArticleListProps) {
   const { depositId, mode } = props
   const isReturned = mode === 'RETURNED'
@@ -259,36 +261,46 @@ function ArticleList(props: ArticleListProps) {
     const rows = await db.articles
       .where({ depositId, status: mode })
       .toArray()
-    if (isReturned) {
-      rows.sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-    } else {
-      rows.sort((a, b) => a.articleIndex - b.articleIndex)
-    }
+    rows.sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    )
     return rows
-  }, [depositId, mode, isReturned])
+  }, [depositId, mode])
 
-  const [sortByCode, setSortByCode] = useState(false)
+  const [sortMode, setSortMode] = useState<SortMode>(
+    isReturned ? 'recent' : 'category',
+  )
   const prevTopId = useRef<string | null>(null)
+
+  useEffect(() => {
+    setSortMode(isReturned ? 'recent' : 'category')
+    prevTopId.current = null
+  }, [isReturned])
 
   useEffect(() => {
     if (!articles) return
     const topId = articles[0]?.id ?? null
-    if (prevTopId.current !== null && topId !== prevTopId.current) {
-      setSortByCode(false)
+    if (
+      isReturned &&
+      prevTopId.current !== null &&
+      topId !== prevTopId.current
+    ) {
+      setSortMode('recent')
     }
     prevTopId.current = topId
-  }, [articles])
+  }, [articles, isReturned])
 
   const displayed = useMemo(() => {
     if (!articles) return undefined
-    if (sortByCode && isReturned) {
-      return sortByIdentificationLetter(articles)
+    if (sortMode === 'code') return sortByIdentificationLetter(articles)
+    if (sortMode === 'category') {
+      return [...articles].sort((a, b) =>
+        a.category.localeCompare(b.category, 'fr'),
+      )
     }
     return articles
-  }, [articles, sortByCode, isReturned])
+  }, [articles, sortMode])
 
   if (!displayed) return
 
@@ -297,13 +309,18 @@ function ArticleList(props: ArticleListProps) {
       <TableHeader>
         <TableRow>
           <TableHead
-            className={`w-[100px] ${isReturned ? 'cursor-pointer select-none' : ''}`}
-            onClick={isReturned ? () => setSortByCode(true) : undefined}
+            className="w-[100px] cursor-pointer select-none"
+            onClick={() => setSortMode('code')}
           >
-            Code{sortByCode && isReturned ? ' ▲' : ''}
+            Code{sortMode === 'code' ? ' ▲' : ''}
           </TableHead>
           <TableHead>Discipline</TableHead>
-          <TableHead>Catégorie</TableHead>
+          <TableHead
+            className={!isReturned ? 'cursor-pointer select-none' : ''}
+            onClick={!isReturned ? () => setSortMode('category') : undefined}
+          >
+            Catégorie{!isReturned && sortMode === 'category' ? ' ▲' : ''}
+          </TableHead>
           <TableHead>Marque</TableHead>
           <TableHead>Descriptif</TableHead>
           <TableHead>Couleur</TableHead>
