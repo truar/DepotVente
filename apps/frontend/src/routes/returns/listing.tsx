@@ -118,9 +118,11 @@ function DepositDataTable() {
           type: deposit.type,
           soldAmount: deposit.soldAmount,
           contributionStatus: deposit.contributionStatus,
-          returnStatus: deposit.returnedCalculationDate
-            ? 'PRÊT'
-            : 'RETOUR A CALCULER',
+          returnStatus: deposit.signatory
+            ? 'TRAITÉ'
+            : deposit.returnedCalculationDate
+              ? 'PRÊT'
+              : 'RETOUR A CALCULER',
           seller: `${seller?.lastName} ${seller?.firstName}`,
         }
       }) ?? [],
@@ -302,10 +304,22 @@ function DepositDataTableHeaderAction({
 }
 
 function DepositsSummary() {
-  const articles = useLiveQuery(() => db.articles.toArray())
-  const total =
-    articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
-  const count = articles?.length ?? 0
+  const allDeposits = useLiveQuery(() => db.deposits.toArray())
+  const { toCompute, ready, processed } = useMemo(() => {
+    let toCompute = 0
+    let ready = 0
+    let processed = 0
+    for (const deposit of allDeposits ?? []) {
+      if (deposit.signatory) {
+        processed++
+      } else if (deposit.returnedCalculationDate) {
+        ready++
+      } else {
+        toCompute++
+      }
+    }
+    return { toCompute, ready, processed }
+  }, [allDeposits])
 
   const printMissingContribution = async () => {
     const deposits = await db.deposits
@@ -341,11 +355,9 @@ function DepositsSummary() {
   return (
     <div className="flex flex-row justify-between">
       <div className="flex flew-row gap-5 font-bold">
-        <p>Nombre d'articles: {count}</p>
-        <p>
-          Montant total:{' '}
-          <FormattedNumber value={total} style="currency" currency="EUR" />
-        </p>
+        <p>Fiches à calculer: {toCompute}</p>
+        <p>Fiches prêtes: {ready}</p>
+        <p>Fiches traitées: {processed}</p>
       </div>
       <div>
         <CustomButton onClick={() => printMissingContribution()}>
