@@ -184,7 +184,7 @@ export const columns: ColumnDef<TableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant',
+    header: () => <div className="text-right pr-3">Montant</div>,
     cell: ({ row }) => {
       const articles = useLiveQuery(() =>
         db.predepositArticles

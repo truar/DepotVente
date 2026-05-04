@@ -129,7 +129,7 @@ export const columns: ColumnDef<CheckTableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant vendu',
+    header: () => <div className="text-right pr-3">Montant vendu</div>,
     cell: ({ row }) => {
       const sellerAmount = row.original.sellerAmount
       return (

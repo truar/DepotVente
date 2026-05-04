@@ -206,7 +206,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
   },
   {
     accessorKey: 'contributionAmount',
-    header: 'Montant cotisation',
+    header: () => <div className="text-right pr-3">Montant cotisation</div>,
     cell: ({ row }) => (
       <p className="text-right pr-3">
         <FormattedNumber value={row.original.contributionAmount} style="currency" currency="EUR" />
@@ -215,7 +215,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant',
+    header: () => <div className="text-right pr-3">Montant</div>,
     cell: ({ row }) => {
       const articles = useLiveQuery(() =>
         db.articles

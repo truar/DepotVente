@@ -124,7 +124,7 @@ export const columns: ColumnDef<DataTableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant',
+    header: () => <div className="text-right pr-3">Montant</div>,
     cell: ({ row }) => {
       const articles = useLiveQuery(() =>
         db.articles.where({ saleId: row.original.saleId }).toArray(),

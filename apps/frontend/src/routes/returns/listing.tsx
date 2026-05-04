@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { EyeIcon, RefreshCwIcon } from 'lucide-react'
+import { CheckIcon, EyeIcon, RefreshCwIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import {
   ReturnDepositPdf,
@@ -20,6 +20,7 @@ import {
   type ReturnDepositsPdfProps,
 } from '@/pdf/return-deposit-pdf.tsx'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { FormattedNumber } from 'react-intl'
 import {
   DepositsMissingContributionPdf,
@@ -186,10 +187,26 @@ export const columns: ColumnDef<DepositTableType>[] = [
     id: 'mustPayContribution',
     header: 'Doit cotisation ?',
     accessorFn: (row) => (row.contributionStatus === 'A_PAYER' ? 'Oui' : 'Non'),
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const v = getValue() as string
+      const depositsDb = useDepositsDb()
+      const id = row.original.depositId
       return (
-        <p className={v === 'Oui' ? 'text-red-500' : 'text-green-500'}>{v}</p>
+        <div className="flex items-center gap-2">
+          <p className={v === 'Oui' ? 'text-red-500' : 'text-green-500'}>{v}</p>
+          {v === 'Oui' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                depositsDb.update(id, { contributionStatus: 'PAYEE' })
+              }
+            >
+              <CheckIcon />
+              Marquer payée
+            </Button>
+          )}
+        </div>
       )
     },
   },
@@ -211,7 +228,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
   },
   {
     id: 'amount',
-    header: 'Montant vendu',
+    header: () => <div className="text-right pr-3">Montant vendu</div>,
     cell: ({ row }) => {
       const soldAmount = row.original.soldAmount
       return (
