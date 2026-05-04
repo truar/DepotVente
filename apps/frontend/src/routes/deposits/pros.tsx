@@ -6,12 +6,20 @@ import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
-import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
+import { sortByIdentificationLetter } from '@/utils'
 import {
   Table,
   TableBody,
@@ -115,27 +123,41 @@ type ProArticlesFormProps = {
 
 function ProArticlesForm(props: ProArticlesFormProps) {
   const { depositId } = props
-  const [shouldDisplayArticles, setShouldDisplayArticles] = useState(false)
+  const [listMode, setListMode] = useState<'RECEPTION_OK' | 'RECEPTION_PENDING'>(
+    'RECEPTION_OK',
+  )
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <ReceiveArticleInput />
       <ReceivedArticleCount depositId={depositId} />
       <TotalArticleCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Articles non réceptionnés</div>
-        <div>
-          <Button
-            className="cursor-pointer"
-            type="button"
-            variant="secondary"
-            onClick={() => setShouldDisplayArticles(!shouldDisplayArticles)}
-          >
-            {shouldDisplayArticles ? 'Masquer' : 'Consulter'}
-          </Button>
+        <div className="col-span-2 text-right">Liste articles :</div>
+        <div className="col-span-3 flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="listMode"
+              value="RECEPTION_OK"
+              checked={listMode === 'RECEPTION_OK'}
+              onChange={() => setListMode('RECEPTION_OK')}
+            />
+            Réceptionnés
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="listMode"
+              value="RECEPTION_PENDING"
+              checked={listMode === 'RECEPTION_PENDING'}
+              onChange={() => setListMode('RECEPTION_PENDING')}
+            />
+            Non réceptionnés
+          </label>
         </div>
       </div>
 
-      {shouldDisplayArticles && <ArticleList depositId={depositId} />}
+      <ArticleList depositId={depositId} mode={listMode} />
     </div>
   )
 }
@@ -225,7 +247,7 @@ function TotalArticleCount(props: { depositId: string }) {
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-      <div className="col-span-2 text-right">Nombre d'articles totals</div>
+      <div className="col-span-2 text-right">Nombre d'articles total</div>
       <div>
         <Input type="text" readOnly value={articlesTotalCount ?? ''} />
       </div>
@@ -235,24 +257,59 @@ function TotalArticleCount(props: { depositId: string }) {
 
 type ArticleListProps = {
   depositId: string
+  mode: 'RECEPTION_OK' | 'RECEPTION_PENDING'
 }
 function ArticleList(props: ArticleListProps) {
-  const { depositId } = props
-  const articles = useLiveQuery(
-    () =>
-      db.articles
-        .where({ depositId, status: 'RECEPTION_PENDING' })
-        .sortBy('articleIndex'),
-    [depositId],
-  )
+  const { depositId, mode } = props
+  const isReceived = mode === 'RECEPTION_OK'
 
-  if (!articles) return
+  const articles = useLiveQuery(async () => {
+    const rows = await db.articles
+      .where({ depositId, status: mode })
+      .toArray()
+    if (isReceived) {
+      rows.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+    } else {
+      rows.sort((a, b) => a.articleIndex - b.articleIndex)
+    }
+    return rows
+  }, [depositId, mode, isReceived])
+
+  const [sortByCode, setSortByCode] = useState(false)
+  const prevTopId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!articles) return
+    const topId = articles[0]?.id ?? null
+    if (prevTopId.current !== null && topId !== prevTopId.current) {
+      setSortByCode(false)
+    }
+    prevTopId.current = topId
+  }, [articles])
+
+  const displayed = useMemo(() => {
+    if (!articles) return undefined
+    if (sortByCode && isReceived) {
+      return sortByIdentificationLetter(articles)
+    }
+    return articles
+  }, [articles, sortByCode, isReceived])
+
+  if (!displayed) return
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px]">Code</TableHead>
+          <TableHead
+            className={`w-[100px] ${isReceived ? 'cursor-pointer select-none' : ''}`}
+            onClick={isReceived ? () => setSortByCode(true) : undefined}
+          >
+            Code{sortByCode && isReceived ? ' ▲' : ''}
+          </TableHead>
           <TableHead>Discipline</TableHead>
           <TableHead>Catégorie</TableHead>
           <TableHead>Marque</TableHead>
@@ -263,7 +320,7 @@ function ArticleList(props: ArticleListProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {articles.map((article) => (
+        {displayed.map((article) => (
           <TableRow key={article.id}>
             <TableCell className="font-medium">{article.code}</TableCell>
             <TableCell>{article.discipline}</TableCell>

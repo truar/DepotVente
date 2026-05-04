@@ -6,12 +6,20 @@ import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
-import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
+import { sortByIdentificationLetter } from '@/utils'
 import {
   Table,
   TableBody,
@@ -102,7 +110,7 @@ function ProSearchForm(props: ProSearchFormProps) {
           variant="secondary"
           onClick={() => onClick(value)}
         >
-          Rechercher
+          Valider
         </Button>
       </div>
     </div>
@@ -115,27 +123,41 @@ type ProArticlesFormProps = {
 
 function ProArticlesForm(props: ProArticlesFormProps) {
   const { depositId } = props
-  const [shouldDisplayArticles, setShouldDisplayArticles] = useState(false)
+  const [listMode, setListMode] = useState<'RETURNED' | 'RECEPTION_OK'>(
+    'RETURNED',
+  )
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <ReturnArticleInput />
       <ReturnedArticleCount depositId={depositId} />
       <TotalArticleReceivedUnsoldCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-        <div className="col-span-2 text-right">Articles non réceptionnés</div>
-        <div>
-          <Button
-            className="cursor-pointer"
-            type="button"
-            variant="secondary"
-            onClick={() => setShouldDisplayArticles(!shouldDisplayArticles)}
-          >
-            {shouldDisplayArticles ? 'Masquer' : 'Consulter'}
-          </Button>
+        <div className="col-span-2 text-right">Liste articles :</div>
+        <div className="col-span-3 flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="listMode"
+              value="RETURNED"
+              checked={listMode === 'RETURNED'}
+              onChange={() => setListMode('RETURNED')}
+            />
+            Réceptionnés
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="listMode"
+              value="RECEPTION_OK"
+              checked={listMode === 'RECEPTION_OK'}
+              onChange={() => setListMode('RECEPTION_OK')}
+            />
+            Non réceptionnés
+          </label>
         </div>
       </div>
 
-      {shouldDisplayArticles && <ArticleList depositId={depositId} />}
+      <ArticleList depositId={depositId} mode={listMode} />
     </div>
   )
 }
@@ -227,23 +249,59 @@ function TotalArticleReceivedUnsoldCount(props: { depositId: string }) {
 
 type ArticleListProps = {
   depositId: string
+  mode: 'RETURNED' | 'RECEPTION_OK'
 }
 function ArticleList(props: ArticleListProps) {
-  const { depositId } = props
-  const articles = useLiveQuery(
-    () =>
-      db.articles
-        .where({ depositId, status: 'RECEPTION_OK' })
-        .sortBy('articleIndex'),
-    [depositId],
-  )
-  if (!articles) return
+  const { depositId, mode } = props
+  const isReturned = mode === 'RETURNED'
+
+  const articles = useLiveQuery(async () => {
+    const rows = await db.articles
+      .where({ depositId, status: mode })
+      .toArray()
+    if (isReturned) {
+      rows.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+    } else {
+      rows.sort((a, b) => a.articleIndex - b.articleIndex)
+    }
+    return rows
+  }, [depositId, mode, isReturned])
+
+  const [sortByCode, setSortByCode] = useState(false)
+  const prevTopId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!articles) return
+    const topId = articles[0]?.id ?? null
+    if (prevTopId.current !== null && topId !== prevTopId.current) {
+      setSortByCode(false)
+    }
+    prevTopId.current = topId
+  }, [articles])
+
+  const displayed = useMemo(() => {
+    if (!articles) return undefined
+    if (sortByCode && isReturned) {
+      return sortByIdentificationLetter(articles)
+    }
+    return articles
+  }, [articles, sortByCode, isReturned])
+
+  if (!displayed) return
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px]">Code</TableHead>
+          <TableHead
+            className={`w-[100px] ${isReturned ? 'cursor-pointer select-none' : ''}`}
+            onClick={isReturned ? () => setSortByCode(true) : undefined}
+          >
+            Code{sortByCode && isReturned ? ' ▲' : ''}
+          </TableHead>
           <TableHead>Discipline</TableHead>
           <TableHead>Catégorie</TableHead>
           <TableHead>Marque</TableHead>
@@ -254,7 +312,7 @@ function ArticleList(props: ArticleListProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {articles.map((article) => (
+        {displayed.map((article) => (
           <TableRow key={article.id}>
             <TableCell className="font-medium">{article.code}</TableCell>
             <TableCell>{article.discipline}</TableCell>
