@@ -2,14 +2,14 @@
 // Based on Prisma schema but framework-agnostic
 
 // Export generated Zod schemas (auto-generated from Prisma schema)
-export * from './generated'
+export * from './generated/index.js'
 
 // Re-import generated types for composition
 import type {
   Sale as GeneratedSale,
   Article as GeneratedArticle,
   Deposit as GeneratedDeposit
-} from './generated'
+} from './generated/index.js'
 
 // Types with relations (for API responses with nested data)
 export type SaleWithRelations = GeneratedSale & {

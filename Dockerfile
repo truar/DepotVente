@@ -22,10 +22,13 @@ COPY packages/types/package.json ./packages/types/
 # Install all dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 
-# Copy packages source and generate Prisma client
+# Copy packages source, generate Prisma client, then build the workspace
+# packages so consumers (backend) can import compiled JS from dist/.
 COPY packages/database ./packages/database
 COPY packages/types ./packages/types
-RUN pnpm --filter database db:generate
+RUN pnpm --filter database db:generate \
+ && pnpm --filter database build \
+ && pnpm --filter @cmr-apps/types build
 
 ###################
 # BACKEND DEV
@@ -47,21 +50,21 @@ FROM pruned AS backend-build
 # Copy backend source
 COPY apps/backend ./apps/backend
 
-# Build backend
+# Build backend (workspace packages were already built in `pruned`)
 RUN pnpm --filter backend build
 
 FROM base AS backend-prod
 
-# Copy installed dependencies
+# Bring in installed deps and the *built* packages (dist/ contains compiled JS)
 COPY --from=pruned /app/node_modules ./node_modules
 COPY --from=pruned /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=pruned /app/packages/database ./packages/database
-COPY --from=pruned /app/packages/types ./packages/types
+COPY --from=pruned /app/packages ./packages
 
-# Copy built backend
+# Bring in the compiled backend
 COPY --from=backend-build /app/apps/backend/dist ./apps/backend/dist
 COPY --from=backend-build /app/apps/backend/package.json ./apps/backend/
 
+ENV NODE_ENV=production
 EXPOSE 3000
 
 CMD ["node", "apps/backend/dist/index.js"]

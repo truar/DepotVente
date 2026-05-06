@@ -1,5 +1,5 @@
 import type { User, CreateUserInput, UpdateUserInput } from "@cmr-apps/types";
-import type { IUserRepository } from "../interfaces/IUserRepository";
+import type { IUserRepository } from "../interfaces/IUserRepository.js";
 import bcrypt from "bcrypt";
 
 /**

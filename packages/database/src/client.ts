@@ -1,6 +1,6 @@
-import { PrismaClient } from '../generated/client'
-import { decimalToNumberExtension } from './extensions/decimal-to-number'
-import { softDeleteExtension } from './extensions/soft-delete'
+import { PrismaClient } from '../generated/client/index.js'
+import { decimalToNumberExtension } from './extensions/decimal-to-number.js'
+import { softDeleteExtension } from './extensions/soft-delete.js'
 
 // Extension du type global pour le stockage du client Prisma
 const globalForPrisma = globalThis as typeof globalThis & {

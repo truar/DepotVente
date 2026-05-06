@@ -2,14 +2,20 @@
     auto_https off
 }
 
-:15174 {
+# HTTP -> HTTPS redirect (so http://bourseauski.local lands on HTTPS)
+:80 {
+    redir https://{host}{uri} permanent
+}
+
+# HTTPS entrypoint - this is what client PCs connect to
+:443 {
     tls /etc/caddy/certs/cert.pem /etc/caddy/certs/cert-key.pem
 
     handle /api/* {
-        reverse_proxy host.docker.internal:3000
+        reverse_proxy backend:3000
     }
 
     handle {
-        reverse_proxy host.docker.internal:15173
+        reverse_proxy frontend:80
     }
 }

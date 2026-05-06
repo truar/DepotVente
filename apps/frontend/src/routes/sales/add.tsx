@@ -23,7 +23,7 @@ import {
   useState,
 } from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
-import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
+import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
   InputGroup,

@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Prisma } from '../../generated/client'
+import { Prisma } from '../../generated/client/index.js'
 
 export const softDeleteExtension = Prisma.defineExtension({
   name: 'softDelete',

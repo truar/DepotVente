@@ -8,7 +8,7 @@
 // this schema are `Decimal(10, 2)` (max ≈ 99,999,999.99), well within
 // `Number.MAX_SAFE_INTEGER`, so converting to `number` is safe.
 
-import { Prisma } from '../../generated/client'
+import { Prisma } from '../../generated/client/index.js'
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object') return false

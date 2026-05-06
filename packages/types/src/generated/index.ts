@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { z } from 'zod';
-import { Prisma } from '../../../database/generated/client';
+import { Prisma } from 'database';
 import Decimal from 'decimal.js';
 
 /////////////////////////////////////////

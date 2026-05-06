@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { UserService } from "../services/UserService";
-import { PrismaUserRepository } from "../repositories/PrismaUserRepository";
+import { UserService } from "../services/UserService.js";
+import { PrismaUserRepository } from "../repositories/PrismaUserRepository.js";
 
 // Instancier le service avec le repository
 const userRepository = new PrismaUserRepository();

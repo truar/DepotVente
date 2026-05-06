@@ -5,9 +5,9 @@ import 'dotenv/config';
 import jwt from '@fastify/jwt';
 
 // Import des routes
-import { authRoutes } from './routes/auth.routes';
-import { replicationRoutes } from './routes/replication.route';
-import { syncRoutes } from './routes/sync.routes';
+import { authRoutes } from './routes/auth.routes.js';
+import { replicationRoutes } from './routes/replication.route.js';
+import { syncRoutes } from './routes/sync.routes.js';
 
 // Étendre le type FastifyInstance pour inclure notre decorator
 declare module "fastify" {

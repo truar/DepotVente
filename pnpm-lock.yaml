@@ -237,6 +237,9 @@ importers:
 
   packages/types:
     dependencies:
+      database:
+        specifier: workspace:*
+        version: link:../database
       zod:
         specifier: ^4.1.12
         version: 4.1.12
