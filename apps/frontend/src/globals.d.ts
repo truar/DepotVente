@@ -17,6 +17,7 @@ type CheckEnvironmentResult = {
 
 type ILabel = {
   print: (printerName: string) => void
+  setObjectText: (objectName: string, text: string) => void
 }
 
 declare global {

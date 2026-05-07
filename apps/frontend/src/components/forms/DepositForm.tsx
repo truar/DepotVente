@@ -650,7 +650,7 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
     const valid = await trigger(`deposit.articles.${index}`)
     if (!valid) return
     const field = getValues(`deposit.articles.${index}`)
-    const printed = dymo.print({
+    const printed = await dymo.print({
       color: field.color,
       brand: field.brand,
       size: field.size ?? '',

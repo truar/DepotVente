@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export type ArticlePrintParam = {
   code: string
@@ -29,7 +29,13 @@ const getPrinters = () => {
   return window.dymo.label.framework.getPrinters()
 }
 
-const droppedArticleLabelXml =
+// DYMO Connect (Win10+) label format. Not used at runtime today — the v8
+// `.label` template in /public works on both DYMO Connect and DYMO Label v8.
+// Kept here for future runtime version detection (option 2): if the local
+// service is detected as DYMO Connect, swap to this template + the legacy
+// `replacePlaceholders` substitution path. Exported so the unused-locals
+// check accepts it without prefixing with `_`.
+export const articleLabelConnectXml =
   '<?xml version="1.0" encoding="utf-8"?>\n' +
   '<DesktopLabel Version="1">\n' +
   '  <DYMOLabel Version="4">\n' +
@@ -733,18 +739,50 @@ const droppedArticleLabelXml =
 
 const isFakeDymo = import.meta.env.VITE_FAKE_DYMO === 'true'
 
+const labelTemplateUrl = '/article-label.label'
+
+let cachedLabelXml: Promise<string> | null = null
+
+function loadLabelXml(): Promise<string> {
+  if (!cachedLabelXml) {
+    cachedLabelXml = fetch(labelTemplateUrl).then((res) => {
+      if (!res.ok) {
+        cachedLabelXml = null
+        throw new Error(`Failed to load label template (${res.status})`)
+      }
+      return res.text()
+    })
+  }
+  return cachedLabelXml
+}
+
+// Avoid sending `undefined` to the DYMO service.
+const safe = (v: string | undefined) => v ?? ''
+
 export function useDymo() {
-  const print = useCallback((param: ArticlePrintParam): boolean => {
+  useEffect(() => {
+    if (!isFakeDymo) loadLabelXml().catch(() => {})
+  }, [])
+
+  const print = useCallback(async (param: ArticlePrintParam): Promise<boolean> => {
     if (isFakeDymo) {
       console.info('[fake-dymo] print', param)
       return true
     }
-    const printers = getPrinters()
-    const replacedXml = replacePlaceholders(droppedArticleLabelXml, param)
+    const xml = await loadLabelXml()
+    const label = window.dymo.label.framework.openLabelXml(xml)
 
-    const label = window.dymo.label.framework.openLabelXml(replacedXml)
+    label.setObjectText('ARTICLE', safe(param.shortCode))
+    label.setObjectText('CODE-BARRES', safe(param.code))
+    label.setObjectText('ID_ARTICLE', safe(param.code))
+    label.setObjectText('NOM_MATERIEL', safe(param.category))
+    label.setObjectText('DESCRIPTIF', safe(param.model))
+    label.setObjectText('NOM_MARQUE', safe(param.brand))
+    label.setObjectText('couleur', safe(param.color))
+    label.setObjectText('TAILLE', safe(param.size))
+    label.setObjectText('PRIX', safe(param.price))
 
-    const printer = printers.at(0)
+    const printer = getPrinters().at(0)
     if (!printer) return false
     label.print(printer.name)
     return true

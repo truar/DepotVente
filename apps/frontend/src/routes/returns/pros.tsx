@@ -17,6 +17,13 @@ import {
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
 import { sortByIdentificationLetter } from '@/utils'
@@ -277,12 +284,20 @@ function ArticleList(props: ArticleListProps) {
   const [sortMode, setSortMode] = useState<SortMode>(
     isReturned ? 'recent' : 'category',
   )
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const prevTopId = useRef<string | null>(null)
 
   useEffect(() => {
     setSortMode(isReturned ? 'recent' : 'category')
+    setCategoryFilter('all')
     prevTopId.current = null
   }, [isReturned])
+
+  const availableCategories = useMemo(() => {
+    if (!articles) return []
+    const set = new Set(articles.map((a) => a.category))
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [articles])
 
   useEffect(() => {
     if (!articles) return
@@ -299,19 +314,42 @@ function ArticleList(props: ArticleListProps) {
 
   const displayed = useMemo(() => {
     if (!articles) return undefined
-    if (sortMode === 'code') return sortByIdentificationLetter(articles)
+    let rows = articles
+    if (!isReturned && categoryFilter !== 'all') {
+      rows = rows.filter((a) => a.category === categoryFilter)
+    }
+    if (sortMode === 'code') return sortByIdentificationLetter(rows)
     if (sortMode === 'category') {
-      return [...articles].sort((a, b) =>
+      return [...rows].sort((a, b) =>
         a.category.localeCompare(b.category, 'fr'),
       )
     }
-    return articles
-  }, [articles, sortMode])
+    return rows
+  }, [articles, sortMode, categoryFilter, isReturned])
 
   if (!displayed) return
 
   return (
-    <Table>
+    <>
+      {!isReturned && (
+        <div className="flex items-center gap-2">
+          <span>Filtrer par catégorie :</span>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes</SelectItem>
+              {availableCategories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <Table>
       <TableHeader>
         <TableRow>
           <TableHead
@@ -349,5 +387,6 @@ function ArticleList(props: ArticleListProps) {
         ))}
       </TableBody>
     </Table>
+    </>
   )
 }

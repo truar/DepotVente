@@ -371,6 +371,42 @@ Expected: padlock icon closed, no warning, the app loads. Open DevTools →
 
 ---
 
+## DYMO label printing on Windows 7 clients
+
+Some deposit PCs run Windows 7 with **DYMO Label Software v8.7.4** for
+printing seller/article labels. The DYMO Label Web Service (port
+`41951`) only speaks legacy TLS (1.0/1.1) and ships with an old
+self-signed cert. Modern Chrome/Edge (≥ v91) refuse the connection
+outright — there is no flag, policy, or click-through to re-enable it.
+
+**Use Firefox ESR 115** on these PCs. It is the last Firefox branch that
+runs on Windows 7 and still exposes the prefs needed to allow legacy
+TLS.
+
+### Setup steps (per Win7 client)
+
+1. **Install Firefox ESR 115 for Windows 7.**
+   Download from
+   [mozilla.org/firefox/all/#product-desktop-esr](https://www.mozilla.org/firefox/all/#product-desktop-esr)
+   (pick a 115.x build — later ESR branches dropped Win7 support).
+
+2. **Allow deprecated TLS versions.**
+   In the address bar go to `about:config` → accept the warning →
+   set:
+   - `security.tls.version.enable-deprecated` → **true**
+   - `security.tls.version.min` → **1**  *(1 = TLS 1.0)*
+
+3. **Verify.** With DYMO Label running, open
+   `https://localhost:41951/DYMO/DLS/Printing/Check` in Firefox. You
+   should get a JSON-ish "DYMO Label Framework is up and running"
+   response (a one-time cert warning is expected; click through to
+   trust it).
+
+After that the deposit app's print buttons will reach the local DYMO
+service from the browser.
+
+---
+
 ## Project Structure
 
 ```plaintext
