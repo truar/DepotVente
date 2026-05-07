@@ -128,7 +128,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   )
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReturnArticleInput />
+      <ReturnArticleInput depositId={depositId} />
       <ReturnedArticleCount depositId={depositId} />
       <TotalArticleReceivedUnsoldCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -162,7 +162,8 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   )
 }
 
-function ReturnArticleInput() {
+function ReturnArticleInput(props: { depositId: string }) {
+  const { depositId } = props
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
   const checkKeyDown = useCallback(
@@ -181,6 +182,11 @@ function ReturnArticleInput() {
       setArticleCode('')
       return
     }
+    if (article.depositId !== depositId) {
+      toast.error(`L'article ${articleCode} n'appartient pas à ce dépôt`)
+      setArticleCode('')
+      return
+    }
     if (article.status === 'RETURNED') {
       toast.error(`Retour de l'article ${articleCode} déja effectué`)
       setArticleCode('')
@@ -191,7 +197,7 @@ function ReturnArticleInput() {
     toast.success(`Retour de l'article ${articleCode} effectué`)
 
     setArticleCode('')
-  }, [articleCode, articlesDb])
+  }, [articleCode, articlesDb, depositId])
 
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">

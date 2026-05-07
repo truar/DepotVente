@@ -128,7 +128,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   )
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReceiveArticleInput />
+      <ReceiveArticleInput depositId={depositId} />
       <ReceivedArticleCount depositId={depositId} />
       <TotalArticleCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -162,7 +162,8 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   )
 }
 
-function ReceiveArticleInput() {
+function ReceiveArticleInput(props: { depositId: string }) {
+  const { depositId } = props
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
   const checkKeyDown = useCallback(
@@ -181,6 +182,11 @@ function ReceiveArticleInput() {
       setArticleCode('')
       return
     }
+    if (article.depositId !== depositId) {
+      toast.error(`L'article ${articleCode} n'appartient pas à ce dépôt`)
+      setArticleCode('')
+      return
+    }
     if (article.status === 'RECEPTION_OK') {
       toast.error(`Dépôt de l'article ${articleCode} déja effectué`)
       setArticleCode('')
@@ -191,7 +197,7 @@ function ReceiveArticleInput() {
     toast.success(`Dépôt de l'article ${articleCode} effectué`)
 
     setArticleCode('')
-  }, [articleCode, articlesDb])
+  }, [articleCode, articlesDb, depositId])
 
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
