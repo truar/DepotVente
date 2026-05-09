@@ -61,6 +61,7 @@ export function useCreateDepot() {
             size: articleForm.size ?? '',
             color: articleForm.color,
             model: articleForm.model ?? '',
+            serialNumber: null,
             year: articleForm.year,
             depositIndex: data.depotIndex,
             articleIndex: articleForm.articleIndex,

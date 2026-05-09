@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -51,17 +51,7 @@ import { printPdf } from '@/pdf/print.tsx'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: requireAuthAndWorkstation,
@@ -80,6 +70,8 @@ function toNumber(value: unknown) {
 function RouteComponent() {
   const salesDb = useSalesDb()
   const [workstation] = useWorkstation()
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
   const currentSaleCount = useLiveQuery(
     () => salesDb.count(workstation),
     [workstation],
@@ -88,9 +80,31 @@ function RouteComponent() {
   if (currentSaleCount == null) return null
   const saleCurrentIndex = workstation.incrementStart + currentSaleCount + 1
   return (
-    <Page navigation={<Link to={'..'}>Retour</Link>} title="Faire une vente">
-      <SalesForm saleIndex={saleCurrentIndex} />
-    </Page>
+    <>
+      <Page
+        navigation={
+          <Link
+            to={'..'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour au menu
+          </Link>
+        }
+        title="Faire une vente"
+      >
+        <SalesForm saleIndex={saleCurrentIndex} />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les données non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '..' })}
+      />
+    </>
   )
 }
 
@@ -207,35 +221,19 @@ function SalesForm(props: SalesFormProps) {
           <SaleArticlesForm />
           <PaymentForm />
           <div className="flex justify-end gap-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <ConfirmationDialog
+              trigger={
                 <Button type="button" variant="destructive">
                   Annuler
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Etes vous sur de vouloir annuler ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action va réinitialiser le formulaire. Les données non
-                    enregistrées seront perdues.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Non</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      reset()
-                      setValue('saleIndex', saleIndex)
-                    }}
-                  >
-                    Oui
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+              title="Etes vous sur de vouloir annuler ?"
+              description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
+              onConfirm={() => {
+                reset()
+                setValue('saleIndex', saleIndex)
+              }}
+            />
             <Button type="button" onClick={print} variant="secondary">
               Facture
             </Button>

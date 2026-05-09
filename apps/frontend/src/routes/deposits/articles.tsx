@@ -4,17 +4,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { toast } from 'sonner'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
@@ -70,13 +60,34 @@ export const Route = createFileRoute('/deposits/articles')({
 })
 
 function RouteComponent() {
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
   return (
-    <Page
-      title="Modifier un article"
-      navigation={<Link to={'..'}>Retour au menu</Link>}
-    >
-      <ArticleEditPage />
-    </Page>
+    <>
+      <Page
+        title="Modifier un article"
+        navigation={
+          <Link
+            to={'..'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour au menu
+          </Link>
+        }
+      >
+        <ArticleEditPage />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les modifications non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '..' })}
+      />
+    </>
   )
 }
 
@@ -181,6 +192,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       size: article.size,
       color: article.color,
       model: article.model,
+      serialNumber: article.serialNumber ?? '',
       status: article.status,
       discipline: article.discipline,
       articleCode: article.code,
@@ -202,6 +214,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       size: article.size,
       color: article.color,
       model: article.model,
+      serialNumber: article.serialNumber ?? '',
       discipline: article.discipline,
       articleCode: article.code,
       shortArticleCode: shortArticleCode(
@@ -236,6 +249,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       price: `${field.price}`,
       shortCode: field.shortArticleCode,
       model: field.model ?? '',
+      serialNumber: field.serialNumber ?? '',
     })
   }, [dymo, getValues])
   return (
@@ -333,6 +347,27 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                       aria-invalid={fieldState.invalid}
                       type="text"
                       id="model"
+                    />
+                  </InputGroup>
+                </FieldContent>
+              </Field>
+            )}
+          />
+        </div>
+        <div>
+          <Controller
+            control={control}
+            name="serialNumber"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="serialNumber">N° Série</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                      id="serialNumber"
                     />
                   </InputGroup>
                 </FieldContent>
@@ -441,30 +476,16 @@ function ArticleEditForm(props: ArticleEditFormProps) {
         </div>
       </div>
       <div className="flex justify-end gap-4">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+        <ConfirmationDialog
+          trigger={
             <CustomButton type="button" variant="destructive">
               Annuler
             </CustomButton>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Etes vous sur de vouloir annuler ?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Cette action va annuler les modifications. Les données non
-                enregistrées seront perdues.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Non</AlertDialogCancel>
-              <AlertDialogAction onClick={() => navigate({ to: '..' })}>
-                Oui
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          }
+          title="Etes vous sur de vouloir annuler ?"
+          description="Cette action va annuler les modifications. Les données non enregistrées seront perdues."
+          onConfirm={() => navigate({ to: '..' })}
+        />
         <CustomButton
           type="button"
           onClick={() => printDymo()}

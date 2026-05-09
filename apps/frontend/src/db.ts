@@ -92,6 +92,7 @@ export type Article = {
   discipline: string
   brand: string
   model: string
+  serialNumber: string | null
   size: string
   color: string
   code: string

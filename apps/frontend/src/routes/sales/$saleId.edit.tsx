@@ -13,21 +13,11 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { type KeyboardEvent, useCallback, useMemo } from 'react'
+import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
 import { getYear, shortArticleCode } from '@/utils'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -70,6 +60,8 @@ export const Route = createFileRoute('/sales/$saleId/edit')({
 
 function RouteComponent() {
   const { saleId } = Route.useParams()
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
 
   const sale = useLiveQuery(() => db.sales.get(saleId))
   const contact = useLiveQuery(
@@ -87,19 +79,36 @@ function RouteComponent() {
   if (!sale || !contact || !articles) return
   const activeRefund = refund && refund.deletedAt == null ? refund : null
   return (
-    <Page
-      navigation={
-        <Link to={'/sales/listing'}>Retour à la liste des ventes</Link>
-      }
-      title={`Modifier la vente n°${sale.saleIndex}`}
-    >
-      <SaleForm
-        sale={sale}
-        buyer={contact}
-        articles={articles}
-        refund={activeRefund}
+    <>
+      <Page
+        navigation={
+          <Link
+            to={'/sales/listing'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour à la liste des ventes
+          </Link>
+        }
+        title={`Modifier la vente n°${sale.saleIndex}`}
+      >
+        <SaleForm
+          sale={sale}
+          buyer={contact}
+          articles={articles}
+          refund={activeRefund}
+        />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les modifications non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '/sales/listing' })}
       />
-    </Page>
+    </>
   )
 }
 type SaleFormProps = {
@@ -255,27 +264,16 @@ function SaleForm(props: SaleFormProps) {
           <PaymentForm />
           <RefundForm previousTotalRefund={sale.totalRefundAmount ?? 0} />
           <div className="flex justify-end gap-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <ConfirmationDialog
+              trigger={
                 <Button type="button" variant="destructive">
                   Annuler
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Etes vous sur de vouloir annuler ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Les modifications non enregistrées seront perdues.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Non</AlertDialogCancel>
-                  <AlertDialogAction onClick={onCancel}>Oui</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+              title="Etes vous sur de vouloir annuler ?"
+              description="Les modifications non enregistrées seront perdues."
+              onConfirm={onCancel}
+            />
             <Button
               type="button"
               onClick={print}

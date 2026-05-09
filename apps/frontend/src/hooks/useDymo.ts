@@ -9,6 +9,7 @@ export type ArticlePrintParam = {
   brand: string
   category: string
   size: string
+  serialNumber?: string
 }
 
 export function replacePlaceholders(
@@ -780,7 +781,8 @@ export function useDymo() {
     label.setObjectText('NOM_MARQUE', safe(param.brand))
     label.setObjectText('couleur', safe(param.color))
     label.setObjectText('TAILLE', safe(param.size))
-    label.setObjectText('PRIX', safe(param.price))
+    label.setObjectText('PRIX', param.price ? `${param.price} €` : '')
+    label.setObjectText('N° Serie', safe(param.serialNumber))
 
     const printer = getPrinters().at(0)
     if (!printer) return false

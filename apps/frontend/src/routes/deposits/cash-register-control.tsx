@@ -36,17 +36,7 @@ import {
 import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
 import { toast } from 'sonner'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 
 export const Route = createFileRoute('/deposits/cash-register-control')({
   beforeLoad: requireAuthAndWorkstation,
@@ -59,6 +49,8 @@ export const Route = createFileRoute('/deposits/cash-register-control')({
 
 function RouteComponent() {
   const [workstation] = useWorkstation()
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   const cashRegisterControl = useLiveQuery(
     () =>
@@ -70,15 +62,34 @@ function RouteComponent() {
   )
   if (!workstation || !workstation.incrementStart) return null
   return (
-    <Page
-      navigation={<Link to={'..'}>Retour au menu</Link>}
-      title="Contrôler les espèces"
-    >
-      <CashRegisterControlForm
-        workstation={workstation}
-        cashRegisterControl={cashRegisterControl}
+    <>
+      <Page
+        navigation={
+          <Link
+            to={'..'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour au menu
+          </Link>
+        }
+        title="Contrôler les espèces"
+      >
+        <CashRegisterControlForm
+          workstation={workstation}
+          cashRegisterControl={cashRegisterControl}
+        />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les données non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '..' })}
       />
-    </Page>
+    </>
   )
 }
 
@@ -116,7 +127,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       comment: '',
     },
   })
-  const { control, getValues, handleSubmit, reset } = methods
+  const { control, getValues, handleSubmit, reset, trigger } = methods
   const [hasPrinted, setHasPrinted] = useState(false)
   const [printError, setPrintError] = useState(false)
   const navigate = useNavigate()
@@ -156,6 +167,8 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   })
 
   const print = async () => {
+    const isValid = await trigger()
+    if (!isValid) return
     const formData = getValues()
     const year = getYear()
     const data: DepositCashRegisterControlProps['data'] = {
@@ -220,12 +233,19 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
             <Label htmlFor="comment">Commentaire</Label>
             <Controller
               name="comment"
-              render={({ field }) => (
-                <Textarea
-                  id="comment"
-                  {...field}
-                  value={field.value ?? ''}
-                />
+              render={({ field, fieldState }) => (
+                <>
+                  <Textarea
+                    id="comment"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
+                  {fieldState.invalid && fieldState.error?.message && (
+                    <p className="text-red-600 text-sm">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </>
               )}
             />
           </div>
@@ -238,28 +258,16 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
             <CustomButton type="button" onClick={print} variant="secondary">
               Imprimer
             </CustomButton>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <ConfirmationDialog
+              trigger={
                 <CustomButton type="button" variant="destructive">
                   Annuler
                 </CustomButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Etes vous sur de vouloir annuler ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action va réinitialiser le formulaire. Les données non
-                    enregistrées seront perdues.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Non</AlertDialogCancel>
-                  <AlertDialogAction onClick={onCancel}>Oui</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+              title="Etes vous sur de vouloir annuler ?"
+              description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
+              onConfirm={onCancel}
+            />
             <CustomButton type="submit">Valider</CustomButton>
           </div>
         </div>

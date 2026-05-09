@@ -5,7 +5,7 @@ type Props = { comment?: string | null }
 export const PdfCommentSection = ({ comment }: Props) => {
   if (!comment) return null
   return (
-    <View style={{ marginTop: 10, gap: 6 }} wrap={false}>
+    <View fixed wrap={false} style={{ marginTop: 10, gap: 6 }}>
       <Text>Commentaire:</Text>
       <Text>{comment}</Text>
     </View>

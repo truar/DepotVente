@@ -15,6 +15,7 @@ export function useEditArticle() {
         size: data.size,
         color: data.color,
         model: data.model,
+        serialNumber: data.serialNumber?.trim() || null,
         status: data.status,
         updatedAt: new Date(),
       })

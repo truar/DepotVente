@@ -10,6 +10,7 @@ export const EditArticleSchema = z
     size: z.string().nonempty({ message: 'La taille est requise' }),
     color: z.string().nonempty({ message: 'La couleur est requise' }),
     model: z.string().optional(),
+    serialNumber: z.string().optional(),
     articleCode: z.string(),
     shortArticleCode: z.string(),
     isDeleted: z.boolean().optional(),

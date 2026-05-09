@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
@@ -7,6 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import PublicLayout from '@/components/PublicLayout'
 import { Page } from '@/components/Page.tsx'
 import { DepositForm } from '@/components/forms/DepositForm.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { useCallback, useState } from 'react'
 import { db } from '@/db.ts'
 import { Combobox } from '@/components/Combobox.tsx'
@@ -33,6 +34,8 @@ export const Route = createFileRoute('/deposits/add')({
 export function RouteComponent() {
   const depotDb = useDepositsDb()
   const [workstation] = useWorkstation()
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
   const currentDepotCount = useLiveQuery(
     () => depotDb.count(workstation),
     [workstation],
@@ -41,12 +44,31 @@ export function RouteComponent() {
   const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
-    <Page
-      navigation={<Link to={'..'}>Retour au menu</Link>}
-      title="Enregistrer des articles"
-    >
-      <DepositAddComponent depositIndex={depositCurrentIndex} />
-    </Page>
+    <>
+      <Page
+        navigation={
+          <Link
+            to={'..'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour au menu
+          </Link>
+        }
+        title="Enregistrer des articles"
+      >
+        <DepositAddComponent depositIndex={depositCurrentIndex} />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les données non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '..' })}
+      />
+    </>
   )
 }
 

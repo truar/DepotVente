@@ -193,6 +193,7 @@ model Article {
   discipline           String
   brand                String
   model                String?
+  serialNumber         String?  @map("serial_number")
   size                 String?
   color                String
   code                 String   @unique // Code-barres

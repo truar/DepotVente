@@ -15,17 +15,7 @@ import {
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { type KeyboardEvent, memo, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import {
   computeContributionAmount,
   generateArticleCode,
@@ -62,8 +52,7 @@ import { colors } from '@/types/colors.ts'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 import { useDymo } from '@/hooks/useDymo.ts'
 import { useDebouncedCallback } from 'use-debounce'
-import { DepositPdf, type DepositPdfProps } from '@/pdf/deposit-pdf.tsx'
-import { printPdf } from '@/pdf/print.tsx'
+import { usePrintDepositFromForm } from '@/hooks/usePrintDepositFromForm.tsx'
 
 type DepositFormProps = {
   depositIndex: number
@@ -158,28 +147,16 @@ export function DepositForm(props: DepositFormProps) {
 
           <div className="flex justify-end gap-4">
             <SummaryPrintButton />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <ConfirmationDialog
+              trigger={
                 <CustomButton type="button" variant="destructive">
                   Annuler
                 </CustomButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Etes vous sur de vouloir annuler ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action va réinitialiser le formulaire. Les données non
-                    enregistrées seront perdues.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Non</AlertDialogCancel>
-                  <AlertDialogAction onClick={resetForm}>Oui</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+              title="Etes vous sur de vouloir annuler ?"
+              description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
+              onConfirm={resetForm}
+            />
             <SubmitButton />
           </div>
         </div>
@@ -644,7 +621,9 @@ type PrintArticleButtonProps = {
 function PrintArticleButton(props: PrintArticleButtonProps) {
   const { index } = props
   const dymo = useDymo()
-  const { trigger, getValues, setValue } = useFormContext<DepositFormType>()
+  const { trigger, getValues, setValue, watch } =
+    useFormContext<DepositFormType>()
+  const labelPrinted = watch(`deposit.articles.${index}.labelPrinted`)
 
   const printDymo = useCallback(async () => {
     const valid = await trigger(`deposit.articles.${index}`)
@@ -663,7 +642,7 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
     if (printed) {
       setValue(`deposit.articles.${index}.labelPrinted`, true)
     }
-  }, [dymo, getValues, setValue, index])
+  }, [dymo, getValues, setValue, index, trigger])
 
   const debouncedPrintDymo = useDebouncedCallback(printDymo, 1000)
 
@@ -673,53 +652,18 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
       variant="ghost"
       onClick={debouncedPrintDymo}
       disabled={props.disabled}
+      title={labelPrinted ? 'Étiquette imprimée — réimprimer' : 'Non imprimée'}
+      className={labelPrinted ? 'bg-gray-200 hover:bg-gray-300' : ''}
     >
-      <Printer className="w-4 h-4" />
+      <Printer
+        className={`w-4 h-4 ${labelPrinted ? 'text-green-600' : 'text-muted-foreground'}`}
+      />
     </CustomButton>
   )
 }
 
 function SummaryPrintButton() {
-  const { getValues, trigger, setValue } = useFormContext<DepositFormType>()
-  const print = async () => {
-    const valid = await trigger('deposit')
-    if (!valid) {
-      return
-    }
-    const formData = getValues('deposit')
-    if (formData.contributionStatus == null) {
-      // unreachable: trigger() returned valid, so the schema's refine passed
-      throw new Error('contributionStatus must be set before printing')
-    }
-    const year = getYear()
-    const data: DepositPdfProps['data'] = {
-      deposit: {
-        depositIndex: formData.depotIndex,
-        year,
-        contributionStatus: formData.contributionStatus,
-        contributionAmount: formData.contributionAmount,
-      },
-      contact: {
-        lastName: formData.lastName,
-        firstName: formData.firstName,
-        city: formData.city,
-        phoneNumber: formData.phoneNumber,
-      },
-      articles: formData.articles.map((article) => ({
-        shortCode: `${formData.depotIndex} ${article.identificationLetter}`,
-        category: article.type,
-        brand: article.brand,
-        model: article.model ?? '',
-        discipline: article.discipline,
-        size: article.size ?? '',
-        price: article.price,
-        color: article.color,
-        isDeleted: article.isDeleted,
-      })),
-    }
-    await printPdf(<DepositPdf data={data} copy={2} />)
-    setValue('isSummaryPrinted', true)
-  }
+  const print = usePrintDepositFromForm()
 
   return (
     <CustomButton type="button" onClick={print} variant="secondary">

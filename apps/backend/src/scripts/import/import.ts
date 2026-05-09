@@ -88,6 +88,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           discipline: articleFromImport.discipline || 'AUTRE',
           brand: articleFromImport.brand,
           model: articleFromImport.model || 'AUTRE',
+          serialNumber: articleFromImport.serialNumber ?? null,
           size: articleFromImport.size,
           color: articleFromImport.color,
           code: articleFromImport.code,

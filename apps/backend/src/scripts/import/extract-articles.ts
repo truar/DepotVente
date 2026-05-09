@@ -16,6 +16,7 @@ const ID_MATERIEL = 3
 const ID_MARQUE = 4
 const ID_TYPE = 5
 const DESCRIPTIF = 6
+const N_SERIE = 7
 const COULEUR = 8
 const TAILLE = 9
 const PRIX = 10
@@ -29,6 +30,7 @@ export interface ArticleData {
   discipline?: string;
   brand: string;
   model?: string;
+  serialNumber?: string | null;
   size: string;
   color: string;
   code: string;
@@ -52,6 +54,7 @@ function parseCSV(content: string): ArticleData[] {
       discipline: types[values[ID_TYPE]],
       brand: marques[values[ID_MARQUE]],
       model: values[DESCRIPTIF],
+      serialNumber: values[N_SERIE]?.trim() || null,
       size: values[TAILLE],
       color: values[COULEUR],
       code: articleCode,

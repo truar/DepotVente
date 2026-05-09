@@ -6,7 +6,8 @@ import { type Article, type Contact, db, type Deposit } from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { useEditDepot } from '@/hooks/useEditDepot.ts'
 import { DepositForm } from '@/components/forms/DepositForm.tsx'
-import { useMemo } from 'react'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { useMemo, useState } from 'react'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 import { shortArticleCode, sortByIdentificationLetter } from '@/utils'
 
@@ -21,6 +22,8 @@ export const Route = createFileRoute('/deposits/$depositId/edit')({
 
 function RouteComponent() {
   const { depositId } = Route.useParams()
+  const navigate = useNavigate()
+  const [backOpen, setBackOpen] = useState(false)
   const deposit = useLiveQuery(() => db.deposits.get(depositId))
   const contact = useLiveQuery(
     () => db.contacts.get(deposit?.sellerId ?? ''),
@@ -35,18 +38,35 @@ function RouteComponent() {
   )
   if (!deposit || !contact || !articles) return
   return (
-    <Page
-      navigation={
-        <Link to={'/deposits/listing'}>Retour à la liste des dépôts</Link>
-      }
-      title={`Modifier la fiche n°${deposit.depositIndex}`}
-    >
-      <EditDepositComponent
-        deposit={deposit}
-        contact={contact}
-        articles={articles}
+    <>
+      <Page
+        navigation={
+          <Link
+            to={'/deposits/listing'}
+            onClick={(e) => {
+              e.preventDefault()
+              setBackOpen(true)
+            }}
+          >
+            Retour à la liste des dépôts
+          </Link>
+        }
+        title={`Modifier la fiche n°${deposit.depositIndex}`}
+      >
+        <EditDepositComponent
+          deposit={deposit}
+          contact={contact}
+          articles={articles}
+        />
+      </Page>
+      <ConfirmationDialog
+        open={backOpen}
+        onOpenChange={setBackOpen}
+        title="Etes vous sur de vouloir quitter cette page ?"
+        description="Les modifications non enregistrées seront perdues."
+        onConfirm={() => navigate({ to: '/deposits/listing' })}
       />
-    </Page>
+    </>
   )
 }
 

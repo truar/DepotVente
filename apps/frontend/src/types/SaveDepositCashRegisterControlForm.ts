@@ -12,7 +12,7 @@ export const CashRegisterControlFormSchema = z.object({
       value: z.coerce.number(),
     }),
   ),
-  comment: z.string().optional(),
+  comment: z.string().trim().min(1, 'Le commentaire est obligatoire'),
 })
 
 export type CashRegisterControlFormType = z.infer<
