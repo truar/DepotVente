@@ -9,7 +9,7 @@ export interface DepositData {
   phoneNumber: string;
   city?: string;
   postalCode?: string;
-  contributionStatus: 'PAYEE' | 'A_PAYER' | 'GRATUIT' | 'PRO';
+  contributionStatus: 'PAYE' | 'A_PAYER' | 'GRATUIT' | 'PRO';
   depositIndex: number;
   incrementStart: number;
   dropWorkstationId: number;
@@ -40,7 +40,7 @@ const PREDEPOSIT_ID = 18
 export const contributionStatuses = new Map(
   [
     ['Ext.1', 'PRO'],
-    ['Payé', 'PAYEE'],
+    ['Payé', 'PAYE'],
     ['A Payer', 'A_PAYER'],
     ['Gratuit', 'GRATUIT'],
   ]

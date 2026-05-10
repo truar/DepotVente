@@ -11,7 +11,7 @@ export function useReturnDepositMutation() {
       checkId: `${data.checkId}`,
       collectedAt: date,
       collectWorkstationId: data.workstation,
-      ...(data.contributionPaid ? { contributionStatus: 'PAYEE' as const } : {}),
+      ...(data.contributionPaid ? { contributionStatus: 'PAYE' as const } : {}),
     })
   }
 

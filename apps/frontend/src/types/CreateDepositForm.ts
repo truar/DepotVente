@@ -41,7 +41,7 @@ export const DepositSchema = z.object({
   contributionStatus: z
     .union([
       z.literal('A_PAYER'),
-      z.literal('PAYEE'),
+      z.literal('PAYE'),
       z.literal('PRO'),
       z.literal('GRATUIT'),
     ])

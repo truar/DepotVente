@@ -59,7 +59,7 @@ function DepositDataTable() {
 
   const contributionStatuses = useMemo(() => {
     return new Map([
-      ['PAYEE', 'Payée'],
+      ['PAYE', 'Payé'],
       ['A_PAYER', 'A payer'],
       ['PRO', 'Pro'],
       ['GRATUIT', 'Gratuit'],

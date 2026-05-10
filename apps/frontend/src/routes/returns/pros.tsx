@@ -9,32 +9,19 @@ import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import {
   type KeyboardEvent,
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
-import { sortByIdentificationLetter } from '@/utils'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table.tsx'
+import { DataTable } from '@/components/custom/DataTable.tsx'
+import { articleColumns } from '@/components/custom/articleColumns.tsx'
+import { printPdf } from '@/pdf/print.tsx'
+import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
+import { loadUnreturnedArticlesPdfData } from '@/pdf/load-unreturned-articles-pdf-data.ts'
 
 export const Route = createFileRoute('/returns/pros')({
   beforeLoad: requireAuthAndWorkstation,
@@ -133,9 +120,14 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const [listMode, setListMode] = useState<'RETURNED' | 'RECEPTION_OK'>(
     'RETURNED',
   )
+  const printUnreturned = useCallback(async () => {
+    const data = await loadUnreturnedArticlesPdfData(depositId)
+    if (!data) return
+    await printPdf(<DepositPdf data={data} showCategorySubtotals />)
+  }, [depositId])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReturnArticleInput depositId={depositId} />
+      <ReturnArticleInput key={depositId} depositId={depositId} />
       <ReturnedArticleCount depositId={depositId} />
       <TotalArticleReceivedUnsoldCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -149,7 +141,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
               checked={listMode === 'RETURNED'}
               onChange={() => setListMode('RETURNED')}
             />
-            Réceptionnés
+            Retrouvés
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -159,10 +151,18 @@ function ProArticlesForm(props: ProArticlesFormProps) {
               checked={listMode === 'RECEPTION_OK'}
               onChange={() => setListMode('RECEPTION_OK')}
             />
-            Non réceptionnés
+            Non retrouvés
           </label>
         </div>
       </div>
+
+      {listMode === 'RECEPTION_OK' && (
+        <div>
+          <Button type="button" variant="secondary" onClick={printUnreturned}>
+            Imprimer
+          </Button>
+        </div>
+      )}
 
       <ArticleList depositId={depositId} mode={listMode} />
     </div>
@@ -214,6 +214,7 @@ function ReturnArticleInput(props: { depositId: string }) {
           type="text"
           name="articleCode"
           id="articleCode"
+          autoFocus
           value={articleCode}
           onChange={(e) => setArticleCode(e.target.value)}
           onKeyDown={checkKeyDown}
@@ -264,11 +265,9 @@ type ArticleListProps = {
   depositId: string
   mode: 'RETURNED' | 'RECEPTION_OK'
 }
-type SortMode = 'recent' | 'code' | 'category'
 
 function ArticleList(props: ArticleListProps) {
   const { depositId, mode } = props
-  const isReturned = mode === 'RETURNED'
 
   const articles = useLiveQuery(async () => {
     const rows = await db.articles
@@ -281,112 +280,22 @@ function ArticleList(props: ArticleListProps) {
     return rows
   }, [depositId, mode])
 
-  const [sortMode, setSortMode] = useState<SortMode>(
-    isReturned ? 'recent' : 'category',
-  )
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const prevTopId = useRef<string | null>(null)
+  const data = useMemo(() => articles ?? [], [articles])
 
-  useEffect(() => {
-    setSortMode(isReturned ? 'recent' : 'category')
-    setCategoryFilter('all')
-    prevTopId.current = null
-  }, [isReturned])
-
-  const availableCategories = useMemo(() => {
-    if (!articles) return []
-    const set = new Set(articles.map((a) => a.category))
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [articles])
-
-  useEffect(() => {
-    if (!articles) return
-    const topId = articles[0]?.id ?? null
-    if (
-      isReturned &&
-      prevTopId.current !== null &&
-      topId !== prevTopId.current
-    ) {
-      setSortMode('recent')
-    }
-    prevTopId.current = topId
-  }, [articles, isReturned])
-
-  const displayed = useMemo(() => {
-    if (!articles) return undefined
-    let rows = articles
-    if (!isReturned && categoryFilter !== 'all') {
-      rows = rows.filter((a) => a.category === categoryFilter)
-    }
-    if (sortMode === 'code') return sortByIdentificationLetter(rows)
-    if (sortMode === 'category') {
-      return [...rows].sort((a, b) =>
-        a.category.localeCompare(b.category, 'fr'),
-      )
-    }
-    return rows
-  }, [articles, sortMode, categoryFilter, isReturned])
-
-  if (!displayed) return
+  if (!articles) return null
 
   return (
-    <>
-      {!isReturned && (
-        <div className="flex items-center gap-2">
-          <span>Filtrer par catégorie :</span>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              {availableCategories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead
-            className="w-[100px] cursor-pointer select-none"
-            onClick={() => setSortMode('code')}
-          >
-            Code{sortMode === 'code' ? ' ▲' : ''}
-          </TableHead>
-          <TableHead>Discipline</TableHead>
-          <TableHead
-            className={!isReturned ? 'cursor-pointer select-none' : ''}
-            onClick={!isReturned ? () => setSortMode('category') : undefined}
-          >
-            Catégorie{!isReturned && sortMode === 'category' ? ' ▲' : ''}
-          </TableHead>
-          <TableHead>Marque</TableHead>
-          <TableHead>Descriptif</TableHead>
-          <TableHead>Couleur</TableHead>
-          <TableHead>Taille</TableHead>
-          <TableHead className="text-right">Prix</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {displayed.map((article) => (
-          <TableRow key={article.id}>
-            <TableCell className="font-medium">{article.code}</TableCell>
-            <TableCell>{article.discipline}</TableCell>
-            <TableCell>{article.category}</TableCell>
-            <TableCell>{article.brand}</TableCell>
-            <TableCell>{article.model}</TableCell>
-            <TableCell>{article.color}</TableCell>
-            <TableCell>{article.size}</TableCell>
-            <TableCell className="text-right">{article.price}€</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-    </>
+    <DataTable
+      key={`${depositId}-${mode}`}
+      columns={articleColumns}
+      columnVisibility={{}}
+      data={data}
+      enableColumnSort
+      enableColumnFilters
+      hideGlobalFilter
+      hideSelectionCount
+      initialSorting={[{ id: 'category', desc: false }]}
+      initialPageSize={50}
+    />
   )
 }

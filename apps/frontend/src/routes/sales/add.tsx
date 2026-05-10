@@ -16,10 +16,14 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import {
+  createContext,
   type KeyboardEvent,
+  type RefObject,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
@@ -66,6 +70,9 @@ function toNumber(value: unknown) {
   const n = typeof value === 'number' ? value : parseFloat(value as string)
   return Number.isNaN(n) ? 0 : n
 }
+
+const ArticleCodeFocusContext =
+  createContext<RefObject<HTMLInputElement | null> | null>(null)
 
 function RouteComponent() {
   const salesDb = useSalesDb()
@@ -134,6 +141,7 @@ function SalesForm(props: SalesFormProps) {
   })
   const { setValue, handleSubmit, reset, setError, trigger, getValues } =
     methods
+  const articleCodeRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setValue('saleIndex', saleIndex)
@@ -207,46 +215,49 @@ function SalesForm(props: SalesFormProps) {
 
   return (
     <FormProvider {...methods}>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        onKeyDown={checkKeyDown}
-        className="flex flex-col gap-4"
-      >
-        <ContactSearchForm />
+      <ArticleCodeFocusContext.Provider value={articleCodeRef}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onKeyDown={checkKeyDown}
+          className="flex flex-col gap-4"
+        >
+          <ContactSearchForm />
 
-        <ErrorMessages />
+          <ErrorMessages />
 
-        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-          <BuyerInformationForm />
-          <SaleArticlesForm />
-          <PaymentForm />
-          <div className="flex justify-end gap-4">
-            <ConfirmationDialog
-              trigger={
-                <Button type="button" variant="destructive">
-                  Annuler
-                </Button>
-              }
-              title="Etes vous sur de vouloir annuler ?"
-              description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
-              onConfirm={() => {
-                reset()
-                setValue('saleIndex', saleIndex)
-              }}
-            />
-            <Button type="button" onClick={print} variant="secondary">
-              Facture
-            </Button>
-            <Button type="submit">Valider et enregistrer la vente</Button>
+          <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+            <BuyerInformationForm />
+            <SaleArticlesForm />
+            <PaymentForm />
+            <div className="flex justify-end gap-4">
+              <ConfirmationDialog
+                trigger={
+                  <Button type="button" variant="destructive">
+                    Annuler
+                  </Button>
+                }
+                title="Etes vous sur de vouloir annuler ?"
+                description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
+                onConfirm={() => {
+                  reset()
+                  setValue('saleIndex', saleIndex)
+                }}
+              />
+              <Button type="button" onClick={print} variant="secondary">
+                Facture
+              </Button>
+              <Button type="submit">Valider et enregistrer la vente</Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </ArticleCodeFocusContext.Provider>
     </FormProvider>
   )
 }
 
 function ContactSearchForm() {
   const { setValue, watch } = useFormContext<SaleFormType>()
+  const articleCodeRef = useContext(ArticleCodeFocusContext)
   const contactsDb = useContactsDb()
   const contacts = useLiveQuery(() => contactsDb.getAll())
   const contactItems = useMemo(
@@ -280,7 +291,8 @@ function ContactSearchForm() {
     setValue('buyer.firstName', contact.firstName)
     setValue('buyer.phoneNumber', contact.phoneNumber)
     setValue('buyer.city', contact.city)
-  }, [setValue, contactId, contactsDb])
+    articleCodeRef?.current?.focus()
+  }, [setValue, contactId, contactsDb, articleCodeRef])
 
   return (
     <div className="grid grid-cols-6 gap-2 w-[500px]">
@@ -379,6 +391,7 @@ function BuyerInformationForm() {
 }
 function SaleArticlesForm() {
   const { getValues, watch } = useFormContext<SaleFormType>()
+  const articleCodeRef = useContext(ArticleCodeFocusContext)
   const { append } = useFieldArray<SaleFormType>({
     name: 'articles',
   })
@@ -448,6 +461,7 @@ function SaleArticlesForm() {
             </div>
             <div>
               <Input
+                ref={articleCodeRef}
                 type="text"
                 name="articleCode"
                 id="articleCode"
@@ -542,10 +556,13 @@ function ScannedArticles() {
 function PaymentForm() {
   const {
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitSuccessful },
   } = useFormContext<SaleFormType>()
   const totalPriceError = errors.root?.totalPrice?.message
   const [cashReceived, setCashReceived] = useState<string>('')
+  useEffect(() => {
+    if (isSubmitSuccessful) setCashReceived('')
+  }, [isSubmitSuccessful])
   const cashAmount = watch('cashAmount')
   const cardAmount = watch('cardAmount')
   const checkAmount = watch('checkAmount')

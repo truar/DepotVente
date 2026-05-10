@@ -274,7 +274,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
           variant="secondary"
           onClick={() => onClick(value)}
         >
-          Rechercher
+          Valider
         </Button>
       </div>
     </div>
@@ -351,16 +351,14 @@ function ReturnedDepositSummary() {
     <Table className="max-w-1/2">
       <TableHeader>
         <TableRow>
-          <TableHead>Nombre de fiche à traiter</TableHead>
-          <TableHead>Nombre de fiche traitées</TableHead>
-          <TableHead>Reste à traiter</TableHead>
+          <TableHead>Fiche à traiter</TableHead>
+          <TableHead>Fiche traitées</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <TableRow>
           <TableCell>{toBeTreated.length}</TableCell>
           <TableCell>{returned.length}</TableCell>
-          <TableCell>{toBeTreated.length - returned.length}</TableCell>
         </TableRow>
       </TableBody>
     </Table>

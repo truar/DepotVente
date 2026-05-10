@@ -9,7 +9,6 @@ import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import {
   type KeyboardEvent,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -17,24 +16,13 @@ import {
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.tsx'
 import { toast } from 'sonner'
 import { db } from '@/db.ts'
-import { sortByIdentificationLetter } from '@/utils'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table.tsx'
+import { printPdf } from '@/pdf/print.tsx'
+import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
+import { loadPendingArticlesPdfData } from '@/pdf/load-pending-articles-pdf-data.ts'
+import { DataTable } from '@/components/custom/DataTable.tsx'
+import { articleColumns } from '@/components/custom/articleColumns.tsx'
 
 export const Route = createFileRoute('/deposits/pros')({
   beforeLoad: requireAuthAndWorkstation,
@@ -117,7 +105,7 @@ function ProSearchForm(props: ProSearchFormProps) {
           variant="secondary"
           onClick={() => onClick(value)}
         >
-          Rechercher
+          Valider
         </Button>
       </div>
     </div>
@@ -133,9 +121,14 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const [listMode, setListMode] = useState<'RECEPTION_OK' | 'RECEPTION_PENDING'>(
     'RECEPTION_OK',
   )
+  const printPending = useCallback(async () => {
+    const data = await loadPendingArticlesPdfData(depositId)
+    if (!data) return
+    await printPdf(<DepositPdf data={data} showCategorySubtotals />)
+  }, [depositId])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReceiveArticleInput depositId={depositId} />
+      <ReceiveArticleInput key={depositId} depositId={depositId} />
       <ReceivedArticleCount depositId={depositId} />
       <TotalArticleCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -164,6 +157,14 @@ function ProArticlesForm(props: ProArticlesFormProps) {
         </div>
       </div>
 
+      {listMode === 'RECEPTION_PENDING' && (
+        <div>
+          <Button type="button" variant="secondary" onClick={printPending}>
+            Imprimer
+          </Button>
+        </div>
+      )}
+
       <ArticleList depositId={depositId} mode={listMode} />
     </div>
   )
@@ -173,47 +174,61 @@ function ReceiveArticleInput(props: { depositId: string }) {
   const { depositId } = props
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const addArticle = useCallback(async () => {
+    try {
+      const article = await articlesDb.findByCode(articleCode.trim())
+      if (!article) {
+        toast.error(`Article ${articleCode} inconnu`)
+        setArticleCode('')
+        return
+      }
+      if (article.depositId !== depositId) {
+        toast.error(`L'article scanné n'appartient pas à ce professionnel`)
+        setArticleCode('')
+        return
+      }
+      if (article.status !== 'RECEPTION_PENDING') {
+        const reason: Record<typeof article.status, string> = {
+          RECEPTION_OK: `Dépôt de l'article ${articleCode} déja effectué`,
+          DELETED: `L'article ${articleCode} a été supprimé`,
+          RETURNED: `L'article ${articleCode} a été restitué`,
+          SOLD: `L'article ${articleCode} a déjà été vendu`,
+        }
+        toast.error(reason[article.status])
+        setArticleCode('')
+        return
+      }
+
+      await articlesDb.markArticleAsReceived(article.id)
+      toast.success(`Dépôt de l'article ${articleCode} effectué`)
+
+      setArticleCode('')
+    } finally {
+      inputRef.current?.focus()
+    }
+  }, [articleCode, articlesDb, depositId])
+
   const checkKeyDown = useCallback(
     async (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         await addArticle()
       }
     },
-    [articleCode, articlesDb],
+    [addArticle],
   )
-
-  const addArticle = useCallback(async () => {
-    const article = await articlesDb.findByCode(articleCode.trim())
-    if (!article) {
-      toast.error(`Article ${articleCode} inconnu`)
-      setArticleCode('')
-      return
-    }
-    if (article.depositId !== depositId) {
-      toast.error(`L'article ${articleCode} n'appartient pas à ce dépôt`)
-      setArticleCode('')
-      return
-    }
-    if (article.status === 'RECEPTION_OK') {
-      toast.error(`Dépôt de l'article ${articleCode} déja effectué`)
-      setArticleCode('')
-      return
-    }
-
-    await articlesDb.markArticleAsReceived(article.id)
-    toast.success(`Dépôt de l'article ${articleCode} effectué`)
-
-    setArticleCode('')
-  }, [articleCode, articlesDb, depositId])
 
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
       <div className="col-span-2 text-right">Scanner un article</div>
       <div>
         <Input
+          ref={inputRef}
           type="text"
           name="articleCode"
           id="articleCode"
+          autoFocus
           value={articleCode}
           onChange={(e) => setArticleCode(e.target.value)}
           onKeyDown={checkKeyDown}
@@ -272,11 +287,9 @@ type ArticleListProps = {
   depositId: string
   mode: 'RECEPTION_OK' | 'RECEPTION_PENDING'
 }
-type SortMode = 'recent' | 'code' | 'category'
 
 function ArticleList(props: ArticleListProps) {
   const { depositId, mode } = props
-  const isReceived = mode === 'RECEPTION_OK'
 
   const articles = useLiveQuery(async () => {
     const rows = await db.articles
@@ -289,112 +302,22 @@ function ArticleList(props: ArticleListProps) {
     return rows
   }, [depositId, mode])
 
-  const [sortMode, setSortMode] = useState<SortMode>(
-    isReceived ? 'recent' : 'category',
-  )
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const prevTopId = useRef<string | null>(null)
+  const data = useMemo(() => articles ?? [], [articles])
 
-  useEffect(() => {
-    setSortMode(isReceived ? 'recent' : 'category')
-    setCategoryFilter('all')
-    prevTopId.current = null
-  }, [isReceived])
-
-  const availableCategories = useMemo(() => {
-    if (!articles) return []
-    const set = new Set(articles.map((a) => a.category))
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [articles])
-
-  useEffect(() => {
-    if (!articles) return
-    const topId = articles[0]?.id ?? null
-    if (
-      isReceived &&
-      prevTopId.current !== null &&
-      topId !== prevTopId.current
-    ) {
-      setSortMode('recent')
-    }
-    prevTopId.current = topId
-  }, [articles, isReceived])
-
-  const displayed = useMemo(() => {
-    if (!articles) return undefined
-    let rows = articles
-    if (!isReceived && categoryFilter !== 'all') {
-      rows = rows.filter((a) => a.category === categoryFilter)
-    }
-    if (sortMode === 'code') return sortByIdentificationLetter(rows)
-    if (sortMode === 'category') {
-      return [...rows].sort((a, b) =>
-        a.category.localeCompare(b.category, 'fr'),
-      )
-    }
-    return rows
-  }, [articles, sortMode, categoryFilter, isReceived])
-
-  if (!displayed) return
+  if (!articles) return null
 
   return (
-    <>
-      {!isReceived && (
-        <div className="flex items-center gap-2">
-          <span>Filtrer par catégorie :</span>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              {availableCategories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead
-            className="w-[100px] cursor-pointer select-none"
-            onClick={() => setSortMode('code')}
-          >
-            Code{sortMode === 'code' ? ' ▲' : ''}
-          </TableHead>
-          <TableHead>Discipline</TableHead>
-          <TableHead
-            className={!isReceived ? 'cursor-pointer select-none' : ''}
-            onClick={!isReceived ? () => setSortMode('category') : undefined}
-          >
-            Catégorie{!isReceived && sortMode === 'category' ? ' ▲' : ''}
-          </TableHead>
-          <TableHead>Marque</TableHead>
-          <TableHead>Descriptif</TableHead>
-          <TableHead>Couleur</TableHead>
-          <TableHead>Taille</TableHead>
-          <TableHead className="text-right">Prix</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {displayed.map((article) => (
-          <TableRow key={article.id}>
-            <TableCell className="font-medium">{article.code}</TableCell>
-            <TableCell>{article.discipline}</TableCell>
-            <TableCell>{article.category}</TableCell>
-            <TableCell>{article.brand}</TableCell>
-            <TableCell>{article.model}</TableCell>
-            <TableCell>{article.color}</TableCell>
-            <TableCell>{article.size}</TableCell>
-            <TableCell className="text-right">{article.price}€</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-    </>
+    <DataTable
+      key={`${depositId}-${mode}`}
+      columns={articleColumns}
+      columnVisibility={{}}
+      data={data}
+      enableColumnSort
+      enableColumnFilters
+      hideGlobalFilter
+      hideSelectionCount
+      initialSorting={[{ id: 'category', desc: false }]}
+      initialPageSize={50}
+    />
   )
 }

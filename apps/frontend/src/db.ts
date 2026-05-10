@@ -33,7 +33,7 @@ export type Refund = {
 
 export type Deposit = {
   id: string
-  contributionStatus: 'A_PAYER' | 'PAYEE' | 'PRO' | 'GRATUIT' | 'DEDUITE'
+  contributionStatus: 'A_PAYER' | 'PAYE' | 'PRO' | 'GRATUIT' | 'DEDUITE'
   contributionAmount: number
   sellerId: string
   incrementStart: number

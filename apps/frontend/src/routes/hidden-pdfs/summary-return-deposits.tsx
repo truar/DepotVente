@@ -21,7 +21,7 @@ function RouteComponent() {
             depositIndex: 1001,
             year: 2025,
             contributionAmount: 2,
-            contributionStatus: 'PAYEE',
+            contributionStatus: 'PAYE',
             totalAmount: 30000,
             clubAmount: 4.5,
             dueContributionAmount: 0,

@@ -14,6 +14,7 @@ import {
   useFieldArray,
   useForm,
   useFormContext,
+  useWatch,
 } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useEffect, useMemo, useState } from 'react'
@@ -118,7 +119,7 @@ function useCardPaymentData({
         })
         .and((sale) => sale.cardAmount != null && sale.cardAmount > 0)
         .sortBy('saleIndex'),
-    [workstation],
+    [workstation.incrementStart],
   )
   const contacts = useLiveQuery(() => db.contacts.toArray())
   const contactMap = useMemo(
@@ -160,7 +161,7 @@ function useCheckPaymentData({
         })
         .and((sale) => sale.checkAmount != null && sale.checkAmount > 0)
         .sortBy('saleIndex'),
-    [workstation],
+    [workstation.incrementStart],
   )
   const contacts = useLiveQuery(() => db.contacts.toArray())
   const contactMap = useMemo(
@@ -200,7 +201,7 @@ function useRefundPaymentData({
         .where({ incrementStart: workstation.incrementStart })
         .and((refund) => refund.deletedAt == null)
         .toArray(),
-    [workstation],
+    [workstation.incrementStart],
   )
   const sales = useLiveQuery(() => db.sales.toArray())
   const contacts = useLiveQuery(() => db.contacts.toArray())
@@ -477,8 +478,8 @@ function SalesControlPage(props: SalesControlPageProps) {
 }
 
 function CardPaymentDetails() {
-  const { getValues } = useFormContext<CashRegisterControlFormType>()
-  const onlyCardSales = getValues('cardPayments')
+  const { control } = useFormContext<CashRegisterControlFormType>()
+  const onlyCardSales = useWatch({ control, name: 'cardPayments' }) ?? []
   const total = onlyCardSales.reduce((acc, cur) => acc + cur.amount, 0)
   return (
     <>
@@ -523,8 +524,8 @@ function CardPaymentDetails() {
 }
 
 function CheckPaymentDetails() {
-  const { getValues } = useFormContext<CashRegisterControlFormType>()
-  const sales = getValues('checkPayments')
+  const { control } = useFormContext<CashRegisterControlFormType>()
+  const sales = useWatch({ control, name: 'checkPayments' }) ?? []
   const total = sales.reduce((acc, cur) => acc + cur.amount, 0)
 
   return (
@@ -570,8 +571,8 @@ function CheckPaymentDetails() {
 }
 
 function RefundPaymentDetails() {
-  const { getValues } = useFormContext<CashRegisterControlFormType>()
-  const sales = getValues('refundPayments')
+  const { control } = useFormContext<CashRegisterControlFormType>()
+  const sales = useWatch({ control, name: 'refundPayments' }) ?? []
   const total = sales.reduce((acc, cur) => acc + cur.amount, 0)
 
   return (

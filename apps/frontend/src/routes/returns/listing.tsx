@@ -199,7 +199,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
               variant="outline"
               size="sm"
               onClick={() =>
-                depositsDb.update(id, { contributionStatus: 'PAYEE' })
+                depositsDb.update(id, { contributionStatus: 'PAYE' })
               }
             >
               <CheckIcon />

@@ -406,7 +406,7 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem value="A_PAYER">A payer</SelectItem>
-                      <SelectItem value="PAYEE">Payée</SelectItem>
+                      <SelectItem value="PAYE">Payé</SelectItem>
                       <SelectItem value="PRO">Pro</SelectItem>
                       <SelectItem value="GRATUIT">Gratuit</SelectItem>
                     </SelectGroup>

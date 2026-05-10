@@ -21,7 +21,7 @@ function RouteComponent() {
             depositIndex: 1001,
             year: 2025,
             contributionAmount: 2,
-            contributionStatus: 'PAYEE',
+            contributionStatus: 'PAYE',
           },
           articles: Array.from({ length: 100 }).map(() => ({
             shortCode: '1001 A',

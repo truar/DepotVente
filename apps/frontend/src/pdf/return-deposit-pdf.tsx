@@ -174,7 +174,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
           (A Payer)
         </>
       )
-    } else if (contributionStatus === 'PAYEE') {
+    } else if (contributionStatus === 'PAYE') {
       contribution = (
         <>
           <FormattedNumber
@@ -183,7 +183,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             currency="EUR"
             useGrouping={false}
           />{' '}
-          (Payée)
+          (Payé)
         </>
       )
     } else if (contributionStatus === 'PRO') {

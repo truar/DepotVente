@@ -1,4 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Fragment } from 'react'
 import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
@@ -103,6 +104,19 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textDecoration: 'line-through',
   },
+  subtotalRow: {
+    flexDirection: 'row',
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 2,
+    paddingRight: 10,
+    borderBottomWidth: 1,
+    borderColor: 'grey',
+    backgroundColor: '#c3c8d0',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    justifyContent: 'space-between',
+  },
 })
 
 export type Article = {
@@ -120,11 +134,18 @@ export type Article = {
 export type DepositPdfProps = {
   copy?: number
   data: DepositPdfData
+  showCategorySubtotals?: boolean
 }
 
 export const DepositPdf = (props: DepositPdfProps) => {
-  const { data, copy = 1 } = props
-  return <DepositsPdf copy={copy} data={[data]} />
+  const { data, copy = 1, showCategorySubtotals } = props
+  return (
+    <DepositsPdf
+      copy={copy}
+      data={[data]}
+      showCategorySubtotals={showCategorySubtotals}
+    />
+  )
 }
 
 type DepositPdfData = {
@@ -146,10 +167,11 @@ type DepositPdfData = {
 export type DepositsPdfProps = {
   copy?: number
   data: Array<DepositPdfData>
+  showCategorySubtotals?: boolean
 }
 
 export const DepositsPdf = (props: DepositsPdfProps) => {
-  const { data: deposits, copy = 1 } = props
+  const { data: deposits, copy = 1, showCategorySubtotals = false } = props
   const depositPages = deposits.map((data) => {
     const {
       articles = [],
@@ -168,7 +190,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
           (A Payer)
         </>
       )
-    } else if (contributionStatus === 'PAYEE') {
+    } else if (contributionStatus === 'PAYE') {
       contribution = (
         <>
           <FormattedNumber
@@ -177,7 +199,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             currency="EUR"
             useGrouping={false}
           />{' '}
-          (Payée)
+          (Payé)
         </>
       )
     } else if (contributionStatus === 'PRO') {
@@ -281,40 +303,51 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
               const rowStyle = article.isDeleted
                 ? [styles.tableRow, styles.tableRowDeleted]
                 : styles.tableRow
+              const isLastOfCategory =
+                showCategorySubtotals &&
+                articles[index + 1]?.category !== article.category
               return (
-                <View style={rowStyle} key={index}>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.shortCode}</Text>
+                <Fragment key={index}>
+                  <View style={rowStyle}>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.shortCode}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.discipline}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.category}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.brand}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.color}</Text>
+                    </View>
+                    <View style={styles.tableCol}>
+                      <Text style={cellStyle}>{article.size}</Text>
+                    </View>
+                    <View style={styles.tableColDesc}>
+                      <Text style={cellStyle}>{article.model}</Text>
+                    </View>
+                    <View style={styles.tableColPrice}>
+                      <Text style={cellStyle}>
+                        <FormattedNumber
+                          value={article.price}
+                          style="currency"
+                          currency="EUR"
+                          useGrouping={false}
+                        />
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.discipline}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.category}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.brand}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.color}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={cellStyle}>{article.size}</Text>
-                  </View>
-                  <View style={styles.tableColDesc}>
-                    <Text style={cellStyle}>{article.model}</Text>
-                  </View>
-                  <View style={styles.tableColPrice}>
-                    <Text style={cellStyle}>
-                      <FormattedNumber
-                        value={article.price}
-                        style="currency"
-                        currency="EUR"
-                        useGrouping={false}
-                      />
-                    </Text>
-                  </View>
-                </View>
+                  {isLastOfCategory && (
+                    <CategorySubtotalRow
+                      category={article.category}
+                      articles={articles}
+                    />
+                  )}
+                </Fragment>
               )
             })}
           </View>
@@ -342,5 +375,32 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
     <IntlProvider locale={'fr'}>
       <Document>{depositPages}</Document>
     </IntlProvider>
+  )
+}
+
+function CategorySubtotalRow(props: {
+  category: string
+  articles: Article[]
+}) {
+  const { category, articles } = props
+  const inCategory = articles.filter(
+    (a) => a.category === category && !a.isDeleted,
+  )
+  const total = inCategory.reduce((sum, a) => sum + a.price, 0)
+  return (
+    <View style={styles.subtotalRow}>
+      <Text>
+        Sous-total {category} : {inCategory.length} article
+        {inCategory.length > 1 ? 's' : ''}
+      </Text>
+      <Text>
+        <FormattedNumber
+          value={total}
+          style="currency"
+          currency="EUR"
+          useGrouping={false}
+        />
+      </Text>
+    </View>
   )
 }
