@@ -16,6 +16,7 @@ import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
+import { showErrorAlert } from '@/stores/errorAlertStore'
 import { db } from '@/db.ts'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { articleColumns } from '@/components/custom/articleColumns.tsx'
@@ -185,17 +186,17 @@ function ReturnArticleInput(props: { depositId: string }) {
   const addArticle = useCallback(async () => {
     const article = await articlesDb.findByCode(articleCode.trim())
     if (!article) {
-      toast.error(`Article ${articleCode} inconnu`)
+      showErrorAlert(`Article ${articleCode} inconnu`)
       setArticleCode('')
       return
     }
     if (article.depositId !== depositId) {
-      toast.error(`L'article ${articleCode} n'appartient pas à ce dépôt`)
+      showErrorAlert(`L'article ${articleCode} n'appartient pas à ce dépôt`)
       setArticleCode('')
       return
     }
     if (article.status === 'RETURNED') {
-      toast.error(`Retour de l'article ${articleCode} déja effectué`)
+      showErrorAlert(`Retour de l'article ${articleCode} déja effectué`)
       setArticleCode('')
       return
     }

@@ -76,6 +76,7 @@ const SalesCashRegisterControlFormSchema = z.object({
       buyerPhoneNumber: z.string(),
       buyerCity: z.string(),
       amount: z.number(),
+      saleTotal: z.number(),
     }),
   ),
   checkPayments: z.array(
@@ -85,6 +86,17 @@ const SalesCashRegisterControlFormSchema = z.object({
       buyerPhoneNumber: z.string(),
       buyerCity: z.string(),
       amount: z.number(),
+      saleTotal: z.number(),
+    }),
+  ),
+  cashSales: z.array(
+    z.object({
+      saleIndex: z.number(),
+      buyerName: z.string(),
+      buyerPhoneNumber: z.string(),
+      buyerCity: z.string(),
+      amount: z.number(),
+      saleTotal: z.number(),
     }),
   ),
   refundPayments: z.array(
@@ -96,10 +108,21 @@ const SalesCashRegisterControlFormSchema = z.object({
       type: z.union([z.literal('CB'), z.literal('CASH')]),
       comment: z.string(),
       amount: z.number(),
+      saleTotal: z.number(),
     }),
   ),
   cashPayment: CashRegisterControlFormSchema,
 })
+
+function computeSaleTotal(sale: Sale): number {
+  return (
+    (sale.cardAmount ?? 0) +
+    (sale.cashAmount ?? 0) +
+    (sale.checkAmount ?? 0) +
+    (sale.deferredAmount ?? 0) -
+    (sale.totalRefundAmount ?? 0)
+  )
+}
 
 type CashRegisterControlFormType = z.infer<
   typeof SalesCashRegisterControlFormSchema
@@ -121,6 +144,19 @@ function useCardPaymentData({
         .sortBy('saleIndex'),
     [workstation.incrementStart],
   )
+  const refunds = useLiveQuery(
+    () =>
+      db.refunds
+        .where({ incrementStart: workstation.incrementStart })
+        .and((refund) => refund.deletedAt == null && refund.cardAmount > 0)
+        .toArray(),
+    [workstation.incrementStart],
+  )
+  const allSales = useLiveQuery(() => db.sales.toArray())
+  const saleMap = useMemo(
+    () => new Map<string, Sale>(allSales?.map((sale) => [sale.id, sale])),
+    [allSales],
+  )
   const contacts = useLiveQuery(() => db.contacts.toArray())
   const contactMap = useMemo(
     () =>
@@ -130,7 +166,7 @@ function useCardPaymentData({
     [contacts],
   )
   useEffect(() => {
-    const data = (sales ?? [])
+    const saleRows = (sales ?? [])
       .map((payment) => {
         const buyer = contactMap.get(payment.buyerId)
         if (!buyer) return
@@ -140,11 +176,31 @@ function useCardPaymentData({
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
           amount: payment.cardAmount ?? 0,
+          saleTotal: computeSaleTotal(payment),
         }
       })
-      .filter((sale) => !!sale)
-    setValue('cardPayments', data)
-  }, [sales, contactMap])
+      .filter((row) => !!row)
+    const refundRows = (refunds ?? [])
+      .map((refund) => {
+        const sale = saleMap.get(refund.saleId)
+        if (!sale) return
+        const buyer = contactMap.get(sale.buyerId)
+        if (!buyer) return
+        return {
+          saleIndex: sale.saleIndex,
+          buyerName: `${buyer.lastName} ${buyer.firstName}`,
+          buyerPhoneNumber: buyer.phoneNumber,
+          buyerCity: buyer.city || '',
+          amount: -refund.cardAmount,
+          saleTotal: computeSaleTotal(sale),
+        }
+      })
+      .filter((row) => !!row)
+    const merged = [...saleRows, ...refundRows].sort(
+      (a, b) => a!.saleIndex - b!.saleIndex,
+    ) as CashRegisterControlFormType['cardPayments']
+    setValue('cardPayments', merged)
+  }, [sales, refunds, contactMap, saleMap])
 }
 
 function useCheckPaymentData({
@@ -182,11 +238,87 @@ function useCheckPaymentData({
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
           amount: payment.checkAmount ?? 0,
+          saleTotal: computeSaleTotal(payment),
         }
       })
       .filter((sale) => !!sale)
     setValue('checkPayments', data)
   }, [sales, contactMap])
+}
+
+function useCashSalesData({
+  setValue,
+}: {
+  setValue: UseFormSetValue<CashRegisterControlFormType>
+}) {
+  const [workstation] = useWorkstation()
+  const sales = useLiveQuery(
+    () =>
+      db.sales
+        .where({
+          incrementStart: workstation.incrementStart,
+        })
+        .and((sale) => sale.cashAmount != null && sale.cashAmount > 0)
+        .sortBy('saleIndex'),
+    [workstation.incrementStart],
+  )
+  const refunds = useLiveQuery(
+    () =>
+      db.refunds
+        .where({ incrementStart: workstation.incrementStart })
+        .and((refund) => refund.deletedAt == null && refund.cashAmount > 0)
+        .toArray(),
+    [workstation.incrementStart],
+  )
+  const allSales = useLiveQuery(() => db.sales.toArray())
+  const saleMap = useMemo(
+    () => new Map<string, Sale>(allSales?.map((sale) => [sale.id, sale])),
+    [allSales],
+  )
+  const contacts = useLiveQuery(() => db.contacts.toArray())
+  const contactMap = useMemo(
+    () =>
+      new Map<string, Contact>(
+        contacts?.map((contact) => [contact.id, contact]),
+      ),
+    [contacts],
+  )
+  useEffect(() => {
+    const saleRows = (sales ?? [])
+      .map((payment) => {
+        const buyer = contactMap.get(payment.buyerId)
+        if (!buyer) return
+        return {
+          saleIndex: payment.saleIndex,
+          buyerName: `${buyer.lastName} ${buyer.firstName}`,
+          buyerPhoneNumber: buyer.phoneNumber,
+          buyerCity: buyer.city || '',
+          amount: payment.cashAmount ?? 0,
+          saleTotal: computeSaleTotal(payment),
+        }
+      })
+      .filter((row) => !!row)
+    const refundRows = (refunds ?? [])
+      .map((refund) => {
+        const sale = saleMap.get(refund.saleId)
+        if (!sale) return
+        const buyer = contactMap.get(sale.buyerId)
+        if (!buyer) return
+        return {
+          saleIndex: sale.saleIndex,
+          buyerName: `${buyer.lastName} ${buyer.firstName}`,
+          buyerPhoneNumber: buyer.phoneNumber,
+          buyerCity: buyer.city || '',
+          amount: -refund.cashAmount,
+          saleTotal: computeSaleTotal(sale),
+        }
+      })
+      .filter((row) => !!row)
+    const merged = [...saleRows, ...refundRows].sort(
+      (a, b) => a!.saleIndex - b!.saleIndex,
+    ) as CashRegisterControlFormType['cashSales']
+    setValue('cashSales', merged)
+  }, [sales, refunds, contactMap, saleMap])
 }
 
 function useRefundPaymentData({
@@ -232,6 +364,7 @@ function useRefundPaymentData({
             refund.cardAmount > 0 ? ('CB' as const) : ('CASH' as const),
           comment: refund.comment || '',
           amount: refund.cardAmount > 0 ? refund.cardAmount : refund.cashAmount,
+          saleTotal: computeSaleTotal(sale),
         }
       })
       .filter((row) => !!row)
@@ -339,6 +472,7 @@ function SalesControlPage(props: SalesControlPageProps) {
     defaultValues: {
       cardPayments: [],
       checkPayments: [],
+      cashSales: [],
       cashPayment: {
         cashRegisterId: workstation.incrementStart,
         initialAmount: 80,
@@ -372,6 +506,7 @@ function SalesControlPage(props: SalesControlPageProps) {
 
   useCardPaymentData({ setValue })
   useCheckPaymentData({ setValue })
+  useCashSalesData({ setValue })
   useRefundPaymentData({ setValue })
   useCashPaymentData({ setValue, cashRegisterControl })
 
@@ -386,6 +521,7 @@ function SalesControlPage(props: SalesControlPageProps) {
       cashPayment: formData.cashPayment,
       cardPayments: formData.cardPayments,
       checkPayments: formData.checkPayments,
+      cashSales: formData.cashSales,
       refundPayments: formData.refundPayments,
     }
     await printPdf(<SaleCashRegisterControlPdf data={data} />)
@@ -430,8 +566,14 @@ function SalesControlPage(props: SalesControlPageProps) {
                 <CardPaymentDetails />
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="cash-payments">
-              <AccordionTrigger>Espèces</AccordionTrigger>
+            <AccordionItem value="cash-sales-details">
+              <AccordionTrigger>Espèces — détail des ventes</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-4 text-balance">
+                <CashSalesDetails />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="cash-register-control">
+              <AccordionTrigger>Espèces — contrôle de caisse</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CashRegisterControlForm />
               </AccordionContent>
@@ -490,17 +632,29 @@ function CardPaymentDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead>Montant vente</TableHead>
+            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Montant vente</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {onlyCardSales.map((sale, index) => {
+            const mismatch = sale.amount !== sale.saleTotal
             return (
-              <TableRow key={`card-${index}`}>
+              <TableRow
+                key={`card-${index}`}
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
+              >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
                 <TableCell>{sale.buyerPhoneNumber}</TableCell>
                 <TableCell>{sale.buyerCity}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <FormattedNumber
                     value={sale.amount}
@@ -537,17 +691,88 @@ function CheckPaymentDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead>Montant vente</TableHead>
+            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Montant vente</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sales.map((sale, index) => {
+            const mismatch = sale.amount !== sale.saleTotal
             return (
-              <TableRow key={`check-${index}`}>
+              <TableRow
+                key={`check-${index}`}
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
+              >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
                 <TableCell>{sale.buyerPhoneNumber}</TableCell>
                 <TableCell>{sale.buyerCity}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.amount}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+      <div className="flex justify-end">
+        <p className="font-bold">
+          Total:{' '}
+          <FormattedNumber value={total} style="currency" currency="EUR" />
+        </p>
+      </div>
+    </>
+  )
+}
+
+function CashSalesDetails() {
+  const { control } = useFormContext<CashRegisterControlFormType>()
+  const sales = useWatch({ control, name: 'cashSales' }) ?? []
+  const total = sales.reduce((acc, cur) => acc + cur.amount, 0)
+
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">N° vente</TableHead>
+            <TableHead>Nom acheteur</TableHead>
+            <TableHead>Téléphone</TableHead>
+            <TableHead>Ville</TableHead>
+            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Montant vente</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sales.map((sale, index) => {
+            const mismatch = sale.amount !== sale.saleTotal
+            return (
+              <TableRow
+                key={`cash-${index}`}
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
+              >
+                <TableCell className="font-medium">{sale.saleIndex}</TableCell>
+                <TableCell>{sale.buyerName}</TableCell>
+                <TableCell>{sale.buyerPhoneNumber}</TableCell>
+                <TableCell>{sale.buyerCity}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <FormattedNumber
                     value={sale.amount}
@@ -586,7 +811,8 @@ function RefundPaymentDetails() {
             <TableHead>Ville</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Commentaires</TableHead>
-            <TableHead>Remboursement</TableHead>
+            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Remboursement</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -599,6 +825,13 @@ function RefundPaymentDetails() {
                 <TableCell>{sale.buyerCity}</TableCell>
                 <TableCell>{sale.type}</TableCell>
                 <TableCell>{sale.comment}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <FormattedNumber
                     value={sale.amount}
@@ -717,17 +950,27 @@ function TheoreticalAmount() {
         .toArray(),
     [workstation],
   )
+  const cashRefunds = useLiveQuery(
+    () =>
+      db.refunds
+        .where({ incrementStart: workstation.incrementStart })
+        .and((refund) => refund.deletedAt == null && refund.cashAmount > 0)
+        .toArray(),
+    [workstation],
+  )
   useEffect(() => {
-    const theoreticalAmount =
+    const cashIn =
       sales?.reduce((acc, sale) => acc + (sale.cashAmount ?? 0), 0) ?? 0
-    setValue('cashPayment.theoreticalAmount', theoreticalAmount)
-  }, [sales, setValue])
+    const cashOut =
+      cashRefunds?.reduce((acc, refund) => acc + refund.cashAmount, 0) ?? 0
+    setValue('cashPayment.theoreticalAmount', cashIn - cashOut)
+  }, [sales, cashRefunds, setValue])
 
   return (
     <Controller
       name="cashPayment.theoreticalAmount"
       render={({ field }) => (
-        <MonetaryField {...field} label="Montant théorique" />
+        <MonetaryField {...field} label="Montant théorique" readOnly />
       )}
     />
   )

@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/table'
 import { Euro, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { showErrorAlert } from '@/stores/errorAlertStore'
 import { useCreateSale } from '@/hooks/useCreateSale.ts'
 import { getYear, shortArticleCode } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
@@ -411,17 +412,17 @@ function SaleArticlesForm() {
   const addArticle = useCallback(async () => {
     const article = await articlesDb.findByCode(articleCode)
     if (!article) {
-      toast.error(`Article ${articleCode} inconnu`)
+      showErrorAlert(`Article ${articleCode} inconnu`)
       setArticleCode('')
       return
     }
     if (article.saleId) {
-      toast.error(`Article ${articleCode} déja vendu`)
+      showErrorAlert(`Article ${articleCode} déja vendu`)
       setArticleCode('')
       return
     }
     if (article.status === 'DELETED') {
-      toast.error(
+      showErrorAlert(
         `Article ${articleCode} invendable, contactez l'administrateur`,
       )
       setArticleCode('')

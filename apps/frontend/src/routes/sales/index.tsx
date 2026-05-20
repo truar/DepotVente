@@ -14,6 +14,7 @@ import PublicLayout from '@/components/PublicLayout'
 import { Button } from '@/components/ui/button.tsx'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
 import { ClickableCard } from '@/components/ClickableCard.tsx'
+import { useAuthStore } from '@/stores/authStore.ts'
 
 export const Route = createFileRoute('/sales/')({
   beforeLoad: requireAuthAndWorkstation,
@@ -26,6 +27,11 @@ export const Route = createFileRoute('/sales/')({
 
 export function RouteComponent() {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
+  if (!user)
+    throw new Error(
+      'User not found. This should not happen. Please report this bug.',
+    )
 
   return (
     <>
@@ -64,13 +70,15 @@ export function RouteComponent() {
               description="Contrôler la caisse"
               variant="blue"
             />
-            <ClickableCard
-              onClick={() => navigate({ to: '/sales/listing' })}
-              icon={<ClipboardList className="w-8 h-8 text-blue-600" />}
-              title="Ventes"
-              description="Gérer les ventes"
-              variant="blue"
-            />
+            {user.role === 'ADMIN' && (
+              <ClickableCard
+                onClick={() => navigate({ to: '/sales/listing' })}
+                icon={<ClipboardList className="w-8 h-8 text-blue-600" />}
+                title="Ventes"
+                description="Gérer les ventes"
+                variant="blue"
+              />
+            )}
           </div>
         </div>
       </main>

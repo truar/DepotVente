@@ -325,7 +325,7 @@ function TheoreticalAmount() {
     <Controller
       name="theoreticalAmount"
       render={({ field }) => (
-        <MonetaryField {...field} label="Montant théorique" />
+        <MonetaryField {...field} label="Montant théorique" readOnly />
       )}
     />
   )

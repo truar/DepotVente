@@ -53,6 +53,7 @@ function SalesDataTable() {
           saleId: sale.id,
           index: sale.saleIndex,
           buyer: `${seller?.lastName} ${seller?.firstName}`,
+          workstation: sale.incrementStart,
         }
       }) ?? [],
     [contactMap, sales],
@@ -107,6 +108,7 @@ export type DataTableType = {
   saleId: string
   index: number
   buyer: string
+  workstation: number
 }
 
 export const columns: ColumnDef<DataTableType>[] = [
@@ -121,6 +123,10 @@ export const columns: ColumnDef<DataTableType>[] = [
   {
     accessorKey: 'buyer',
     header: 'Acheteur',
+  },
+  {
+    accessorKey: 'workstation',
+    header: 'Caisse',
   },
   {
     id: 'amount',

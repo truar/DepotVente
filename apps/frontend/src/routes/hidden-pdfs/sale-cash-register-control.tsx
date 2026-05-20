@@ -30,6 +30,13 @@ function RouteComponent() {
             buyerName: 'Toto titi',
             saleIndex: 1001,
           })),
+          cashSales: Array.from({ length: 10 }).map(() => ({
+            amount: 20,
+            buyerCity: 'Rumilly',
+            buyerPhoneNumber: '0102030405',
+            buyerName: 'Toto titi',
+            saleIndex: 1001,
+          })),
           refundPayments: Array.from({ length: 10 }).map(() => ({
             amount: 15,
             type: 'CB',

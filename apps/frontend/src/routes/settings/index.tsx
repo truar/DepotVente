@@ -13,7 +13,7 @@ import { Page } from '@/components/Page.tsx'
 import { syncManager } from '@/sync-manager.ts'
 import { syncService } from '@/services/sync-service.ts'
 
-export const Route = createFileRoute('/settings')({
+export const Route = createFileRoute('/settings/')({
   beforeLoad: requireAdmin,
   component: () => (
     <PublicLayout>
@@ -129,6 +129,20 @@ function RouteComponent() {
                 <Button onClick={saveWorkstation}>Valider</Button>
               </div>
             </Field>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl">Impression des chèques</h2>
+          <p className="text-gray-600">
+            Réglez la position des champs imprimés sur les chèques pour cette
+            imprimante.
+          </p>
+          <div>
+            <Link to="/settings/check-print">
+              <CustomButton type="button">
+                Configurer l'impression des chèques
+              </CustomButton>
+            </Link>
           </div>
         </div>
       </div>

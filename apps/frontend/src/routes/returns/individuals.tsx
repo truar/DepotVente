@@ -32,6 +32,7 @@ import {
   type SellerCheckPdfProps,
 } from '@/pdf/seller-check.tsx'
 import { useReturnDepositMutation } from '@/hooks/useReturnDepositMutation.ts'
+import { useCheckPrintOffsets } from '@/hooks/useCheckPrintOffsets.ts'
 import {
   IndividualReturnForm,
   type IndividualReturnFormType,
@@ -72,6 +73,7 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
     },
   })
   const { control, handleSubmit, watch, setValue, trigger } = methods
+  const [checkPrintOffsets] = useCheckPrintOffsets()
 
   const depositId = watch('depositId')
 
@@ -90,8 +92,8 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
       seller: `${contact.firstName} ${contact.lastName}`,
       date: new Date(),
     }
-    await printPdf(<SellerCheckPdf data={data} />)
-  }, [depositId, trigger])
+    await printPdf(<SellerCheckPdf data={data} offsets={checkPrintOffsets} />)
+  }, [depositId, trigger, checkPrintOffsets])
 
   const onSubmit: SubmitHandler<IndividualReturnFormType> = useCallback(
     async (formData) => {

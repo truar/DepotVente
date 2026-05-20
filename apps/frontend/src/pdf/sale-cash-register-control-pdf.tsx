@@ -66,11 +66,11 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
   },
   tableCol: {
-    width: '20%',
+    width: '16%',
   },
   tableColPrice: {
     textAlign: 'right',
-    width: '20%',
+    width: '18%',
     paddingRight: 10,
   },
   headerCell: {
@@ -78,6 +78,9 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: '#f3f4f6',
+  },
+  tableRowMismatch: {
+    backgroundColor: '#fef3c7',
   },
 
   refundTable: {
@@ -96,11 +99,11 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
   },
   refundTableCol: {
-    width: '15%',
+    width: '12%',
   },
   refundTableColPrice: {
     textAlign: 'right',
-    width: '10%',
+    width: '14%',
     paddingRight: 10,
   },
   refundHeaderCell: {
@@ -126,6 +129,7 @@ export type SaleCashRegisterControlProps = {
       buyerPhoneNumber: string
       buyerCity: string
       amount: number
+      saleTotal: number
     }>
     checkPayments: Array<{
       saleIndex: number
@@ -133,6 +137,15 @@ export type SaleCashRegisterControlProps = {
       buyerPhoneNumber: string
       buyerCity: string
       amount: number
+      saleTotal: number
+    }>
+    cashSales: Array<{
+      saleIndex: number
+      buyerName: string
+      buyerPhoneNumber: string
+      buyerCity: string
+      amount: number
+      saleTotal: number
     }>
     refundPayments: Array<{
       saleIndex: number
@@ -142,6 +155,7 @@ export type SaleCashRegisterControlProps = {
       type: 'CB' | 'CASH'
       comment: string
       amount: number
+      saleTotal: number
     }>
     cashPayment: {
       initialAmount: number
@@ -185,6 +199,11 @@ export const SaleCashRegisterControlPdf = (
               payments={data.cardPayments}
               shouldBreak={false}
             />
+            <Payments
+              title="Paiement Espèces — détail"
+              payments={data.cashSales}
+              shouldBreak={true}
+            />
             <CashPayment cashPayment={cashPayment} shouldBreak={true} />
             <Payments
               title="Paiement Chèques"
@@ -222,6 +241,7 @@ function Payments({
   payments:
     | SaleCashRegisterControlProps['data']['cardPayments']
     | SaleCashRegisterControlProps['data']['checkPayments']
+    | SaleCashRegisterControlProps['data']['cashSales']
 }) {
   return (
     <>
@@ -243,36 +263,58 @@ function Payments({
                 <Text style={styles.headerCell}>Ville</Text>
               </View>
               <View style={styles.tableColPrice}>
+                <Text style={styles.headerCell}>Total vente</Text>
+              </View>
+              <View style={styles.tableColPrice}>
                 <Text style={styles.headerCell}>Montant</Text>
               </View>
             </View>
 
-            {payments.map((payment, index) => (
-              <View style={styles.tableRow} key={index}>
-                <View style={styles.tableCol}>
-                  <Text>{payment.saleIndex}</Text>
+            {payments.map((payment, index) => {
+              const mismatch = payment.amount !== payment.saleTotal
+              return (
+                <View
+                  style={[
+                    styles.tableRow,
+                    ...(mismatch ? [styles.tableRowMismatch] : []),
+                  ]}
+                  key={index}
+                >
+                  <View style={styles.tableCol}>
+                    <Text>{payment.saleIndex}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{payment.buyerName}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{payment.buyerPhoneNumber}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text>{payment.buyerCity}</Text>
+                  </View>
+                  <View style={styles.tableColPrice}>
+                    <Text>
+                      <FormattedNumber
+                        value={payment.saleTotal}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
+                  <View style={styles.tableColPrice}>
+                    <Text>
+                      <FormattedNumber
+                        value={payment.amount}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerName}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerPhoneNumber}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{payment.buyerCity}</Text>
-                </View>
-                <View style={styles.tableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={payment.amount}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              </View>
-            ))}
+              )
+            })}
           </View>
         </View>
       )}
@@ -406,6 +448,9 @@ function RefundPayments({
                 <Text style={styles.refundHeaderCell}>Commentaire</Text>
               </View>
               <View style={styles.refundTableColPrice}>
+                <Text style={styles.refundHeaderCell}>Total vente</Text>
+              </View>
+              <View style={styles.refundTableColPrice}>
                 <Text style={styles.refundHeaderCell}>Montant</Text>
               </View>
             </View>
@@ -429,6 +474,16 @@ function RefundPayments({
                 </View>
                 <View style={styles.refundTableCol}>
                   <Text>{payment.comment}</Text>
+                </View>
+                <View style={styles.refundTableColPrice}>
+                  <Text>
+                    <FormattedNumber
+                      value={payment.saleTotal}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
                 </View>
                 <View style={styles.refundTableColPrice}>
                   <Text>

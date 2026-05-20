@@ -17,6 +17,7 @@ import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
+import { showErrorAlert } from '@/stores/errorAlertStore'
 import { db } from '@/db.ts'
 import { printPdf } from '@/pdf/print.tsx'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
@@ -180,12 +181,12 @@ function ReceiveArticleInput(props: { depositId: string }) {
     try {
       const article = await articlesDb.findByCode(articleCode.trim())
       if (!article) {
-        toast.error(`Article ${articleCode} inconnu`)
+        showErrorAlert(`Article ${articleCode} inconnu`)
         setArticleCode('')
         return
       }
       if (article.depositId !== depositId) {
-        toast.error(`L'article scanné n'appartient pas à ce professionnel`)
+        showErrorAlert(`L'article ${articleCode} n'appartient pas à ce professionnel`)
         setArticleCode('')
         return
       }
@@ -196,7 +197,7 @@ function ReceiveArticleInput(props: { depositId: string }) {
           RETURNED: `L'article ${articleCode} a été restitué`,
           SOLD: `L'article ${articleCode} a déjà été vendu`,
         }
-        toast.error(reason[article.status])
+        showErrorAlert(reason[article.status])
         setArticleCode('')
         return
       }

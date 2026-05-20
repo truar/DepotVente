@@ -17,7 +17,7 @@ export function useArticlesDb() {
       status: 'RECEPTION_OK' as const,
       updatedAt: new Date(),
     }
-    db.articles.update(articleId, changes)
+    await db.articles.update(articleId, changes)
 
     await syncService.addToOutbox('articles', 'update', articleId, changes)
   }

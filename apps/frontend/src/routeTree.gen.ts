@@ -9,14 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DymoRouteImport } from './routes/dymo'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SalesIndexRouteImport } from './routes/sales/index'
 import { Route as ReturnsIndexRouteImport } from './routes/returns/index'
 import { Route as HiddenPdfsIndexRouteImport } from './routes/hidden-pdfs/index'
 import { Route as DepositsIndexRouteImport } from './routes/deposits/index'
+import { Route as SettingsCheckPrintRouteImport } from './routes/settings/check-print'
 import { Route as SalesSalesControlRouteImport } from './routes/sales/sales-control'
 import { Route as SalesListingRouteImport } from './routes/sales/listing'
 import { Route as SalesAddRouteImport } from './routes/sales/add'
@@ -39,11 +40,6 @@ import { Route as DepositsAddRouteImport } from './routes/deposits/add'
 import { Route as SalesSaleIdEditRouteImport } from './routes/sales/$saleId.edit'
 import { Route as DepositsDepositIdEditRouteImport } from './routes/deposits/$depositId.edit'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -57,6 +53,11 @@ const DymoRoute = DymoRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalesIndexRoute = SalesIndexRouteImport.update({
@@ -77,6 +78,11 @@ const HiddenPdfsIndexRoute = HiddenPdfsIndexRouteImport.update({
 const DepositsIndexRoute = DepositsIndexRouteImport.update({
   id: '/deposits/',
   path: '/deposits/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsCheckPrintRoute = SettingsCheckPrintRouteImport.update({
+  id: '/settings/check-print',
+  path: '/settings/check-print',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalesSalesControlRoute = SalesSalesControlRouteImport.update({
@@ -194,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -214,10 +219,12 @@ export interface FileRoutesByFullPath {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
+  '/settings/check-print': typeof SettingsCheckPrintRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/returns': typeof ReturnsIndexRoute
   '/sales': typeof SalesIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
 }
@@ -225,7 +232,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -245,10 +251,12 @@ export interface FileRoutesByTo {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
+  '/settings/check-print': typeof SettingsCheckPrintRoute
   '/deposits': typeof DepositsIndexRoute
   '/hidden-pdfs': typeof HiddenPdfsIndexRoute
   '/returns': typeof ReturnsIndexRoute
   '/sales': typeof SalesIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
 }
@@ -257,7 +265,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/deposits/add': typeof DepositsAddRoute
   '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
@@ -277,10 +284,12 @@ export interface FileRoutesById {
   '/sales/add': typeof SalesAddRoute
   '/sales/listing': typeof SalesListingRoute
   '/sales/sales-control': typeof SalesSalesControlRoute
+  '/settings/check-print': typeof SettingsCheckPrintRoute
   '/deposits/': typeof DepositsIndexRoute
   '/hidden-pdfs/': typeof HiddenPdfsIndexRoute
   '/returns/': typeof ReturnsIndexRoute
   '/sales/': typeof SalesIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
 }
@@ -290,7 +299,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dymo'
     | '/login'
-    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -310,10 +318,12 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
+    | '/settings/check-print'
     | '/deposits'
     | '/hidden-pdfs'
     | '/returns'
     | '/sales'
+    | '/settings'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -321,7 +331,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dymo'
     | '/login'
-    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -341,10 +350,12 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
+    | '/settings/check-print'
     | '/deposits'
     | '/hidden-pdfs'
     | '/returns'
     | '/sales'
+    | '/settings'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
   id:
@@ -352,7 +363,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dymo'
     | '/login'
-    | '/settings'
     | '/deposits/add'
     | '/deposits/articles'
     | '/deposits/cash-register-control'
@@ -372,10 +382,12 @@ export interface FileRouteTypes {
     | '/sales/add'
     | '/sales/listing'
     | '/sales/sales-control'
+    | '/settings/check-print'
     | '/deposits/'
     | '/hidden-pdfs/'
     | '/returns/'
     | '/sales/'
+    | '/settings/'
     | '/deposits/$depositId/edit'
     | '/sales/$saleId/edit'
   fileRoutesById: FileRoutesById
@@ -384,7 +396,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DymoRoute: typeof DymoRoute
   LoginRoute: typeof LoginRoute
-  SettingsRoute: typeof SettingsRoute
   DepositsAddRoute: typeof DepositsAddRoute
   DepositsArticlesRoute: typeof DepositsArticlesRoute
   DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
@@ -404,23 +415,18 @@ export interface RootRouteChildren {
   SalesAddRoute: typeof SalesAddRoute
   SalesListingRoute: typeof SalesListingRoute
   SalesSalesControlRoute: typeof SalesSalesControlRoute
+  SettingsCheckPrintRoute: typeof SettingsCheckPrintRoute
   DepositsIndexRoute: typeof DepositsIndexRoute
   HiddenPdfsIndexRoute: typeof HiddenPdfsIndexRoute
   ReturnsIndexRoute: typeof ReturnsIndexRoute
   SalesIndexRoute: typeof SalesIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   DepositsDepositIdEditRoute: typeof DepositsDepositIdEditRoute
   SalesSaleIdEditRoute: typeof SalesSaleIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -440,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/': {
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       path: '/deposits'
       fullPath: '/deposits'
       preLoaderRoute: typeof DepositsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/check-print': {
+      id: '/settings/check-print'
+      path: '/settings/check-print'
+      fullPath: '/settings/check-print'
+      preLoaderRoute: typeof SettingsCheckPrintRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/sales-control': {
@@ -624,7 +644,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DymoRoute: DymoRoute,
   LoginRoute: LoginRoute,
-  SettingsRoute: SettingsRoute,
   DepositsAddRoute: DepositsAddRoute,
   DepositsArticlesRoute: DepositsArticlesRoute,
   DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
@@ -646,10 +665,12 @@ const rootRouteChildren: RootRouteChildren = {
   SalesAddRoute: SalesAddRoute,
   SalesListingRoute: SalesListingRoute,
   SalesSalesControlRoute: SalesSalesControlRoute,
+  SettingsCheckPrintRoute: SettingsCheckPrintRoute,
   DepositsIndexRoute: DepositsIndexRoute,
   HiddenPdfsIndexRoute: HiddenPdfsIndexRoute,
   ReturnsIndexRoute: ReturnsIndexRoute,
   SalesIndexRoute: SalesIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   DepositsDepositIdEditRoute: DepositsDepositIdEditRoute,
   SalesSaleIdEditRoute: SalesSaleIdEditRoute,
 }
