@@ -1,5 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { BaggageClaim, Loader2, Package, ShoppingCart } from 'lucide-react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  BaggageClaim,
+  FileBarChart,
+  Loader2,
+  Package,
+  ShoppingCart,
+} from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import PublicLayout from '@/components/PublicLayout'
 import { ClickableCard } from '@/components/ClickableCard.tsx'
@@ -91,6 +97,16 @@ export function RouteComponent() {
                   description="Gérer les retours"
                   disabled={!isWorkstationConfigured}
                 />
+                {isAdmin && (
+                  <ClickableCard
+                    onClick={() => {
+                      navigate({ to: '/reports' })
+                    }}
+                    icon={<FileBarChart className="w-8 h-8 text-green-600" />}
+                    title="Rapports"
+                    description="Générer les rapports"
+                  />
+                )}
               </div>
             </>
           )}

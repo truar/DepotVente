@@ -235,8 +235,8 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
         <View
           fixed
           style={styles.repeatedHeader}
-          render={({ pageNumber }) =>
-            pageNumber > 1 ? (
+          render={({ subPageNumber }) =>
+            subPageNumber > 1 ? (
               <>
                 <Text style={styles.name}>
                   {data.contact.lastName.toUpperCase()}{' '}
@@ -309,7 +309,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
 
         <View style={styles.articles}>
           <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
+            <View fixed style={[styles.tableRow, styles.tableHeader]}>
               <View style={colStyle}>
                 <Text style={styles.headerCell}>Identifiant</Text>
               </View>
