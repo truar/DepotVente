@@ -40,6 +40,7 @@ export async function loadPendingArticlesPdfData(
       size: a.size,
       price: a.price,
       color: a.color,
+      serialNumber: a.serialNumber,
       isDeleted: a.status === 'DELETED',
     })),
   })

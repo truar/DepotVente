@@ -295,9 +295,6 @@ function ArticleForm(props: ArticleFormProps) {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
                 Code
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Discipline
-              </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[150px]">
                 Catégorie
               </th>
@@ -305,13 +302,16 @@ function ArticleForm(props: ArticleFormProps) {
                 Marque
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
-                Descriptif
+                Discipline
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Couleur
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
                 Taille
+              </th>
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+                Descriptif
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
                 Prix
@@ -474,20 +474,6 @@ const ArticleLineForm = memo(function ArticleLineForm(
       </td>
       <td className={cellClass}>
         <Controller
-          name={`deposit.articles.${index}.discipline`}
-          render={({ field, fieldState }) => (
-            <Combobox
-              invalid={fieldState.invalid}
-              items={disciplineItems}
-              onSelect={field.onChange}
-              value={field.value}
-              readOnly={isLocked}
-            />
-          )}
-        />
-      </td>
-      <td className={cellClass}>
-        <Controller
           name={`deposit.articles.${index}.type`}
           render={({ field, fieldState }) => (
             <Combobox
@@ -516,11 +502,13 @@ const ArticleLineForm = memo(function ArticleLineForm(
       </td>
       <td className={cellClass}>
         <Controller
-          name={`deposit.articles.${index}.model`}
+          name={`deposit.articles.${index}.discipline`}
           render={({ field, fieldState }) => (
-            <TextField
+            <Combobox
               invalid={fieldState.invalid}
-              {...field}
+              items={disciplineItems}
+              onSelect={field.onChange}
+              value={field.value}
               readOnly={isLocked}
             />
           )}
@@ -542,6 +530,18 @@ const ArticleLineForm = memo(function ArticleLineForm(
       <td className={cellClass}>
         <Controller
           name={`deposit.articles.${index}.size`}
+          render={({ field, fieldState }) => (
+            <TextField
+              invalid={fieldState.invalid}
+              {...field}
+              readOnly={isLocked}
+            />
+          )}
+        />
+      </td>
+      <td className={cellClass}>
+        <Controller
+          name={`deposit.articles.${index}.model`}
           render={({ field, fieldState }) => (
             <TextField
               invalid={fieldState.invalid}

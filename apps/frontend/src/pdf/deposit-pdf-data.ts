@@ -10,6 +10,7 @@ export type DepositPdfArticleSource = {
   size: string | null | undefined
   price: number
   color: string
+  serialNumber?: string | null
   isDeleted: boolean
 }
 
@@ -44,6 +45,7 @@ export function toDepositPdfData(
       size: a.size ?? '',
       price: a.price,
       color: a.color,
+      serialNumber: a.serialNumber ?? '',
       isDeleted: a.isDeleted,
     })),
   }

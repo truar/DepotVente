@@ -83,6 +83,9 @@ const styles = StyleSheet.create({
   tableCol: {
     width: '11%',
   },
+  tableColNarrow: {
+    width: '9.5%',
+  },
   tableColPrice: {
     textAlign: 'right',
     width: '9%',
@@ -96,6 +99,16 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: '#f3f4f6',
+  },
+  repeatedHeader: {
+    position: 'absolute',
+    top: 15,
+    left: 40,
+    right: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    fontSize: 9,
+    fontStyle: 'italic',
   },
   tableRowDeleted: {
     backgroundColor: '#f3f4f6',
@@ -128,6 +141,7 @@ export type Article = {
   discipline: string
   color: string
   category: string
+  serialNumber?: string
   isDeleted?: boolean
 }
 
@@ -135,15 +149,17 @@ export type DepositPdfProps = {
   copy?: number
   data: DepositPdfData
   showCategorySubtotals?: boolean
+  showSerialNumber?: boolean
 }
 
 export const DepositPdf = (props: DepositPdfProps) => {
-  const { data, copy = 1, showCategorySubtotals } = props
+  const { data, copy = 1, showCategorySubtotals, showSerialNumber } = props
   return (
     <DepositsPdf
       copy={copy}
       data={[data]}
       showCategorySubtotals={showCategorySubtotals}
+      showSerialNumber={showSerialNumber}
     />
   )
 }
@@ -168,10 +184,17 @@ export type DepositsPdfProps = {
   copy?: number
   data: Array<DepositPdfData>
   showCategorySubtotals?: boolean
+  showSerialNumber?: boolean
 }
 
 export const DepositsPdf = (props: DepositsPdfProps) => {
-  const { data: deposits, copy = 1, showCategorySubtotals = false } = props
+  const {
+    data: deposits,
+    copy = 1,
+    showCategorySubtotals = false,
+    showSerialNumber = false,
+  } = props
+  const colStyle = showSerialNumber ? styles.tableColNarrow : styles.tableCol
   const depositPages = deposits.map((data) => {
     const {
       articles = [],
@@ -209,6 +232,21 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
     }
     return Array.from({ length: copy }).map((_, index) => (
       <Page key={`page-${index}`} size="A4" style={styles.page}>
+        <View
+          fixed
+          style={styles.repeatedHeader}
+          render={({ pageNumber }) =>
+            pageNumber > 1 ? (
+              <>
+                <Text style={styles.name}>
+                  {data.contact.lastName.toUpperCase()}{' '}
+                  {data.contact.firstName}
+                </Text>
+                <Text>Fiche N° {data.deposit.depositIndex}</Text>
+              </>
+            ) : null
+          }
+        />
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
@@ -272,22 +310,27 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
         <View style={styles.articles}>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <View style={styles.tableCol}>
+              <View style={colStyle}>
                 <Text style={styles.headerCell}>Identifiant</Text>
               </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Discipline</Text>
-              </View>
-              <View style={styles.tableCol}>
+              <View style={colStyle}>
                 <Text style={styles.headerCell}>Catégorie</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={colStyle}>
                 <Text style={styles.headerCell}>Marque</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={colStyle}>
+                <Text style={styles.headerCell}>Discipline</Text>
+              </View>
+              {showSerialNumber && (
+                <View style={colStyle}>
+                  <Text style={styles.headerCell}>N° Série</Text>
+                </View>
+              )}
+              <View style={colStyle}>
                 <Text style={styles.headerCell}>Couleur</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={colStyle}>
                 <Text style={styles.headerCell}>Taille</Text>
               </View>
               <View style={styles.tableColDesc}>
@@ -309,22 +352,27 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
               return (
                 <Fragment key={index}>
                   <View style={rowStyle}>
-                    <View style={styles.tableCol}>
+                    <View style={colStyle}>
                       <Text style={cellStyle}>{article.shortCode}</Text>
                     </View>
-                    <View style={styles.tableCol}>
-                      <Text style={cellStyle}>{article.discipline}</Text>
-                    </View>
-                    <View style={styles.tableCol}>
+                    <View style={colStyle}>
                       <Text style={cellStyle}>{article.category}</Text>
                     </View>
-                    <View style={styles.tableCol}>
+                    <View style={colStyle}>
                       <Text style={cellStyle}>{article.brand}</Text>
                     </View>
-                    <View style={styles.tableCol}>
+                    <View style={colStyle}>
+                      <Text style={cellStyle}>{article.discipline}</Text>
+                    </View>
+                    {showSerialNumber && (
+                      <View style={colStyle}>
+                        <Text style={cellStyle}>{article.serialNumber}</Text>
+                      </View>
+                    )}
+                    <View style={colStyle}>
                       <Text style={cellStyle}>{article.color}</Text>
                     </View>
-                    <View style={styles.tableCol}>
+                    <View style={colStyle}>
                       <Text style={cellStyle}>{article.size}</Text>
                     </View>
                     <View style={styles.tableColDesc}>

@@ -135,7 +135,7 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
           />
         </div>
         <div>
-          <CustomButton onClick={submit}>Modifier</CustomButton>
+          <CustomButton onClick={submit}>Rechercher</CustomButton>
         </div>
       </div>
     </div>
@@ -176,6 +176,11 @@ type ArticleEditFormProps = {
   onSubmit?: () => void
 }
 
+function normalizeSerialNumber(serialNumber: string | null): string {
+  const value = String(serialNumber ?? '').trim()
+  return value === '0' ? '' : value
+}
+
 function ArticleEditForm(props: ArticleEditFormProps) {
   const { article } = props
   const navigate = useNavigate()
@@ -192,7 +197,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       size: article.size,
       color: article.color,
       model: article.model,
-      serialNumber: article.serialNumber ?? '',
+      serialNumber: normalizeSerialNumber(article.serialNumber),
       status: article.status,
       discipline: article.discipline,
       articleCode: article.code,
@@ -214,7 +219,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       size: article.size,
       color: article.color,
       model: article.model,
-      serialNumber: article.serialNumber ?? '',
+      serialNumber: normalizeSerialNumber(article.serialNumber),
       discipline: article.discipline,
       articleCode: article.code,
       shortArticleCode: shortArticleCode(
@@ -340,7 +345,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldContent>
-                  <Label htmlFor="model">Descriptif</Label>
+                  <Label htmlFor="model">Descriptif/Motif suppression</Label>
                   <InputGroup>
                     <InputGroupInput
                       {...field}

@@ -189,13 +189,13 @@ export const PredepositsPdf = (props: PdfsProps) => {
                 <Text style={styles.headerCell}>Identifiant</Text>
               </View>
               <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Discipline</Text>
-              </View>
-              <View style={styles.tableCol}>
                 <Text style={styles.headerCell}>Catégorie</Text>
               </View>
               <View style={styles.tableCol}>
                 <Text style={styles.headerCell}>Marque</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.headerCell}>Discipline</Text>
               </View>
               <View style={styles.tableCol}>
                 <Text style={styles.headerCell}>Couleur</Text>
@@ -217,13 +217,13 @@ export const PredepositsPdf = (props: PdfsProps) => {
                   <Text>{article.shortCode}</Text>
                 </View>
                 <View style={styles.tableCol}>
-                  <Text>{article.discipline}</Text>
-                </View>
-                <View style={styles.tableCol}>
                   <Text>{article.category}</Text>
                 </View>
                 <View style={styles.tableCol}>
                   <Text>{article.brand}</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text>{article.discipline}</Text>
                 </View>
                 <View style={styles.tableCol}>
                   <Text>{article.color}</Text>

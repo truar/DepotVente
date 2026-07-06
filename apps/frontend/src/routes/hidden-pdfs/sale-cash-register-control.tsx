@@ -18,6 +18,7 @@ function RouteComponent() {
           year: getYear(),
           cardPayments: Array.from({ length: 10 }).map(() => ({
             amount: 10,
+            saleTotal: 10,
             buyerCity: 'Rumilly',
             buyerPhoneNumber: '0102030405',
             buyerName: 'Toto titi',
@@ -25,6 +26,7 @@ function RouteComponent() {
           })),
           checkPayments: Array.from({ length: 10 }).map(() => ({
             amount: 15,
+            saleTotal: 15,
             buyerCity: 'Rumilly',
             buyerPhoneNumber: '0102030405',
             buyerName: 'Toto titi',
@@ -32,6 +34,7 @@ function RouteComponent() {
           })),
           cashSales: Array.from({ length: 10 }).map(() => ({
             amount: 20,
+            saleTotal: 20,
             buyerCity: 'Rumilly',
             buyerPhoneNumber: '0102030405',
             buyerName: 'Toto titi',
@@ -39,6 +42,7 @@ function RouteComponent() {
           })),
           refundPayments: Array.from({ length: 10 }).map(() => ({
             amount: 15,
+            saleTotal: 15,
             type: 'CB',
             comment: 'A comment',
             buyerCity: 'Rumilly',

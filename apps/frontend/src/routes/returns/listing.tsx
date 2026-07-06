@@ -203,7 +203,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
               }
             >
               <CheckIcon />
-              Marquer payée
+              Marquer payé
             </Button>
           )}
         </div>

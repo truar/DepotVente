@@ -124,7 +124,9 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const printUnreturned = useCallback(async () => {
     const data = await loadUnreturnedArticlesPdfData(depositId)
     if (!data) return
-    await printPdf(<DepositPdf data={data} showCategorySubtotals />)
+    await printPdf(
+      <DepositPdf data={data} showCategorySubtotals showSerialNumber />,
+    )
   }, [depositId])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
