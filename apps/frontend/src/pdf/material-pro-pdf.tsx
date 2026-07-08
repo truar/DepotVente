@@ -1,6 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { pdfEur } from '@/pdf/format.ts'
-import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfTimestampHeader } from '@/pdf/timestamp-footer.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 
 const BLUE = '#1F3864'
@@ -159,6 +159,7 @@ export type MaterialProProps = { data: MaterialProData }
 
 const FichePage = ({ fiche, year }: { fiche: MaterialProFiche; year: number }) => (
   <Page size="A4" orientation="landscape" style={styles.page}>
+    <PdfTimestampHeader />
     <View style={styles.header}>
       <View style={styles.titleWrap}>
         <Text style={styles.title}>Bilan Matériel</Text>
@@ -212,7 +213,6 @@ const FichePage = ({ fiche, year }: { fiche: MaterialProFiche; year: number }) =
     </View>
 
     <PdfPageNumberFooter />
-    <PdfTimestampFooter />
   </Page>
 )
 

@@ -1,11 +1,10 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ChevronLeft,
-  Layers,
-  PackageOpen,
+  Package,
   Scale,
   ShoppingCart,
-  Snowflake,
+  UserRound,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout'
@@ -21,6 +20,26 @@ export const Route = createFileRoute('/reports/')({
     </PublicLayout>
   ),
 })
+
+function SportShoeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M4 6h5.426a1 1 0 0 1 .863.496l1.064 1.823a3 3 0 0 0 1.896 1.407l4.677 1.114a4 4 0 0 1 3.074 3.89V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" />
+      <path d="M14 13l1-2" />
+      <path d="M8 18v-1a4 4 0 0 0-4-4H3" />
+      <path d="M10 12l1.5-3" />
+    </svg>
+  )
+}
 
 export function RouteComponent() {
   const navigate = useNavigate()
@@ -40,9 +59,9 @@ export function RouteComponent() {
           {/* Title Section */}
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Générer les rapports
+              Générer les bilans
             </h2>
-            <p className="text-xl text-gray-600">Quel rapport éditer ?</p>
+            <p className="text-xl text-gray-600">Quel bilan éditer ?</p>
           </div>
 
           {/* Cards Grid */}
@@ -51,35 +70,30 @@ export function RouteComponent() {
               onClick={() => navigate({ to: '/reports/balance' })}
               icon={<Scale className="w-8 h-8 text-blue-600" />}
               title="Bilan de la bourse"
-              description="Bilan global de la bourse"
               variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/reports/summary-deposits' })}
-              icon={<PackageOpen className="w-8 h-8 text-blue-600" />}
+              icon={<Package className="w-8 h-8 text-blue-600" />}
               title="Récap. dépôts"
-              description="Dépôts / pré-dépôts par caisse"
               variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/reports/summary-sales' })}
               icon={<ShoppingCart className="w-8 h-8 text-blue-600" />}
               title="Récap. ventes"
-              description="Ventes par caisse"
               variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/reports/material-pro' })}
-              icon={<Layers className="w-8 h-8 text-blue-600" />}
-              title="Bilan matériel pro"
-              description="Matériel par fiche pro"
+              icon={<UserRound className="w-8 h-8 text-blue-600" />}
+              title="Bilan pro"
               variant="blue"
             />
             <ClickableCard
               onClick={() => navigate({ to: '/reports/material' })}
-              icon={<Snowflake className="w-8 h-8 text-blue-600" />}
+              icon={<SportShoeIcon className="w-8 h-8 text-blue-600" />}
               title="Bilan matériel"
-              description="Matériel par catégorie"
               variant="blue"
             />
           </div>

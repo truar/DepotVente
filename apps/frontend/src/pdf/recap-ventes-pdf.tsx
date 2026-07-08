@@ -1,6 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
-import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 import { pdfEur } from '@/pdf/format.ts'
 
@@ -242,7 +241,6 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
       </View>
 
       <PdfPageNumberFooter />
-      <PdfTimestampFooter />
     </Page>
   </Document>
 )

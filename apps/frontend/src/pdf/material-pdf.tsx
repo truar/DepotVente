@@ -1,5 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
-import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfTimestampHeader } from '@/pdf/timestamp-footer.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 
 const INK = '#000000'
@@ -327,6 +327,7 @@ export const MaterialPdf = ({ data }: MaterialProps) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <PdfTimestampHeader />
         <Text style={styles.title}>Bilan matériel Bourse aux skis  {data.year}</Text>
 
         {blocks.map((b, i) => (
@@ -370,7 +371,6 @@ export const MaterialPdf = ({ data }: MaterialProps) => {
       </View>
 
       <PdfPageNumberFooter />
-      <PdfTimestampFooter />
     </Page>
   </Document>
   )

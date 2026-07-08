@@ -1,7 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import type { ReactNode } from 'react'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
-import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 import { pdfDec, pdfEur, pdfPct } from '@/pdf/format.ts'
 
@@ -380,7 +379,6 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
         </View>
 
         <PdfPageNumberFooter />
-        <PdfTimestampFooter />
       </Page>
     </Document>
   )

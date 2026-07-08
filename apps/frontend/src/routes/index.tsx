@@ -103,8 +103,8 @@ export function RouteComponent() {
                       navigate({ to: '/reports' })
                     }}
                     icon={<FileBarChart className="w-8 h-8 text-green-600" />}
-                    title="Rapports"
-                    description="Générer les rapports"
+                    title="Bilan"
+                    description="Générer les bilans"
                   />
                 )}
               </div>
