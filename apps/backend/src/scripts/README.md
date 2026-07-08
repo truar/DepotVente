@@ -8,22 +8,24 @@ Scripts utilitaires pour tester et peupler la base de données.
 
 Crée un utilisateur dans la base de données.
 
+> ⚠️ Les options sont séparées par un **espace** (`--email admin@cmr.com`), pas
+> par un `=`. Le parseur découpe les arguments par paires `--clé valeur`.
+
 ```bash
+# Depuis la racine du monorepo
+pnpm --filter backend script:create-user --email admin@cmr.com --password admin --role ADMIN
+
 # Depuis le dossier backend
-pnpm script:create-user --firstName=John --lastName=Doe --email=john@example.com --password=secret123
+pnpm script:create-user --email admin@cmr.com --password admin --role ADMIN
 
 # Ou directement avec tsx
-tsx src/scripts/create-user.ts --firstName=John --lastName=Doe
+tsx src/scripts/create-user.ts --email admin@cmr.com --password admin --role ADMIN
 ```
 
 **Options:**
-- `--firstName` (requis) - Prénom
-- `--lastName` (requis) - Nom
-- `--email` - Email
-- `--phoneNumber` - Téléphone
-- `--password` - Mot de passe (sera hashé avec bcrypt)
-- `--city` - Ville
-- `--postalCode` - Code postal
+- `--email` (requis) - Email
+- `--password` (requis) - Mot de passe (sera hashé avec bcrypt)
+- `--role` - `ADMIN` | `BENEVOLE` (défaut : `BENEVOLE`)
 
 ### 2. `create-sales.ts` - Créer des ventes en batch
 
@@ -73,6 +75,58 @@ pnpm script:simulate -- --min=100 --max=1000
 - `--help` - Afficher l'aide
 
 **Appuyez sur Ctrl+C pour arrêter la simulation**
+
+### 4. `import/import.ts` - Importer les données historiques
+
+Importe les données de l'ancienne bourse depuis les fichiers `.tsv` du dossier
+`src/scripts/import/` (dépôts, articles, acheteurs, ventes, pré-dépôts, caisses).
+
+```bash
+# Depuis la racine du monorepo
+pnpm --filter backend script:import
+
+# Depuis le dossier backend
+pnpm script:import
+
+# Ou directement avec tsx
+tsx src/scripts/import/import.ts
+```
+
+> ⚠️ Le script **n'efface pas** la base avant d'importer : il ne fait
+> qu'insérer. Pour repartir d'une base propre, lance d'abord `db:reset`
+> (voir ci-dessous).
+
+## 🗄️ Réinitialiser & importer la base
+
+Les commandes Prisma vivent dans le package `database` (pas `backend`).
+
+```bash
+# Réinitialiser la base : drop + rejoue les migrations
+pnpm --filter database db:reset
+```
+
+**Séquence recommandée pour repartir de zéro :**
+
+```bash
+# 1. Réinitialiser la base (drop + migrations)
+pnpm --filter database db:reset
+
+# 2. Régénérer le client Prisma (si le schéma a changé)
+pnpm --filter database db:generate
+
+# 3. Créer l'utilisateur admin
+pnpm --filter backend script:create-user --email admin@cmr.com --password admin --role ADMIN
+
+# 4. Importer les données historiques
+pnpm --filter backend script:import
+```
+
+**Autres commandes `database` disponibles :**
+- `db:push` - Pousse le schéma vers la base sans migration
+- `db:migrate` - Applique les migrations (`prisma migrate deploy`)
+- `db:migrate:dev` - Crée/applique une migration en dev
+- `db:generate` - Régénère le client Prisma
+- `db:studio` - Ouvre Prisma Studio
 
 ## 🧪 Tester le Dashboard en Temps Réel
 

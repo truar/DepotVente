@@ -26,6 +26,13 @@ const num = (n: number) => numFmt.format(n)
 
 const safeDiv = (a: number, b: number) => (b === 0 ? 0 : a / b)
 
+/**
+ * Categories left out of the material report entirely — not listed and not
+ * counted in the totals. "Zabsent" / "Zrefusé" are absent/refused items (never
+ * really deposited); "Snow Blade" / "Luge" are no longer sold.
+ */
+const HIDDEN_CATEGORIES = new Set(['Snow Blade', 'Luge', 'Zabsent', 'Zrefusé'])
+
 export type MaterialResult = {
   data: MaterialData
   audit: Array<BilanAuditGroup>
@@ -51,7 +58,10 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
   ])
 
   const articles = allArticles.filter(
-    (a) => a.deletedAt == null && a.status !== 'DELETED',
+    (a) =>
+      a.deletedAt == null &&
+      a.status !== 'DELETED' &&
+      !HIDDEN_CATEGORIES.has(a.category || ''),
   )
 
   // deposit.id -> type (PRO / PARTICULIER), for the bottom split.
@@ -116,7 +126,8 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
   }
 
   const splits = [
-    buildSplit('Professionnels', 'PRO'),
+    // "Professionels" (single n) matches the wording on the legacy report.
+    buildSplit('Professionels', 'PRO'),
     buildSplit('Particuliers', 'PARTICULIER'),
   ]
 

@@ -1,6 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
-const BLUE = '#1F3864'
+const INK = '#000000'
 const RED = '#E11414'
 const GREY = '#4b5563'
 
@@ -23,7 +23,6 @@ const DISCIPLINE_PHRASE: Record<string, string> = {
   Fond: 'ski fond',
   'Rando Alpine': 'rando alpine',
   'Rando Pédestre': 'rando pédestre',
-  Snowboard: 'surf',
   Telemark: 'télémark',
 }
 
@@ -32,6 +31,35 @@ const discLabel = (category: string, discipline: string) => {
   const noun = category === 'Skis' ? 'articles' : category.toLowerCase()
   const phrase = DISCIPLINE_PHRASE[discipline] ?? discipline.toLowerCase()
   return `Nombre ${noun} ${phrase}`
+}
+
+/** Data category -> the wording shown on the legacy report. */
+const DISPLAY_NAME: Record<string, string> = {
+  Casque: 'Casques',
+  'Masque Ski': 'Masque ski',
+  'Housse Ski': 'Housse ski',
+  Vêtement: 'Vêtements',
+}
+
+/** Category display order on the legacy report. */
+const ORDER = [
+  'Skis',
+  'Snowboard',
+  'Casque',
+  'Masque Ski',
+  'Housse Ski',
+  'Chaussures',
+  'Bâtons',
+  'Fixations',
+  'Raquettes',
+  'Vêtement',
+  'Divers',
+]
+const DIVERS_RANK = ORDER.indexOf('Divers')
+// Unlisted categories (Gants, …) sort in just before the "Divers" catch-all.
+const rank = (category: string) => {
+  const i = ORDER.indexOf(category)
+  return i === -1 ? DIVERS_RANK - 0.5 : i
 }
 
 // Shared column geometry so header / boxed total / sub-rows all line up.
@@ -52,7 +80,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Times-BoldItalic',
     fontSize: 17,
-    color: BLUE,
+    color: INK,
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -70,7 +98,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontFamily: 'Times-BoldItalic',
     fontSize: 12,
-    color: BLUE,
+    color: INK,
   },
 
   headNum: {
@@ -78,7 +106,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Times-Italic',
     fontSize: 8.5,
-    color: GREY,
+    color: INK,
   },
 
   // The boxed "Total articles" row (rectangle hugs desc + the two numbers).
@@ -153,8 +181,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 5,
   },
-  grandWord: { fontFamily: 'Times-BoldItalic', fontSize: 18, color: BLUE },
-  grandSmall: { fontFamily: 'Times-Italic', fontSize: 11, color: BLUE },
+  grandWord: { fontFamily: 'Times-BoldItalic', fontSize: 18, color: INK },
+  grandSmall: { fontFamily: 'Times-Italic', fontSize: 11, color: INK },
   grandDep: { fontFamily: 'Helvetica-Bold', fontSize: 16, color: RED },
   grandSold: { fontFamily: 'Helvetica-Bold', fontSize: 16, color: '#111827' },
   grandPct: { fontFamily: 'Helvetica-Bold', fontSize: 16, color: '#111827' },
@@ -178,14 +206,14 @@ const styles = StyleSheet.create({
     width: 108,
     fontFamily: 'Times-BoldItalic',
     fontSize: 10,
-    color: BLUE,
+    color: INK,
   },
   splitHeadCell: {
     width: 58,
     textAlign: 'right',
     fontFamily: 'Times-Italic',
     fontSize: 8,
-    color: GREY,
+    color: INK,
   },
   splitNum: {
     width: 58,
@@ -247,17 +275,27 @@ export type MaterialData = {
 
 export type MaterialProps = { data: MaterialData }
 
-const CategoryGroup = ({ block }: { block: MaterialCategoryBlock }) => (
+const CategoryGroup = ({
+  block,
+  displayName,
+  showHeader,
+}: {
+  block: MaterialCategoryBlock
+  displayName: string
+  showHeader: boolean
+}) => (
   <View style={styles.group} wrap={false}>
-    <View style={styles.headRow}>
-      <View style={styles.labelSpacer} />
-      <View style={styles.descSpacer} />
-      <Text style={styles.headNum}>En Dépôt</Text>
-      <Text style={styles.headNum}>Vendu</Text>
-    </View>
+    {showHeader && (
+      <View style={styles.headRow}>
+        <View style={styles.labelSpacer} />
+        <View style={styles.descSpacer} />
+        <Text style={styles.headNum}>En Dépôt</Text>
+        <Text style={styles.headNum}>Vendu</Text>
+      </View>
+    )}
 
     <View style={styles.totalRow}>
-      <Text style={styles.catLabel}>{block.category}</Text>
+      <Text style={styles.catLabel}>{displayName}</Text>
       <View style={styles.totalBox}>
         <Text style={styles.totalLabel}>Total articles</Text>
         <Text style={styles.depNum}>{block.depositCount}</Text>
@@ -281,14 +319,31 @@ const CategoryGroup = ({ block }: { block: MaterialCategoryBlock }) => (
   </View>
 )
 
-export const MaterialPdf = ({ data }: MaterialProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <Text style={styles.title}>Bilan matériel Bourse aux skis  {data.year}</Text>
+export const MaterialPdf = ({ data }: MaterialProps) => {
+  const blocks = data.categories
+    .slice()
+    .sort((a, b) => rank(a.category) - rank(b.category))
+  // Categories with a discipline breakdown carry their own header; the plain
+  // single-line categories that trail the last breakdown do too. The plain
+  // categories wedged *between* breakdowns share the header above them.
+  const lastDiscIdx = blocks.reduce(
+    (acc, b, i) => (b.disciplines.length > 0 ? i : acc),
+    -1,
+  )
 
-      {data.categories.map((b) => (
-        <CategoryGroup key={b.category} block={b} />
-      ))}
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.title}>Bilan matériel Bourse aux skis  {data.year}</Text>
+
+        {blocks.map((b, i) => (
+          <CategoryGroup
+            key={b.category}
+            block={b}
+            displayName={DISPLAY_NAME[b.category] ?? b.category}
+            showHeader={i === 0 || b.disciplines.length > 0 || i > lastDiscIdx}
+          />
+        ))}
 
       <View style={styles.grandRow}>
         <Text style={styles.grandWord}>Total articles</Text>
@@ -305,9 +360,9 @@ export const MaterialPdf = ({ data }: MaterialProps) => (
           <View style={styles.splitHeadRow}>
             <Text style={styles.splitName} />
             <Text style={styles.splitHeadCell}>Dépôt</Text>
-            <Text style={styles.splitHeadCell}>%</Text>
+            <Text style={styles.splitHeadCell} />
             <Text style={styles.splitHeadCell}>Vendus</Text>
-            <Text style={styles.splitHeadCell}>% sur dépôt</Text>
+            <Text style={styles.splitHeadCell}>- % sur dépôt</Text>
           </View>
           {data.splits.map((s) => (
             <View key={s.label} style={styles.splitRow}>
@@ -323,4 +378,5 @@ export const MaterialPdf = ({ data }: MaterialProps) => (
       </View>
     </Page>
   </Document>
-)
+  )
+}
