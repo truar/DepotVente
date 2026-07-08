@@ -15,11 +15,6 @@ const pctFmt = new Intl.NumberFormat('fr-FR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
-const timestampFmt = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  dateStyle: 'short',
-  timeStyle: 'medium',
-})
 const numFmt = new Intl.NumberFormat('fr-FR')
 const pct = (n: number) => pctFmt.format(n)
 const num = (n: number) => numFmt.format(n)
@@ -138,7 +133,6 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
     totalSold,
     totalRatio: safeDiv(totalSold, totalDeposit),
     splits,
-    timestamp: timestampFmt.format(new Date()),
   }
 
   const audit: Array<BilanAuditGroup> = [

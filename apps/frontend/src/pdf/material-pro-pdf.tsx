@@ -1,5 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { pdfEur } from '@/pdf/format.ts'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 
 const BLUE = '#1F3864'
 
@@ -10,14 +12,6 @@ const pctFmt = new Intl.NumberFormat('fr-FR', {
 })
 const pctTight = (n: number) =>
   `${pctFmt.format(n * 100).replace(/[\u202F\u00A0\u2009]/g, ' ')}%`
-
-/** "mardi 4 novembre 2025" — matches the reference footer date. */
-const longDateFmt = new Intl.DateTimeFormat('fr-FR', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
 
 const styles = StyleSheet.create({
   page: {
@@ -97,15 +91,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   globalValue: { fontFamily: 'Helvetica-Bold', fontSize: 12 },
-
-  date: {
-    position: 'absolute',
-    bottom: 22,
-    left: 30,
-    fontFamily: 'Times-Italic',
-    fontSize: 9,
-    color: BLUE,
-  },
 })
 
 /** column definitions in the reference order (after the "Materiel" label). */
@@ -226,9 +211,8 @@ const FichePage = ({ fiche, year }: { fiche: MaterialProFiche; year: number }) =
       <Text style={styles.globalValue}>{pctTight(fiche.total.soldRatio)}</Text>
     </View>
 
-    <Text style={styles.date} fixed>
-      {longDateFmt.format(new Date())}
-    </Text>
+    <PdfPageNumberFooter />
+    <PdfTimestampFooter />
   </Page>
 )
 

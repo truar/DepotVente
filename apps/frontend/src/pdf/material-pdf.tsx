@@ -1,8 +1,9 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
+import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 
 const INK = '#000000'
 const RED = '#E11414'
-const GREY = '#4b5563'
 
 /** Integer, French grouping, with Helvetica-safe spaces ("2 056"). */
 const numFmt = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
@@ -228,12 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#374151',
   },
-  timestamp: {
-    fontFamily: 'Times-Italic',
-    fontSize: 9,
-    color: GREY,
-    marginTop: 20,
-  },
 })
 
 export type MaterialDisciplineRow = {
@@ -269,8 +264,6 @@ export type MaterialData = {
   /** totalSold / totalDeposit */
   totalRatio: number
   splits: Array<MaterialTypeSplit>
-  /** print timestamp, formatted by the loader */
-  timestamp: string
 }
 
 export type MaterialProps = { data: MaterialData }
@@ -374,8 +367,10 @@ export const MaterialPdf = ({ data }: MaterialProps) => {
             </View>
           ))}
         </View>
-        <Text style={styles.timestamp}>{data.timestamp}</Text>
       </View>
+
+      <PdfPageNumberFooter />
+      <PdfTimestampFooter />
     </Page>
   </Document>
   )
