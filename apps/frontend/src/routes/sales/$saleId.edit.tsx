@@ -234,14 +234,16 @@ function SaleForm(props: SaleFormProps) {
         firstName: formData.buyer.firstName,
         phoneNumber: formData.buyer.phoneNumber,
       },
-      articles: formData.articles.map((article) => ({
-        code: article.articleCode,
-        category: article.category,
-        brand: article.brand,
-        model: article.model,
-        discipline: article.discipline,
-        price: article.price,
-      })),
+      articles: formData.articles
+        .filter((article) => !article.isDeleted)
+        .map((article) => ({
+          code: article.articleCode,
+          category: article.category,
+          brand: article.brand,
+          model: article.model,
+          discipline: article.discipline,
+          price: article.price,
+        })),
       payments: {
         cash: toNumber(formData.cashAmount) - toNumber(formData.refundCashAmount),
         card: toNumber(formData.cardAmount) - toNumber(formData.refundCardAmount),
