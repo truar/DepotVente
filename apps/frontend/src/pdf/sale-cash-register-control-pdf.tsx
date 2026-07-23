@@ -133,6 +133,83 @@ const styles = StyleSheet.create({
     left: 20,
     fontSize: 8,
   },
+  cashBody: {
+    flexDirection: 'row',
+    gap: 20,
+    marginTop: 10,
+  },
+  cashColumn: {
+    flexDirection: 'column',
+    gap: 5,
+  },
+  cashSubTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  cashTable: {
+    width: 240,
+    fontSize: 9,
+  },
+  cashHeaderRow: {
+    flexDirection: 'row',
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    backgroundColor: '#f3f4f6',
+  },
+  cashRow: {
+    flexDirection: 'row',
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  cashTotalRow: {
+    flexDirection: 'row',
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    backgroundColor: '#e5e7eb',
+  },
+  cashColCoupure: {
+    width: '35%',
+    textAlign: 'right',
+    paddingRight: 8,
+  },
+  cashColNombre: {
+    width: '25%',
+    textAlign: 'center',
+  },
+  cashColTotal: {
+    width: '40%',
+    textAlign: 'right',
+  },
+  cashSummaryBox: {
+    width: 250,
+    fontSize: 11,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    padding: 10,
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  cashSummaryTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  cashSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cashSummaryValue: {
+    fontWeight: 'bold',
+  },
+  cashSummaryDivider: {
+    borderTopWidth: 1,
+    borderColor: '#d1d5db',
+    marginTop: 2,
+    marginBottom: 2,
+  },
 })
 
 export type SaleCashRegisterControlProps = {
@@ -403,24 +480,79 @@ function CashPaymentPage({
   data: SaleCashRegisterControlProps['data']
   cashPayment: SaleCashRegisterControlProps['data']['cashPayment']
 }) {
+  const totalCounted = cashPayment.amounts.reduce(
+    (acc, amount) => acc + amount.value * amount.amount,
+    0,
+  )
   return (
     <Page size="A4" style={styles.page}>
       <GlobalHeader year={data.year} cashRegisterId={data.cashRegisterId} />
       <View>
         <Text>Paiement espèces</Text>
 
-        <View
-          style={{
-            marginTop: 10,
-            display: 'flex',
-            flexDirection: 'row-reverse',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ gap: 8 }}>
-            <View style={styles.libelle}>
-              <Text>Fond de caisse:</Text>
-              <Text>
+        <View style={styles.cashBody}>
+          <View style={styles.cashColumn}>
+            <Text style={styles.cashSubTitle}>Décompte des espèces</Text>
+            <View style={styles.cashTable}>
+              <View style={styles.cashHeaderRow}>
+                <View style={styles.cashColCoupure}>
+                  <Text style={styles.headerCell}>Coupure</Text>
+                </View>
+                <View style={styles.cashColNombre}>
+                  <Text style={styles.headerCell}>Nombre</Text>
+                </View>
+                <View style={styles.cashColTotal}>
+                  <Text style={styles.headerCell}>Total</Text>
+                </View>
+              </View>
+              {cashPayment.amounts.map((amount, index) => (
+                <View style={styles.cashRow} key={index}>
+                  <View style={styles.cashColCoupure}>
+                    <Text>
+                      {amount.value < 1
+                        ? amount.value.toFixed(2)
+                        : amount.value}{' '}
+                      €
+                    </Text>
+                  </View>
+                  <View style={styles.cashColNombre}>
+                    <Text>{amount.amount}</Text>
+                  </View>
+                  <View style={styles.cashColTotal}>
+                    <Text>
+                      <FormattedNumber
+                        value={amount.value * amount.amount}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              <View style={styles.cashTotalRow}>
+                <View style={styles.cashColCoupure}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                </View>
+                <View style={styles.cashColNombre} />
+                <View style={styles.cashColTotal}>
+                  <Text style={styles.totalValue}>
+                    <FormattedNumber
+                      value={totalCounted}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          <View style={styles.cashSummaryBox}>
+            <Text style={styles.cashSummaryTitle}>Récapitulatif</Text>
+            <View style={styles.cashSummaryRow}>
+              <Text>Fond de caisse</Text>
+              <Text style={styles.cashSummaryValue}>
                 <FormattedNumber
                   value={cashPayment.initialAmount}
                   style="currency"
@@ -429,9 +561,9 @@ function CashPaymentPage({
                 />
               </Text>
             </View>
-            <View style={styles.libelle}>
-              <Text>Montant réel:</Text>
-              <Text>
+            <View style={styles.cashSummaryRow}>
+              <Text>Montant réel</Text>
+              <Text style={styles.cashSummaryValue}>
                 <FormattedNumber
                   value={cashPayment.realAmount}
                   style="currency"
@@ -440,9 +572,9 @@ function CashPaymentPage({
                 />
               </Text>
             </View>
-            <View style={styles.libelle}>
-              <Text>Montant théorique:</Text>
-              <Text>
+            <View style={styles.cashSummaryRow}>
+              <Text>Montant théorique</Text>
+              <Text style={styles.cashSummaryValue}>
                 <FormattedNumber
                   value={cashPayment.theoreticalAmount}
                   style="currency"
@@ -451,9 +583,10 @@ function CashPaymentPage({
                 />
               </Text>
             </View>
-            <View style={styles.libelle}>
-              <Text>Différence:</Text>
-              <Text>
+            <View style={styles.cashSummaryDivider} />
+            <View style={styles.cashSummaryRow}>
+              <Text>Différence</Text>
+              <Text style={styles.cashSummaryValue}>
                 <FormattedNumber
                   value={cashPayment.realAmount - cashPayment.theoreticalAmount}
                   style="currency"
@@ -462,36 +595,6 @@ function CashPaymentPage({
                 />
               </Text>
             </View>
-          </View>
-          <View style={styles.amountList}>
-            {cashPayment.amounts.map((amount, index) => {
-              return (
-                <View
-                  style={{
-                    width: 170,
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    borderBottom: '1px solid grey',
-                  }}
-                  key={index}
-                >
-                  <Text style={{ width: 45, textAlign: 'right' }}>
-                    {amount.value < 1 ? amount.value.toFixed(2) : amount.value} €
-                  </Text>
-                  <Text>: {amount.amount}</Text>
-                  <Text>
-                    ={' '}
-                    <FormattedNumber
-                      value={amount.value * amount.amount}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              )
-            })}
           </View>
         </View>
       </View>
