@@ -82,6 +82,20 @@ const styles = StyleSheet.create({
   tableRowMismatch: {
     backgroundColor: '#fef3c7',
   },
+  tableTotalRow: {
+    margin: 'auto',
+    flexDirection: 'row',
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 2,
+  },
+  totalLabel: {
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
+  totalValue: {
+    fontWeight: 'bold',
+  },
 
   refundTable: {
     marginTop: 10,
@@ -257,6 +271,7 @@ function Payments({
     | SaleCashRegisterControlProps['data']['cashSales']
     | SaleCashRegisterControlProps['data']['deferredPayments']
 }) {
+  const total = payments.reduce((acc, payment) => acc + payment.amount, 0)
   return (
     <View style={styles.payments} break={shouldBreak}>
       <Text>{title}</Text>
@@ -327,6 +342,25 @@ function Payments({
             </View>
           )
         })}
+        <View style={styles.tableTotalRow}>
+          <View style={styles.tableCol} />
+          <View style={styles.tableCol} />
+          <View style={styles.tableCol} />
+          <View style={styles.tableCol} />
+          <View style={styles.tableColPrice}>
+            <Text style={styles.totalLabel}>Total</Text>
+          </View>
+          <View style={styles.tableColPrice}>
+            <Text style={styles.totalValue}>
+              <FormattedNumber
+                value={total}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   )
@@ -432,6 +466,7 @@ function RefundPayments({
   title: string
   payments: SaleCashRegisterControlProps['data']['refundPayments']
 }) {
+  const total = payments.reduce((acc, payment) => acc + payment.amount, 0)
   return (
     <View style={styles.payments} break={shouldBreak}>
       <Text>{title}</Text>
@@ -505,6 +540,27 @@ function RefundPayments({
             </View>
           </View>
         ))}
+        <View style={styles.tableTotalRow}>
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableCol} />
+          <View style={styles.refundTableColPrice}>
+            <Text style={styles.totalLabel}>Total</Text>
+          </View>
+          <View style={styles.refundTableColPrice}>
+            <Text style={styles.totalValue}>
+              <FormattedNumber
+                value={total}
+                style="currency"
+                currency="EUR"
+                useGrouping={false}
+              />
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   )
