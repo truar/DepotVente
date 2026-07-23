@@ -436,18 +436,27 @@ function CashPayment({
             return (
               <View
                 style={{
-                  width: 100,
+                  width: 170,
                   display: 'flex',
                   flexDirection: 'row',
+                  justifyContent: 'space-between',
                   borderBottom: '1px solid grey',
                 }}
                 key={index}
               >
-                <Text style={{ width: 50, textAlign: 'right' }}>
-                  {amount.value < 1 ? amount.value.toFixed(2) : amount.value}{' '}
-                  €{' '}
+                <Text style={{ width: 45, textAlign: 'right' }}>
+                  {amount.value < 1 ? amount.value.toFixed(2) : amount.value} €
                 </Text>
                 <Text>: {amount.amount}</Text>
+                <Text>
+                  ={' '}
+                  <FormattedNumber
+                    value={amount.value * amount.amount}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
               </View>
             )
           })}
