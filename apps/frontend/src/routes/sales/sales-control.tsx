@@ -403,26 +403,30 @@ function useRefundPaymentData({
   )
   useEffect(() => {
     const data = (refunds ?? [])
-      .map((refund) => {
+      .flatMap((refund) => {
         const sale = saleMap.get(refund.saleId)
-        if (!sale) return
+        if (!sale) return []
         const buyer = contactMap.get(sale.buyerId)
-        if (!buyer) return
-        return {
+        if (!buyer) return []
+        const base = {
           saleIndex: sale.saleIndex,
           buyerName: `${buyer.lastName} ${buyer.firstName}`,
           buyerPhoneNumber: buyer.phoneNumber,
           buyerCity: buyer.city || '',
-          type:
-            refund.cardAmount > 0 ? ('CB' as const) : ('CASH' as const),
           comment: refund.comment || '',
-          amount: refund.cardAmount > 0 ? refund.cardAmount : refund.cashAmount,
           saleTotal: computeSaleTotal(sale),
         }
+        const rows: CashRegisterControlFormType['refundPayments'] = []
+        if (refund.cardAmount > 0) {
+          rows.push({ ...base, type: 'CB', amount: refund.cardAmount })
+        }
+        if (refund.cashAmount > 0) {
+          rows.push({ ...base, type: 'CASH', amount: refund.cashAmount })
+        }
+        return rows
       })
-      .filter((row) => !!row)
-      .sort((a, b) => a!.saleIndex - b!.saleIndex)
-    setValue('refundPayments', data as CashRegisterControlFormType['refundPayments'])
+      .sort((a, b) => a.saleIndex - b.saleIndex)
+    setValue('refundPayments', data)
   }, [refunds, saleMap, contactMap])
 }
 function buildCashPaymentValues(
