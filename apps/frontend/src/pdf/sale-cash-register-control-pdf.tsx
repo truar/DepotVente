@@ -147,6 +147,14 @@ export type SaleCashRegisterControlProps = {
       amount: number
       saleTotal: number
     }>
+    deferredPayments: Array<{
+      saleIndex: number
+      buyerName: string
+      buyerPhoneNumber: string
+      buyerCity: string
+      amount: number
+      saleTotal: number
+    }>
     refundPayments: Array<{
       saleIndex: number
       buyerName: string
@@ -210,6 +218,11 @@ export const SaleCashRegisterControlPdf = (
               payments={data.checkPayments}
               shouldBreak={true}
             />
+            <Payments
+              title="Paiement différés"
+              payments={data.deferredPayments}
+              shouldBreak={true}
+            />
             <RefundPayments
               title="Remboursements"
               payments={data.refundPayments}
@@ -242,6 +255,7 @@ function Payments({
     | SaleCashRegisterControlProps['data']['cardPayments']
     | SaleCashRegisterControlProps['data']['checkPayments']
     | SaleCashRegisterControlProps['data']['cashSales']
+    | SaleCashRegisterControlProps['data']['deferredPayments']
 }) {
   return (
     <>

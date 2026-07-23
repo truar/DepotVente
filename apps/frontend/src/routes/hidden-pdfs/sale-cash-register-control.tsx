@@ -40,6 +40,14 @@ function RouteComponent() {
             buyerName: 'Toto titi',
             saleIndex: 1001,
           })),
+          deferredPayments: Array.from({ length: 10 }).map(() => ({
+            amount: 25,
+            saleTotal: 25,
+            buyerCity: 'Rumilly',
+            buyerPhoneNumber: '0102030405',
+            buyerName: 'Toto titi',
+            saleIndex: 1001,
+          })),
           refundPayments: Array.from({ length: 10 }).map(() => ({
             amount: 15,
             saleTotal: 15,

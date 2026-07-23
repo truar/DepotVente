@@ -89,6 +89,16 @@ const SalesCashRegisterControlFormSchema = z.object({
       saleTotal: z.number(),
     }),
   ),
+  deferredPayments: z.array(
+    z.object({
+      saleIndex: z.number(),
+      buyerName: z.string(),
+      buyerPhoneNumber: z.string(),
+      buyerCity: z.string(),
+      amount: z.number(),
+      saleTotal: z.number(),
+    }),
+  ),
   cashSales: z.array(
     z.object({
       saleIndex: z.number(),
@@ -243,6 +253,49 @@ function useCheckPaymentData({
       })
       .filter((sale) => !!sale)
     setValue('checkPayments', data)
+  }, [sales, contactMap])
+}
+
+function useDeferredPaymentData({
+  setValue,
+}: {
+  setValue: UseFormSetValue<CashRegisterControlFormType>
+}) {
+  const [workstation] = useWorkstation()
+  const sales = useLiveQuery(
+    () =>
+      db.sales
+        .where({
+          incrementStart: workstation.incrementStart,
+        })
+        .and((sale) => sale.deferredAmount != null && sale.deferredAmount > 0)
+        .sortBy('saleIndex'),
+    [workstation.incrementStart],
+  )
+  const contacts = useLiveQuery(() => db.contacts.toArray())
+  const contactMap = useMemo(
+    () =>
+      new Map<string, Contact>(
+        contacts?.map((contact) => [contact.id, contact]),
+      ),
+    [contacts],
+  )
+  useEffect(() => {
+    const data = (sales ?? [])
+      .map((payment) => {
+        const buyer = contactMap.get(payment.buyerId)
+        if (!buyer) return
+        return {
+          saleIndex: payment.saleIndex,
+          buyerName: `${buyer.lastName} ${buyer.firstName}`,
+          buyerPhoneNumber: buyer.phoneNumber,
+          buyerCity: buyer.city || '',
+          amount: payment.deferredAmount ?? 0,
+          saleTotal: computeSaleTotal(payment),
+        }
+      })
+      .filter((sale) => !!sale)
+    setValue('deferredPayments', data)
   }, [sales, contactMap])
 }
 
@@ -472,6 +525,7 @@ function SalesControlPage(props: SalesControlPageProps) {
     defaultValues: {
       cardPayments: [],
       checkPayments: [],
+      deferredPayments: [],
       cashSales: [],
       cashPayment: {
         cashRegisterId: workstation.incrementStart,
@@ -506,6 +560,7 @@ function SalesControlPage(props: SalesControlPageProps) {
 
   useCardPaymentData({ setValue })
   useCheckPaymentData({ setValue })
+  useDeferredPaymentData({ setValue })
   useCashSalesData({ setValue })
   useRefundPaymentData({ setValue })
   useCashPaymentData({ setValue, cashRegisterControl })
@@ -521,6 +576,7 @@ function SalesControlPage(props: SalesControlPageProps) {
       cashPayment: formData.cashPayment,
       cardPayments: formData.cardPayments,
       checkPayments: formData.checkPayments,
+      deferredPayments: formData.deferredPayments,
       cashSales: formData.cashSales,
       refundPayments: formData.refundPayments,
     }
@@ -582,6 +638,12 @@ function SalesControlPage(props: SalesControlPageProps) {
               <AccordionTrigger>Chèques</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">
                 <CheckPaymentDetails />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="deferred-payments">
+              <AccordionTrigger>Paiements différés</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-4 text-balance">
+                <DeferredPaymentDetails />
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="refund-payments">
@@ -701,6 +763,65 @@ function CheckPaymentDetails() {
             return (
               <TableRow
                 key={`check-${index}`}
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
+              >
+                <TableCell className="font-medium">{sale.saleIndex}</TableCell>
+                <TableCell>{sale.buyerName}</TableCell>
+                <TableCell>{sale.buyerPhoneNumber}</TableCell>
+                <TableCell>{sale.buyerCity}</TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <FormattedNumber
+                    value={sale.amount}
+                    style="currency"
+                    currency="EUR"
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+      <div className="flex justify-end">
+        <p className="font-bold">
+          Total:{' '}
+          <FormattedNumber value={total} style="currency" currency="EUR" />
+        </p>
+      </div>
+    </>
+  )
+}
+
+function DeferredPaymentDetails() {
+  const { control } = useFormContext<CashRegisterControlFormType>()
+  const sales = useWatch({ control, name: 'deferredPayments' }) ?? []
+  const total = sales.reduce((acc, cur) => acc + cur.amount, 0)
+
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">N° vente</TableHead>
+            <TableHead>Nom acheteur</TableHead>
+            <TableHead>Téléphone</TableHead>
+            <TableHead>Ville</TableHead>
+            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Montant vente</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sales.map((sale, index) => {
+            const mismatch = sale.amount !== sale.saleTotal
+            return (
+              <TableRow
+                key={`deferred-${index}`}
                 className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
               >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
