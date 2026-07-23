@@ -272,11 +272,14 @@ function DepositsSummary() {
   const total =
     articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
   const count = articles?.length ?? 0
-  const totalContributions =
-    deposits?.reduce(
-      (acc, deposit) => acc + (deposit.contributionAmount ?? 0),
-      0,
-    ) ?? 0
+  const paidContributions =
+    deposits
+      ?.filter((deposit) => deposit.contributionStatus === 'PAYE')
+      .reduce((acc, deposit) => acc + (deposit.contributionAmount ?? 0), 0) ?? 0
+  const contributionsToCollect =
+    deposits
+      ?.filter((deposit) => deposit.contributionStatus === 'A_PAYER')
+      .reduce((acc, deposit) => acc + (deposit.contributionAmount ?? 0), 0) ?? 0
 
   return (
     <div className="flex flew-row gap-5 font-bold">
@@ -286,8 +289,20 @@ function DepositsSummary() {
         <FormattedNumber value={total} style="currency" currency="EUR" />
       </p>
       <p>
-        Total cotisations:{' '}
-        <FormattedNumber value={totalContributions} style="currency" currency="EUR" />
+        Cotisations payées:{' '}
+        <FormattedNumber
+          value={paidContributions}
+          style="currency"
+          currency="EUR"
+        />
+      </p>
+      <p>
+        Cotisations à encaisser:{' '}
+        <FormattedNumber
+          value={contributionsToCollect}
+          style="currency"
+          currency="EUR"
+        />
       </p>
     </div>
   )
