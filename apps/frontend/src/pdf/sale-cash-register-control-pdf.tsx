@@ -88,6 +88,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 4,
     paddingLeft: 2,
+    backgroundColor: '#e5e7eb',
   },
   totalLabel: {
     fontStyle: 'italic',
