@@ -258,81 +258,77 @@ function Payments({
     | SaleCashRegisterControlProps['data']['deferredPayments']
 }) {
   return (
-    <>
-      {payments.length > 0 && (
-        <View style={styles.payments} break={shouldBreak}>
-          <Text>{title}</Text>
-          <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Vente</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Acheteur</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Téléphone</Text>
-              </View>
-              <View style={styles.tableCol}>
-                <Text style={styles.headerCell}>Ville</Text>
-              </View>
-              <View style={styles.tableColPrice}>
-                <Text style={styles.headerCell}>Montant vente</Text>
-              </View>
-              <View style={styles.tableColPrice}>
-                <Text style={styles.headerCell}>Montant encaissé</Text>
-              </View>
-            </View>
-
-            {payments.map((payment, index) => {
-              const mismatch = payment.amount !== payment.saleTotal
-              return (
-                <View
-                  style={[
-                    styles.tableRow,
-                    ...(mismatch ? [styles.tableRowMismatch] : []),
-                  ]}
-                  key={index}
-                >
-                  <View style={styles.tableCol}>
-                    <Text>{payment.saleIndex}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text>{payment.buyerName}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text>{payment.buyerPhoneNumber}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text>{payment.buyerCity}</Text>
-                  </View>
-                  <View style={styles.tableColPrice}>
-                    <Text>
-                      <FormattedNumber
-                        value={payment.saleTotal}
-                        style="currency"
-                        currency="EUR"
-                        useGrouping={false}
-                      />
-                    </Text>
-                  </View>
-                  <View style={styles.tableColPrice}>
-                    <Text>
-                      <FormattedNumber
-                        value={payment.amount}
-                        style="currency"
-                        currency="EUR"
-                        useGrouping={false}
-                      />
-                    </Text>
-                  </View>
-                </View>
-              )
-            })}
+    <View style={styles.payments} break={shouldBreak}>
+      <Text>{title}</Text>
+      <View style={styles.table}>
+        <View style={[styles.tableRow, styles.tableHeader]}>
+          <View style={styles.tableCol}>
+            <Text style={styles.headerCell}>Vente</Text>
+          </View>
+          <View style={styles.tableCol}>
+            <Text style={styles.headerCell}>Acheteur</Text>
+          </View>
+          <View style={styles.tableCol}>
+            <Text style={styles.headerCell}>Téléphone</Text>
+          </View>
+          <View style={styles.tableCol}>
+            <Text style={styles.headerCell}>Ville</Text>
+          </View>
+          <View style={styles.tableColPrice}>
+            <Text style={styles.headerCell}>Montant vente</Text>
+          </View>
+          <View style={styles.tableColPrice}>
+            <Text style={styles.headerCell}>Montant encaissé</Text>
           </View>
         </View>
-      )}
-    </>
+
+        {payments.map((payment, index) => {
+          const mismatch = payment.amount !== payment.saleTotal
+          return (
+            <View
+              style={[
+                styles.tableRow,
+                ...(mismatch ? [styles.tableRowMismatch] : []),
+              ]}
+              key={index}
+            >
+              <View style={styles.tableCol}>
+                <Text>{payment.saleIndex}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text>{payment.buyerName}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text>{payment.buyerPhoneNumber}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text>{payment.buyerCity}</Text>
+              </View>
+              <View style={styles.tableColPrice}>
+                <Text>
+                  <FormattedNumber
+                    value={payment.saleTotal}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+              <View style={styles.tableColPrice}>
+                <Text>
+                  <FormattedNumber
+                    value={payment.amount}
+                    style="currency"
+                    currency="EUR"
+                    useGrouping={false}
+                  />
+                </Text>
+              </View>
+            </View>
+          )
+        })}
+      </View>
+    </View>
   )
 }
 
@@ -437,83 +433,79 @@ function RefundPayments({
   payments: SaleCashRegisterControlProps['data']['refundPayments']
 }) {
   return (
-    <>
-      {payments.length > 0 && (
-        <View style={styles.payments} break={shouldBreak}>
-          <Text>{title}</Text>
-          <View style={styles.refundTable}>
-            <View style={[styles.refundTableRow, styles.refundTableHeader]}>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Vente</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Acheteur</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Téléphone</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Ville</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Type</Text>
-              </View>
-              <View style={styles.refundTableCol}>
-                <Text style={styles.refundHeaderCell}>Commentaire</Text>
-              </View>
-              <View style={styles.refundTableColPrice}>
-                <Text style={styles.refundHeaderCell}>Montant vente</Text>
-              </View>
-              <View style={styles.refundTableColPrice}>
-                <Text style={styles.refundHeaderCell}>Montant</Text>
-              </View>
-            </View>
-
-            {payments.map((payment, index) => (
-              <View style={styles.refundTableRow} key={index}>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.saleIndex}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerName}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerPhoneNumber}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.buyerCity}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.type}</Text>
-                </View>
-                <View style={styles.refundTableCol}>
-                  <Text>{payment.comment}</Text>
-                </View>
-                <View style={styles.refundTableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={payment.saleTotal}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-                <View style={styles.refundTableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={payment.amount}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-              </View>
-            ))}
+    <View style={styles.payments} break={shouldBreak}>
+      <Text>{title}</Text>
+      <View style={styles.refundTable}>
+        <View style={[styles.refundTableRow, styles.refundTableHeader]}>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Vente</Text>
+          </View>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Acheteur</Text>
+          </View>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Téléphone</Text>
+          </View>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Ville</Text>
+          </View>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Type</Text>
+          </View>
+          <View style={styles.refundTableCol}>
+            <Text style={styles.refundHeaderCell}>Commentaire</Text>
+          </View>
+          <View style={styles.refundTableColPrice}>
+            <Text style={styles.refundHeaderCell}>Montant vente</Text>
+          </View>
+          <View style={styles.refundTableColPrice}>
+            <Text style={styles.refundHeaderCell}>Montant</Text>
           </View>
         </View>
-      )}
-    </>
+
+        {payments.map((payment, index) => (
+          <View style={styles.refundTableRow} key={index}>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.saleIndex}</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.buyerName}</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.buyerPhoneNumber}</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.buyerCity}</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.type}</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text>{payment.comment}</Text>
+            </View>
+            <View style={styles.refundTableColPrice}>
+              <Text>
+                <FormattedNumber
+                  value={payment.saleTotal}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+            <View style={styles.refundTableColPrice}>
+              <Text>
+                <FormattedNumber
+                  value={payment.amount}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
   )
 }
