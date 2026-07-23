@@ -199,71 +199,96 @@ export const SaleCashRegisterControlPdf = (
   return (
     <IntlProvider locale={'fr'}>
       <Document>
-        {Array.from({ length: copy }).map((_, index) => (
-          <Page size="A4" style={styles.page} key={`page-${index}`}>
-            <View style={styles.header} fixed>
-              <View style={{ flexDirection: 'row', gap: 5 }}>
-                <CMRLogo />
-                <View style={styles.title}>
-                  <Text>Bourse au skis {data.year}</Text>
-                  <Text>Club Montagnard Rumillien</Text>
-                  <Text>Contrôle caisse ventes</Text>
-                </View>
-              </View>
-              <View>
-                <View>
-                  <Text>N° {data.cashRegisterId}</Text>
-                </View>
-              </View>
-            </View>
-            <Payments
-              title="Paiement CB"
-              payments={data.cardPayments}
-              shouldBreak={false}
-            />
-            <Payments
-              title="Paiement Espèces — détail"
-              payments={data.cashSales}
-              shouldBreak={true}
-            />
-            <CashPayment cashPayment={cashPayment} shouldBreak={true} />
-            <Payments
-              title="Paiement Chèques"
-              payments={data.checkPayments}
-              shouldBreak={true}
-            />
-            <Payments
-              title="Paiement différés"
-              payments={data.deferredPayments}
-              shouldBreak={true}
-            />
-            <RefundPayments
-              title="Remboursements"
-              payments={data.refundPayments}
-              shouldBreak={true}
-            />
-            <PdfCommentSection comment={cashPayment.comment} />
-            <View fixed style={styles.pageInformation}>
-              <Text
-                render={({ subPageNumber, subPageTotalPages }) =>
-                  `Page ${subPageNumber} sur ${subPageTotalPages}`
-                }
-              />
-            </View>
-            <PdfTimestampFooter />
-          </Page>
-        ))}
+        {Array.from({ length: copy }).flatMap((_, index) => [
+          <PaymentsPage
+            key={`cb-${index}`}
+            data={data}
+            title="Paiement CB"
+            payments={data.cardPayments}
+          />,
+          <PaymentsPage
+            key={`cash-${index}`}
+            data={data}
+            title="Paiement Espèces — détail"
+            payments={data.cashSales}
+          />,
+          <CashPaymentPage
+            key={`cash-control-${index}`}
+            data={data}
+            cashPayment={cashPayment}
+          />,
+          <PaymentsPage
+            key={`check-${index}`}
+            data={data}
+            title="Paiement Chèques"
+            payments={data.checkPayments}
+          />,
+          <PaymentsPage
+            key={`deferred-${index}`}
+            data={data}
+            title="Paiement différés"
+            payments={data.deferredPayments}
+          />,
+          <RefundPaymentsPage
+            key={`refund-${index}`}
+            data={data}
+            title="Remboursements"
+            payments={data.refundPayments}
+            comment={cashPayment.comment}
+          />,
+        ])}
       </Document>
     </IntlProvider>
   )
 }
 
-function Payments({
+function GlobalHeader({
+  year,
+  cashRegisterId,
+}: {
+  year: number
+  cashRegisterId: number
+}) {
+  return (
+    <View style={styles.header} fixed>
+      <View style={{ flexDirection: 'row', gap: 5 }}>
+        <CMRLogo />
+        <View style={styles.title}>
+          <Text>Bourse au skis {year}</Text>
+          <Text>Club Montagnard Rumillien</Text>
+          <Text>Contrôle caisse ventes</Text>
+        </View>
+      </View>
+      <View>
+        <View>
+          <Text>N° {cashRegisterId}</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function PageFooter() {
+  return (
+    <>
+      <View fixed style={styles.pageInformation}>
+        <Text
+          render={({ pageNumber, totalPages }) =>
+            `Page ${pageNumber} sur ${totalPages}`
+          }
+        />
+      </View>
+      <PdfTimestampFooter />
+    </>
+  )
+}
+
+function PaymentsPage({
+  data,
   payments,
   title,
-  shouldBreak,
 }: {
-  shouldBreak?: boolean
+  data: SaleCashRegisterControlProps['data']
   title: string
   payments:
     | SaleCashRegisterControlProps['data']['cardPayments']
@@ -273,53 +298,273 @@ function Payments({
 }) {
   const total = payments.reduce((acc, payment) => acc + payment.amount, 0)
   return (
-    <View style={styles.payments} break={shouldBreak}>
-      <Text>{title}</Text>
-      <View style={styles.table}>
-        <View style={[styles.tableRow, styles.tableHeader]}>
-          <View style={styles.tableCol}>
-            <Text style={styles.headerCell}>Vente</Text>
+    <Page size="A4" style={styles.page}>
+      <GlobalHeader year={data.year} cashRegisterId={data.cashRegisterId} />
+      <View style={styles.payments}>
+        <Text fixed>{title}</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]} fixed>
+            <View style={styles.tableCol}>
+              <Text style={styles.headerCell}>Vente</Text>
+            </View>
+            <View style={styles.tableCol}>
+              <Text style={styles.headerCell}>Acheteur</Text>
+            </View>
+            <View style={styles.tableCol}>
+              <Text style={styles.headerCell}>Téléphone</Text>
+            </View>
+            <View style={styles.tableCol}>
+              <Text style={styles.headerCell}>Ville</Text>
+            </View>
+            <View style={styles.tableColPrice}>
+              <Text style={styles.headerCell}>Montant vente</Text>
+            </View>
+            <View style={styles.tableColPrice}>
+              <Text style={styles.headerCell}>Montant encaissé</Text>
+            </View>
           </View>
-          <View style={styles.tableCol}>
-            <Text style={styles.headerCell}>Acheteur</Text>
-          </View>
-          <View style={styles.tableCol}>
-            <Text style={styles.headerCell}>Téléphone</Text>
-          </View>
-          <View style={styles.tableCol}>
-            <Text style={styles.headerCell}>Ville</Text>
-          </View>
-          <View style={styles.tableColPrice}>
-            <Text style={styles.headerCell}>Montant vente</Text>
-          </View>
-          <View style={styles.tableColPrice}>
-            <Text style={styles.headerCell}>Montant encaissé</Text>
+
+          {payments.map((payment, index) => {
+            const mismatch = payment.amount !== payment.saleTotal
+            return (
+              <View
+                style={[
+                  styles.tableRow,
+                  ...(mismatch ? [styles.tableRowMismatch] : []),
+                ]}
+                key={index}
+              >
+                <View style={styles.tableCol}>
+                  <Text>{payment.saleIndex}</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text>{payment.buyerName}</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text>{payment.buyerPhoneNumber}</Text>
+                </View>
+                <View style={styles.tableCol}>
+                  <Text>{payment.buyerCity}</Text>
+                </View>
+                <View style={styles.tableColPrice}>
+                  <Text>
+                    <FormattedNumber
+                      value={payment.saleTotal}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+                <View style={styles.tableColPrice}>
+                  <Text>
+                    <FormattedNumber
+                      value={payment.amount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+              </View>
+            )
+          })}
+          <View style={styles.tableTotalRow}>
+            <View style={styles.tableCol} />
+            <View style={styles.tableCol} />
+            <View style={styles.tableCol} />
+            <View style={styles.tableCol} />
+            <View style={styles.tableColPrice}>
+              <Text style={styles.totalLabel}>Total</Text>
+            </View>
+            <View style={styles.tableColPrice}>
+              <Text style={styles.totalValue}>
+                <FormattedNumber
+                  value={total}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
           </View>
         </View>
+      </View>
+      <PageFooter />
+    </Page>
+  )
+}
 
-        {payments.map((payment, index) => {
-          const mismatch = payment.amount !== payment.saleTotal
-          return (
-            <View
-              style={[
-                styles.tableRow,
-                ...(mismatch ? [styles.tableRowMismatch] : []),
-              ]}
-              key={index}
-            >
-              <View style={styles.tableCol}>
+function CashPaymentPage({
+  data,
+  cashPayment,
+}: {
+  data: SaleCashRegisterControlProps['data']
+  cashPayment: SaleCashRegisterControlProps['data']['cashPayment']
+}) {
+  return (
+    <Page size="A4" style={styles.page}>
+      <GlobalHeader year={data.year} cashRegisterId={data.cashRegisterId} />
+      <View>
+        <Text>Paiement espèces</Text>
+
+        <View
+          style={{
+            marginTop: 10,
+            display: 'flex',
+            flexDirection: 'row-reverse',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={{ gap: 8 }}>
+            <View style={styles.libelle}>
+              <Text>Fond de caisse:</Text>
+              <Text>
+                <FormattedNumber
+                  value={cashPayment.initialAmount}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+            <View style={styles.libelle}>
+              <Text>Montant réel:</Text>
+              <Text>
+                <FormattedNumber
+                  value={cashPayment.realAmount}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+            <View style={styles.libelle}>
+              <Text>Montant théorique:</Text>
+              <Text>
+                <FormattedNumber
+                  value={cashPayment.theoreticalAmount}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+            <View style={styles.libelle}>
+              <Text>Différence:</Text>
+              <Text>
+                <FormattedNumber
+                  value={cashPayment.realAmount - cashPayment.theoreticalAmount}
+                  style="currency"
+                  currency="EUR"
+                  useGrouping={false}
+                />
+              </Text>
+            </View>
+          </View>
+          <View style={styles.amountList}>
+            {cashPayment.amounts.map((amount, index) => {
+              return (
+                <View
+                  style={{
+                    width: 170,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    borderBottom: '1px solid grey',
+                  }}
+                  key={index}
+                >
+                  <Text style={{ width: 45, textAlign: 'right' }}>
+                    {amount.value < 1 ? amount.value.toFixed(2) : amount.value} €
+                  </Text>
+                  <Text>: {amount.amount}</Text>
+                  <Text>
+                    ={' '}
+                    <FormattedNumber
+                      value={amount.value * amount.amount}
+                      style="currency"
+                      currency="EUR"
+                      useGrouping={false}
+                    />
+                  </Text>
+                </View>
+              )
+            })}
+          </View>
+        </View>
+      </View>
+      <PageFooter />
+    </Page>
+  )
+}
+
+function RefundPaymentsPage({
+  data,
+  payments,
+  title,
+  comment,
+}: {
+  data: SaleCashRegisterControlProps['data']
+  title: string
+  payments: SaleCashRegisterControlProps['data']['refundPayments']
+  comment?: string | null
+}) {
+  const total = payments.reduce((acc, payment) => acc + payment.amount, 0)
+  return (
+    <Page size="A4" style={styles.page}>
+      <GlobalHeader year={data.year} cashRegisterId={data.cashRegisterId} />
+      <View style={styles.payments}>
+        <Text fixed>{title}</Text>
+        <View style={styles.refundTable}>
+          <View style={[styles.refundTableRow, styles.refundTableHeader]} fixed>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Vente</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Acheteur</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Téléphone</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Ville</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Type</Text>
+            </View>
+            <View style={styles.refundTableCol}>
+              <Text style={styles.refundHeaderCell}>Commentaire</Text>
+            </View>
+            <View style={styles.refundTableColPrice}>
+              <Text style={styles.refundHeaderCell}>Montant vente</Text>
+            </View>
+            <View style={styles.refundTableColPrice}>
+              <Text style={styles.refundHeaderCell}>Montant</Text>
+            </View>
+          </View>
+
+          {payments.map((payment, index) => (
+            <View style={styles.refundTableRow} key={index}>
+              <View style={styles.refundTableCol}>
                 <Text>{payment.saleIndex}</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={styles.refundTableCol}>
                 <Text>{payment.buyerName}</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={styles.refundTableCol}>
                 <Text>{payment.buyerPhoneNumber}</Text>
               </View>
-              <View style={styles.tableCol}>
+              <View style={styles.refundTableCol}>
                 <Text>{payment.buyerCity}</Text>
               </View>
-              <View style={styles.tableColPrice}>
+              <View style={styles.refundTableCol}>
+                <Text>{payment.type}</Text>
+              </View>
+              <View style={styles.refundTableCol}>
+                <Text>{payment.comment}</Text>
+              </View>
+              <View style={styles.refundTableColPrice}>
                 <Text>
                   <FormattedNumber
                     value={payment.saleTotal}
@@ -329,7 +574,7 @@ function Payments({
                   />
                 </Text>
               </View>
-              <View style={styles.tableColPrice}>
+              <View style={styles.refundTableColPrice}>
                 <Text>
                   <FormattedNumber
                     value={payment.amount}
@@ -340,207 +585,21 @@ function Payments({
                 </Text>
               </View>
             </View>
-          )
-        })}
-        <View style={styles.tableTotalRow}>
-          <View style={styles.tableCol} />
-          <View style={styles.tableCol} />
-          <View style={styles.tableCol} />
-          <View style={styles.tableCol} />
-          <View style={styles.tableColPrice}>
-            <Text style={styles.totalLabel}>Total</Text>
-          </View>
-          <View style={styles.tableColPrice}>
-            <Text style={styles.totalValue}>
-              <FormattedNumber
-                value={total}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  )
-}
-
-function CashPayment({
-  cashPayment,
-  shouldBreak,
-}: {
-  shouldBreak: boolean
-  cashPayment: SaleCashRegisterControlProps['data']['cashPayment']
-}) {
-  return (
-    <View break={shouldBreak}>
-      <Text>Paiement espèces</Text>
-
-      <View
-        style={{
-          marginTop: 10,
-          display: 'flex',
-          flexDirection: 'row-reverse',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ gap: 8 }}>
-          <View style={styles.libelle}>
-            <Text>Fond de caisse:</Text>
-            <Text>
-              <FormattedNumber
-                value={cashPayment.initialAmount}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
-          <View style={styles.libelle}>
-            <Text>Montant réel:</Text>
-            <Text>
-              <FormattedNumber
-                value={cashPayment.realAmount}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
-          <View style={styles.libelle}>
-            <Text>Montant théorique:</Text>
-            <Text>
-              <FormattedNumber
-                value={cashPayment.theoreticalAmount}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
-          <View style={styles.libelle}>
-            <Text>Différence:</Text>
-            <Text>
-              <FormattedNumber
-                value={cashPayment.realAmount - cashPayment.theoreticalAmount}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
-        </View>
-        <View style={styles.amountList}>
-          {cashPayment.amounts.map((amount, index) => {
-            return (
-              <View
-                style={{
-                  width: 170,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  borderBottom: '1px solid grey',
-                }}
-                key={index}
-              >
-                <Text style={{ width: 45, textAlign: 'right' }}>
-                  {amount.value < 1 ? amount.value.toFixed(2) : amount.value} €
-                </Text>
-                <Text>: {amount.amount}</Text>
-                <Text>
-                  ={' '}
-                  <FormattedNumber
-                    value={amount.value * amount.amount}
-                    style="currency"
-                    currency="EUR"
-                    useGrouping={false}
-                  />
-                </Text>
-              </View>
-            )
-          })}
-        </View>
-      </View>
-    </View>
-  )
-}
-
-function RefundPayments({
-  payments,
-  title,
-  shouldBreak,
-}: {
-  shouldBreak?: boolean
-  title: string
-  payments: SaleCashRegisterControlProps['data']['refundPayments']
-}) {
-  const total = payments.reduce((acc, payment) => acc + payment.amount, 0)
-  return (
-    <View style={styles.payments} break={shouldBreak}>
-      <Text>{title}</Text>
-      <View style={styles.refundTable}>
-        <View style={[styles.refundTableRow, styles.refundTableHeader]}>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Vente</Text>
-          </View>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Acheteur</Text>
-          </View>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Téléphone</Text>
-          </View>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Ville</Text>
-          </View>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Type</Text>
-          </View>
-          <View style={styles.refundTableCol}>
-            <Text style={styles.refundHeaderCell}>Commentaire</Text>
-          </View>
-          <View style={styles.refundTableColPrice}>
-            <Text style={styles.refundHeaderCell}>Montant vente</Text>
-          </View>
-          <View style={styles.refundTableColPrice}>
-            <Text style={styles.refundHeaderCell}>Montant</Text>
-          </View>
-        </View>
-
-        {payments.map((payment, index) => (
-          <View style={styles.refundTableRow} key={index}>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.saleIndex}</Text>
-            </View>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.buyerName}</Text>
-            </View>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.buyerPhoneNumber}</Text>
-            </View>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.buyerCity}</Text>
-            </View>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.type}</Text>
-            </View>
-            <View style={styles.refundTableCol}>
-              <Text>{payment.comment}</Text>
+          ))}
+          <View style={styles.tableTotalRow}>
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableCol} />
+            <View style={styles.refundTableColPrice}>
+              <Text style={styles.totalLabel}>Total</Text>
             </View>
             <View style={styles.refundTableColPrice}>
-              <Text>
+              <Text style={styles.totalValue}>
                 <FormattedNumber
-                  value={payment.saleTotal}
-                  style="currency"
-                  currency="EUR"
-                  useGrouping={false}
-                />
-              </Text>
-            </View>
-            <View style={styles.refundTableColPrice}>
-              <Text>
-                <FormattedNumber
-                  value={payment.amount}
+                  value={total}
                   style="currency"
                   currency="EUR"
                   useGrouping={false}
@@ -548,29 +607,10 @@ function RefundPayments({
               </Text>
             </View>
           </View>
-        ))}
-        <View style={styles.tableTotalRow}>
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableCol} />
-          <View style={styles.refundTableColPrice}>
-            <Text style={styles.totalLabel}>Total</Text>
-          </View>
-          <View style={styles.refundTableColPrice}>
-            <Text style={styles.totalValue}>
-              <FormattedNumber
-                value={total}
-                style="currency"
-                currency="EUR"
-                useGrouping={false}
-              />
-            </Text>
-          </View>
         </View>
       </View>
-    </View>
+      <PdfCommentSection comment={comment} />
+      <PageFooter />
+    </Page>
   )
 }
