@@ -694,8 +694,8 @@ function CardPaymentDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead className="text-right">Total vente</TableHead>
             <TableHead className="text-right">Montant vente</TableHead>
+            <TableHead className="text-right">Montant encaissé</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -753,8 +753,8 @@ function CheckPaymentDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead className="text-right">Total vente</TableHead>
             <TableHead className="text-right">Montant vente</TableHead>
+            <TableHead className="text-right">Montant encaissé</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -812,8 +812,8 @@ function DeferredPaymentDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead className="text-right">Total vente</TableHead>
             <TableHead className="text-right">Montant vente</TableHead>
+            <TableHead className="text-right">Montant encaissé</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -871,8 +871,8 @@ function CashSalesDetails() {
             <TableHead>Nom acheteur</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead>Ville</TableHead>
-            <TableHead className="text-right">Total vente</TableHead>
             <TableHead className="text-right">Montant vente</TableHead>
+            <TableHead className="text-right">Montant encaissé</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -932,7 +932,7 @@ function RefundPaymentDetails() {
             <TableHead>Ville</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Commentaires</TableHead>
-            <TableHead className="text-right">Total vente</TableHead>
+            <TableHead className="text-right">Montant vente</TableHead>
             <TableHead className="text-right">Remboursement</TableHead>
           </TableRow>
         </TableHeader>

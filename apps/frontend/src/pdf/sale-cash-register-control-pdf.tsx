@@ -277,10 +277,10 @@ function Payments({
                 <Text style={styles.headerCell}>Ville</Text>
               </View>
               <View style={styles.tableColPrice}>
-                <Text style={styles.headerCell}>Total vente</Text>
+                <Text style={styles.headerCell}>Montant vente</Text>
               </View>
               <View style={styles.tableColPrice}>
-                <Text style={styles.headerCell}>Montant</Text>
+                <Text style={styles.headerCell}>Montant encaissé</Text>
               </View>
             </View>
 
@@ -462,7 +462,7 @@ function RefundPayments({
                 <Text style={styles.refundHeaderCell}>Commentaire</Text>
               </View>
               <View style={styles.refundTableColPrice}>
-                <Text style={styles.refundHeaderCell}>Total vente</Text>
+                <Text style={styles.refundHeaderCell}>Montant vente</Text>
               </View>
               <View style={styles.refundTableColPrice}>
                 <Text style={styles.refundHeaderCell}>Montant</Text>
