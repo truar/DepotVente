@@ -2,13 +2,8 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import type { ReactNode } from 'react'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 import { pdfDec, pdfEur, pdfPct } from '@/pdf/format.ts'
-
-const timestampFormatter = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  dateStyle: 'short',
-  timeStyle: 'medium',
-})
 
 const styles = StyleSheet.create({
   page: {
@@ -19,16 +14,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   header: {
+    fontStyle: 'italic',
+    fontSize: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
   },
   headerTitle: {
-    gap: 2,
-  },
-  headerDate: {
-    fontSize: 9,
-    color: '#4b5563',
+    gap: 5,
   },
   section: {
     gap: 6,
@@ -205,17 +197,14 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header} fixed>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
+          <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
             <View style={styles.headerTitle}>
-              <Text>Bourse aux skis</Text>
-              <Text>{data.year}</Text>
+              <Text>Bourse au skis {data.year}</Text>
+              <Text>Club Montagnard Rumillien</Text>
               <Text>Bilan de la bourse</Text>
             </View>
           </View>
-          <Text style={styles.headerDate}>
-            {timestampFormatter.format(new Date())}
-          </Text>
         </View>
 
         {/* Dépôts / pré-dépôts */}
@@ -379,6 +368,7 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
         </View>
 
         <PdfPageNumberFooter />
+        <PdfTimestampFooter />
       </Page>
     </Document>
   )
