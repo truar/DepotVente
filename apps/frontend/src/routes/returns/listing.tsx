@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
-import { getYear } from '@/utils'
+import { getYear, sortByIdentificationLetter } from '@/utils'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { type Contact, db, type Deposit } from '@/db.ts'
@@ -43,9 +43,9 @@ async function createReturnDepositPdfData(
   const deposit = await db.deposits.get(id)
   if (!deposit) return undefined
 
-  const articles = await db.articles
-    .where({ depositId: deposit.id })
-    .sortBy('articleIndex')
+  const articles = sortByIdentificationLetter(
+    await db.articles.where({ depositId: deposit.id }).toArray(),
+  )
   const contact = await db.contacts.get(deposit.sellerId)
   if (!contact) throw new Error('No contact found for deposit')
 
