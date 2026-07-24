@@ -1,13 +1,8 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
+import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 import { pdfEur } from '@/pdf/format.ts'
-
-const timestampFormatter = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  dateStyle: 'short',
-  timeStyle: 'medium',
-})
 
 const styles = StyleSheet.create({
   page: {
@@ -18,12 +13,12 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   header: {
+    fontStyle: 'italic',
+    fontSize: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
   },
-  headerTitle: { gap: 2 },
-  headerDate: { fontSize: 9, color: '#4b5563' },
+  headerTitle: { gap: 5 },
   section: { gap: 6 },
   sectionTitle: {
     fontFamily: 'Helvetica-Bold',
@@ -57,9 +52,8 @@ export type RecapVentesRow = {
   cashRegisterId: number
   checks: number
   cards: number
-  /** espèces = espèces + paiements différés */
   cash: number
-  /** total brut = chèques + cartes + espèces (avant remboursement) */
+  deferred: number
   total: number
   refund: number
   /** ventes nettes = total − remboursements */
@@ -70,6 +64,7 @@ export type RecapTransactionsRow = {
   cashRegisterId: number
   checks: number
   cash: number
+  deferred: number
   cards: number
 }
 
@@ -96,28 +91,26 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header} fixed>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+        <View style={{ flexDirection: 'row', gap: 5 }}>
           <CMRLogo />
           <View style={styles.headerTitle}>
-            <Text>Bourse aux skis</Text>
-            <Text>{data.year}</Text>
+            <Text>Bourse au skis {data.year}</Text>
+            <Text>Club Montagnard Rumillien</Text>
             <Text>Récapitulatif des ventes</Text>
           </View>
         </View>
-        <Text style={styles.headerDate}>
-          {timestampFormatter.format(new Date())}
-        </Text>
       </View>
 
-      {/* Récapitulatif des ventes */}
+      {/* Récapitulatif des encaissements */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Récapitulatif des ventes</Text>
+        <Text style={styles.sectionTitle}>Récapitulatif des encaissements</Text>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>
-            <Text style={styles.cellNum}>Chèques</Text>
             <Text style={styles.cellNum}>Cartes</Text>
             <Text style={styles.cellNum}>Espèces</Text>
+            <Text style={styles.cellNum}>Différé</Text>
+            <Text style={styles.cellNum}>Chèques</Text>
             <Text style={styles.cellNum}>Total</Text>
             <Text style={styles.cellNum}>Remb.</Text>
             <Text style={styles.cellNum}>Ventes</Text>
@@ -129,13 +122,16 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
             >
               <Text style={styles.cellLabel}>{r.cashRegisterId}</Text>
               <Text style={styles.cellNum}>
-                <Eur value={r.checks} />
-              </Text>
-              <Text style={styles.cellNum}>
                 <Eur value={r.cards} />
               </Text>
               <Text style={styles.cellNum}>
                 <Eur value={r.cash} />
+              </Text>
+              <Text style={styles.cellNum}>
+                <Eur value={r.deferred} />
+              </Text>
+              <Text style={styles.cellNum}>
+                <Eur value={r.checks} />
               </Text>
               <Text style={styles.cellNum}>
                 <Eur value={r.total} />
@@ -151,13 +147,16 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
           <View style={[styles.row, styles.totalRow]}>
             <Text style={styles.cellLabel}>Total</Text>
             <Text style={styles.cellNum}>
-              <Eur value={data.salesTotal.checks} />
-            </Text>
-            <Text style={styles.cellNum}>
               <Eur value={data.salesTotal.cards} />
             </Text>
             <Text style={styles.cellNum}>
               <Eur value={data.salesTotal.cash} />
+            </Text>
+            <Text style={styles.cellNum}>
+              <Eur value={data.salesTotal.deferred} />
+            </Text>
+            <Text style={styles.cellNum}>
+              <Eur value={data.salesTotal.checks} />
             </Text>
             <Text style={styles.cellNum}>
               <Eur value={data.salesTotal.total} />
@@ -178,9 +177,10 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>
-            <Text style={styles.cellNum}>Chèques</Text>
-            <Text style={styles.cellNum}>Espèces</Text>
             <Text style={styles.cellNum}>Cartes</Text>
+            <Text style={styles.cellNum}>Espèces</Text>
+            <Text style={styles.cellNum}>Différé</Text>
+            <Text style={styles.cellNum}>Chèques</Text>
           </View>
           {data.transactions.map((r, i) => (
             <View
@@ -188,16 +188,20 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
               style={[styles.row, ...(i % 2 === 1 ? [styles.zebraRow] : [])]}
             >
               <Text style={styles.cellLabel}>{r.cashRegisterId}</Text>
-              <Text style={styles.cellNum}>{r.checks || ''}</Text>
-              <Text style={styles.cellNum}>{r.cash || ''}</Text>
-              <Text style={styles.cellNum}>{r.cards || ''}</Text>
+              <Text style={styles.cellNum}>{r.cards}</Text>
+              <Text style={styles.cellNum}>{r.cash}</Text>
+              <Text style={styles.cellNum}>{r.deferred}</Text>
+              <Text style={styles.cellNum}>{r.checks}</Text>
             </View>
           ))}
           <View style={[styles.row, styles.totalRow]}>
             <Text style={styles.cellLabel}>Total</Text>
-            <Text style={styles.cellNum}>{data.transactionsTotal.checks}</Text>
-            <Text style={styles.cellNum}>{data.transactionsTotal.cash}</Text>
             <Text style={styles.cellNum}>{data.transactionsTotal.cards}</Text>
+            <Text style={styles.cellNum}>{data.transactionsTotal.cash}</Text>
+            <Text style={styles.cellNum}>
+              {data.transactionsTotal.deferred}
+            </Text>
+            <Text style={styles.cellNum}>{data.transactionsTotal.checks}</Text>
           </View>
         </View>
       </View>
@@ -241,6 +245,7 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
       </View>
 
       <PdfPageNumberFooter />
+      <PdfTimestampFooter />
     </Page>
   </Document>
 )

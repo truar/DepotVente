@@ -22,25 +22,24 @@ export type RecapVentesResult = {
   audit: Array<BilanAuditGroup>
 }
 
-const cashOf = (s: Sale) => (s.cashAmount ?? 0) + (s.deferredAmount ?? 0)
+const cashOf = (s: Sale) => s.cashAmount ?? 0
+const deferredOf = (s: Sale) => s.deferredAmount ?? 0
 
-/**
- * "Récapitulatif des ventes" — sales grouped by cash register (incrementStart).
- *
- * Columns:
- *  - Chèques / Cartes         = Σ checkAmount / Σ cardAmount
- *  - Espèces                  = Σ (cashAmount + deferredAmount)   ← différé compté avec les espèces
- *  - Total                    = Chèques + Cartes + Espèces (brut, avant remboursement)
- *  - Remb.                    = Σ totalRefundAmount
- *  - Ventes                   = Total − Remb. (= Σ des ventes nettes)
- */
 export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
-  const [allSales, allRefunds] = await Promise.all([
+  const [allSales, allRefunds, allControls] = await Promise.all([
     db.sales.toArray(),
     db.refunds.toArray(),
+    db.cashRegisterControls.toArray(),
   ])
   const sales = allSales.filter((s) => s.deletedAt == null)
   const refunds = allRefunds.filter((r) => r.deletedAt == null)
+  // espèces = ce qu'il y a réellement dans la caisse, fond de caisse inclus
+  // (le "montant réel" saisi au contrôle est net du fond de caisse)
+  const realCashByRegister = new Map(
+    allControls
+      .filter((c) => c.deletedAt == null && c.type === 'SALE')
+      .map((c) => [c.cashRegisterId, c.realCashAmount + c.initialAmount]),
+  )
 
   const registerIds = Array.from(
     new Set(sales.map((s) => s.incrementStart)),
@@ -52,14 +51,16 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     const registerSales = sales.filter((s) => s.incrementStart === id)
     const checks = registerSales.reduce((a, s) => a + (s.checkAmount ?? 0), 0)
     const cards = registerSales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
-    const cash = registerSales.reduce((a, s) => a + cashOf(s), 0)
-    const total = checks + cards + cash
+    const cash = realCashByRegister.get(id) ?? 0
+    const deferred = registerSales.reduce((a, s) => a + deferredOf(s), 0)
+    const total = checks + cards + cash + deferred
     const refund = registerSales.reduce((a, s) => a + s.totalRefundAmount, 0)
     sales_.push({
       cashRegisterId: id,
       checks,
       cards,
       cash,
+      deferred,
       total,
       refund,
       net: total - refund,
@@ -68,6 +69,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       cashRegisterId: id,
       checks: registerSales.filter((s) => (s.checkAmount ?? 0) > 0).length,
       cash: registerSales.filter((s) => cashOf(s) > 0).length,
+      deferred: registerSales.filter((s) => deferredOf(s) > 0).length,
       cards: registerSales.filter((s) => (s.cardAmount ?? 0) > 0).length,
     })
   }
@@ -76,6 +78,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     checks: sales_.reduce((a, r) => a + r.checks, 0),
     cards: sales_.reduce((a, r) => a + r.cards, 0),
     cash: sales_.reduce((a, r) => a + r.cash, 0),
+    deferred: sales_.reduce((a, r) => a + r.deferred, 0),
     total: sales_.reduce((a, r) => a + r.total, 0),
     refund: sales_.reduce((a, r) => a + r.refund, 0),
     net: sales_.reduce((a, r) => a + r.net, 0),
@@ -83,6 +86,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
   const transactionsTotal = {
     checks: transactions.reduce((a, r) => a + r.checks, 0),
     cash: transactions.reduce((a, r) => a + r.cash, 0),
+    deferred: transactions.reduce((a, r) => a + r.deferred, 0),
     cards: transactions.reduce((a, r) => a + r.cards, 0),
   }
 
@@ -115,7 +119,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
 
   const audit: Array<BilanAuditGroup> = [
     {
-      title: 'Récapitulatif des ventes — définition des colonnes',
+      title: 'Récapitulatif des encaissements — définition des colonnes',
       entries: [
         {
           label: 'Regroupement',
@@ -136,16 +140,22 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
           formula: 'par caisse',
         },
         {
-          label: 'Espèces',
+          label: 'Espèces (réel en caisse)',
           value: eur(salesTotal.cash),
-          source: 'Σ (sale.cashAmount + sale.deferredAmount)',
-          formula: 'les paiements différés sont comptés avec les espèces',
+          source: 'contrôle de caisse SALE : realCashAmount + initialAmount',
+          formula: `espèces comptées, fond de caisse inclus — ${num(realCashByRegister.size)} caisse(s) contrôlée(s) sur ${num(registerIds.length)}`,
+        },
+        {
+          label: 'Différé',
+          value: eur(salesTotal.deferred),
+          source: 'Σ sale.deferredAmount',
+          formula: 'par caisse',
         },
         {
           label: 'Total (brut)',
           value: eur(salesTotal.total),
-          source: 'chèques + cartes + espèces',
-          formula: `${eur(salesTotal.checks)} + ${eur(salesTotal.cards)} + ${eur(salesTotal.cash)}`,
+          source: 'cartes + espèces + différé + chèques',
+          formula: `${eur(salesTotal.cards)} + ${eur(salesTotal.cash)} + ${eur(salesTotal.deferred)} + ${eur(salesTotal.checks)}`,
         },
         {
           label: 'Remb.',
@@ -173,8 +183,14 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
         {
           label: 'Espèces',
           value: num(transactionsTotal.cash),
-          source: 'nb ventes avec (cashAmount + deferredAmount) > 0',
-          formula: 'idem colonne Espèces (différé inclus)',
+          source: 'nb ventes avec cashAmount > 0',
+          formula: '—',
+        },
+        {
+          label: 'Différé',
+          value: num(transactionsTotal.deferred),
+          source: 'nb ventes avec deferredAmount > 0',
+          formula: '—',
         },
         {
           label: 'Cartes',
