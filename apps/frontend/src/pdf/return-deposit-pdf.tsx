@@ -289,7 +289,7 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
           </View>
           <View>
             <Text>
-              Cotisation due:{' '}
+              Cotisation déduite:{' '}
               <FormattedNumber
                 value={data.deposit.dueContributionAmount}
                 style="currency"
