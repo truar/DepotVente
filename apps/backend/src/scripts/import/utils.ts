@@ -28,6 +28,14 @@ export function parseToUTC(dateString: string): Date | undefined {
   }
 }
 
+// Les montants arrivent formatés à la française : "2 782,50 €", avec une
+// espace fine insécable comme séparateur de milliers. On ne garde que les
+// caractères numériques avant de parser, sinon parseFloat s'arrête au
+// séparateur et renvoie 2.
 export function toFloat(frenchNumber: string) {
-  return parseFloat(frenchNumber.replace(/,/g, '.'));
+  const normalized = (frenchNumber ?? '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(',', '.');
+  const parsed = parseFloat(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
