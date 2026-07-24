@@ -75,7 +75,10 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
   const { control, handleSubmit, watch, setValue, trigger } = methods
   const [checkPrintOffsets] = useCheckPrintOffsets()
 
+  const [printedDepositId, setPrintedDepositId] = useState<string | null>(null)
+
   const depositId = watch('depositId')
+  const isCheckPrinted = !!depositId && printedDepositId === depositId
 
   const printCheck = useCallback(async () => {
     if (!depositId) return
@@ -93,15 +96,18 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
       date: new Date(),
     }
     await printPdf(<SellerCheckPdf data={data} offsets={checkPrintOffsets} />)
+    setPrintedDepositId(depositId)
   }, [depositId, trigger, checkPrintOffsets])
 
   const onSubmit: SubmitHandler<IndividualReturnFormType> = useCallback(
     async (formData) => {
+      if (!formData.depositId || formData.depositId !== printedDepositId) return
       await mutation.mutate(formData)
       setValue('checkId', formData.checkId + 1)
       setValue('depositId', null)
+      setPrintedDepositId(null)
     },
-    [depositId],
+    [mutation, setValue, printedDepositId],
   )
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -185,18 +191,25 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
           <ReturnedDepositSummary />
         </div>
         {depositId && (
-          <div className="flex flex-row justify-end gap-5">
+          <div className="flex flex-row justify-end items-center gap-5">
+            {!isCheckPrinted && (
+              <p className="text-sm text-gray-500">
+                Imprimez le chèque avant de valider
+              </p>
+            )}
             <div>
               <CustomButton
                 type="button"
                 onClick={printCheck}
                 variant="outline"
               >
-                Imprimer le chèque
+                {isCheckPrinted ? 'Réimprimer le chèque' : 'Imprimer le chèque'}
               </CustomButton>
             </div>
             <div>
-              <CustomButton type="submit">Valider</CustomButton>
+              <CustomButton type="submit" disabled={!isCheckPrinted}>
+                Valider et passer au chèque suivant
+              </CustomButton>
             </div>
           </div>
         )}
