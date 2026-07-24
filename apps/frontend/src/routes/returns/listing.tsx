@@ -78,6 +78,7 @@ async function createReturnDepositPdfData(
       color: article.color,
       category: article.category,
       isSold: !!article.saleId,
+      isDeleted: article.status === 'DELETED',
     })),
   }
 }

@@ -38,6 +38,7 @@ function RouteComponent() {
             discipline: 'Alpin',
             price: 1000,
             isSold: Math.random() < 0.5,
+            isDeleted: Math.random() < 0.2,
           })),
         }}
       />

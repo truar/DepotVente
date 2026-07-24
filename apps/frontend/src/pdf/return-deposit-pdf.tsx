@@ -104,6 +104,13 @@ const styles = StyleSheet.create({
   tableHeader: {
     backgroundColor: '#f3f4f6',
   },
+  tableRowDeleted: {
+    backgroundColor: '#f3f4f6',
+  },
+  deletedCell: {
+    color: '#9ca3af',
+    textDecoration: 'line-through',
+  },
 })
 
 export type Article = {
@@ -116,6 +123,7 @@ export type Article = {
   color: string
   category: string
   isSold: boolean
+  isDeleted?: boolean
 }
 
 export type ReturnDepositPdfProps = {
@@ -238,7 +246,9 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             </View>
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Nb articles :</Text>
-              <Text style={styles.articleCount}>{articles.length}</Text>
+              <Text style={styles.articleCount}>
+                {articles.filter((article) => !article.isDeleted).length}
+              </Text>
             </View>
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Cotisations :</Text>
@@ -342,44 +352,52 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
               </View>
             </View>
 
-            {articles.map((article, index) => (
-              <View style={styles.tableRow} key={index}>
-                <View style={styles.tableCol}>
-                  <Text>{article.shortCode}</Text>
+            {articles.map((article, index) => {
+              const cellStyle = article.isDeleted
+                ? styles.deletedCell
+                : undefined
+              const rowStyle = article.isDeleted
+                ? [styles.tableRow, styles.tableRowDeleted]
+                : styles.tableRow
+              return (
+                <View style={rowStyle} key={index}>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.shortCode}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.discipline}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.category}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.brand}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.color}</Text>
+                  </View>
+                  <View style={styles.tableCol}>
+                    <Text style={cellStyle}>{article.size}</Text>
+                  </View>
+                  <View style={styles.tableColDesc}>
+                    <Text style={cellStyle}>{article.model}</Text>
+                  </View>
+                  <View style={styles.tableColPrice}>
+                    <Text style={cellStyle}>
+                      <FormattedNumber
+                        value={article.price}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
+                  <View style={styles.tableColSold}>
+                    <Text style={cellStyle}>{article.isSold && 'Vendu'}</Text>
+                  </View>
                 </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.discipline}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.category}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.brand}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.color}</Text>
-                </View>
-                <View style={styles.tableCol}>
-                  <Text>{article.size}</Text>
-                </View>
-                <View style={styles.tableColDesc}>
-                  <Text>{article.model}</Text>
-                </View>
-                <View style={styles.tableColPrice}>
-                  <Text>
-                    <FormattedNumber
-                      value={article.price}
-                      style="currency"
-                      currency="EUR"
-                      useGrouping={false}
-                    />
-                  </Text>
-                </View>
-                <View style={styles.tableColSold}>
-                  <Text>{article.isSold && 'Vendu'}</Text>
-                </View>
-              </View>
-            ))}
+              )
+            })}
           </View>
         </View>
         <View
