@@ -13,6 +13,8 @@ const numFmt = new Intl.NumberFormat('fr-FR')
 const eur = (n: number) => eurFmt.format(n)
 const num = (n: number) => numFmt.format(n)
 
+const THEORETICAL_CONTRIBUTION_STATUSES = ['PAYE', 'DEDUITE', 'A_PAYER']
+
 export type RecapDepotsResult = {
   data: RecapDepotsData
   audit: Array<BilanAuditGroup>
@@ -27,7 +29,6 @@ export type RecapDepotsResult = {
  *  - Nb Pré-dépôts = nb de pré-dépôts confirmés dont le dépôt est sur cette caisse
  *  - Valeur dépôt  = Σ price des articles (status ≠ DELETED) des dépôts de la caisse
  *  - Nb Articles   = nb de ces articles
- *  - Cotisation    = Σ contributionAmount des dépôts PAYE de la caisse
  *
  * Table Pré-dépôts — une ligne de synthèse sur l'ensemble des pré-dépôts.
  */
@@ -81,7 +82,9 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
   const rows: Array<RecapDepotsRow> = registerIds.map((id) => {
     const caisseDeposits = deposits.filter((d) => d.incrementStart === id)
     const contribution = caisseDeposits
-      .filter((d) => d.contributionStatus === 'PAYE')
+      .filter((d) =>
+        THEORETICAL_CONTRIBUTION_STATUSES.includes(d.contributionStatus),
+      )
       .reduce((acc, d) => acc + d.contributionAmount, 0)
     return {
       cashRegisterId: id,
@@ -100,6 +103,11 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
     articlesCount: rows.reduce((a, r) => a + r.articlesCount, 0),
     contribution: rows.reduce((a, r) => a + r.contribution, 0),
   }
+
+  const contributionByStatus = (status: string) =>
+    deposits
+      .filter((d) => d.contributionStatus === status)
+      .reduce((acc, d) => acc + d.contributionAmount, 0)
 
   const confirmed = predeposits.filter((p) => p.depositId != null).length
   const predepositsSummary = {
@@ -154,8 +162,8 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
         {
           label: 'Cotisation',
           value: eur(depositsTotal.contribution),
-          source: 'Σ contributionAmount des dépôts PAYE',
-          formula: 'cotisations encaissées au dépôt',
+          source: 'Σ contributionAmount des dépôts PAYE, DEDUITE ou A_PAYER',
+          formula: `cotisations théoriques : ${eur(contributionByStatus('PAYE'))} payées + ${eur(contributionByStatus('DEDUITE'))} déduites + ${eur(contributionByStatus('A_PAYER'))} à payer`,
         },
       ],
     },
