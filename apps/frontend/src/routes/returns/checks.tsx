@@ -88,7 +88,25 @@ function ChecksDataTable() {
         data={data}
         headerActions={(table) => <ChecksDataTableHeaderAction table={table} />}
       />
+      <ChecksSummary checks={data} />
     </>
+  )
+}
+
+function ChecksSummary({ checks }: { checks: CheckTableType[] }) {
+  const total = checks.reduce(
+    (acc, check) => acc + (check.sellerAmount ?? 0),
+    0,
+  )
+
+  return (
+    <div className="flex flex-row gap-5 font-bold">
+      <p>Nombre de chèques: {checks.length}</p>
+      <p>
+        Sous-total:{' '}
+        <FormattedNumber value={total} style="currency" currency="EUR" />
+      </p>
+    </div>
   )
 }
 
@@ -129,7 +147,7 @@ export const columns: ColumnDef<CheckTableType>[] = [
   },
   {
     id: 'amount',
-    header: () => <div className="text-right pr-3">Montant vendu</div>,
+    header: () => <div className="text-right pr-3">Montant du chèque</div>,
     cell: ({ row }) => {
       const sellerAmount = row.original.sellerAmount
       return (

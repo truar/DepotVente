@@ -79,6 +79,23 @@ const styles = StyleSheet.create({
   tableHeader: {
     backgroundColor: '#f3f4f6',
   },
+  subtotalRow: {
+    margin: 'auto',
+    flexDirection: 'row',
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 2,
+    borderBottomWidth: 1,
+    borderColor: 'grey',
+    backgroundColor: '#c3c8d0',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
+  subtotalLabel: {
+    width: '92%',
+    textAlign: 'right',
+    paddingRight: 10,
+  },
   refundTable: {
     marginTop: 10,
     fontSize: 8,
@@ -135,6 +152,10 @@ export type CheckListingProps = {
 export const CheckListingPdf = (props: CheckListingProps) => {
   const { data, copy = 1 } = props
   const { checks } = data
+  const subtotal = checks.reduce(
+    (acc, check) => acc + (check.sellerAmount ?? 0),
+    0,
+  )
   return (
     <IntlProvider locale={'fr'}>
       <Document>
@@ -172,7 +193,7 @@ export const CheckListingPdf = (props: CheckListingProps) => {
                     <Text style={styles.headerCell}>Signature</Text>
                   </View>
                   <View style={styles.tableColPrice}>
-                    <Text style={styles.headerCell}>Règlement</Text>
+                    <Text style={styles.headerCell}>Montant du chèque</Text>
                   </View>
                 </View>
 
@@ -208,6 +229,23 @@ export const CheckListingPdf = (props: CheckListingProps) => {
                     </View>
                   </View>
                 ))}
+
+                <View style={styles.subtotalRow}>
+                  <Text style={styles.subtotalLabel}>
+                    Sous-total : {checks.length} chèque
+                    {checks.length > 1 ? 's' : ''}
+                  </Text>
+                  <View style={styles.tableColPrice}>
+                    <Text>
+                      <FormattedNumber
+                        value={subtotal}
+                        style="currency"
+                        currency="EUR"
+                        useGrouping={false}
+                      />
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
             <View fixed style={styles.pageInformation}>
