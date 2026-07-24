@@ -103,7 +103,7 @@ function ChecksSummary({ checks }: { checks: CheckTableType[] }) {
     <div className="flex flex-row gap-5 font-bold">
       <p>Nombre de chèques: {checks.length}</p>
       <p>
-        Sous-total:{' '}
+        Montant réglé:{' '}
         <FormattedNumber value={total} style="currency" currency="EUR" />
       </p>
     </div>

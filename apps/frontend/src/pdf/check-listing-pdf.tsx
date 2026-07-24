@@ -232,7 +232,7 @@ export const CheckListingPdf = (props: CheckListingProps) => {
 
                 <View style={styles.subtotalRow}>
                   <Text style={styles.subtotalLabel}>
-                    Sous-total : {checks.length} chèque
+                    Montant réglé : {checks.length} chèque
                     {checks.length > 1 ? 's' : ''}
                   </Text>
                   <View style={styles.tableColPrice}>
