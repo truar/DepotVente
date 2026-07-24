@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { parseToUTC, toFloat } from './utils';
+import { parseToUTC, shiftYearInText, TARGET_YEAR, toFloat } from './utils';
 import path from 'path';
 import fs from 'fs';
 import { types } from './types';
@@ -47,7 +47,7 @@ function parseCSV(content: string): ArticleData[] {
 
   return lines.slice(1).map((line, index) => {
     const values = line.split('\t').map((v) => v.trim());
-    const articleCode = values[IDENTIFIANT_ARTICLE]
+    const articleCode = shiftYearInText(values[IDENTIFIANT_ARTICLE])
     return {
       price: toFloat(values[PRIX]),
       category: materiels[values[ID_MATERIEL]],
@@ -58,7 +58,7 @@ function parseCSV(content: string): ArticleData[] {
       size: values[TAILLE],
       color: values[COULEUR],
       code: articleCode,
-      year: 2025,
+      year: TARGET_YEAR,
       depositIndex: parseInt(values[VENDEUR]),
       identificationLetter: values[INDICE],
       articleIndex: index,

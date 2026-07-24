@@ -1,3 +1,13 @@
+// Les exports sont ceux de la bourse 2025 : l'année et les codes article sont
+// rebasculés sur SOURCE_YEAR → TARGET_YEAR. Les dates gardent leur valeur
+// d'origine.
+export const SOURCE_YEAR = 2025;
+export const TARGET_YEAR = 2026;
+
+export function shiftYearInText(value: string): string {
+  return value.split(String(SOURCE_YEAR)).join(String(TARGET_YEAR));
+}
+
 export function parseToUTC(dateString: string): Date | undefined {
   if (!dateString || dateString.trim() === '') {
     return undefined;

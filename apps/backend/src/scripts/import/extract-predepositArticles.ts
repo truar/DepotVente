@@ -4,7 +4,7 @@ import fs from 'fs';
 import { types } from './types';
 import { materiels } from './materiels';
 import { marques } from './marques';
-import { toFloat } from './utils';
+import { TARGET_YEAR, toFloat } from './utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,7 +49,7 @@ function parseCSV(content: string): PredepositArticleData[] {
       model: values[DESCRIPTIF],
       size: values[TAILLE],
       color: values[COULEUR],
-      year: 2025,
+      year: TARGET_YEAR,
       depositIndex: parseInt(values[VENDEUR]),
       identificationLetter: values[INDICE],
       articleIndex: index,

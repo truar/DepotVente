@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import fs from 'fs';
+import { shiftYearInText } from './utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,7 +22,7 @@ function parseCSV(content: string): SoldArticleData[] {
 
     return {
       idBuyer: values[ID_ACHETEUR],
-      code: values[CODE].toUpperCase(),
+      code: shiftYearInText(values[CODE].toUpperCase()),
     } as SoldArticleData;
   });
 }

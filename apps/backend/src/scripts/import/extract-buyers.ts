@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import fs from 'fs';
-import { parseToUTC, toFloat } from './utils';
+import { parseToUTC, shiftYearInText, toFloat } from './utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,7 +48,7 @@ function parseCSV(content: string): BuyerData[] {
       firstName: firstName.join('').trim(),
       phoneNumber: values[TEL_ACHETEUR],
       city: values[ADRESSE_ACHETEUR],
-      year: parseInt(values[ANNEE]),
+      year: parseInt(shiftYearInText(values[ANNEE])),
       incrementStart: parseInt(values[POSTE] || '2000'),
       soldAt: parseToUTC(values[DATE]),
       createdAt: parseToUTC(values[DATE]),
