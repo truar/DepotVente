@@ -16,6 +16,16 @@ function computeSaleTotal(sale: Sale): number {
 const safeDiv = (numerator: number, denominator: number) =>
   denominator === 0 ? 0 : numerator / denominator
 
+/**
+ * Comme dans le récap. ventes : les vraies caisses de vente sont numérotées de
+ * 1000 en 1000, la caisse 1 est une saisie d'essai qui n'a jamais servi. Elle
+ * n'est exclue que côté vente — côté dépôt, la caisse 1 est légitime (les pros
+ * y sont rattachés par l'import).
+ */
+const EXCLUDED_SALE_REGISTER_IDS = new Set([1])
+const isReportedSaleRegister = (id: number) =>
+  !EXCLUDED_SALE_REGISTER_IDS.has(id)
+
 // --- French display formatters, used only to make the audit trail readable ---
 const eurFmt = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -66,6 +76,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     allDeposits,
     allArticles,
     allSales,
+    allRefunds,
     allPredeposits,
     allContacts,
     allCashRegisterControls,
@@ -73,16 +84,27 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     db.deposits.toArray(),
     db.articles.toArray(),
     db.sales.toArray(),
+    db.refunds.toArray(),
     db.predeposits.toArray(),
     db.contacts.toArray(),
     db.cashRegisterControls.toArray(),
   ])
 
   const deposits = allDeposits.filter((d) => d.deletedAt == null)
-  const sales = allSales.filter((s) => s.deletedAt == null)
+  const sales = allSales.filter(
+    (s) => s.deletedAt == null && isReportedSaleRegister(s.incrementStart),
+  )
+  const refunds = allRefunds.filter(
+    (r) => r.deletedAt == null && isReportedSaleRegister(r.incrementStart),
+  )
+  const excludedSalesCount = allSales.filter(
+    (s) => s.deletedAt == null && !isReportedSaleRegister(s.incrementStart),
+  ).length
   const predeposits = allPredeposits.filter((p) => p.deletedAt == null)
   const cashRegisterControls = allCashRegisterControls.filter(
-    (c) => c.deletedAt == null,
+    (c) =>
+      c.deletedAt == null &&
+      (c.type !== 'SALE' || isReportedSaleRegister(c.cashRegisterId)),
   )
   // "Articles en dépôt" = every article that is not deleted (sold ones included).
   const depositArticles = allArticles.filter(
@@ -135,16 +157,20 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     cmrRights + paidContributions - unpaidContributions
 
   // ===== Détail des encaissements =====
-  // Espèces = real cash actually counted in every register (deposit + sale),
-  // not the persisted sale.cashAmount, per the theoretical-vs-real reconciliation.
+  // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
+  // les mêmes totaux :
+  //  - cartes  = Σ sale.cardAmount − Σ refund.cardAmount (remboursements CB seuls,
+  //              les remboursements espèces sortent déjà du tiroir-caisse) ;
+  //  - espèces = les espèces réellement comptées aux caisses de VENTE, pas le
+  //              sale.cashAmount théorique (réconciliation théorique / réel).
+  const saleRegisters = cashRegisterControls.filter((c) => c.type === 'SALE')
+  const grossCards = sales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
+  const refundedCards = refunds.reduce((a, r) => a + r.cardAmount, 0)
+  const totalCards = grossCards - refundedCards
+  const totalCash = saleRegisters.reduce((a, c) => a + c.realCashAmount, 0)
   const totalChecks = sales.reduce((a, s) => a + (s.checkAmount ?? 0), 0)
-  const totalCash = cashRegisterControls.reduce(
-    (a, c) => a + c.realCashAmount,
-    0,
-  )
-  const totalCards = sales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
-  const totalPayments = totalChecks + totalCash + totalCards
-  const soldMinusCollected = salesTotalAmount - totalPayments
+  const totalDeferred = sales.reduce((a, s) => a + (s.deferredAmount ?? 0), 0)
+  const totalPayments = totalCards + totalCash + totalChecks + totalDeferred
 
   // Cotisations encaissées = real cash counted in the deposit registers only.
   // Contributions deducted at return (DEDUITE) are NOT added here: they are
@@ -216,13 +242,12 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       theoreticalRevenue,
     },
     collection: {
-      totalSold: salesTotalAmount,
       totalDisbursed,
-      totalChecks,
-      totalCash,
       totalCards,
+      totalCash,
+      totalChecks,
+      totalDeferred,
       totalPayments,
-      soldMinusCollected,
       proPayments,
       individualPayments,
       collectedContributions,
@@ -268,6 +293,12 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     {
       title: 'Ventes',
       entries: [
+        {
+          label: 'Périmètre des caisses de vente',
+          value: `${num(excludedSalesCount)} vente(s) exclue(s)`,
+          source: 'ventes, remboursements et contrôles de caisse VENTE',
+          formula: `caisse(s) exclue(s) : ${[...EXCLUDED_SALE_REGISTER_IDS].join(', ')} (saisie d'essai, comme au récap. ventes) — les caisses de dépôt ne sont pas filtrées`,
+        },
         {
           label: "Nombre d'acheteurs",
           value: num(buyersCount),
@@ -351,10 +382,22 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       title: 'Détail des encaissements',
       entries: [
         {
-          label: 'Montant total vendu',
-          value: eur(salesTotalAmount),
-          source: 'Σ total des ventes',
-          formula: `identique au montant total des ventes`,
+          label: 'Total paiements',
+          value: eur(totalPayments),
+          source: 'cartes + espèces + chèques + différé',
+          formula: `${eur(totalCards)} + ${eur(totalCash)} + ${eur(totalChecks)} + ${eur(totalDeferred)}`,
+        },
+        {
+          label: 'Total cartes',
+          value: eur(totalCards),
+          source: 'Σ sale.cardAmount − Σ refund.cardAmount (CB uniquement)',
+          formula: `${eur(grossCards)} − ${eur(refundedCards)} (${num(refunds.length)} remb.)`,
+        },
+        {
+          label: 'Total espèces',
+          value: eur(totalCash),
+          source: 'contrôles de caisse VENTE : Σ realCashAmount',
+          formula: `espèces comptées, hors fond de caisse — ${num(saleRegisters.length)} caisse(s) de vente`,
         },
         {
           label: 'Total chèques',
@@ -363,28 +406,10 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           formula: `Σ checkAmount sur ${num(sales.length)} ventes`,
         },
         {
-          label: 'Total espèces',
-          value: eur(totalCash),
-          source: 'Σ realCashAmount de toutes les caisses (dépôt + ventes)',
-          formula: `Σ realCashAmount sur ${num(cashRegisterControls.length)} caisses`,
-        },
-        {
-          label: 'Total cartes',
-          value: eur(totalCards),
-          source: 'Σ sale.cardAmount',
-          formula: `Σ cardAmount sur ${num(sales.length)} ventes`,
-        },
-        {
-          label: 'Total paiements',
-          value: eur(totalPayments),
-          source: 'chèques + espèces + cartes',
-          formula: `${eur(totalChecks)} + ${eur(totalCash)} + ${eur(totalCards)}`,
-        },
-        {
-          label: 'Diff vendu − encaissé',
-          value: eur(soldMinusCollected),
-          source: 'total vendu − total paiements',
-          formula: `${eur(salesTotalAmount)} − ${eur(totalPayments)}`,
+          label: 'Total différé',
+          value: eur(totalDeferred),
+          source: 'Σ sale.deferredAmount',
+          formula: `Σ deferredAmount sur ${num(sales.length)} ventes`,
         },
         {
           label: 'Montant total décaissé',

@@ -154,17 +154,16 @@ export type BilanPdfData = {
     theoreticalRevenue: number
   }
   collection: {
-    /** Montant total vendu */
-    totalSold: number
     /** Montant total décaissé */
     totalDisbursed: number
-    totalChecks: number
-    totalCash: number
+    /** Cartes, net des remboursements CB */
     totalCards: number
-    /** Total des paiements (chèques + espèces + cartes) */
+    /** Espèces réellement comptées aux caisses de vente */
+    totalCash: number
+    totalChecks: number
+    totalDeferred: number
+    /** Total des paiements (cartes + espèces + chèques + différé) */
     totalPayments: number
-    /** Différence vendu - encaissé */
-    soldMinusCollected: number
     /** Règlements pros */
     proPayments: number
     /** Règlements particuliers */
@@ -303,23 +302,20 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
           <Text style={styles.sectionTitle}>Détail des encaissements :</Text>
           <View style={styles.columns}>
             <View style={styles.column}>
-              <Line label="Montant total vendu">
-                <Amount value={collection.totalSold} />
-              </Line>
-              <Line label="Total chèques" indent>
-                <Amount value={collection.totalChecks} />
-              </Line>
-              <Line label="Total espèces" indent>
-                <Amount value={collection.totalCash} />
+              <Line label="Total paiements">
+                <Amount value={collection.totalPayments} />
               </Line>
               <Line label="Total cartes" indent>
                 <Amount value={collection.totalCards} />
               </Line>
-              <Line label="Total paiements" indent>
-                <Amount value={collection.totalPayments} />
+              <Line label="Total espèces" indent>
+                <Amount value={collection.totalCash} />
               </Line>
-              <Line label="Diff vendu - encaissé" indent>
-                <Amount value={collection.soldMinusCollected} />
+              <Line label="Total chèques" indent>
+                <Amount value={collection.totalChecks} />
+              </Line>
+              <Line label="Total différé" indent>
+                <Amount value={collection.totalDeferred} />
               </Line>
             </View>
             <View style={styles.column}>
