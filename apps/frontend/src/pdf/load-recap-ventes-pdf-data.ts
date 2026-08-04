@@ -184,6 +184,12 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
         a.cashRegisterId - b.cashRegisterId || a.saleIndex - b.saleIndex,
     )
 
+  const refundsTotal = {
+    refundCard: refundRows.reduce((a, r) => a + r.refundCard, 0),
+    refundCash: refundRows.reduce((a, r) => a + r.refundCash, 0),
+    total: refundRows.reduce((a, r) => a + r.total, 0),
+  }
+
   const data: RecapVentesData = {
     year: getYear(),
     sales: sales_,
@@ -191,6 +197,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     transactions,
     transactionsTotal,
     refunds: refundRows,
+    refundsTotal,
   }
 
   const audit: Array<BilanAuditGroup> = [

@@ -92,6 +92,7 @@ export type RecapVentesData = {
   transactions: Array<RecapTransactionsRow>
   transactionsTotal: Omit<RecapTransactionsRow, 'cashRegisterId'>
   refunds: Array<RecapRefundRow>
+  refundsTotal: Omit<RecapRefundRow, 'cashRegisterId' | 'saleIndex'>
 }
 
 export type RecapVentesProps = { data: RecapVentesData }
@@ -271,6 +272,19 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
               </View>
             ))
           )}
+          <View style={[styles.row, styles.totalRow]}>
+            <Text style={styles.cellLabel}>Total</Text>
+            <Text style={styles.cellLabel} />
+            <Text style={styles.cellNum}>
+              <Eur value={data.refundsTotal.refundCard} />
+            </Text>
+            <Text style={styles.cellNum}>
+              <Eur value={data.refundsTotal.refundCash} />
+            </Text>
+            <Text style={styles.cellNum}>
+              <Eur value={data.refundsTotal.total} />
+            </Text>
+          </View>
         </View>
       </View>
 
