@@ -229,7 +229,7 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       ],
     },
     {
-      title: 'Nb de transactions — totaux',
+      title: 'Récapitulatif des ventes — nb de transactions',
       entries: [
         {
           label: 'Chèques',

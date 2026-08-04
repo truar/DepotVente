@@ -175,9 +175,9 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
         </View>
       </View>
 
-      {/* Nb de transactions */}
+      {/* Récapitulatif des ventes */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Nb de transactions</Text>
+        <Text style={styles.sectionTitle}>Récapitulatif des ventes</Text>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>
