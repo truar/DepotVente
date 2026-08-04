@@ -66,6 +66,11 @@ export type RecapVentesRow = {
 
 export type RecapTransactionsRow = {
   cashRegisterId: number
+  /** Σ prix des articles vendus, rattachés à la caisse de leur vente */
+  soldAmount: number
+  salesCount: number
+  articlesCount: number
+  /** les quatre suivants sont des nombres de ventes, pas des montants */
   checks: number
   cash: number
   deferred: number
@@ -178,9 +183,16 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
       {/* Récapitulatif des ventes */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Récapitulatif des ventes</Text>
+        <Text style={styles.emptyText}>
+          Cartes, Espèces, Différé et Chèques comptent les ventes réglées avec
+          ce moyen de paiement — une vente mixte compte dans chacun.
+        </Text>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>
+            <Text style={styles.cellNum}>Mt vente</Text>
+            <Text style={styles.cellNum}>Nb vente</Text>
+            <Text style={styles.cellNum}>Nb articles</Text>
             <Text style={styles.cellNum}>Cartes</Text>
             <Text style={styles.cellNum}>Espèces</Text>
             <Text style={styles.cellNum}>Différé</Text>
@@ -192,6 +204,11 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
               style={[styles.row, ...(i % 2 === 1 ? [styles.zebraRow] : [])]}
             >
               <Text style={styles.cellLabel}>{r.cashRegisterId}</Text>
+              <Text style={styles.cellNum}>
+                <Eur value={r.soldAmount} />
+              </Text>
+              <Text style={styles.cellNum}>{r.salesCount}</Text>
+              <Text style={styles.cellNum}>{r.articlesCount}</Text>
               <Text style={styles.cellNum}>{r.cards}</Text>
               <Text style={styles.cellNum}>{r.cash}</Text>
               <Text style={styles.cellNum}>{r.deferred}</Text>
@@ -200,6 +217,15 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
           ))}
           <View style={[styles.row, styles.totalRow]}>
             <Text style={styles.cellLabel}>Total</Text>
+            <Text style={styles.cellNum}>
+              <Eur value={data.transactionsTotal.soldAmount} />
+            </Text>
+            <Text style={styles.cellNum}>
+              {data.transactionsTotal.salesCount}
+            </Text>
+            <Text style={styles.cellNum}>
+              {data.transactionsTotal.articlesCount}
+            </Text>
             <Text style={styles.cellNum}>{data.transactionsTotal.cards}</Text>
             <Text style={styles.cellNum}>{data.transactionsTotal.cash}</Text>
             <Text style={styles.cellNum}>

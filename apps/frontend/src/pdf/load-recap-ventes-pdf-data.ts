@@ -35,10 +35,11 @@ const EXCLUDED_REGISTER_IDS = new Set([1])
 const isReportedRegister = (id: number) => !EXCLUDED_REGISTER_IDS.has(id)
 
 export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
-  const [allSales, allRefunds, allControls] = await Promise.all([
+  const [allSales, allRefunds, allControls, allArticles] = await Promise.all([
     db.sales.toArray(),
     db.refunds.toArray(),
     db.cashRegisterControls.toArray(),
+    db.articles.toArray(),
   ])
   const sales = allSales.filter(
     (s) => s.deletedAt == null && isReportedRegister(s.incrementStart),
@@ -59,6 +60,24 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       )
       .map((c) => [c.cashRegisterId, c.realCashAmount]),
   )
+
+  // Les articles sont rattachés à la caisse de leur vente. Retirer un article
+  // d'une vente remet son saleId à null, donc ce total suit ce qui est
+  // réellement reparti avec l'acheteur, remboursements déduits.
+  const saleById = new Map(sales.map((s) => [s.id, s]))
+  const soldByRegister = new Map<number, { amount: number; count: number }>()
+  for (const a of allArticles) {
+    if (a.deletedAt != null || a.status !== 'SOLD' || a.saleId == null) continue
+    const sale = saleById.get(a.saleId)
+    if (!sale) continue
+    const acc = soldByRegister.get(sale.incrementStart) ?? {
+      amount: 0,
+      count: 0,
+    }
+    acc.amount += a.price
+    acc.count += 1
+    soldByRegister.set(sale.incrementStart, acc)
+  }
 
   // Les remboursements sont rattachés à la caisse qui les a effectués, comme
   // le fait le contrôle de caisse — pas à celle de la vente d'origine.
@@ -107,8 +126,12 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       sold,
       diff: collected - sold,
     })
+    const sold_ = soldByRegister.get(id) ?? { amount: 0, count: 0 }
     transactions.push({
       cashRegisterId: id,
+      soldAmount: sold_.amount,
+      salesCount: registerSales.length,
+      articlesCount: sold_.count,
       checks: registerSales.filter((s) => (s.checkAmount ?? 0) > 0).length,
       cash: registerSales.filter((s) => cashOf(s) > 0).length,
       deferred: registerSales.filter((s) => deferredOf(s) > 0).length,
@@ -134,6 +157,9 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
   const soldCashTotal = grossCash - refundCashTotal
 
   const transactionsTotal = {
+    soldAmount: transactions.reduce((a, r) => a + r.soldAmount, 0),
+    salesCount: transactions.reduce((a, r) => a + r.salesCount, 0),
+    articlesCount: transactions.reduce((a, r) => a + r.articlesCount, 0),
     checks: transactions.reduce((a, r) => a + r.checks, 0),
     cash: transactions.reduce((a, r) => a + r.cash, 0),
     deferred: transactions.reduce((a, r) => a + r.deferred, 0),
@@ -142,7 +168,6 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
 
   // Remboursements: one line per refund record, rattachée — comme les colonnes
   // du tableau ci-dessus — à la caisse qui a effectué le remboursement.
-  const saleById = new Map(sales.map((s) => [s.id, s]))
   const refundRows: Array<RecapRefundRow> = refunds
     .map((r) => {
       const sale = saleById.get(r.saleId)
@@ -229,8 +254,26 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       ],
     },
     {
-      title: 'Récapitulatif des ventes — nb de transactions',
+      title: 'Récapitulatif des ventes',
       entries: [
+        {
+          label: 'Mt vente',
+          value: eur(transactionsTotal.soldAmount),
+          source: 'Σ article.price (status = SOLD) via article.saleId',
+          formula: `rattaché à la caisse de la vente — retirer un article d'une vente remet son saleId à null, donc les remboursements en sont déjà déduits`,
+        },
+        {
+          label: 'Nb vente',
+          value: num(transactionsTotal.salesCount),
+          source: 'nb ventes (non supprimées) par sale.incrementStart',
+          formula: '—',
+        },
+        {
+          label: 'Nb articles',
+          value: num(transactionsTotal.articlesCount),
+          source: 'nb articles (status = SOLD) via article.saleId',
+          formula: '—',
+        },
         {
           label: 'Chèques',
           value: num(transactionsTotal.checks),
