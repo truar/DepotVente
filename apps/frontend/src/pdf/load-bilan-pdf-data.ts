@@ -146,8 +146,10 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const totalPayments = totalChecks + totalCash + totalCards
   const soldMinusCollected = salesTotalAmount - totalPayments
 
-  // Cotisations encaissées = real cash counted in the deposit registers
-  // + contributions deducted from seller payouts at return (DEDUITE).
+  // Cotisations encaissées = real cash counted in the deposit registers only.
+  // Contributions deducted at return (DEDUITE) are NOT added here: they are
+  // already netted out of deposit.sellerAmount, so they are accounted for by
+  // the lower "montant total décaissé".
   const depositRegisters = cashRegisterControls.filter(
     (c) => c.type === 'DEPOSIT',
   )
@@ -155,7 +157,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     (a, c) => a + c.realCashAmount,
     0,
   )
-  const collectedContributions = depositRegisterRealCash + deductedContributions
+  const collectedContributions = depositRegisterRealCash
   const contributionsToCollect = unpaidContributions
 
   // Return-phase payouts (all 0 until sellers come back to collect).
@@ -405,8 +407,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Cotisations encaissées',
           value: eur(collectedContributions),
-          source: 'caisses dépôt (réel) + cotisations DEDUITE',
-          formula: `${eur(depositRegisterRealCash)} (${num(depositRegisters.length)} caisses) + ${eur(deductedContributions)} (DEDUITE)`,
+          source: 'Σ realCashAmount des caisses de dépôt (réel)',
+          formula: `${eur(depositRegisterRealCash)} sur ${num(depositRegisters.length)} caisse(s) de dépôt (hors DEDUITE, déjà déduites du sellerAmount)`,
         },
         {
           label: 'Cotisations à encaisser',
