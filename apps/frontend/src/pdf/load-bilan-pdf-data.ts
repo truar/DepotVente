@@ -209,11 +209,16 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     (collectedContributions - contributionsToCollect) -
     totalDisbursed
 
-  // Différence de caisses = Σ cashRegisterControl.difference across every register.
-  const cashRegisterDiff = cashRegisterControls.reduce(
+  // Différence de caisses = les écarts constatés aux contrôles, + le différé.
+  // Le contrôle de caisse ne voit pas le différé (son théorique ne compte que
+  // les espèces), alors que "Total paiements" le compte comme encaissé : c'est
+  // donc un écart connu de plus, à mettre au même endroit que les écarts de
+  // comptage pour que le solde ci-dessous ne garde que l'inexpliqué.
+  const controlsDiff = cashRegisterControls.reduce(
     (a, c) => a + c.difference,
     0,
   )
+  const cashRegisterDiff = controlsDiff + totalDeferred
   const theoreticalVsActualDiff = actualRevenue - theoreticalRevenue
   const diffBalance = theoreticalVsActualDiff - cashRegisterDiff
 
@@ -462,8 +467,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Différence de caisses',
           value: eur(cashRegisterDiff),
-          source: 'Σ cashRegisterControl.difference',
-          formula: `Σ difference sur ${num(cashRegisterControls.length)} caisses`,
+          source: 'Σ cashRegisterControl.difference + total différé',
+          formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses) + ${eur(totalDeferred)} (différé, invisible au contrôle de caisse)`,
         },
         {
           label: 'Solde différence',
