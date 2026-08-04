@@ -2,6 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { errorRingPaintedByWrapper, errorRingWithin } from "@/lib/field-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,8 +25,8 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
         // Focus state.
         "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot=input-group-control]:focus-visible]:ring-[3px]",
 
-        // Error state.
-        "has-[[data-slot][aria-invalid=true]]:border-2 has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-[3px] has-[[data-slot][aria-invalid=true]]:ring-destructive/50 dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/50",
+        // Error state. The group owns the rounded border, so it owns the ring.
+        errorRingWithin,
 
         className
       )}
@@ -135,6 +136,7 @@ function InputGroupInput({
       data-slot="input-group-control"
       className={cn(
         "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
+        errorRingPaintedByWrapper,
         className
       )}
       {...props}
@@ -151,6 +153,7 @@ function InputGroupTextarea({
       data-slot="input-group-control"
       className={cn(
         "flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent",
+        errorRingPaintedByWrapper,
         className
       )}
       {...props}
