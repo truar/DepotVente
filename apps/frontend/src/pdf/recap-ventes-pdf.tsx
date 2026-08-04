@@ -51,13 +51,17 @@ const Eur = ({ value }: { value: number }) => <>{pdfEur(value)}</>
 export type RecapVentesRow = {
   cashRegisterId: number
   checks: number
+  /** cartes nettes = Σ vente.cardAmount − Σ remboursement.cardAmount */
   cards: number
+  /** espèces réellement comptées au contrôle, hors fond de caisse */
   cash: number
   deferred: number
-  total: number
-  refund: number
-  /** ventes nettes = total − remboursements */
-  net: number
+  /** encaissé = cartes + espèces comptées + différé + chèques */
+  collected: number
+  /** vendu = même somme, mais avec les espèces théoriques (ventes − remb.) */
+  sold: number
+  /** écart de caisse = encaissé − vendu */
+  diff: number
 }
 
 export type RecapTransactionsRow = {
@@ -111,9 +115,9 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
             <Text style={styles.cellNum}>Espèces</Text>
             <Text style={styles.cellNum}>Différé</Text>
             <Text style={styles.cellNum}>Chèques</Text>
-            <Text style={styles.cellNum}>Total</Text>
-            <Text style={styles.cellNum}>Remb.</Text>
-            <Text style={styles.cellNum}>Ventes</Text>
+            <Text style={styles.cellNum}>Encaissé</Text>
+            <Text style={styles.cellNum}>Vendu</Text>
+            <Text style={styles.cellNum}>Diff</Text>
           </View>
           {data.sales.map((r, i) => (
             <View
@@ -134,13 +138,13 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
                 <Eur value={r.checks} />
               </Text>
               <Text style={styles.cellNum}>
-                <Eur value={r.total} />
+                <Eur value={r.collected} />
               </Text>
               <Text style={styles.cellNum}>
-                <Eur value={r.refund} />
+                <Eur value={r.sold} />
               </Text>
               <Text style={styles.cellNum}>
-                <Eur value={r.net} />
+                <Eur value={r.diff} />
               </Text>
             </View>
           ))}
@@ -159,13 +163,13 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
               <Eur value={data.salesTotal.checks} />
             </Text>
             <Text style={styles.cellNum}>
-              <Eur value={data.salesTotal.total} />
+              <Eur value={data.salesTotal.collected} />
             </Text>
             <Text style={styles.cellNum}>
-              <Eur value={data.salesTotal.refund} />
+              <Eur value={data.salesTotal.sold} />
             </Text>
             <Text style={styles.cellNum}>
-              <Eur value={data.salesTotal.net} />
+              <Eur value={data.salesTotal.diff} />
             </Text>
           </View>
         </View>
@@ -213,8 +217,8 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>
             <Text style={styles.cellLabel}>Vente n°</Text>
-            <Text style={styles.cellNum}>Remb. espèces</Text>
             <Text style={styles.cellNum}>Remb. CB</Text>
+            <Text style={styles.cellNum}>Remb. espèces</Text>
             <Text style={styles.cellNum}>Total remb.</Text>
           </View>
           {data.refunds.length === 0 ? (
@@ -230,10 +234,10 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
                 <Text style={styles.cellLabel}>{r.cashRegisterId}</Text>
                 <Text style={styles.cellLabel}>{r.saleIndex}</Text>
                 <Text style={styles.cellNum}>
-                  <Eur value={r.refundCash} />
+                  <Eur value={r.refundCard} />
                 </Text>
                 <Text style={styles.cellNum}>
-                  <Eur value={r.refundCard} />
+                  <Eur value={r.refundCash} />
                 </Text>
                 <Text style={styles.cellNum}>
                   <Eur value={r.total} />

@@ -5,8 +5,8 @@ import type {
   RecapVentesRow,
 } from './recap-ventes-pdf'
 import type { BilanAuditGroup } from './load-bilan-pdf-data'
-import type {Sale} from '@/db';
-import {  db } from '@/db'
+import type { Sale } from '@/db'
+import { db } from '@/db'
 import { getYear } from '@/utils'
 
 const eurFmt = new Intl.NumberFormat('fr-FR', {
@@ -25,45 +25,87 @@ export type RecapVentesResult = {
 const cashOf = (s: Sale) => s.cashAmount ?? 0
 const deferredOf = (s: Sale) => s.deferredAmount ?? 0
 
+/**
+ * Le numéro de caisse est saisi à la main dans les réglages du poste : les
+ * vraies caisses sont numérotées de 1000 en 1000 (le numéro sert de départ à
+ * la numérotation des ventes). La caisse 1 est une saisie d'essai qui n'a
+ * jamais servi — on l'exclut du rapport.
+ */
+const EXCLUDED_REGISTER_IDS = new Set([1])
+const isReportedRegister = (id: number) => !EXCLUDED_REGISTER_IDS.has(id)
+
 export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
   const [allSales, allRefunds, allControls] = await Promise.all([
     db.sales.toArray(),
     db.refunds.toArray(),
     db.cashRegisterControls.toArray(),
   ])
-  const sales = allSales.filter((s) => s.deletedAt == null)
-  const refunds = allRefunds.filter((r) => r.deletedAt == null)
-  // espèces = ce qu'il y a réellement dans la caisse, fond de caisse inclus
-  // (le "montant réel" saisi au contrôle est net du fond de caisse)
+  const sales = allSales.filter(
+    (s) => s.deletedAt == null && isReportedRegister(s.incrementStart),
+  )
+  const refunds = allRefunds.filter(
+    (r) => r.deletedAt == null && isReportedRegister(r.incrementStart),
+  )
+  // espèces = les espèces comptées au contrôle, hors fond de caisse
+  // (realCashAmount est déjà net du fond de caisse), pour que l'écart affiché
+  // ici soit exactement la "Différence" du contrôle de caisse.
   const realCashByRegister = new Map(
     allControls
-      .filter((c) => c.deletedAt == null && c.type === 'SALE')
-      .map((c) => [c.cashRegisterId, c.realCashAmount + c.initialAmount]),
+      .filter(
+        (c) =>
+          c.deletedAt == null &&
+          c.type === 'SALE' &&
+          isReportedRegister(c.cashRegisterId),
+      )
+      .map((c) => [c.cashRegisterId, c.realCashAmount]),
   )
 
+  // Les remboursements sont rattachés à la caisse qui les a effectués, comme
+  // le fait le contrôle de caisse — pas à celle de la vente d'origine.
+  const refundByRegister = new Map<number, { cash: number; card: number }>()
+  for (const r of refunds) {
+    const acc = refundByRegister.get(r.incrementStart) ?? { cash: 0, card: 0 }
+    acc.cash += r.cashAmount
+    acc.card += r.cardAmount
+    refundByRegister.set(r.incrementStart, acc)
+  }
+
+  // Toute caisse contrôlée ou ayant eu une activité mérite une ligne : une
+  // caisse qui n'a fait que des remboursements (ils sont souvent encaissés
+  // ailleurs que sur la caisse de la vente d'origine) doit apparaître, sinon
+  // ses remboursements ne seraient déduits nulle part.
   const registerIds = Array.from(
-    new Set(sales.map((s) => s.incrementStart)),
+    new Set([
+      ...sales.map((s) => s.incrementStart),
+      ...refunds.map((r) => r.incrementStart),
+      ...realCashByRegister.keys(),
+    ]),
   ).sort((a, b) => a - b)
 
   const sales_: Array<RecapVentesRow> = []
   const transactions: Array<RecapTransactionsRow> = []
   for (const id of registerIds) {
     const registerSales = sales.filter((s) => s.incrementStart === id)
+    const registerRefunds = refundByRegister.get(id) ?? { cash: 0, card: 0 }
     const checks = registerSales.reduce((a, s) => a + (s.checkAmount ?? 0), 0)
-    const cards = registerSales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
+    const cards =
+      registerSales.reduce((a, s) => a + (s.cardAmount ?? 0), 0) -
+      registerRefunds.card
     const cash = realCashByRegister.get(id) ?? 0
+    const soldCash =
+      registerSales.reduce((a, s) => a + cashOf(s), 0) - registerRefunds.cash
     const deferred = registerSales.reduce((a, s) => a + deferredOf(s), 0)
-    const total = checks + cards + cash + deferred
-    const refund = registerSales.reduce((a, s) => a + s.totalRefundAmount, 0)
+    const collected = checks + cards + cash + deferred
+    const sold = checks + cards + soldCash + deferred
     sales_.push({
       cashRegisterId: id,
       checks,
       cards,
       cash,
       deferred,
-      total,
-      refund,
-      net: total - refund,
+      collected,
+      sold,
+      diff: collected - sold,
     })
     transactions.push({
       cashRegisterId: id,
@@ -79,10 +121,18 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     cards: sales_.reduce((a, r) => a + r.cards, 0),
     cash: sales_.reduce((a, r) => a + r.cash, 0),
     deferred: sales_.reduce((a, r) => a + r.deferred, 0),
-    total: sales_.reduce((a, r) => a + r.total, 0),
-    refund: sales_.reduce((a, r) => a + r.refund, 0),
-    net: sales_.reduce((a, r) => a + r.net, 0),
+    collected: sales_.reduce((a, r) => a + r.collected, 0),
+    sold: sales_.reduce((a, r) => a + r.sold, 0),
+    diff: sales_.reduce((a, r) => a + r.diff, 0),
   }
+  // Détail des soustractions, pour l'audit uniquement. Toute caisse portant un
+  // remboursement a sa ligne, donc rien n'échappe aux totaux ci-dessous.
+  const grossCards = sales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
+  const grossCash = sales.reduce((a, s) => a + cashOf(s), 0)
+  const refundCardTotal = refunds.reduce((a, r) => a + r.cardAmount, 0)
+  const refundCashTotal = refunds.reduce((a, r) => a + r.cashAmount, 0)
+  const soldCashTotal = grossCash - refundCashTotal
+
   const transactionsTotal = {
     checks: transactions.reduce((a, r) => a + r.checks, 0),
     cash: transactions.reduce((a, r) => a + r.cash, 0),
@@ -90,13 +140,14 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     cards: transactions.reduce((a, r) => a + r.cards, 0),
   }
 
-  // Remboursements: one line per refund record.
+  // Remboursements: one line per refund record, rattachée — comme les colonnes
+  // du tableau ci-dessus — à la caisse qui a effectué le remboursement.
   const saleById = new Map(sales.map((s) => [s.id, s]))
   const refundRows: Array<RecapRefundRow> = refunds
     .map((r) => {
       const sale = saleById.get(r.saleId)
       return {
-        cashRegisterId: sale?.incrementStart ?? r.incrementStart,
+        cashRegisterId: r.incrementStart,
         saleIndex: sale?.saleIndex ?? 0,
         refundCash: r.cashAmount,
         refundCard: r.cardAmount,
@@ -124,8 +175,8 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
         {
           label: 'Regroupement',
           value: `${num(registerIds.length)} caisses`,
-          source: 'sales.incrementStart',
-          formula: `caisses : ${registerIds.join(', ') || '—'}`,
+          source: 'union : ventes, remboursements et contrôles de caisse SALE',
+          formula: `caisses : ${registerIds.join(', ') || '—'} — exclue(s) : ${[...EXCLUDED_REGISTER_IDS].join(', ')}`,
         },
         {
           label: 'Chèques',
@@ -134,16 +185,16 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
           formula: 'par caisse',
         },
         {
-          label: 'Cartes',
+          label: 'Cartes (net)',
           value: eur(salesTotal.cards),
-          source: 'Σ sale.cardAmount',
-          formula: 'par caisse',
+          source: 'Σ sale.cardAmount − Σ refund.cardAmount',
+          formula: `${eur(grossCards)} − ${eur(refundCardTotal)}`,
         },
         {
           label: 'Espèces (réel en caisse)',
           value: eur(salesTotal.cash),
-          source: 'contrôle de caisse SALE : realCashAmount + initialAmount',
-          formula: `espèces comptées, fond de caisse inclus — ${num(realCashByRegister.size)} caisse(s) contrôlée(s) sur ${num(registerIds.length)}`,
+          source: 'contrôle de caisse SALE : realCashAmount',
+          formula: `espèces comptées, hors fond de caisse — ${num(realCashByRegister.size)} caisse(s) contrôlée(s) sur ${num(registerIds.length)}`,
         },
         {
           label: 'Différé',
@@ -152,22 +203,28 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
           formula: 'par caisse',
         },
         {
-          label: 'Total (brut)',
-          value: eur(salesTotal.total),
-          source: 'cartes + espèces + différé + chèques',
+          label: 'Encaissé',
+          value: eur(salesTotal.collected),
+          source: 'cartes (net) + espèces comptées + différé + chèques',
           formula: `${eur(salesTotal.cards)} + ${eur(salesTotal.cash)} + ${eur(salesTotal.deferred)} + ${eur(salesTotal.checks)}`,
         },
         {
-          label: 'Remb.',
-          value: eur(salesTotal.refund),
-          source: 'Σ sale.totalRefundAmount',
-          formula: 'par caisse',
+          label: 'Vendu',
+          value: eur(salesTotal.sold),
+          source: 'idem Encaissé, mais avec les espèces théoriques',
+          formula: `${eur(salesTotal.cards)} + ${eur(soldCashTotal)} + ${eur(salesTotal.deferred)} + ${eur(salesTotal.checks)}`,
         },
         {
-          label: 'Ventes (net)',
-          value: eur(salesTotal.net),
-          source: 'total − remboursements',
-          formula: `${eur(salesTotal.total)} − ${eur(salesTotal.refund)}`,
+          label: 'Espèces théoriques (dans Vendu)',
+          value: eur(soldCashTotal),
+          source: 'Σ sale.cashAmount − Σ refund.cashAmount',
+          formula: `${eur(grossCash)} − ${eur(refundCashTotal)}`,
+        },
+        {
+          label: 'Diff',
+          value: eur(salesTotal.diff),
+          source: 'encaissé − vendu',
+          formula: `${eur(salesTotal.collected)} − ${eur(salesTotal.sold)} — écart de caisse, doit correspondre à la "Différence" du contrôle`,
         },
       ],
     },
@@ -207,7 +264,15 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
           label: 'Nombre de remboursements',
           value: num(refundRows.length),
           source: 'refunds (non supprimés)',
-          formula: 'une ligne par remboursement (caisse, n° vente, espèces, CB)',
+          formula:
+            'une ligne par remboursement (caisse, n° vente, espèces, CB)',
+        },
+        {
+          label: 'Déduits des colonnes Cartes / Vendu',
+          value: `${eur(refundCardTotal)} / ${eur(refundCashTotal)}`,
+          source: 'Σ refund.cardAmount / Σ refund.cashAmount',
+          formula:
+            'rattachés à refund.incrementStart (la caisse qui a remboursé)',
         },
       ],
     },
