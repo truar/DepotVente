@@ -67,7 +67,9 @@ COPY --from=backend-build /app/apps/backend/package.json ./apps/backend/
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "apps/backend/dist/index.js"]
+# Apply any pending migrations before booting. Without this a rebuild onto a
+# fresh volume comes up with no schema and fails at the first query.
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma && node apps/backend/dist/index.js"]
 
 ###################
 # FRONTEND DEV
