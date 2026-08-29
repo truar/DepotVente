@@ -3,3 +3,6 @@ node_modules
 certs/
 tmp/
 apps/backend/src/scripts/import/*.tsv
+
+# Database dumps - contain sellers/buyers personal data
+backups/
