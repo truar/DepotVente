@@ -17,6 +17,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2g
 
   # Backend (Fastify + Prisma)
   backend:
@@ -28,12 +33,27 @@ services:
     ports:
       - "13000:3000"
     environment:
-      DATABASE_URL: postgresql://cmr_user:cmr_password@postgres:5432/cmr_db?schema=public
+      # connection_limit is pinned rather than left to Prisma's default of
+      # num_cpus*2+1: one /sync/delta fires 8 parallel queries, and 9 clients
+      # polling in lockstep can demand ~72 at once. Without this the pool size
+      # silently tracks whatever Docker Desktop's CPU allocation happens to be.
+      DATABASE_URL: postgresql://cmr_user:cmr_password@postgres:5432/cmr_db?schema=public&connection_limit=20
       PORT: 3000
       NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1536m
 
   # Frontend (React + Vite)
   frontend:
@@ -46,6 +66,16 @@ services:
       - "15173:80"
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
 
   # Caddy reverse proxy with self-signed TLS
   caddy:
@@ -53,13 +83,27 @@ services:
     container_name: cmr_caddy
     restart: unless-stopped
     ports:
-      - "8080:80"
-      - "8443:443"
+      # Published on the standard ports so clients can type "bourseauski.local"
+      # with no port suffix. This also makes the Caddyfile's HTTP->HTTPS redirect
+      # correct: Caddy's {host} placeholder excludes the port, so redirecting
+      # from a non-standard port sent clients to an unpublished :443.
+      - "80:80"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2019/config/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512m
 
 volumes:
   postgres_data:
