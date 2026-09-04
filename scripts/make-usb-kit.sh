@@ -148,6 +148,20 @@ IMPORTANT
   Ne jamais "effacer les donnees du site" : cela supprime les depots et
   les ventes enregistres sur ce poste et pas encore envoyes au serveur.
 
+MODE HORS LIGNE
+  Une fois le site ouvert UNE fois avec le serveur allume, ce poste garde
+  une copie de l'application. Si le serveur tombe pendant la vente, le
+  poste continue de fonctionner, et recharger la page ou en rouvrir une
+  nouvelle marche toujours.
+
+  A FAIRE AVANT L'OUVERTURE DES PORTES : ouvrir https://$HOSTNAME_LAN sur
+  CHAQUE poste pendant que le serveur fonctionne, et se connecter. Un poste
+  qui n'a jamais reussi a ouvrir le site n'a pas de copie locale et
+  n'affichera rien si le serveur est en panne.
+
+  Ne pas se deconnecter pendant l'evenement : sans le serveur, il est
+  impossible de se reconnecter.
+
 FIREFOX
   Firefox a son propre magasin de certificats :
   Parametres -> Vie privee et securite -> Certificats -> Afficher les
