@@ -404,6 +404,19 @@ the client PCs. It stops with a plain-language message if any step fails.
 
 Add `--rebuild` only after a code change.
 
+**Desktop icons.** If whoever runs the server on the day would rather not use a
+terminal, put three double-clickable icons on the Desktop once, in advance:
+
+```bash
+./scripts/install-desktop-icons.sh
+```
+
+This creates *1 - Démarrer le serveur*, *2 - État du serveur* and
+*3 - Arrêter le serveur*, numbered in the order they are used. Double-clicking
+opens a Terminal window showing the same checks, so it is visible whether things
+worked. Test each one before the day: the first launch may need a right-click →
+Open.
+
 - [ ] **DHCP reservation** for the address the script prints, on the venue
       router. Without it the lease rotates and every hosts entry goes stale
       mid-event.
@@ -563,6 +576,8 @@ service from the browser.
 - **`./scripts/stop-server.sh`**: Take a final backup and stop cleanly.
 - **`./scripts/prepare-server.sh`**: Certificate step only — called by
   `start-server.sh`. Run it alone if the Mac's address changes mid-event.
+- **`./scripts/install-desktop-icons.sh`**: Put double-clickable icons for the
+  three scripts above on the Desktop. Run once, in advance.
 
 ---
 
