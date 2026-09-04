@@ -10,6 +10,18 @@ import { extractPredepositArticles, PredepositArticleData } from './extract-pred
 import { CashRegisterDeposit, extractCashRegisterDeposits } from './extract-deposit-cash-register';
 import { extractCashRegisterSales } from './extract-sale-cash-register';
 
+// NOTE: these imports deliberately do NOT set `updatedAt`.
+//
+// `updatedAt` is the sync cursor: /sync/delta returns every row where
+// `updatedAt >= since`. Writing a source timestamp into it means importing a
+// date the database has no control over, and any row dated in the future then
+// satisfies that filter forever - every client re-downloads it on every poll,
+// so delta sync degenerates into a full sync that never converges.
+//
+// Prisma's @updatedAt sets it to now() on create, which is what it should mean:
+// when this row last changed *in this database*. `createdAt` still carries the
+// original date, and nothing in the sync path reads it.
+
 async function importDeposits(fiches: DepositData[]) {
   let successCount = 0;
   let errorCount = 0;
@@ -45,7 +57,6 @@ async function importDeposits(fiches: DepositData[]) {
           type: fiche.depositIndex < 10 ? 'PRO' : 'PARTICULIER',
           signatory: fiche.signature,
           createdAt: fiche.createdAt,
-          updatedAt: fiche.updatedAt,
         },
       });
       deposits.set(deposit.depositIndex, deposit)
@@ -98,7 +109,6 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
           createdAt: articleFromImport.createdAt,
-          updatedAt: articleFromImport.updatedAt,
         }
       })
       articles.set(articleFromImport.code, article)
@@ -150,7 +160,6 @@ async function importSales(buyers: BuyerData[]) {
           cardAmount: cardAmount,
           checkAmount: buyer.paymentMethod === 'Chèque' ? buyer.paymentAmount : 0,
           cashAmount: cashAmount,
-          updatedAt: buyer.updatedAt,
           createdAt: buyer.createdAt,
         }
       })
@@ -192,7 +201,6 @@ async function importSoldArticles(soldArticles: SoldArticleData[], articles: Map
         }, data: {
           saleId: sale.id,
           status: 'SOLD',
-          updatedAt: sale.createdAt
         }
       })
       console.log(`✅ Imported sold article for ${soldArticle.code}`);
@@ -231,7 +239,6 @@ async function importPredeposits(fiches: PredepositData[], preDepositToDeposit: 
           sellerCity: fiche.city || '',
           depositId: preDepositToDeposit.get(fiche.predepositIndex) || null,
           createdAt: fiche.createdAt,
-          updatedAt: fiche.updatedAt,
         },
       });
       predeposits.set(fiche.predepositIndex, predeposit)
@@ -276,7 +283,6 @@ async function importPredepositArticles(articlesFromImport: PredepositArticleDat
           identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
           createdAt: articleFromImport.createdAt,
-          updatedAt: articleFromImport.updatedAt,
         }
       })
 

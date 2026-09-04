@@ -45,9 +45,39 @@ fastify.decorate(
   }
 );
 
-// Health check
+// Event-loop lag: a timer that records how late it actually fires. Sustained
+// lag means the process is too busy to answer promptly - the symptom a load or
+// soak test needs to see, and invisible from outside the process.
+let eventLoopLagMs = 0;
+{
+  const INTERVAL_MS = 500;
+  let last = performance.now();
+  const timer = setInterval(() => {
+    const now = performance.now();
+    eventLoopLagMs = Math.max(0, now - last - INTERVAL_MS);
+    last = now;
+  }, INTERVAL_MS);
+  timer.unref();
+}
+
+// Health check. Reports memory as well as liveness: container RSS drifts upward
+// from heap fragmentation even with no leak, so `docker stats` alone cannot tell
+// you whether a long run is leaking. heapUsed can.
 fastify.get("/api/health", async () => {
-  return { status: "ok", timestamp: new Date().toISOString() };
+  const mem = process.memoryUsage();
+  const mb = (bytes: number) => Math.round((bytes / 1048576) * 10) / 10;
+  return {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    memory: {
+      rssMb: mb(mem.rss),
+      heapUsedMb: mb(mem.heapUsed),
+      heapTotalMb: mb(mem.heapTotal),
+      externalMb: mb(mem.external),
+    },
+    eventLoopLagMs: Math.round(eventLoopLagMs * 10) / 10,
+  };
 });
 
 // Register routes (all mounted under /api)
