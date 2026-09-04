@@ -9,6 +9,18 @@ cd "$(dirname "$0")/.."
 # shellcheck source=/dev/null
 . "$(dirname "$0")/_lib.sh"
 
+# --watch [seconds]: re-run continuously. macOS has no `watch` command, so the
+# script loops over itself rather than depending on one.
+if [ "${1:-}" = "--watch" ]; then
+  INTERVAL="${2:-15}"
+  while true; do
+    clear
+    "$0" || true
+    printf '  %s - refreshing every %ss - Ctrl-C to stop\n\n' "$(date +%H:%M:%S)" "$INTERVAL"
+    sleep "$INTERVAL"
+  done
+fi
+
 PROBLEMS=0
 problem() { bad "$*"; PROBLEMS=$((PROBLEMS+1)); }
 
@@ -133,14 +145,23 @@ if [ -n "$SWAP" ]; then
 fi
 
 say "Backups"
-LAST="$(ls -t backups/*.sql 2>/dev/null | head -1 || true)"
+LAST="$(ls -t backups/*.sql backups/*.sql.gz 2>/dev/null | head -1 || true)"
 if [ -n "$LAST" ]; then
   AGE=$(( ( $(date +%s) - $(stat -f %m "$LAST") ) / 60 ))
-  [ "$AGE" -lt 60 ] && ok "Last backup $AGE minutes ago ($(basename "$LAST"))" \
-                    || warn "Last backup was $AGE minutes ago - take one soon"
+  # With ./scripts/backup-loop.sh running this is never more than a minute or
+  # two, so an old timestamp means the loop has died rather than "nobody has
+  # got round to it yet".
+  if [ "$AGE" -lt 5 ]; then
+    ok "Last backup $AGE minute(s) ago ($(basename "$LAST"))"
+  elif [ "$AGE" -lt 60 ]; then
+    warn "Last backup was $AGE minutes ago - is ./scripts/backup-loop.sh still running?"
+  else
+    problem "Last backup was $AGE minutes ago"
+    info "Start the continuous backup:  ./scripts/backup-loop.sh"
+  fi
 else
-  warn "No backup taken yet"
-  info "docker exec cmr_postgres pg_dump -U cmr_user -d cmr_db > backups/cmr_db-\$(date +%H%M).sql"
+  problem "No backup taken yet"
+  info "Start the continuous backup:  ./scripts/backup-loop.sh"
 fi
 
 if [ "$PROBLEMS" -eq 0 ]; then
