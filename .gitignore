@@ -9,3 +9,6 @@ backups/
 
 # USB kit is generated, and carries the root CA
 usb-kit/
+
+# Load and soak test output
+results/

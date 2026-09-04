@@ -103,8 +103,14 @@ if [ "$(container_health cmr_postgres)" = healthy ]; then
   conns="$(docker exec cmr_postgres psql -U cmr_user -d cmr_db -tAc \
     "select count(*) from pg_stat_activity where datname='cmr_db'" 2>/dev/null | tr -d ' ')"
   if [ -n "$conns" ]; then
-    [ "$conns" -lt 18 ] && ok "$conns database connections in use (limit 20)" \
-                        || problem "$conns of 20 database connections in use - the app may freeze"
+    # Prisma keeps its pool of 20 open and idle, so a count around 20 is normal
+    # and not a sign of pressure. Exhaustion shows up as P2024 in the log, which
+    # is checked below - this is only here to catch something far out of range.
+    if [ "$conns" -lt 40 ]; then
+      ok "$conns database connections (pool of 20 kept open - normal)"
+    else
+      problem "$conns database connections - far above the pool of 20"
+    fi
   fi
 else
   problem "The database is not healthy"
