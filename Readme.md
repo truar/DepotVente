@@ -152,26 +152,21 @@ the Mac's IP without breaking anything.
 
 ### A. Server Mac — generate the cert
 
-#### A.1. Set the Mac's local hostname to `bourseauski`
+#### A.1. Make `bourseauski.local` resolve
 
-mDNS / Bonjour will then publish the Mac as `bourseauski.local` on the LAN
-(no DNS server needed; clients on Windows 10+, macOS, iOS, Android, and
-most Linux desktops resolve `.local` automatically).
+`bourseauski.local` does **not** resolve by itself — the Mac advertises its own
+LocalHostName over mDNS, not this name. Two options:
 
-UI:
-1. *System Settings → General → Sharing*.
-2. Click the **(i)** button next to *Local hostname*.
-3. Set the value to `bourseauski` and confirm.
+**Hosts entries (chosen approach).** Add one line per client PC, pointing at the
+server's LAN address. `scripts/prepare-server.sh` prints the exact line. This is
+IP-based, so the address must be pinned — see the DHCP reservation step in the
+day-of runbook below.
 
-CLI alternative (equivalent):
+**mDNS alternative.** Renaming the Mac makes `.local` resolution automatic and
+survives IP changes, at the cost of renaming the machine:
 ```bash
 sudo scutil --set LocalHostName bourseauski
-```
-
-Verify (from the server itself, then from any other LAN device):
-```bash
-dns-sd -B _services._dns-sd._udp local.   # optional: see what's advertised
-ping -c 2 bourseauski.local
+ping -c 2 bourseauski.local   # verify from a *client*, not the server
 ```
 
 #### A.2. Install mkcert and the `nss` helper
@@ -210,21 +205,25 @@ ls "$(mkcert -CAROOT)"
 
 #### A.4. Issue the server certificate
 
-From the project root (`/Users/truaro/workspace/DepotVente`):
+Use the script — it detects the LAN address, issues the cert for it, restarts
+Caddy and prints the hosts line for the clients:
 
 ```bash
-# Replace any existing cert files
-rm -f certs/cert.pem certs/cert-key.pem
-
-mkcert -cert-file certs/cert.pem -key-file certs/cert-key.pem \
-  bourseauski.local localhost 127.0.0.1
+./scripts/prepare-server.sh
 ```
 
-Verify the SAN matches what we expect:
-```bash
-openssl x509 -in certs/cert.pem -noout -subject -ext subjectAltName
-# expected SAN: DNS:bourseauski.local, DNS:localhost, IP Address:127.0.0.1
-```
+Run it **on the venue network**, not at home: the certificate must cover the
+address the server actually has there.
+
+> The certificate must include the LAN IP in its SANs. Without it, any client
+> reaching the server by address fails TLS.
+
+A restart is required, not a reload. Caddy reads `load_files` certificates into
+memory at config-load time; `docker compose up -d` is a no-op when the service
+definition is unchanged, and `caddy reload` skips reloading when the adapted
+config is byte-identical. Both silently keep serving the old certificate. The
+script checks the served certificate's fingerprint against the file on disk and
+fails if they differ.
 
 #### A.5. Surface the rootCA.pem for distribution
 
@@ -365,9 +364,119 @@ Expected: padlock icon closed, no warning, the app loads. Open DevTools →
   browser's trust store (Firefox needs it imported separately).
 - **Service Worker not registering** — must be on `https://`. If you see
   this on the server itself, ensure `mkcert -install` ran successfully.
-- **Mac's IP changed** — irrelevant. The cert is bound to the hostname,
-  not the IP. As long as `bourseauski.local` still resolves via mDNS,
-  everything keeps working.
+- **Mac's IP changed** — breaks everything under the hosts-entry approach,
+  because those entries map the name to an address. Re-run
+  `./scripts/prepare-server.sh` and update the hosts line on all 9 PCs. Pin the
+  address with a DHCP reservation to avoid this. (Only harmless if you took the
+  mDNS route in A.1.)
+- **`ERR_CERT_AUTHORITY_INVALID` on the server itself** — there may be more than
+  one mkcert CA in the keychain, from a previous machine hostname, with the wrong
+  one trusted. `mkcert -install` fixes it. Confirm which CA signed the live cert:
+  `openssl x509 -in certs/cert.pem -noout -issuer`.
+
+---
+
+## Day-of runbook
+
+Nine client PCs, one Mac as the server, one day. Work top to bottom.
+
+### 1. Before leaving
+
+- [ ] `certs/` copied to a USB key. It is gitignored — nothing else backs it up,
+      and the certificate cannot be recovered from a running container.
+- [ ] `rootCA.pem` sent to whoever sets up the client PCs (see step 3).
+- [ ] `docker compose down && docker compose up -d` succeeds from cold. This is
+      the single most valuable check: it proves the stack survives a reboot or a
+      power blip.
+
+### 2. On site — the server Mac
+
+```bash
+sudo pmset -a disksleep 0 sleep 0 powernap 0 standby 0   # once, persists
+caffeinate -dimsu &                                       # every boot
+docker compose up -d
+./scripts/prepare-server.sh                               # on the venue network
+```
+
+- [ ] **DHCP reservation** for the address the script prints, on the venue
+      router. Without it the lease rotates and every hosts entry goes stale
+      mid-event.
+- [ ] **Close every other application.** macOS starts the day ~1.2 GB into swap
+      and Docker reserves 8 GB of 16 GB. This is the highest-leverage thing you
+      can do for performance, and it costs nothing.
+- [ ] Lid open, plugged in, automatic updates off.
+
+### 3. Each client PC — order matters
+
+**Install the CA _before_ anyone opens the site.**
+
+1. Install `rootCA.pem` (section B above, per OS).
+2. Add the hosts line printed by `prepare-server.sh`:
+   - Windows: `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator)
+   - macOS/Linux: `sudo nano /etc/hosts`
+3. *Then* open `https://bourseauski.local`.
+
+> ⚠️ Get this order wrong and the browser shows a certificate warning. Clicking
+> "proceed anyway" stores an exception that leaves a permanent **"Non sécurisé"**
+> pill even after the CA is installed — and the obvious fix, clearing the site's
+> data, **wipes that PC's IndexedDB**, destroying every deposit or sale it has
+> not yet pushed. If it happens, quit the browser fully (⌘Q / close all windows)
+> first; that clears it without touching site data.
+
+Verify on each PC: padlock closed, app loads, and DevTools → Application →
+Service Workers shows one registered.
+
+### 4. During the event
+
+```bash
+docker stats                  # backend CPU sustained near 100% = saturated
+sysctl vm.swapusage           # host swap climbing = close more apps
+docker compose logs -f backend
+```
+
+What normal looks like: backend and postgres idle at well under 100 MB each,
+CPU near zero between polls, `responseTime` in the logs in single-digit
+milliseconds.
+
+Worth knowing: a **frozen server with an idle container** is connection-pool
+exhaustion, not load. Check for `P2024` in the backend log and
+`docker exec cmr_postgres psql -U cmr_user -d cmr_db -tAc "select count(*) from pg_stat_activity"`.
+
+### 5. If something breaks
+
+**The server is down.** Cashiers keep working — the app is local-first and reads
+from IndexedDB. Do not let anyone reload or clear their browser. Fix the server;
+clients resync on their next poll.
+
+**Postgres data is lost.** Restore from the most recent dump — that is the only
+practical recovery path, so take dumps regularly (below).
+
+Do **not** count on the clients to rebuild the server. Each one holds a full copy
+in IndexedDB, but there is no re-push: `processOutbox` only sends operations
+still marked `pending` or `failed`, and anything already acknowledged is never
+sent again. Recovering from a client means manually exporting its IndexedDB via
+DevTools and importing it by hand — slow, and not something to attempt for the
+first time during an event.
+
+**A client PC is broken.** Its unsynced work lives only in its own browser
+profile. Do not clear site data or reset the profile until the server has
+confirmed the data arrived.
+
+### Backups — do this every 30 minutes
+
+The dumps are the recovery plan. Run this in a spare terminal and leave it:
+
+```bash
+mkdir -p backups
+while true; do
+  docker exec cmr_postgres pg_dump -U cmr_user -d cmr_db \
+    > "backups/cmr_db-$(date +%H%M).sql"
+  sleep 1800
+done
+```
+
+Copy the folder to a USB key at the end of the day. `backups/` is gitignored —
+the dumps contain sellers' and buyers' names and phone numbers.
 
 ---
 
@@ -427,6 +536,9 @@ service from the browser.
 
 - **`pnpm frontenv dev`**: Start the development server.
 - **`pnpm frontenv build`**: Build the app for production.
+- **`./scripts/prepare-server.sh`**: Day-of server prep — detects the LAN
+  address, reissues the TLS certificate for it, restarts Caddy, verifies the
+  served certificate, and prints the hosts line for the client PCs.
 
 ---
 
