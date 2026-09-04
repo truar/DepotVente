@@ -427,13 +427,28 @@ Open.
 
 ### 3. Each client PC — order matters
 
-**Install the CA _before_ anyone opens the site.**
+Build the USB kit once, on the server, after its address is fixed:
 
-1. Install `rootCA.pem` (section B above, per OS).
-2. Add the hosts line printed by `prepare-server.sh`:
-   - Windows: `C:\Windows\System32\drivers\etc\hosts` (edit as Administrator)
-   - macOS/Linux: `sudo nano /etc/hosts`
-3. *Then* open `https://bourseauski.local`.
+```bash
+./scripts/make-usb-kit.sh              # uses this Mac's current address
+./scripts/make-usb-kit.sh 192.168.1.50 # or a fixed one
+```
+
+Copy the `usb-kit/` folder to the USB key, then on each PC:
+
+- **Windows** — right-click `Installer-Windows.bat` → *Run as administrator*
+- **macOS** — right-click `Installer-macOS.command` → *Open*
+
+One double-click does both steps: trusts the certificate authority and writes
+the hosts entry. It is safe to run twice — it replaces any previous line rather
+than adding a second one, so it is also the fix if the server's address changes.
+
+**Run it _before_ anyone opens the site.** Then open `https://bourseauski.local`.
+
+Manual equivalent if the installer is blocked (see section B for the CA):
+`C:\Windows\System32\drivers\etc\hosts` as Administrator, or
+`sudo nano /etc/hosts` on macOS/Linux — add the line
+`<server-ip>  bourseauski.local`.
 
 > ⚠️ Get this order wrong and the browser shows a certificate warning. Clicking
 > "proceed anyway" stores an exception that leaves a permanent **"Non sécurisé"**
@@ -578,6 +593,8 @@ service from the browser.
   `start-server.sh`. Run it alone if the Mac's address changes mid-event.
 - **`./scripts/install-desktop-icons.sh`**: Put double-clickable icons for the
   three scripts above on the Desktop. Run once, in advance.
+- **`./scripts/make-usb-kit.sh`**: Build the `usb-kit/` folder handed to each
+  client PC — root CA plus a one-click installer per platform.
 
 ---
 

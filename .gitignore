@@ -6,3 +6,6 @@ apps/backend/src/scripts/import/*.tsv
 
 # Database dumps - contain sellers/buyers personal data
 backups/
+
+# USB kit is generated, and carries the root CA
+usb-kit/
