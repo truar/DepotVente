@@ -34,9 +34,10 @@ ok "root CA present: $CAROOT/rootCA.pem"
 # --- 2. find this machine's address on the venue network --------------------
 say "2. Detecting LAN address"
 IP=""
+IFACE=""
 for iface in en0 en1 en2 en3; do
   IP="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
-  [ -n "$IP" ] && { ok "$iface -> $IP"; break; }
+  [ -n "$IP" ] && { IFACE="$iface"; ok "$iface -> $IP"; break; }
 done
 [ -n "$IP" ] || { bad "no LAN address found - is the Mac on the venue network?"; exit 1; }
 
@@ -44,15 +45,45 @@ MDNS="$(scutil --get LocalHostName 2>/dev/null || true).local"
 [ "$MDNS" = ".local" ] && MDNS=""
 [ -n "$MDNS" ] && ok "mDNS name: $MDNS"
 
-ROUTER="$(ipconfig getoption en0 router 2>/dev/null || true)"
+# Read the router from the interface that actually supplied the address; on
+# Wi-Fi that is often not en0.
+ROUTER="$(ipconfig getoption "$IFACE" router 2>/dev/null || true)"
 [ -n "$ROUTER" ] && ok "router: $ROUTER  (set a DHCP reservation for $IP here)"
 
 # --- 3. re-issue the certificate for that address ---------------------------
 say "3. Issuing certificate"
 mkdir -p "$CERT_DIR"
+
+# Keep the working cert. mkcert writes in place, so a half-failed run would
+# otherwise leave no certificate at all - on site, with clients waiting.
+BACKUP=""
+if [ -f "$CERT_DIR/cert.pem" ]; then
+  BACKUP="$CERT_DIR/previous-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$BACKUP"
+  cp "$CERT_DIR/cert.pem" "$CERT_DIR/cert-key.pem" "$BACKUP/" 2>/dev/null || true
+  ok "previous certificate saved to $BACKUP/"
+fi
+
+restore_on_failure() {
+  [ -n "$BACKUP" ] || return 0
+  bad "issuing failed - restoring the previous certificate"
+  cp "$BACKUP/cert.pem" "$BACKUP/cert-key.pem" "$CERT_DIR/" 2>/dev/null || true
+  docker compose restart caddy >/dev/null 2>&1 || true
+}
+
 # shellcheck disable=SC2086
-mkcert -cert-file "$CERT_DIR/cert.pem" -key-file "$CERT_DIR/cert-key.pem" \
-  "$HOSTNAME_LAN" localhost 127.0.0.1 "$IP" ${MDNS:+"$MDNS"} >/dev/null 2>&1
+if ! mkcert -cert-file "$CERT_DIR/cert.pem" -key-file "$CERT_DIR/cert-key.pem" \
+     "$HOSTNAME_LAN" localhost 127.0.0.1 "$IP" ${MDNS:+"$MDNS"} >/dev/null 2>&1; then
+  restore_on_failure
+  exit 1
+fi
+
+# A truncated or unreadable cert is as bad as a missing one.
+if ! openssl x509 -in "$CERT_DIR/cert.pem" -noout >/dev/null 2>&1; then
+  restore_on_failure
+  exit 1
+fi
+
 ok "certs/cert.pem covers: $HOSTNAME_LAN, localhost, 127.0.0.1, $IP${MDNS:+, $MDNS}"
 openssl x509 -in "$CERT_DIR/cert.pem" -noout -enddate | sed 's/^/  /'
 
