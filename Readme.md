@@ -394,9 +394,15 @@ Nine client PCs, one Mac as the server, one day. Work top to bottom.
 ```bash
 sudo pmset -a disksleep 0 sleep 0 powernap 0 standby 0   # once, persists
 caffeinate -dimsu &                                       # every boot
-docker compose up -d
-./scripts/prepare-server.sh                               # on the venue network
+./scripts/start-server.sh                                 # on the venue network
 ```
+
+`start-server.sh` does everything: starts Docker if needed, launches the
+services, waits until all four are healthy, issues the certificate for the
+address this network gave the Mac, verifies HTTPS, and prints the hosts line for
+the client PCs. It stops with a plain-language message if any step fails.
+
+Add `--rebuild` only after a code change.
 
 - [ ] **DHCP reservation** for the address the script prints, on the venue
       router. Without it the lease rotates and every hosts entry goes stale
@@ -429,18 +435,25 @@ Service Workers shows one registered.
 ### 4. During the event
 
 ```bash
-docker stats                  # backend CPU sustained near 100% = saturated
-sysctl vm.swapusage           # host swap climbing = close more apps
-docker compose logs -f backend
+./scripts/status.sh
 ```
+
+Run it whenever something feels wrong. It checks the four services, whether the
+app answers, the certificate (including whether it still covers the Mac's
+current address — the most likely day-of failure), the row counts, database
+connection usage, recent errors, memory and swap, and how long ago the last
+backup was taken. It ends with either *Everything is working* or a list of
+problems with the fix for each.
+
+Raw tools if you need them: `docker stats`, `sysctl vm.swapusage`,
+`docker compose logs -f backend`.
 
 What normal looks like: backend and postgres idle at well under 100 MB each,
 CPU near zero between polls, `responseTime` in the logs in single-digit
 milliseconds.
 
 Worth knowing: a **frozen server with an idle container** is connection-pool
-exhaustion, not load. Check for `P2024` in the backend log and
-`docker exec cmr_postgres psql -U cmr_user -d cmr_db -tAc "select count(*) from pg_stat_activity"`.
+exhaustion, not load — `status.sh` reports it as database timeouts.
 
 ### 5. If something breaks
 
@@ -461,6 +474,15 @@ first time during an event.
 **A client PC is broken.** Its unsynced work lives only in its own browser
 profile. Do not clear site data or reset the profile until the server has
 confirmed the data arrived.
+
+### End of day
+
+```bash
+./scripts/stop-server.sh
+```
+
+Takes a final backup, then stops. It refuses to stop if the backup fails. The
+database is kept in a Docker volume, so starting again restores everything.
 
 ### Backups — do this every 30 minutes
 
@@ -536,9 +558,11 @@ service from the browser.
 
 - **`pnpm frontenv dev`**: Start the development server.
 - **`pnpm frontenv build`**: Build the app for production.
-- **`./scripts/prepare-server.sh`**: Day-of server prep — detects the LAN
-  address, reissues the TLS certificate for it, restarts Caddy, verifies the
-  served certificate, and prints the hosts line for the client PCs.
+- **`./scripts/start-server.sh`**: Start everything for the sale. Use this one.
+- **`./scripts/status.sh`**: Is the server healthy right now? Safe at any time.
+- **`./scripts/stop-server.sh`**: Take a final backup and stop cleanly.
+- **`./scripts/prepare-server.sh`**: Certificate step only — called by
+  `start-server.sh`. Run it alone if the Mac's address changes mid-event.
 
 ---
 
