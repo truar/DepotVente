@@ -354,6 +354,13 @@ Expected: padlock icon closed, no warning, the app loads. Open DevTools →
 - Logs: `docker compose logs -f caddy backend frontend`
 - Rebuild after a code change: `docker compose up -d --build`
 
+After a rebuild, client PCs do **not** pick up the new version on a refresh. The
+service worker downloads and caches it silently, then waits: it only takes over
+once every tab for `bourseauski.local` on that PC is closed. To apply an update,
+**quit the browser completely and reopen it**. This is deliberate — it means a
+mid-event redeploy can never reload a till out from under a cashier, and an open
+tab keeps working against the version it already has.
+
 ### Troubleshooting
 
 - **`bourseauski.local` doesn't resolve from a client** — check the client
@@ -460,10 +467,17 @@ Manual equivalent if the installer is blocked (see section B for the CA):
 Verify on each PC: padlock closed, app loads, and DevTools → Application →
 Service Workers shows one registered.
 
+> **This verification is a hard prerequisite, not a formality.** The service
+> worker only caches the app after one *successful* visit. A PC that has never
+> loaded the site while the server was up has no local copy, and will show a
+> blank page if the server goes down. Open the app and log in on all 9 PCs
+> before the doors open.
+
 ### 4. During the event
 
 ```bash
-./scripts/status.sh
+./scripts/status.sh            # once
+./scripts/status.sh --watch    # keep it on screen, refreshing every 15s
 ```
 
 Run it whenever something feels wrong. It checks the four services, whether the
@@ -486,8 +500,24 @@ exhaustion, not load — `status.sh` reports it as database timeouts.
 ### 5. If something breaks
 
 **The server is down.** Cashiers keep working — the app is local-first and reads
-from IndexedDB. Do not let anyone reload or clear their browser. Fix the server;
-clients resync on their next poll.
+from IndexedDB. **Reloading is safe**: the service worker serves the app from
+the PC's own cache, so a refresh, a new tab, or even restarting the browser all
+still work. Fix the server; clients resync on their next poll.
+
+Two things are still forbidden, for different reasons:
+
+- **Never "clear site data" / "Forget About This Site".** That wipes IndexedDB
+  and destroys every sale that PC has not yet pushed. If you need to reset a
+  misbehaving service worker, use *Unregister* (DevTools → Application → Service
+  Workers, or `about:serviceworkers` in Firefox) — that removes only the cached
+  app and leaves the data alone — then Ctrl+Shift+R.
+- **Never log out.** `/api/signin` needs the server, so a logged-out PC cannot
+  get back in until the server returns. An already-logged-in PC stays logged in
+  indefinitely.
+
+Note that operations queued while the server is down stop retrying after about
+17 minutes and land in *Paramètres → Outbox — opérations échouées*, where an
+admin can resend them once the server is back.
 
 **Postgres data is lost.** Restore from the most recent dump — that is the only
 practical recovery path, so take dumps regularly (below).
@@ -512,21 +542,48 @@ confirmed the data arrived.
 Takes a final backup, then stops. It refuses to stop if the backup fails. The
 database is kept in a Docker volume, so starting again restores everything.
 
-### Backups — do this every 30 minutes
+### Backups — leave this running all day
 
-The dumps are the recovery plan. Run this in a spare terminal and leave it:
+The dumps are the recovery plan, so this runs continuously in its own window:
 
 ```bash
-mkdir -p backups
-while true; do
-  docker exec cmr_postgres pg_dump -U cmr_user -d cmr_db \
-    > "backups/cmr_db-$(date +%H%M).sql"
-  sleep 1800
-done
+./scripts/backup-loop.sh                        # a dump every 60s
+./scripts/backup-loop.sh --mirror /Volumes/CLE  # also copy to the USB key
 ```
+
+It discards truncated dumps rather than storing them, skips writing when the
+database has not changed, keeps every dump for two hours and one per hour after
+that, and warns if a dump suddenly shrinks. A dump takes about 0.3 s and does
+not block the tills.
+
+`status.sh` reports how long ago the last one was taken, so a dead backup loop
+shows up there.
 
 Copy the folder to a USB key at the end of the day. `backups/` is gitignored —
 the dumps contain sellers' and buyers' names and phone numbers.
+
+### Restoring from a backup
+
+```bash
+./scripts/restore-backup.sh                     # list what is available
+./scripts/restore-backup.sh --verify <file>     # is this backup usable?
+./scripts/restore-backup.sh --restore <file>    # replace the live database
+```
+
+**Check a backup before you need one.** `--verify` loads the dump into a
+throwaway database, counts the rows and drops it again, without touching
+anything live. Worth running once before the sale — an untested backup is a
+guess.
+
+`--restore` asks you to type `RESTORE`, takes a safety copy of the current
+database first, stops the backend so nothing writes to a half-loaded database,
+replaces the schema, reloads and restarts. If it fails partway it tells you the
+exact command to put things back.
+
+> ⚠️ **Restoring loses anything recorded after that backup was taken.** The
+> client PCs still hold it in their own storage, but they do not re-send data
+> they have already sent, so it will not come back on its own. Before restoring,
+> and before letting anyone reload or clear a client, work out what is missing.
 
 ---
 
@@ -595,6 +652,9 @@ service from the browser.
   three scripts above on the Desktop. Run once, in advance.
 - **`./scripts/make-usb-kit.sh`**: Build the `usb-kit/` folder handed to each
   client PC — root CA plus a one-click installer per platform.
+- **`./scripts/backup-loop.sh`**: Continuous database backup. Leave it running
+  for the whole sale.
+- **`./scripts/restore-backup.sh`**: List, verify or restore a backup.
 
 ---
 
