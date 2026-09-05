@@ -187,7 +187,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     0,
   )
   const collectedContributions = depositRegisterRealCash
-  const contributionsToCollect = unpaidContributions
 
   // Les pros sont réputés réglés d'office : il n'existe pas d'étape de
   // règlement pro dans l'application (l'écran /returns/pros ne fait que
@@ -215,11 +214,13 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     )
     .reduce((a, d) => a + (d.sellerAmount ?? 0), 0)
 
-  // Les cotisations à encaisser ne figurent pas dans la recette réelle : elle
-  // ne compte que ce qui est effectivement passé en caisse. Elles restent
-  // affichées sur leur propre ligne, à titre indicatif.
+  // Les chèques particuliers non faits sont dus aux vendeurs : l'argent est
+  // encore en caisse mais il n'appartient pas à la bourse, donc il sort de la
+  // recette réelle au même titre que ce qui a déjà été décaissé. Sans cela la
+  // recette gonfle de tout ce qui reste à régler aux particuliers.
   const actualRevenue =
-    totalPayments + collectedContributions - totalDisbursed
+    totalPayments + collectedContributions - totalDisbursed -
+    unmadeIndividualChecks
 
   // Différence de caisses = les écarts constatés aux contrôles, + le différé.
   // Le contrôle de caisse ne voit pas le différé (son théorique ne compte que
@@ -268,7 +269,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       proPayments,
       individualPayments,
       collectedContributions,
-      contributionsToCollect,
       unmadeIndividualChecks,
       actualRevenue,
       theoreticalVsActualDiff,
@@ -453,12 +453,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           formula: `${eur(depositRegisterRealCash)} sur ${num(depositRegisters.length)} caisse(s) de dépôt (hors DEDUITE, déjà déduites du sellerAmount)`,
         },
         {
-          label: 'Cotisations à encaisser',
-          value: eur(contributionsToCollect),
-          source: '= cotisations non payées',
-          formula: `${eur(unpaidContributions)}`,
-        },
-        {
           label: 'Chèques particuliers non faits',
           value: eur(unmadeIndividualChecks),
           source: 'Σ sellerAmount (PARTICULIER, sans chèque)',
@@ -467,8 +461,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Recette bourse',
           value: eur(actualRevenue),
-          source: 'total paiements + cotisations encaissées − décaissé',
-          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)}`,
+          source:
+            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits',
+          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)}`,
         },
         {
           label: 'Différence recette théorique et réelle',

@@ -170,11 +170,9 @@ export type BilanPdfData = {
     individualPayments: number
     /** Cotisations encaissées */
     collectedContributions: number
-    /** Cotisations à encaisser */
-    contributionsToCollect: number
-    /** Chèques particuliers non faits */
+    /** Chèques particuliers non faits, déduits de la recette réelle */
     unmadeIndividualChecks: number
-    /** Recette bourse (réelle) */
+    /** Recette bourse (réelle), nette du décaissé et des chèques non faits */
     actualRevenue: number
     /** Différence recette théorique et réelle */
     theoreticalVsActualDiff: number
@@ -334,9 +332,6 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
           <View style={{ gap: 5, marginTop: 6 }}>
             <Line label="Cotisations encaissées" compact>
               <Amount value={collection.collectedContributions} />
-            </Line>
-            <Line label="Cotisations à encaisser" compact>
-              <Amount value={collection.contributionsToCollect} />
             </Line>
             <Line label="Chèques particuliers non faits" compact>
               <Amount value={collection.unmadeIndividualChecks} />
