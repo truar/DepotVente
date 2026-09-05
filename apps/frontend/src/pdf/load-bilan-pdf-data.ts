@@ -189,11 +189,19 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const collectedContributions = depositRegisterRealCash
   const contributionsToCollect = unpaidContributions
 
-  // Return-phase payouts (all 0 until sellers come back to collect).
+  // Les pros sont réputés réglés d'office : il n'existe pas d'étape de
+  // règlement pro dans l'application (l'écran /returns/pros ne fait que
+  // rescanner les articles), et le montant qui leur est dû part toujours. On
+  // le décaisse donc dès que le calcul du retour l'a établi, sans attendre un
+  // collectedAt qu'aucun écran ne pose.
+  const proDeposits = deposits.filter((d) => d.type === 'PRO')
+  const proPayments = proDeposits.reduce(
+    (a, d) => a + Math.max(0, d.sellerAmount ?? 0),
+    0,
+  )
+  // Les particuliers, eux, ne sont décaissés qu'une fois venus chercher leur
+  // chèque (collectedAt posé par /returns/individuals).
   const isCollected = (d: Deposit) => d.collectedAt != null
-  const proPayments = deposits
-    .filter((d) => d.type === 'PRO' && isCollected(d))
-    .reduce((a, d) => a + Math.max(0, d.sellerAmount ?? 0), 0)
   const individualPayments = deposits
     .filter((d) => d.type === 'PARTICULIER' && isCollected(d))
     .reduce((a, d) => a + Math.max(0, d.sellerAmount ?? 0), 0)
@@ -429,8 +437,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Règlements pros',
           value: eur(proPayments),
-          source: 'Σ sellerAmount (PRO, collecté)',
-          formula: `Σ sellerAmount des dépôts pros collectés`,
+          source: 'Σ sellerAmount (PRO) — réglés d’office',
+          formula: `Σ sellerAmount sur ${num(proDeposits.length)} dépôt(s) pro`,
         },
         {
           label: 'Règlements particuliers',
