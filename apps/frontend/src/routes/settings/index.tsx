@@ -37,10 +37,16 @@ function RouteComponent() {
     await syncManager.triggerDeltaSync()
     return
   }
-  const [incrementStart, setIncrementStart] = useState(0)
   const [workstation, setWorkstation] = useWorkstation()
+  // Saisie gardée sous forme de texte : passer par Number() à chaque frappe
+  // transforme la moindre touche non numérique en NaN, que React réaffiche
+  // dans le champ — et plus rien n'est saisissable ensuite.
+  const [incrementStart, setIncrementStart] = useState<string | null>(null)
+  const incrementStartValue =
+    incrementStart ?? String(workstation.incrementStart)
   const saveWorkstation = async () => {
-    setWorkstation(incrementStart)
+    if (incrementStartValue === '') return
+    setWorkstation(Number(incrementStartValue))
   }
 
   return (
@@ -121,12 +127,21 @@ function RouteComponent() {
             <Field>
               <InputGroup>
                 <InputGroupInput
-                  value={incrementStart}
-                  onChange={(e) => setIncrementStart(Number(e.target.value))}
+                  value={incrementStartValue}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  onChange={(e) =>
+                    setIncrementStart(e.target.value.replace(/\D/g, ''))
+                  }
                 />
               </InputGroup>
               <div>
-                <Button onClick={saveWorkstation}>Valider</Button>
+                <Button
+                  onClick={saveWorkstation}
+                  disabled={incrementStartValue === ''}
+                >
+                  Valider
+                </Button>
               </div>
             </Field>
           </div>
