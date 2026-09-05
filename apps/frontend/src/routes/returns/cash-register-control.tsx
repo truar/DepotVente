@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { requireAuthAndWorkstation } from '@/lib/route-guards'
+import { requireAdminAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db.ts'
@@ -8,7 +8,7 @@ import { CashRegisterControlScreen } from '@/components/forms/CashRegisterContro
 import { FormattedNumber } from 'react-intl'
 
 export const Route = createFileRoute('/returns/cash-register-control')({
-  beforeLoad: requireAuthAndWorkstation,
+  beforeLoad: requireAdminAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

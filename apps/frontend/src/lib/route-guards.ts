@@ -19,6 +19,15 @@ export function requireAdmin() {
 
 export async function requireAuthAndWorkstation() {
   requireAuth()
+  await requireWorkstation()
+}
+
+export async function requireAdminAndWorkstation() {
+  requireAdmin()
+  await requireWorkstation()
+}
+
+async function requireWorkstation() {
   const ws = await db.workstation.get('incrementStart')
   const incrementStart = (ws?.value as number) ?? 0
   if (!incrementStart) {
