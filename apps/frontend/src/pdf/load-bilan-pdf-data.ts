@@ -153,8 +153,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     0,
   )
 
-  const theoreticalRevenue =
-    cmrRights + paidContributions - unpaidContributions
+  // Les cotisations non payées ne sont pas retranchées : la recette théorique
+  // ne compte que ce qui est effectivement acquis à la bourse.
+  const theoreticalRevenue = cmrRights + paidContributions
 
   // ===== Détail des encaissements =====
   // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
@@ -378,8 +379,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Recette bourse théorique',
           value: eur(theoreticalRevenue),
-          source: 'droits CMR + cotisations payées − non payées',
-          formula: `${eur(cmrRights)} + ${eur(paidContributions)} − ${eur(unpaidContributions)}`,
+          source: 'droits CMR + cotisations payées',
+          formula: `${eur(cmrRights)} + ${eur(paidContributions)}`,
         },
       ],
     },
