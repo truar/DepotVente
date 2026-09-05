@@ -84,11 +84,14 @@ if [ -f certs/cert.pem ]; then
   # covers its address, so every client hosts entry points somewhere untrusted.
   IP="$(lan_ip || echo '')"
   if [ -n "$IP" ]; then
-    if openssl x509 -in certs/cert.pem -noout -text 2>/dev/null | grep -q "IP Address:$IP"; then
+    # The entry must end at the address, or 192.168.2.8 would look covered by
+    # a certificate that only carries 192.168.2.80.
+    if openssl x509 -in certs/cert.pem -noout -text 2>/dev/null | grep -qE "IP Address:${IP//./\\.}(,|$)"; then
       ok "Covers this Mac's current address ($IP)"
     else
       problem "This Mac's address is now $IP, which the certificate does not cover"
       info "The address changed. Fix: ./scripts/prepare-server.sh"
+      info "(one certificate can carry several networks - it keeps the old ones)"
       info "then update the hosts file on the client PCs."
     fi
   fi
