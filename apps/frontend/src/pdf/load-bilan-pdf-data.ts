@@ -153,9 +153,11 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     0,
   )
 
-  // Les cotisations non payées ne sont pas retranchées : la recette théorique
-  // ne compte que ce qui est effectivement acquis à la bourse.
-  const theoreticalRevenue = cmrRights + paidContributions
+  // La recette théorique est ce qui est dû à la bourse : les cotisations non
+  // payées y sont ajoutées (et non retranchées). Côté recette réelle elles
+  // n'entrent pas du tout, donc l'écart entre les deux est le non encaissé.
+  const theoreticalRevenue =
+    cmrRights + paidContributions + unpaidContributions
 
   // ===== Détail des encaissements =====
   // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
@@ -205,10 +207,11 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     )
     .reduce((a, d) => a + (d.sellerAmount ?? 0), 0)
 
+  // Les cotisations à encaisser ne figurent pas dans la recette réelle : elle
+  // ne compte que ce qui est effectivement passé en caisse. Elles restent
+  // affichées sur leur propre ligne, à titre indicatif.
   const actualRevenue =
-    totalPayments +
-    (collectedContributions - contributionsToCollect) -
-    totalDisbursed
+    totalPayments + collectedContributions - totalDisbursed
 
   // Différence de caisses = les écarts constatés aux contrôles, + le différé.
   // Le contrôle de caisse ne voit pas le différé (son théorique ne compte que
@@ -379,8 +382,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Recette bourse théorique',
           value: eur(theoreticalRevenue),
-          source: 'droits CMR + cotisations payées',
-          formula: `${eur(cmrRights)} + ${eur(paidContributions)}`,
+          source: 'droits CMR + cotisations payées + non payées',
+          formula: `${eur(cmrRights)} + ${eur(paidContributions)} + ${eur(unpaidContributions)}`,
         },
       ],
     },
@@ -456,8 +459,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Recette bourse',
           value: eur(actualRevenue),
-          source: 'total paiements + (encaissées − à encaisser) − décaissé',
-          formula: `${eur(totalPayments)} + (${eur(collectedContributions)} − ${eur(contributionsToCollect)}) − ${eur(totalDisbursed)}`,
+          source: 'total paiements + cotisations encaissées − décaissé',
+          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)}`,
         },
         {
           label: 'Différence recette théorique et réelle',
