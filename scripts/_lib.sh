@@ -59,6 +59,50 @@ wait_healthy() {
   return 1
 }
 
+# --- backup USB key ---------------------------------------------------------
+#
+# The key is identified by a marker file, not by its path. macOS remounts a
+# volume as "CLE 1" after an unclean eject - exactly when things have already
+# gone wrong - so a hard-coded /Volumes/CLE silently stops working. Worse, if
+# anyone has ever created that directory on the internal disk, the "mirror"
+# writes to the same disk as the original, which is not a backup at all.
+#
+# Bless a key once with:  ./scripts/backup-loop.sh --claim-usb /Volumes/WHATEVER
+
+# Dumps go in a named folder rather than the key's root: the key may well be
+# used for other things, and after a sale this folder holds a few hundred files.
+# Everything in it is visible on purpose - someone reaching for this is having a
+# bad day and should not have to unhide anything to find it.
+#
+#   cmr-backup/marker                     marks the key, and says what it is
+#   cmr-backup/lists/auto-cmr_db-*.sql.gz the dumps
+BACKUP_KEY_DIR="cmr-backup"
+BACKUP_MARKER="$BACKUP_KEY_DIR/marker"
+BACKUP_DUMP_DIR="$BACKUP_KEY_DIR/lists"
+# Overridable only so the tests can point it somewhere writable.
+BACKUP_VOLUMES_ROOT="${BACKUP_VOLUMES_ROOT:-/Volumes}"
+
+# True when $1 sits on the same filesystem as /, i.e. it is not removable media.
+on_boot_volume() {
+  [ "$(stat -f %d "$1" 2>/dev/null)" = "$(stat -f %d / 2>/dev/null)" ]
+}
+
+# Print the path of the claimed backup volume, or nothing if none is mounted.
+# Callers re-run this every cycle: re-discovering is what makes replugging the
+# key resume mirroring on its own, with no restart and no operator action.
+find_backup_volume() {
+  local marker vol
+  for marker in "$BACKUP_VOLUMES_ROOT"/*/"$BACKUP_MARKER"; do
+    [ -f "$marker" ] || continue
+    vol="${marker%/$BACKUP_MARKER}"
+    on_boot_volume "$vol" && continue
+    [ -w "$vol" ] || continue
+    printf '%s' "$vol"
+    return 0
+  done
+  return 1
+}
+
 lan_ip() {
   local ip
   for iface in en0 en1 en2 en3; do

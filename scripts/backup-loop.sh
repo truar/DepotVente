@@ -2,14 +2,22 @@
 #
 # Continuous database backup for the day of the sale.
 #
-#   ./scripts/backup-loop.sh                        # dump every 60s into backups/
+#   ./scripts/backup-loop.sh                          # dump every 60s into backups/
 #   ./scripts/backup-loop.sh --interval 30
-#   ./scripts/backup-loop.sh --mirror /Volumes/CLE  # also copy to the USB key
-#   ./scripts/backup-loop.sh --once                 # single dump, then exit
+#   ./scripts/backup-loop.sh --claim-usb /Volumes/CLE # once per key: mark it, then exit
+#   ./scripts/backup-loop.sh --mirror /Volumes/CLE    # force a path instead of finding it
+#   ./scripts/backup-loop.sh --no-usb                 # local dumps only
+#   ./scripts/backup-loop.sh --once                   # single dump, then exit
 #
 # Leave it running in its own terminal window for the whole sale. Ctrl-C stops
 # it. It is safe to start and stop at any time, and it survives the database
 # container restarting under it.
+#
+# A claimed USB key is found automatically wherever it mounts and whatever it is
+# called. It can be pulled out and plugged back in at any time: the dumps keep
+# going to backups/ regardless, and mirroring picks up again by itself. Dumps
+# made while it was out are not copied over afterwards - the key is a spare copy
+# of recent state, not a second archive.
 #
 # Cost, measured on this stack (12 MB database, 5388 articles): 0.3s per dump,
 # ~450 KB compressed. pg_dump "does not block other users accessing the
@@ -30,13 +38,16 @@ PREFIX=auto-cmr_db-          # only files with this prefix are ever pruned, so
                              # hand-made dumps in backups/ are never deleted
 INTERVAL=60
 KEEP_MINUTES=120             # newer than this: keep every dump. Older: hourly.
-MIRROR=""
+MIRROR=""                    # explicit path, overrides marker discovery
+CLAIM=""
+NO_USB=no
+MIRROR_TIMEOUT=10            # seconds before a stuck USB write is given up on
 ONCE=no
 LOCK_WAIT=10s                # fail the cycle rather than queue behind a lock
 MIN_FREE_MB=500
 
 usage() {
-  sed -n '2,14p' "$0" | sed 's/^#//;s/^ //'
+  sed -n '2,20p' "$0" | sed 's/^#//;s/^ //'
   exit "${1:-0}"
 }
 
@@ -45,6 +56,8 @@ while [ $# -gt 0 ]; do
     --interval) INTERVAL="${2:?--interval needs a number of seconds}"; shift 2 ;;
     --keep-minutes) KEEP_MINUTES="${2:?--keep-minutes needs a number}"; shift 2 ;;
     --mirror) MIRROR="${2:?--mirror needs a directory}"; shift 2 ;;
+    --claim-usb) CLAIM="${2:?--claim-usb needs the path of a mounted volume}"; shift 2 ;;
+    --no-usb) NO_USB=yes; shift ;;
     --once) ONCE=yes; shift ;;
     -h|--help) usage 0 ;;
     *) bad "Unknown option: $1"; usage 1 ;;
@@ -59,7 +72,7 @@ ERRLOG="$(mktemp -t depotvente-backup)"
 trap 'rm -f "$ERRLOG" "$BACKUP_DIR"/*.part 2>/dev/null' EXIT
 
 DUMPS=0; SKIPPED=0; FAILURES=0; LAST_HASH=""; LAST_FILE=""; LAST_BYTES=0
-MIRROR_WARNED=no
+MIRROR_STATE=absent; MIRROR_WHY=none
 STARTED="$(date +%s)"
 
 human() { awk -v b="$1" 'BEGIN{ if (b>1048576) printf "%.1f MB", b/1048576; else printf "%.0f KB", b/1024 }'; }
@@ -124,16 +137,140 @@ dump_once() {
 
   LAST_HASH="$HASH"; LAST_FILE="$out"; LAST_BYTES="$size"
 
-  if [ -n "$MIRROR" ]; then
-    if cp "$out" "$MIRROR/" 2>/dev/null; then
-      MIRROR_WARNED=no
-    elif [ "$MIRROR_WARNED" = no ]; then
-      warn "cannot write to $MIRROR - is the USB key still plugged in?"
-      info "Dumps are still being written to $BACKUP_DIR. Replug it and they resume."
-      MIRROR_WARNED=yes
+  return 0
+}
+
+# --- USB mirror -------------------------------------------------------------
+#
+# The local dump is the backup; the key is a second copy in case the Mac itself
+# is the thing that dies. So the key must never be able to slow the loop down or
+# fail a cycle: a spun-down or half-yanked USB stick can block a write in the
+# kernel for a long time, and this loop is the one thing that has to keep going.
+#
+# Every failure here is therefore a warning, never a failed cycle, and the copy
+# runs detached from the loop.
+
+# Copy one dump to the key. Runs in the background - never call it without '&'.
+mirror_one() {
+  local src="$1" dest="$2" base tmp cp_pid waited=0
+  base="$(basename "$src")"
+  # Unique temp name: if a slow key leaves two copies overlapping, they cannot
+  # collide. Both land on the same final name with the same bytes.
+  tmp="$dest/.${base}.$$.part"
+
+  cp "$src" "$tmp" 2>/dev/null &
+  cp_pid=$!
+
+  # No `timeout` on macOS, so watchdog it by hand. Without this, pulling the key
+  # mid-write leaves a cp blocked in uninterruptible I/O forever.
+  while kill -0 "$cp_pid" 2>/dev/null; do
+    if [ "$waited" -ge "$MIRROR_TIMEOUT" ]; then
+      kill -9 "$cp_pid" 2>/dev/null
+      rm -f "$tmp" 2>/dev/null
+      return 1
+    fi
+    sleep 1; waited=$(( waited + 1 ))
+  done
+  wait "$cp_pid" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; return 1; }
+
+  # Same .part-then-rename as the local dump: a half-copied file on the key must
+  # never look like a usable backup to restore-backup.sh.
+  mv "$tmp" "$dest/$base" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; return 1; }
+}
+
+# Clear part-files left by a copy that was interrupted by the key being pulled.
+# Their own cleanup cannot run in that case - the volume is gone by then - so
+# they are swept the next time the key is usable. They are hidden and can never
+# be mistaken for a backup, but without this they pile up across a sale.
+sweep_parts() {
+  rm -f "$1"/.*.part 2>/dev/null || true
+}
+
+# Resolve the key and mirror the newest dump, announcing only the transitions.
+# Deliberately no catch-up: dumps written while the key was out stay behind on
+# the Mac. What matters is that the key carries a recent dump, and it gets one
+# the moment it is plugged back in.
+mirror_cycle() {
+  local dest vol
+  vol="$(find_backup_volume 2>/dev/null || true)"
+  # Discovery writes into the dumps folder on the key; --mirror means "this
+  # exact directory" and is left alone.
+  [ -n "$vol" ] && dest="$vol/$BACKUP_DUMP_DIR" || dest=""
+  [ -n "$MIRROR" ] && dest="$MIRROR"
+  if [ -n "$dest" ]; then
+    mkdir -p "$dest" 2>/dev/null
+    # Found the key but cannot write to it: a full key, a read-only mount, or
+    # something occupying the folder name. Say so instead of reporting it gone -
+    # "gone" sends someone hunting for a physical problem that is not there.
+    if [ ! -d "$dest" ] || [ ! -w "$dest" ]; then
+      if [ "$MIRROR_WHY" != blocked ]; then
+        warn "$(now_hms)  found the USB key but cannot write to $dest"
+        info "Is it full, read-only, or is something else using that name?"
+        info "Dumps continue in $BACKUP_DIR."
+        MIRROR_WHY=blocked
+      fi
+      MIRROR_STATE=absent
+      return
     fi
   fi
-  return 0
+
+  if [ -z "$dest" ]; then
+    if [ "$MIRROR_STATE" = present ]; then
+      warn "$(now_hms)  the USB key is gone - dumps continue in $BACKUP_DIR"
+      info "Plug it back in and mirroring resumes on its own."
+      MIRROR_STATE=absent
+    fi
+    MIRROR_WHY=none
+    return
+  fi
+  MIRROR_WHY=ok
+
+  if [ "$MIRROR_STATE" = absent ]; then
+    # Name the key, not the folder inside it: this is read by someone checking
+    # the right stick is being written to.
+    ok "$(now_hms)  USB key found at ${vol:-$dest} - mirroring resumed"
+    MIRROR_STATE=present
+    sweep_parts "$dest"
+    # Copy the current dump right away rather than waiting for the data to
+    # change: after a replug the key would otherwise stay stale for as long as
+    # the database happens to be quiet.
+    [ -n "$LAST_FILE" ] && [ -f "$LAST_FILE" ] && { mirror_one "$LAST_FILE" "$dest" & }
+    return
+  fi
+
+  [ -n "$LAST_FILE" ] && [ -f "$LAST_FILE" ] && { mirror_one "$LAST_FILE" "$dest" & }
+}
+
+# Write the marker that makes a volume findable, whatever it is later called.
+claim_usb() {
+  local vol="$1"
+  [ -d "$vol" ] || { bad "$vol is not a directory - is the key plugged in?"; exit 1; }
+  [ -w "$vol" ] || { bad "$vol is not writable."; exit 1; }
+  if on_boot_volume "$vol"; then
+    bad "$vol is on the Mac's own disk, not removable media."
+    info "A copy there is lost with the Mac. Pass the path under /Volumes/."
+    exit 1
+  fi
+  mkdir -p "$vol/$BACKUP_DUMP_DIR" || exit 1
+  cat > "$vol/$BACKUP_MARKER" <<EOF
+Cle de sauvegarde DepotVente (bourse au ski).
+
+NE PAS SUPPRIMER CE FICHIER. C'est lui qui identifie la cle : le serveur la
+reconnait grace a lui, meme si elle est renommee ou branchee sur un autre port.
+Sans ce fichier, plus aucune sauvegarde n'est copiee sur cette cle.
+
+Les sauvegardes sont dans le dossier "lists" a cote.
+
+marquee_le=$(date '+%Y-%m-%d %H:%M:%S')
+marquee_par=$(hostname)
+identifiant=$(uuidgen 2>/dev/null || date +%s)
+EOF
+  ok "Claimed $vol as the backup key"
+  info "Wrote $BACKUP_KEY_DIR/marker; dumps will go in $BACKUP_DUMP_DIR/"
+  info "Backups will now find it automatically, however it is named."
+  info "Spotlight indexes removable media by default and only slows the writes"
+  info "down; turn it off for this key with:  sudo mdutil -i off '$vol'"
+  exit 0
 }
 
 # Keep every dump from the last KEEP_MINUTES, then one per hour. Filenames sort
@@ -165,6 +302,13 @@ summary() {
     $(( elapsed / 60 )) "$DUMPS" "$SKIPPED" "$FAILURES"
   printf '  %s holds %s\n' "$BACKUP_DIR" "$(human $(( ${total:-0} * 1024 )))"
   [ -n "$LAST_FILE" ] && printf '  Most recent: %s\n' "$LAST_FILE"
+  if [ "$NO_USB" = no ]; then
+    if [ "$MIRROR_STATE" = present ]; then
+      printf '  USB key was connected at the end\n'
+    else
+      printf '  %sNo USB key connected at the end - backups/ is the only copy%s\n' "$YEL" "$RST"
+    fi
+  fi
   [ "$FAILURES" -gt 0 ] && printf '  %s%d cycle(s) failed - check above%s\n' "$YEL" "$FAILURES" "$RST"
   echo
   exit 0
@@ -172,6 +316,10 @@ summary() {
 trap summary INT TERM
 
 # --- startup ----------------------------------------------------------------
+
+# Claiming only writes a file on the key - no database and no Docker needed, so
+# it happens before every other check.
+[ -n "$CLAIM" ] && claim_usb "$CLAIM"
 
 if [ "$ONCE" = no ]; then
   printf '\n%s=== Continuous database backup ===%s\n' "$BLD" "$RST"
@@ -188,13 +336,30 @@ if [ "$(container_health "$DB_CONTAINER")" = missing ]; then
   exit 1
 fi
 
-if [ -n "$MIRROR" ]; then
+# A missing key is never fatal. Refusing to start because nobody plugged the
+# stick in would leave the sale with no backup at all, which is far worse than
+# having no second copy.
+if [ "$NO_USB" = yes ]; then
+  MIRROR=""
+elif [ -n "$MIRROR" ]; then
   if [ -d "$MIRROR" ] && [ -w "$MIRROR" ]; then
     ok "Mirroring each dump to $MIRROR"
+    MIRROR_STATE=present
   else
-    bad "$MIRROR is not a writable directory."
-    info "Plug the USB key in and check the path, or drop --mirror."
-    exit 1
+    warn "$MIRROR is not writable yet - dumps go to $BACKUP_DIR until it is"
+  fi
+else
+  USB="$(find_backup_volume 2>/dev/null || true)"
+  if [ -n "$USB" ]; then
+    ok "Mirroring each dump to the USB key at $USB"
+    MIRROR_STATE=present
+    # Also sweep here: a run that ended with the key pulled leaves part-files
+    # behind, and the transition below only fires on a replug.
+    sweep_parts "$USB/$BACKUP_DUMP_DIR"
+  else
+    info "No backup USB key found - dumps go to $BACKUP_DIR only."
+    info "Plug one in at any time and it starts mirroring by itself."
+    info "First time with a new key:  $0 --claim-usb /Volumes/<name>"
   fi
 fi
 
@@ -205,6 +370,9 @@ if [ "$ONCE" = yes ]; then
     2) ok "Database unchanged since $LAST_FILE" ;;
     *) exit 1 ;;
   esac
+  # Wait for it here, unlike the loop: a one-shot run has nothing else to get on
+  # with, and the operator wants to know the key really has the file.
+  [ "$NO_USB" = yes ] || { mirror_cycle; wait; }
   prune
   exit 0
 fi
@@ -239,6 +407,9 @@ while true; do
          [ "$(container_health "$DB_CONTAINER")" != healthy ] && \
            info "$DB_CONTAINER is $(container_health "$DB_CONTAINER") - retrying next cycle" ;;
     esac
+    # Every cycle, not just the ones that produced a new dump: this is also how
+    # the key is noticed coming back while the database happens to be quiet.
+    [ "$NO_USB" = yes ] || mirror_cycle
     prune
   fi
 

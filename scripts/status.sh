@@ -167,6 +167,28 @@ else
   info "Start the continuous backup:  ./scripts/backup-loop.sh"
 fi
 
+# The USB key is the copy that survives the Mac itself dying, so a key that fell
+# out an hour ago is worth saying out loud - the local backups above look
+# perfectly healthy either way.
+USB="$(find_backup_volume 2>/dev/null || true)"
+if [ -z "$USB" ]; then
+  warn "No backup USB key connected - backups/ on this Mac is the only copy"
+  info "Plug it in and mirroring resumes on its own, or claim a new key with:"
+  info "./scripts/backup-loop.sh --claim-usb /Volumes/<name>"
+else
+  USB_LAST="$(ls -t "$USB/$BACKUP_DUMP_DIR"/auto-cmr_db-*.sql.gz 2>/dev/null | head -1 || true)"
+  if [ -z "$USB_LAST" ]; then
+    warn "USB key at $USB holds no backup yet"
+  else
+    USB_AGE=$(( ( $(date +%s) - $(stat -f %m "$USB_LAST") ) / 60 ))
+    if [ "$USB_AGE" -lt 5 ]; then
+      ok "USB key up to date ($USB_AGE minute(s) ago, $USB)"
+    else
+      warn "USB key last updated $USB_AGE minutes ago - was it unplugged?"
+    fi
+  fi
+fi
+
 if [ "$PROBLEMS" -eq 0 ]; then
   printf '\n%s=== Everything is working ===%s\n\n' "$GRN" "$RST"
 else
