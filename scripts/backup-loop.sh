@@ -41,7 +41,13 @@ KEEP_MINUTES=120             # newer than this: keep every dump. Older: hourly.
 MIRROR=""                    # explicit path, overrides marker discovery
 CLAIM=""
 NO_USB=no
-MIRROR_TIMEOUT=10            # seconds before a stuck USB write is given up on
+# Seconds before a stuck USB write is given up on. Generous on purpose: the
+# first copy to a key that has been sitting idle was measured at 13.8s on real
+# hardware (a wake-up cost - the next four copies of the same file took ~250ms).
+# A tight timeout kills copies that were about to succeed. Nothing waits on this
+# anyway, so the only job of the limit is to stop a copy to a pulled-out key
+# from lingering for ever.
+MIRROR_TIMEOUT=60
 ONCE=no
 LOCK_WAIT=10s                # fail the cycle rather than queue behind a lock
 MIN_FREE_MB=500
@@ -165,8 +171,19 @@ mirror_one() {
   # mid-write leaves a cp blocked in uninterruptible I/O forever.
   while kill -0 "$cp_pid" 2>/dev/null; do
     if [ "$waited" -ge "$MIRROR_TIMEOUT" ]; then
-      kill -9 "$cp_pid" 2>/dev/null
+      # disown first: without it the shell announces the kill on the terminal
+      # as "line N: 14361 Killed: 9  cp ...", which looks like a crash in the
+      # middle of an otherwise calm backup window.
+      disown "$cp_pid" 2>/dev/null || true
+      # TERM before KILL - a cp that can still respond gets to tidy up. A cp
+      # wedged in uninterruptible I/O on a pulled key ignores both, but it is
+      # detached, so it harms nothing while the kernel gives up on the device.
+      kill -TERM "$cp_pid" 2>/dev/null
+      sleep 2
+      kill -KILL "$cp_pid" 2>/dev/null
       rm -f "$tmp" 2>/dev/null
+      warn "$(now_hms)  gave up copying $base to the USB key after ${MIRROR_TIMEOUT}s"
+      info "The dump is safe in $BACKUP_DIR. Check the key is still plugged in."
       return 1
     fi
     sleep 1; waited=$(( waited + 1 ))
@@ -176,6 +193,27 @@ mirror_one() {
   # Same .part-then-rename as the local dump: a half-copied file on the key must
   # never look like a usable backup to restore-backup.sh.
   mv "$tmp" "$dest/$base" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; return 1; }
+}
+
+# Say where the dump ended up. Only for --once, which waits for the copy: the
+# loop cannot report this, because it deliberately never waits.
+mirror_report() {
+  local vol dest
+  [ "$NO_USB" = yes ] && return
+  [ -z "$LAST_FILE" ] && return
+  vol="$(find_backup_volume 2>/dev/null || true)"
+  dest="$vol/$BACKUP_DUMP_DIR"
+  [ -n "$MIRROR" ] && { vol="$MIRROR"; dest="$MIRROR"; }
+  if [ -z "$vol" ]; then
+    warn "Not copied to a USB key - none connected"
+    return
+  fi
+  if [ -f "$dest/$(basename "$LAST_FILE")" ]; then
+    ok "Copied to $dest/"
+  else
+    bad "Could not copy it to the USB key at $vol"
+    info "The dump is safe in $BACKUP_DIR - only the second copy failed."
+  fi
 }
 
 # Clear part-files left by a copy that was interrupted by the key being pulled.
@@ -372,7 +410,7 @@ if [ "$ONCE" = yes ]; then
   esac
   # Wait for it here, unlike the loop: a one-shot run has nothing else to get on
   # with, and the operator wants to know the key really has the file.
-  [ "$NO_USB" = yes ] || { mirror_cycle; wait; }
+  [ "$NO_USB" = yes ] || { mirror_cycle; wait; mirror_report; }
   prune
   exit 0
 fi
@@ -397,8 +435,14 @@ while true; do
     dump_once
     case $? in
       0) DUMPS=$(( DUMPS + 1 ))
-         printf '  %s✓%s %s  %-8s  %s\n' "$GRN" "$RST" "$(now_hms)" \
-           "$(human "$LAST_BYTES")" "$(basename "$LAST_FILE")" ;;
+         # The USB note reflects the key's state as of this cycle, not a
+         # finished copy - the copy is dispatched just below and deliberately
+         # never waited on. It answers "is the key still being written to?",
+         # which is the question someone glancing at this window has.
+         USB_NOTE=""
+         [ "$NO_USB" = no ] && [ "$MIRROR_STATE" = present ] && USB_NOTE="  + USB key"
+         printf '  %s✓%s %s  %-8s  %s%s\n' "$GRN" "$RST" "$(now_hms)" \
+           "$(human "$LAST_BYTES")" "$(basename "$LAST_FILE")" "$USB_NOTE" ;;
       2) SKIPPED=$(( SKIPPED + 1 ))
          printf '  %s·%s %s  unchanged\n' "$YEL" "$RST" "$(now_hms)" ;;
       *) FAILURES=$(( FAILURES + 1 ))
