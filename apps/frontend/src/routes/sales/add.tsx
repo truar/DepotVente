@@ -421,10 +421,31 @@ function SaleArticlesForm() {
       setArticleCode('')
       return
     }
-    if (article.status === 'DELETED') {
-      showErrorAlert(
-        `Article ${articleCode} invendable, contactez l'administrateur`,
-      )
+    // Seul un article effectivement réceptionné au dépôt peut être vendu.
+    if (article.status !== 'RECEPTION_OK') {
+      const reason: Record<
+        Exclude<typeof article.status, 'RECEPTION_OK'>,
+        { title: string; description: string }
+      > = {
+        RECEPTION_PENDING: {
+          title: 'Article non réceptionné',
+          description: `L'article ${articleCode} n'a pas été réceptionné au dépôt : il ne peut pas être vendu. Faites-le réceptionner avant de l'encaisser.`,
+        },
+        DELETED: {
+          title: 'Article invendable',
+          description: `Article ${articleCode} invendable, contactez l'administrateur`,
+        },
+        RETURNED: {
+          title: 'Article restitué',
+          description: `L'article ${articleCode} a été restitué à son déposant : il ne peut pas être vendu.`,
+        },
+        SOLD: {
+          title: 'Article déjà vendu',
+          description: `L'article ${articleCode} a déjà été vendu.`,
+        },
+      }
+      const { title, description } = reason[article.status]
+      showErrorAlert(description, { title })
       setArticleCode('')
       return
     }
