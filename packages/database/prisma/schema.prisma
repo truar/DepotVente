@@ -114,6 +114,9 @@ model Deposit {
   sellerAmount            Decimal?  @map("seller_amount") @db.Decimal(10, 2)
 
   collectWorkstationId Int?      @map("collect_workstation_id")
+  // Caisse qui a encaissé la cotisation soldée le soir (statut SOLDE). C'est
+  // elle qui doit retrouver ces espèces dans son tiroir, pas la caisse de dépôt.
+  contributionCollectWorkstationId Int? @map("contribution_collect_workstation_id")
   collectedAt          DateTime? @map("collected_at")
   checkId              String?   @map("cheque_number")
   signatory            String?

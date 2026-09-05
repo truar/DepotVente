@@ -33,7 +33,13 @@ export type Refund = {
 
 export type Deposit = {
   id: string
-  contributionStatus: 'A_PAYER' | 'PAYE' | 'PRO' | 'GRATUIT' | 'DEDUITE'
+  contributionStatus:
+    | 'A_PAYER'
+    | 'PAYE'
+    | 'SOLDE'
+    | 'PRO'
+    | 'GRATUIT'
+    | 'DEDUITE'
   contributionAmount: number
   sellerId: string
   incrementStart: number
@@ -48,6 +54,8 @@ export type Deposit = {
   signatory?: string
   collectedAt?: Date
   collectWorkstationId?: number
+  // Caisse qui a encaissé la cotisation soldée le soir (statut SOLDE).
+  contributionCollectWorkstationId?: number | null
   checkId?: string
   createdAt: Date
   updatedAt: Date
@@ -136,7 +144,7 @@ export type OutboxOperation = {
 export type CashRegisterControl = {
   id: string
   cashRegisterId: number
-  type: 'DEPOSIT' | 'SALE'
+  type: 'DEPOSIT' | 'SALE' | 'RETURN'
   totalAmount: number
   realCashAmount: number
   theoreticalCashAmount: number

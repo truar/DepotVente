@@ -60,6 +60,8 @@ function DepositDataTable() {
   const contributionStatuses = useMemo(() => {
     return new Map([
       ['PAYE', 'Payé'],
+      ['SOLDE', 'Soldé'],
+      ['DEDUITE', 'Déduite'],
       ['A_PAYER', 'A payer'],
       ['PRO', 'Pro'],
       ['GRATUIT', 'Gratuit'],
@@ -274,7 +276,11 @@ function DepositsSummary() {
   const count = articles?.length ?? 0
   const paidContributions =
     deposits
-      ?.filter((deposit) => deposit.contributionStatus === 'PAYE')
+      ?.filter(
+        (deposit) =>
+          deposit.contributionStatus === 'PAYE' ||
+          deposit.contributionStatus === 'SOLDE',
+      )
       .reduce((acc, deposit) => acc + (deposit.contributionAmount ?? 0), 0) ?? 0
   const contributionsToCollect =
     deposits

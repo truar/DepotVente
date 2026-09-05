@@ -407,6 +407,15 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
                     <SelectGroup>
                       <SelectItem value="A_PAYER">A payer</SelectItem>
                       <SelectItem value="PAYE">Payé</SelectItem>
+                      {/* Statuts posés par le retour, jamais à la saisie :
+                          affichés seulement pour ne pas vider le champ quand
+                          on édite une fiche déjà soldée ou déduite. */}
+                      {controllerField.value === 'SOLDE' && (
+                        <SelectItem value="SOLDE">Soldé (retour)</SelectItem>
+                      )}
+                      {controllerField.value === 'DEDUITE' && (
+                        <SelectItem value="DEDUITE">Déduite</SelectItem>
+                      )}
                       <SelectItem value="PRO">Pro</SelectItem>
                       <SelectItem value="GRATUIT">Gratuit</SelectItem>
                     </SelectGroup>

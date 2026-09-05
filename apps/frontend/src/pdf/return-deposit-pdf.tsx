@@ -194,6 +194,18 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
           (Payé)
         </>
       )
+    } else if (contributionStatus === 'SOLDE') {
+      contribution = (
+        <>
+          <FormattedNumber
+            value={data.deposit.contributionAmount}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />{' '}
+          (Soldée)
+        </>
+      )
     } else if (contributionStatus === 'PRO') {
       contribution = <>Pro</>
     } else if (contributionStatus === 'DEDUITE') {

@@ -35,6 +35,9 @@ function computeContribution(
     }
   }
 
+  // PAYE, SOLDE, PRO, GRATUIT : rien à déduire du chèque, la cotisation est
+  // déjà réglée (ou n'est pas due). Un dépôt soldé le soir doit rester SOLDE,
+  // sinon il serait encaissé deux fois.
   return { dueContributionAmount: 0, contributionStatus }
 }
 

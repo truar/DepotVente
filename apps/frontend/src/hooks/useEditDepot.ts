@@ -28,9 +28,16 @@ export function useEditDepot() {
         }
 
         if (data.id) {
+          // Sortir du statut SOLDE efface la caisse d'encaissement : sinon le
+          // théorique de cette caisse garderait une cotisation fantôme.
+          const deposit = await depotDb.get(data.id)
           await depotDb.update(data.id, {
             contributionStatus: data.contributionStatus!,
             contributionAmount: data.contributionAmount,
+            contributionCollectWorkstationId:
+              data.contributionStatus === 'SOLDE'
+                ? (deposit?.contributionCollectWorkstationId ?? null)
+                : null,
             updatedAt: currentDate,
           })
         }

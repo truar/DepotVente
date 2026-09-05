@@ -21,6 +21,11 @@ function RouteComponent() {
         </Link>
       </div>
       <div>
+        <Link to="/hidden-pdfs/return-cash-register-control">
+          Return cash register control
+        </Link>
+      </div>
+      <div>
         <Link to="/hidden-pdfs/invoice">Invoice</Link>
       </div>
       <div>

@@ -13,7 +13,15 @@ const numFmt = new Intl.NumberFormat('fr-FR')
 const eur = (n: number) => eurFmt.format(n)
 const num = (n: number) => numFmt.format(n)
 
-const THEORETICAL_CONTRIBUTION_STATUSES = ['PAYE', 'DEDUITE', 'A_PAYER']
+// Une cotisation soldée le soir reste due par le dépôt, donc rattachée à sa
+// caisse de dépôt ici — même si les espèces, elles, ont été comptées à la
+// caisse de retour qui l'a encaissée.
+const THEORETICAL_CONTRIBUTION_STATUSES = [
+  'PAYE',
+  'SOLDE',
+  'DEDUITE',
+  'A_PAYER',
+]
 
 export type RecapDepotsResult = {
   data: RecapDepotsData
@@ -162,8 +170,9 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
         {
           label: 'Cotisation',
           value: eur(depositsTotal.contribution),
-          source: 'Σ contributionAmount des dépôts PAYE, DEDUITE ou A_PAYER',
-          formula: `cotisations théoriques : ${eur(contributionByStatus('PAYE'))} payées + ${eur(contributionByStatus('DEDUITE'))} déduites + ${eur(contributionByStatus('A_PAYER'))} à payer`,
+          source:
+            'Σ contributionAmount des dépôts PAYE, SOLDE, DEDUITE ou A_PAYER',
+          formula: `cotisations théoriques : ${eur(contributionByStatus('PAYE'))} payées + ${eur(contributionByStatus('SOLDE'))} soldées au retour + ${eur(contributionByStatus('DEDUITE'))} déduites + ${eur(contributionByStatus('A_PAYER'))} à payer`,
         },
       ],
     },

@@ -11,7 +11,14 @@ export function useReturnDepositMutation() {
       checkId: `${data.checkId}`,
       collectedAt: date,
       collectWorkstationId: data.workstation,
-      ...(data.contributionPaid ? { contributionStatus: 'PAYE' as const } : {}),
+      // Une cotisation réglée au moment du retour est soldée, et rattachée au
+      // poste qui l'encaisse — pas à la caisse de dépôt d'origine.
+      ...(data.contributionPaid
+        ? {
+            contributionStatus: 'SOLDE' as const,
+            contributionCollectWorkstationId: data.workstation,
+          }
+        : {}),
     })
   }
 

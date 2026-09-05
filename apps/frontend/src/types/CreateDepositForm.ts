@@ -38,10 +38,15 @@ export const DepositSchema = z.object({
   firstName: z.string().nonempty({ message: 'Le prénom est requis' }),
   phoneNumber: z.string().nonempty({ message: 'Le téléphone est requis' }),
   city: z.string().nullable(),
+  // SOLDE et DEDUITE ne sont pas proposés à la saisie, mais doivent être
+  // acceptés ici : sans eux, l'édition d'une fiche déjà soldée ou déduite est
+  // rejetée par le refine et devient impossible à enregistrer.
   contributionStatus: z
     .union([
       z.literal('A_PAYER'),
       z.literal('PAYE'),
+      z.literal('SOLDE'),
+      z.literal('DEDUITE'),
       z.literal('PRO'),
       z.literal('GRATUIT'),
     ])

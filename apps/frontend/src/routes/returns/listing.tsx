@@ -19,6 +19,7 @@ import {
   ReturnDepositsPdf,
   type ReturnDepositsPdfProps,
 } from '@/pdf/return-deposit-pdf.tsx'
+import { toast } from 'sonner'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { FormattedNumber } from 'react-intl'
@@ -187,24 +188,39 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     id: 'mustPayContribution',
     header: 'Doit cotisation ?',
-    accessorFn: (row) => (row.contributionStatus === 'A_PAYER' ? 'Oui' : 'Non'),
+    accessorFn: (row) =>
+      row.contributionStatus === 'A_PAYER'
+        ? 'Oui'
+        : row.contributionStatus === 'SOLDE'
+          ? 'Soldé'
+          : 'Non',
     cell: ({ getValue, row }) => {
       const v = getValue() as string
       const depositsDb = useDepositsDb()
       const id = row.original.depositId
+      // La caisse est lue au clic, pas au rendu : useWorkstation() renvoie 0
+      // tant que Dexie n'a pas répondu, et un clic rapide rattacherait alors
+      // l'encaissement à la caisse 0.
+      const markAsSettled = async () => {
+        const record = await db.workstation.get('incrementStart')
+        const cashRegisterId = Number(record?.value ?? 0)
+        if (!cashRegisterId) {
+          toast.error('Aucun numéro de caisse configuré sur ce poste')
+          return
+        }
+        await depositsDb.update(id, {
+          contributionStatus: 'SOLDE',
+          contributionCollectWorkstationId: cashRegisterId,
+        })
+        toast.success(`Cotisation encaissée sur la caisse ${cashRegisterId}`)
+      }
       return (
         <div className="flex items-center gap-2">
           <p className={v === 'Oui' ? 'text-red-500' : 'text-green-500'}>{v}</p>
           {v === 'Oui' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                depositsDb.update(id, { contributionStatus: 'PAYE' })
-              }
-            >
+            <Button variant="outline" size="sm" onClick={markAsSettled}>
               <CheckIcon />
-              Marquer payé
+              Marquer soldé
             </Button>
           )}
         </div>

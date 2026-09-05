@@ -73,6 +73,13 @@ export function RouteComponent() {
               description="Retour des pros"
               variant="blue"
             />
+            <ClickableCard
+              onClick={() => navigate({ to: '/returns/cash-register-control' })}
+              icon={<ReceiptEuro className="w-8 h-8 text-blue-600" />}
+              title="Caisse"
+              description="Contrôler les espèces"
+              variant="blue"
+            />
             {user.role === 'ADMIN' && (
               <ClickableCard
                 onClick={() => navigate({ to: '/returns/checks' })}

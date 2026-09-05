@@ -131,10 +131,12 @@ const styles = StyleSheet.create({
   },
 })
 
+// Sert aussi au contrôle de la caisse de retour : seul le titre change.
 export type DepositCashRegisterControlProps = {
   copy?: number
   data: {
     year: number
+    title?: string
     cashRegisterId: number
     initialAmount: number
     realAmount: number
@@ -163,7 +165,7 @@ export const DepositCashRegisterControlPdf = (
                 <View style={styles.title}>
                   <Text>Bourse au skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
-                  <Text>Contrôle caisse dépôts</Text>
+                  <Text>{data.title ?? 'Contrôle caisse dépôts'}</Text>
                 </View>
               </View>
               <View>

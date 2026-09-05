@@ -225,6 +225,30 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
           (Payé)
         </>
       )
+    } else if (contributionStatus === 'SOLDE') {
+      contribution = (
+        <>
+          <FormattedNumber
+            value={data.deposit.contributionAmount}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />{' '}
+          (Soldée)
+        </>
+      )
+    } else if (contributionStatus === 'DEDUITE') {
+      contribution = (
+        <>
+          <FormattedNumber
+            value={data.deposit.contributionAmount}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />{' '}
+          (Déduite)
+        </>
+      )
     } else if (contributionStatus === 'PRO') {
       contribution = <>Pro</>
     } else {

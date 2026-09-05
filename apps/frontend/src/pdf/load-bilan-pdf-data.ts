@@ -132,10 +132,26 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const paidContributionsPaye = deposits
     .filter((d) => d.contributionStatus === 'PAYE')
     .reduce((a, d) => a + d.contributionAmount, 0)
+  // Cotisations réglées le soir au bureau des retours : elles ont bien été
+  // payées, elles changent simplement de ligne (et de caisse), donc la recette
+  // théorique reste inchangée quand un dépôt passe de A_PAYER à SOLDE.
+  const settledDeposits = deposits.filter((d) => d.contributionStatus === 'SOLDE')
+  const paidContributionsSolde = settledDeposits.reduce(
+    (a, d) => a + d.contributionAmount,
+    0,
+  )
+  const unattributedSettled = settledDeposits.filter(
+    (d) => d.contributionCollectWorkstationId == null,
+  )
+  const unattributedSettledAmount = unattributedSettled.reduce(
+    (a, d) => a + d.contributionAmount,
+    0,
+  )
   const deductedContributions = deposits
     .filter((d) => d.contributionStatus === 'DEDUITE')
     .reduce((a, d) => a + (d.dueContributionAmount ?? 0), 0)
-  const paidContributions = paidContributionsPaye + deductedContributions
+  const paidContributions =
+    paidContributionsPaye + paidContributionsSolde + deductedContributions
   const unpaidContributions = deposits
     .filter((d) => d.contributionStatus === 'A_PAYER')
     .reduce((a, d) => a + d.contributionAmount, 0)
@@ -175,18 +191,27 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const totalDeferred = sales.reduce((a, s) => a + (s.deferredAmount ?? 0), 0)
   const totalPayments = totalCards + totalCash + totalChecks + totalDeferred
 
-  // Cotisations encaissées = real cash counted in the deposit registers only.
+  // Cotisations encaissées = real cash counted in the deposit registers and in
+  // the return registers (the cotisations settled in the evening).
   // Contributions deducted at return (DEDUITE) are NOT added here: they are
   // already netted out of deposit.sellerAmount, so they are accounted for by
   // the lower "montant total décaissé".
   const depositRegisters = cashRegisterControls.filter(
     (c) => c.type === 'DEPOSIT',
   )
+  const returnRegisters = cashRegisterControls.filter(
+    (c) => c.type === 'RETURN',
+  )
   const depositRegisterRealCash = depositRegisters.reduce(
     (a, c) => a + c.realCashAmount,
     0,
   )
-  const collectedContributions = depositRegisterRealCash
+  const returnRegisterRealCash = returnRegisters.reduce(
+    (a, c) => a + c.realCashAmount,
+    0,
+  )
+  const collectedContributions =
+    depositRegisterRealCash + returnRegisterRealCash
 
   // Les pros sont réputés réglés d'office : il n'existe pas d'étape de
   // règlement pro dans l'application (l'écran /returns/pros ne fait que
@@ -223,6 +248,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     unmadeIndividualChecks
 
   // Différence de caisses = les écarts constatés aux contrôles, + le différé.
+  // Les contrôles de caisse de retour sont comptés comme les autres : leurs
+  // espèces entrent dans la recette réelle ci-dessus, donc leur écart explique
+  // bien un manque ou un excédent réel.
   // Le contrôle de caisse ne voit pas le différé (son théorique ne compte que
   // les espèces), alors que "Total paiements" le compte comme encaissé : c'est
   // donc un écart connu de plus, à mettre au même endroit que les écarts de
@@ -366,14 +394,21 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Cotisations payées',
           value: eur(paidContributions),
-          source: 'contributionAmount (PAYE) + dueContributionAmount (DEDUITE)',
-          formula: `${eur(paidContributionsPaye)} (PAYE) + ${eur(deductedContributions)} (DEDUITE)`,
+          source:
+            'contributionAmount (PAYE + SOLDE) + dueContributionAmount (DEDUITE)',
+          formula: `${eur(paidContributionsPaye)} (PAYE) + ${eur(paidContributionsSolde)} (SOLDE) + ${eur(deductedContributions)} (DEDUITE)`,
+        },
+        {
+          label: 'Dont cotisations soldées au retour',
+          value: eur(paidContributionsSolde),
+          source: 'contributionAmount (SOLDE), encaissées le soir aux retours',
+          formula: `${num(settledDeposits.length)} fiche(s) ; ${eur(unattributedSettledAmount)} sans caisse d'encaissement (${num(unattributedSettled.length)} fiche(s)), comptée(s) dans aucun théorique de caisse`,
         },
         {
           label: 'Cotisations non payées',
           value: eur(unpaidContributions),
           source: 'contributionAmount (A_PAYER)',
-          formula: `Σ contributionAmount des dépôts A_PAYER`,
+          formula: `Σ contributionAmount des dépôts A_PAYER — une cotisation soldée le soir passe en SOLDE et sort de cette ligne`,
         },
         {
           label: 'Droits CMR',
@@ -390,7 +425,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Recette bourse théorique',
           value: eur(theoreticalRevenue),
-          source: 'droits CMR + cotisations payées + non payées',
+          source:
+            'droits CMR + cotisations payées (PAYE + SOLDE + DEDUITE) + non payées',
           formula: `${eur(cmrRights)} + ${eur(paidContributions)} + ${eur(unpaidContributions)}`,
         },
       ],
@@ -449,8 +485,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Cotisations encaissées',
           value: eur(collectedContributions),
-          source: 'Σ realCashAmount des caisses de dépôt (réel)',
-          formula: `${eur(depositRegisterRealCash)} sur ${num(depositRegisters.length)} caisse(s) de dépôt (hors DEDUITE, déjà déduites du sellerAmount)`,
+          source: 'Σ realCashAmount des caisses de dépôt et de retour (réel)',
+          formula: `${eur(depositRegisterRealCash)} sur ${num(depositRegisters.length)} caisse(s) de dépôt + ${eur(returnRegisterRealCash)} sur ${num(returnRegisters.length)} caisse(s) de retour (hors DEDUITE, déjà déduites du sellerAmount)`,
         },
         {
           label: 'Chèques particuliers non faits',
@@ -474,8 +510,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Différence de caisses',
           value: eur(cashRegisterDiff),
-          source: 'Σ cashRegisterControl.difference + total différé',
-          formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses) + ${eur(totalDeferred)} (différé, invisible au contrôle de caisse)`,
+          source:
+            'Σ cashRegisterControl.difference (dépôt + vente + retour) + total différé',
+          formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses : ${num(depositRegisters.length)} dépôt, ${num(saleRegisters.length)} vente, ${num(returnRegisters.length)} retour) + ${eur(totalDeferred)} (différé, invisible au contrôle de caisse)`,
         },
         {
           label: 'Solde différence',
