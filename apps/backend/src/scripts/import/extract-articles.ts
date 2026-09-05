@@ -22,6 +22,11 @@ const TAILLE = 9
 const PRIX = 10
 const DATE = 11
 const INDICE = 13
+// Colonne « ReceptOK » de l'export : renseignée uniquement pour les articles
+// des pros, qui sont les seuls à être scannés à la réception. Les articles des
+// particuliers sont remis en main propre au moment du dépôt, donc la colonne
+// reste vide pour eux.
+const RECEPT_OK = 17
 
 
 export interface ArticleData {
@@ -35,6 +40,7 @@ export interface ArticleData {
   color: string;
   code: string;
   year: number;
+  received: boolean;
   depositIndex: number;
   identificationLetter: string;
   articleIndex: number;
@@ -59,6 +65,7 @@ function parseCSV(content: string): ArticleData[] {
       color: values[COULEUR],
       code: articleCode,
       year: TARGET_YEAR,
+      received: values[RECEPT_OK] === 'ReceptOK',
       depositIndex: parseInt(values[VENDEUR]),
       identificationLetter: values[INDICE],
       articleIndex: index,

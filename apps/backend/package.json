@@ -11,7 +11,8 @@
     "script:create-user": "tsx src/scripts/create-user.ts",
     "script:create-sales": "tsx src/scripts/create-sales.ts",
     "script:simulate": "tsx src/scripts/simulate-sales.ts",
-    "script:import": "tsx src/scripts/import/import.ts"
+    "script:import": "tsx src/scripts/import/import.ts",
+    "script:pro-barcodes": "tsx src/scripts/pro-barcodes/generate.ts"
   },
   "dependencies": {
     "@cmr-apps/types": "workspace:*",

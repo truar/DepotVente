@@ -22,6 +22,68 @@ import { extractCashRegisterSales } from './extract-sale-cash-register';
 // when this row last changed *in this database*. `createdAt` still carries the
 // original date, and nothing in the sync path reads it.
 
+// ── Mode « état de dépôt » (--depot-state) ──────────────────────────────────
+//
+// Rejoue l'export en s'arrêtant à la fin de la phase de dépôt : les dépôts et
+// leurs articles existent, mais rien de ce qui vient d'après n'est importé.
+// Concrètement, aucune vente, aucun article vendu, aucun contrôle de caisse, et
+// aucun chèque rendu — les champs de restitution des fiches restent vides.
+//
+// Les statuts d'article sont alors ceux qu'on aurait vraiment à ce moment-là :
+//   • particulier → RECEPTION_OK   (remis en main propre pendant le dépôt)
+//   • pro         → RECEPTION_OK / RECEPTION_PENDING selon la colonne ReceptOK
+//
+// Pour pouvoir répéter la partie « scan humain » de la réception pro, les fiches
+// listées dans PENDING_PRO_DEPOSIT_INDEXES sont traitées à part : leurs
+// PENDING_ARTICLES_PER_PRO derniers articles restent non réceptionnés, et tout
+// le reste de la fiche passe en RECEPTION_OK quoi qu'en dise la colonne
+// ReceptOK. On a donc exactement le nombre d'articles voulu à scanner, et la
+// sélection est déterministe (les derniers articles du fichier) : un ré-import
+// redonne le même lot.
+
+const PENDING_PRO_DEPOSIT_INDEXES = [2, 3];
+const PENDING_ARTICLES_PER_PRO = 30;
+
+const depotState = process.argv.includes('--depot-state');
+
+// Renvoie les codes des articles qu'on garde volontairement non réceptionnés.
+function reservePendingArticleCodes(articles: ArticleData[]) {
+  const codes = new Set<string>();
+  for (const depositIndex of PENDING_PRO_DEPOSIT_INDEXES) {
+    const reserved = articles
+      .filter((article) => article.depositIndex === depositIndex)
+      .slice(-PENDING_ARTICLES_PER_PRO);
+    if (reserved.length < PENDING_ARTICLES_PER_PRO) {
+      console.warn(
+        `⚠️  Fiche ${depositIndex} : ${reserved.length} articles disponibles pour ${PENDING_ARTICLES_PER_PRO} demandés`
+      );
+    }
+    for (const article of reserved) codes.add(article.code);
+  }
+  return codes;
+}
+
+// En mode état de dépôt la fiche n'a pas encore été restituée : ni calcul de
+// retour, ni chèque, ni signature, ni poste de restitution.
+function depositReturnFields(fiche: DepositData) {
+  if (depotState) {
+    return {
+      collectWorkstationId: null,
+      collectedAt: null,
+      clubAmount: null,
+      checkId: null,
+      signatory: null,
+    };
+  }
+  return {
+    collectWorkstationId: fiche.collectWorkstationId,
+    collectedAt: fiche.collectedAt,
+    clubAmount: fiche.paymentAmount,
+    checkId: fiche.chequeNumber,
+    signatory: fiche.signature,
+  };
+}
+
 async function importDeposits(fiches: DepositData[]) {
   let successCount = 0;
   let errorCount = 0;
@@ -50,13 +112,9 @@ async function importDeposits(fiches: DepositData[]) {
           depositIndex: fiche.depositIndex,
           incrementStart: fiche.incrementStart,
           dropWorkstationId: fiche.dropWorkstationId,
-          collectWorkstationId: fiche.collectWorkstationId,
-          collectedAt: fiche.collectedAt,
-          clubAmount: fiche.paymentAmount,
-          checkId: fiche.chequeNumber,
           type: fiche.depositIndex < 10 ? 'PRO' : 'PARTICULIER',
-          signatory: fiche.signature,
           createdAt: fiche.createdAt,
+          ...depositReturnFields(fiche),
         },
       });
       deposits.set(deposit.depositIndex, deposit)
@@ -82,10 +140,29 @@ async function importDeposits(fiches: DepositData[]) {
   return { deposits, predeposits };
 }
 
+// Hors mode état de dépôt on garde le comportement historique : tout arrive en
+// RECEPTION_PENDING, et importSoldArticles repasse ensuite les articles vendus
+// en SOLD.
+function articleStatus(
+  article: ArticleData,
+  deposit: Deposit,
+  reservedPendingCodes: Set<string>
+) {
+  if (!depotState) return 'RECEPTION_PENDING';
+  if (deposit.type !== 'PRO') return 'RECEPTION_OK';
+  if (PENDING_PRO_DEPOSIT_INDEXES.includes(article.depositIndex)) {
+    return reservedPendingCodes.has(article.code) ? 'RECEPTION_PENDING' : 'RECEPTION_OK';
+  }
+  return article.received ? 'RECEPTION_OK' : 'RECEPTION_PENDING';
+}
+
 async function importArticles(articlesFromImport: ArticleData[], deposits: Map<number, Deposit>) {
   let successCount = 0;
   let errorCount = 0;
   const articles = new Map<string, Article>()
+  const reservedPendingCodes = depotState
+    ? reservePendingArticleCodes(articlesFromImport)
+    : new Set<string>()
   for (const articleFromImport of articlesFromImport) {
     try {
       const deposit = deposits.get(articleFromImport.depositIndex)
@@ -104,7 +181,7 @@ async function importArticles(articlesFromImport: ArticleData[], deposits: Map<n
           color: articleFromImport.color,
           code: articleFromImport.code,
           year: articleFromImport.year,
-          status: 'RECEPTION_PENDING',
+          status: articleStatus(articleFromImport, deposit, reservedPendingCodes),
           depositIndex: articleFromImport.depositIndex,
           identificationLetter: articleFromImport.identificationLetter,
           articleIndex: articleFromImport.articleIndex,
@@ -365,11 +442,13 @@ async function importAll() {
     const articlesFromImport = extractArticles()
     const { articles } = await importArticles(articlesFromImport, deposits)
 
-    const buyersFromImport = await extractBuyers()
-    const { sales } = await importSales(buyersFromImport)
+    if (!depotState) {
+      const buyersFromImport = await extractBuyers()
+      const { sales } = await importSales(buyersFromImport)
 
-    const soldArticles = await extractSoldArticles()
-    await importSoldArticles(soldArticles, articles, sales)
+      const soldArticles = await extractSoldArticles()
+      await importSoldArticles(soldArticles, articles, sales)
+    }
 
     const predepositFiches = extractPredeposits()
     const { predeposits } = await importPredeposits(predepositFiches, preDepositToDeposit)
@@ -377,11 +456,16 @@ async function importAll() {
     const predepositArticles = extractPredepositArticles()
     await importPredepositArticles(predepositArticles, predeposits)
 
-    const cashRegisterDeposits = await extractCashRegisterDeposits()
-    await importCashRegister(cashRegisterDeposits, 'DEPOSIT')
+    // Les contrôles de caisse - dépôt comme vente - décrivent une journée déjà
+    // jouée. En mode état de dépôt on part caisses vides, pour pouvoir refaire
+    // le contrôle de caisse du dépôt pendant la répétition.
+    if (!depotState) {
+      const cashRegisterDeposits = await extractCashRegisterDeposits()
+      await importCashRegister(cashRegisterDeposits, 'DEPOSIT')
 
-    const cashRegisterSales = await extractCashRegisterSales()
-    await importCashRegister(cashRegisterSales, 'SALE')
+      const cashRegisterSales = await extractCashRegisterSales()
+      await importCashRegister(cashRegisterSales, 'SALE')
+    }
   } catch (error) {
     console.error('❌ Fatal error during import:', error);
     throw error;
@@ -392,4 +476,12 @@ async function importAll() {
 
 // Run the script
 console.log('🚀 Starting Fiche import...\n');
+if (depotState) {
+  console.log(
+    "📦 Mode état de dépôt : ni vente, ni article vendu, ni contrôle de caisse, ni chèque rendu."
+  );
+  console.log(
+    `📦 ${PENDING_ARTICLES_PER_PRO} articles réservés non réceptionnés sur les fiches pro ${PENDING_PRO_DEPOSIT_INDEXES.join(', ')}.\n`
+  );
+}
 importAll();

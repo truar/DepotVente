@@ -96,6 +96,67 @@ tsx src/scripts/import/import.ts
 > qu'insérer. Pour repartir d'une base propre, lance d'abord `db:reset`
 > (voir ci-dessous).
 
+**Options :**
+- `--depot-state` - Importe uniquement l'**état de fin de dépôt** (voir plus bas)
+
+#### Mode `--depot-state`
+
+Rejoue l'export en s'arrêtant à la fin de la phase de dépôt, pour répéter la
+journée à partir d'une base « tout est déposé, rien n'est vendu ».
+
+```bash
+pnpm --filter backend script:import --depot-state
+```
+
+Ce que le mode change :
+
+| | Import complet | `--depot-state` |
+|---|---|---|
+| Ventes / acheteurs | importées | **aucune** |
+| Articles vendus (`SOLD`) | importés | **aucun** |
+| Contrôles de caisse (dépôt **et** vente) | importés | **aucun** |
+| Chèques rendus (`checkId`, `collectedAt`, `signatory`, `collectWorkstationId`, `clubAmount`) | importés | **vides** |
+| Dépôts, articles, pré-dépôts | importés | importés |
+| Statut des articles particuliers | `RECEPTION_PENDING` | `RECEPTION_OK` |
+| Statut des articles pro | `RECEPTION_PENDING` | colonne `ReceptOK` de l'export |
+
+**Articles réservés pour tester le scan.** Les fiches pro listées dans
+`PENDING_PRO_DEPOSIT_INDEXES` (par défaut `2` = PERRILLAT et `3` = ALLOSKI)
+gardent exactement `PENDING_ARTICLES_PER_PRO` articles (par défaut 30) en
+`RECEPTION_PENDING` — leurs 30 derniers articles du fichier, donc la sélection
+est déterministe et un ré-import redonne le même lot. Le reste de ces fiches
+passe en `RECEPTION_OK`. Les deux constantes sont en haut de `import/import.ts`.
+
+Les autres fiches pro suivent la colonne `ReceptOK` de l'export : elles ont
+donc quelques articles réellement non réceptionnés en 2025 (9 au total sur les
+fiches 4, 8 et 9), qui apparaîtront eux aussi dans la planche de codes-barres.
+
+### 5. `pro-barcodes/generate.ts` - Planche de codes-barres à scanner
+
+Génère une page HTML avec un code-barres **Code 128** par article pro encore en
+`RECEPTION_PENDING`, groupés par fiche. Sert à répéter la partie humaine de la
+réception pro : on imprime la planche, et on scanne les codes un par un dans
+l'écran « Réceptionner les articles des pros ».
+
+```bash
+# Sortie par défaut : tmp/pro-barcodes.html (dossier ignoré par git)
+pnpm --filter backend script:pro-barcodes
+
+# Ailleurs
+pnpm --filter backend script:pro-barcodes --output ~/Desktop/planche.html
+```
+
+**Options :**
+- `--output <chemin>` - Fichier HTML à écrire (défaut : `tmp/pro-barcodes.html`)
+
+Les codes-barres sont des images PNG embarquées en `data:` URI : la page
+s'imprime telle quelle depuis le navigateur, et un copier-coller vers Word
+emmène les images avec lui.
+
+Le code encodé est exactement le `code` de l'article (`2026 2A`, espace
+comprise), celui que cherche `articlesDb.findByCode` — c'est le même Code 128
+que les étiquettes Dymo.
+
 ## 🗄️ Réinitialiser & importer la base
 
 Les commandes Prisma vivent dans le package `database` (pas `backend`).
