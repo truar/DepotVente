@@ -122,10 +122,12 @@ Ce que le mode change :
 
 **Articles réservés pour tester le scan.** Les fiches pro listées dans
 `PENDING_PRO_DEPOSIT_INDEXES` (par défaut `2` = PERRILLAT et `3` = ALLOSKI)
-gardent exactement `PENDING_ARTICLES_PER_PRO` articles (par défaut 30) en
-`RECEPTION_PENDING` — leurs 30 derniers articles du fichier, donc la sélection
-est déterministe et un ré-import redonne le même lot. Le reste de ces fiches
-passe en `RECEPTION_OK`. Les deux constantes sont en haut de `import/import.ts`.
+gardent, pour chaque catégorie de `PENDING_PRO_CATEGORIES` (par défaut `Skis`
+et `Chaussures`), exactement `PENDING_ARTICLES_PER_CATEGORY` articles (par
+défaut 30) en `RECEPTION_PENDING` — soit 30 skis et 30 chaussures par fiche,
+leurs 30 derniers de chaque catégorie dans le fichier, donc la sélection est
+déterministe et un ré-import redonne le même lot. Le reste de ces fiches passe
+en `RECEPTION_OK`. Les trois constantes sont en haut de `import/import.ts`.
 
 Les autres fiches pro suivent la colonne `ReceptOK` de l'export : elles ont
 donc quelques articles réellement non réceptionnés en 2025 (9 au total sur les
@@ -134,9 +136,15 @@ fiches 4, 8 et 9), qui apparaîtront eux aussi dans la planche de codes-barres.
 ### 5. `pro-barcodes/generate.ts` - Planche de codes-barres à scanner
 
 Génère une page HTML avec un code-barres **Code 128** par article pro encore en
-`RECEPTION_PENDING`, groupés par fiche. Sert à répéter la partie humaine de la
-réception pro : on imprime la planche, et on scanne les codes un par un dans
-l'écran « Réceptionner les articles des pros ».
+`RECEPTION_PENDING`, groupés par fiche puis par catégorie. Sert à répéter la
+partie humaine de la réception pro : on imprime la planche, et on scanne les
+codes un par un dans l'écran « Réceptionner les articles des pros ».
+
+La planche ajoute un échantillon d'articles **particuliers** invendus
+(`RECEPTION_OK`), pour répéter un passage en caisse : par défaut 30 articles,
+**un seul par vendeur**, tirés en tournant sur les catégories (un ski, une
+chaussure, un vêtement, ...) pour mélanger vendeurs et rayons. Les
+pseudo-catégories `Zabsent` et `Zrefusé` sont exclues.
 
 ```bash
 # Sortie par défaut : tmp/pro-barcodes.html (dossier ignoré par git)
@@ -148,6 +156,7 @@ pnpm --filter backend script:pro-barcodes --output ~/Desktop/planche.html
 
 **Options :**
 - `--output <chemin>` - Fichier HTML à écrire (défaut : `tmp/pro-barcodes.html`)
+- `--particuliers <N>` - Nombre d'articles particuliers dans l'échantillon (défaut : 30, `0` pour la planche pro seule)
 
 Les codes-barres sont des images PNG embarquées en `data:` URI : la page
 s'imprime telle quelle depuis le navigateur, et un copier-coller vers Word

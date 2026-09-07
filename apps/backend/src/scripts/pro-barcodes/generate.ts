@@ -5,23 +5,30 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prisma } from 'database';
 import { barcodeDataUri } from './code128.js';
+import { groupByCategory, sampleAcrossSellersAndCategories } from './sample.js';
 
 // Planche de codes-barres à scanner.
 //
 // Deux familles, dans le même fichier :
-//  - les articles PRO non réceptionnés (RECEPTION_PENDING), qui servent à
-//    répéter la partie humaine de la réception pro : on imprime la planche (ou
-//    on la colle dans un document Word) et on scanne les codes un par un dans
-//    l'écran « Réceptionner les articles des pros » ;
+//  - les articles PRO non réceptionnés (RECEPTION_PENDING), groupés par fiche
+//    puis par catégorie (l'import --depot-state réserve 30 skis et 30
+//    chaussures sur les fiches 2 et 3), qui servent à répéter la partie humaine
+//    de la réception pro : on imprime la planche (ou on la colle dans un
+//    document Word) et on scanne les codes un par un dans l'écran
+//    « Réceptionner les articles des pros » ;
 //  - un échantillon d'articles PARTICULIER invendus (RECEPTION_OK, la même
 //    définition d'« invendu » que load-unreturned-articles-pdf-data), pour
 //    pouvoir répéter un passage en caisse sans aller chercher un article dans
 //    les rayons.
 //
-// L'échantillon est volontairement petit : il y a plus de mille articles
-// particulier invendus, en imprimer la totalité n'a pas de sens et alourdit le
-// HTML d'autant d'images embarquées. --particuliers 0 revient à la planche pro
-// seule, --particuliers N en demande N.
+// L'échantillon particulier est volontairement petit : il y a plus de mille
+// articles particulier invendus, en imprimer la totalité n'a pas de sens et
+// alourdit le HTML d'autant d'images embarquées. Il est aussi volontairement
+// varié : un seul article par vendeur, et les catégories sont tirées en
+// tournant (un ski, une chaussure, un vêtement, ... puis on recommence) pour
+// qu'un passage en caisse mélange des vendeurs et des rayons différents.
+// --particuliers 0 revient à la planche pro seule, --particuliers N en
+// demande N.
 //
 // Le code encodé est exactement le `code` de l'article, celui que cherche
 // articlesDb.findByCode.
@@ -32,7 +39,11 @@ import { barcodeDataUri } from './code128.js';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'tmp', 'pro-barcodes.html');
 
-const DEFAULT_PARTICULIER_SAMPLE = 20;
+const DEFAULT_PARTICULIER_SAMPLE = 30;
+
+// Pseudo-catégories de l'export (article absent / refusé au dépôt) : ce ne
+// sont pas des articles en rayon, on ne les propose pas au scan.
+const EXCLUDED_PARTICULIER_CATEGORIES = ['Zabsent', 'Zrefusé'];
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -64,34 +75,38 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-type PendingArticle = {
+type ScanArticle = {
   code: string;
   brand: string;
   model: string | null;
   size: string | null;
   category: string;
   identificationLetter: string;
+  // Renseigné quand le groupe mélange plusieurs vendeurs (échantillon
+  // particulier) : la fiche est alors rappelée sous chaque code.
+  owner?: string;
 };
 
-function renderArticle(article: PendingArticle) {
+function renderArticle(article: ScanArticle) {
   const details = [article.brand, article.model, article.size]
     .filter((part) => part && part.trim())
     .join(' · ');
+  const owner = article.owner ? `\n          <span class="owner">${escapeHtml(article.owner)}</span>` : '';
   return `      <figure class="article">
         <img src="${barcodeDataUri(article.code)}" alt="${escapeHtml(article.code)}" />
         <figcaption>
           <span class="code">${escapeHtml(article.code)}</span>
-          <span class="details">${escapeHtml(article.category)}${details ? ` — ${escapeHtml(details)}` : ''}</span>
+          <span class="details">${escapeHtml(article.category)}${details ? ` — ${escapeHtml(details)}` : ''}</span>${owner}
         </figcaption>
       </figure>`;
 }
 
-type Group = { depositIndex: number; sellerName: string; articles: PendingArticle[] };
+type Group = { title: string; articles: ScanArticle[] };
 type Family = { title: string; note?: string; groups: Group[] };
 
 function renderGroup(group: Group) {
   return `    <section>
-      <h3>Fiche ${group.depositIndex} — ${escapeHtml(group.sellerName)} <small>${group.articles.length} articles à scanner</small></h3>
+      <h3>${escapeHtml(group.title)} <small>${group.articles.length} articles à scanner</small></h3>
       <div class="grid">
 ${group.articles.map(renderArticle).join('\n')}
       </div>
@@ -137,6 +152,7 @@ function renderHtml(families: Family[]) {
   figcaption { display: flex; flex-direction: column; }
   .code { font-family: "Courier New", monospace; font-size: 11pt; font-weight: bold; letter-spacing: 0.5px; }
   .details { font-size: 7.5pt; color: #444; }
+  .owner { font-size: 7.5pt; color: #444; font-style: italic; }
   section { break-inside: auto; }
   @media print { body { margin: 8mm; } .intro { display: none; } }
 </style>
@@ -168,58 +184,50 @@ async function generate() {
     },
   });
 
-  const proGroups = deposits
-    .filter((deposit) => deposit.articles.length > 0)
-    .map((deposit) => ({
-      depositIndex: deposit.depositIndex,
-      sellerName: `${deposit.seller.firstName} ${deposit.seller.lastName}`.trim(),
-      articles: deposit.articles as PendingArticle[],
-    }));
+  // Une section par fiche et par catégorie : les skis et les chaussures d'une
+  // même fiche se scannent en deux passes distinctes.
+  const proGroups: Group[] = [];
+  for (const deposit of deposits) {
+    const sellerName = `${deposit.seller.firstName} ${deposit.seller.lastName}`.trim();
+    for (const [category, articles] of groupByCategory(deposit.articles)) {
+      proGroups.push({ title: `Fiche ${deposit.depositIndex} — ${sellerName} · ${category}`, articles });
+    }
+  }
 
   // Invendu = RECEPTION_OK : reçu au dépôt, jamais passé en caisse. Même
   // définition que load-unreturned-articles-pdf-data côté frontend.
   const particulierWhere = {
     status: 'RECEPTION_OK',
     deletedAt: null,
+    category: { notIn: EXCLUDED_PARTICULIER_CATEGORIES },
     deposit: { type: 'PARTICULIER' as const, deletedAt: null },
   };
-  const unsoldTotal = particuliers > 0 ? await prisma.article.count({ where: particulierWhere }) : 0;
-  // On prend les N premiers articles, pas les N premières fiches : l'échantillon
-  // reste de taille prévisible même si un vendeur a déposé trente articles.
   const unsold =
     particuliers > 0
       ? await prisma.article.findMany({
           where: particulierWhere,
           orderBy: [{ depositIndex: 'asc' }, { articleIndex: 'asc' }],
-          take: particuliers,
           include: { deposit: { include: { seller: true } } },
         })
       : [];
-
-  const particulierGroups: Group[] = [];
-  for (const article of unsold) {
-    const last = particulierGroups[particulierGroups.length - 1];
-    if (last && last.depositIndex === article.depositIndex) {
-      last.articles.push(article as PendingArticle);
-      continue;
-    }
-    particulierGroups.push({
-      depositIndex: article.depositIndex,
-      sellerName: `${article.deposit.seller.firstName} ${article.deposit.seller.lastName}`.trim(),
-      articles: [article as PendingArticle],
-    });
-  }
+  const sample = sampleAcrossSellersAndCategories(unsold, particuliers).map((article) => ({
+    ...article,
+    owner: `Fiche ${article.depositIndex} — ${`${article.deposit.seller.firstName} ${article.deposit.seller.lastName}`.trim()}`,
+  }));
+  const sampledCategories = new Set(sample.map((article) => article.category)).size;
 
   const families: Family[] = [
     { title: 'Articles pro non réceptionnés', groups: proGroups },
     {
       title: 'Articles particuliers invendus',
       note:
-        `Échantillon de ${unsold.length} article(s) sur ${unsoldTotal} invendus — ` +
-        `pour répéter un passage en caisse. --particuliers N pour en demander plus, 0 pour aucun.`,
-      groups: particulierGroups,
+        `Échantillon de ${sample.length} article(s) sur ${unsold.length} invendus, un par vendeur, ` +
+        `${sampledCategories} catégorie(s) — pour répéter un passage en caisse. ` +
+        `--particuliers N pour en demander plus, 0 pour aucun.`,
+      groups: sample.length > 0 ? [{ title: 'Un article par vendeur, catégories mélangées', articles: sample }] : [],
     },
   ];
+  const particulierGroups = families[1].groups;
 
   if (proGroups.length === 0 && particulierGroups.length === 0) {
     console.log('ℹ️  Aucun article à scanner : rien à imprimer.');
@@ -233,7 +241,7 @@ async function generate() {
     if (family.groups.length === 0) continue;
     console.log(`\n${family.title} :`);
     for (const group of family.groups) {
-      console.log(`  • Fiche ${group.depositIndex} — ${group.sellerName} : ${group.articles.length} articles`);
+      console.log(`  • ${group.title} : ${group.articles.length} articles`);
     }
   }
   const total = countArticles(proGroups) + countArticles(particulierGroups);

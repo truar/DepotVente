@@ -34,15 +34,17 @@ import { extractCashRegisterSales } from './extract-sale-cash-register';
 //   • pro         → RECEPTION_OK / RECEPTION_PENDING selon la colonne ReceptOK
 //
 // Pour pouvoir répéter la partie « scan humain » de la réception pro, les fiches
-// listées dans PENDING_PRO_DEPOSIT_INDEXES sont traitées à part : leurs
-// PENDING_ARTICLES_PER_PRO derniers articles restent non réceptionnés, et tout
-// le reste de la fiche passe en RECEPTION_OK quoi qu'en dise la colonne
-// ReceptOK. On a donc exactement le nombre d'articles voulu à scanner, et la
-// sélection est déterministe (les derniers articles du fichier) : un ré-import
-// redonne le même lot.
+// listées dans PENDING_PRO_DEPOSIT_INDEXES sont traitées à part : pour chaque
+// catégorie de PENDING_PRO_CATEGORIES, leurs PENDING_ARTICLES_PER_CATEGORY
+// derniers articles restent non réceptionnés, et tout le reste de la fiche passe
+// en RECEPTION_OK quoi qu'en dise la colonne ReceptOK. On a donc exactement le
+// nombre d'articles voulu à scanner par catégorie (30 skis et 30 chaussures par
+// fiche), et la sélection est déterministe (les derniers articles du fichier) :
+// un ré-import redonne le même lot.
 
 const PENDING_PRO_DEPOSIT_INDEXES = [2, 3];
-const PENDING_ARTICLES_PER_PRO = 30;
+const PENDING_PRO_CATEGORIES = ['Skis', 'Chaussures'];
+const PENDING_ARTICLES_PER_CATEGORY = 30;
 
 const depotState = process.argv.includes('--depot-state');
 
@@ -50,15 +52,17 @@ const depotState = process.argv.includes('--depot-state');
 function reservePendingArticleCodes(articles: ArticleData[]) {
   const codes = new Set<string>();
   for (const depositIndex of PENDING_PRO_DEPOSIT_INDEXES) {
-    const reserved = articles
-      .filter((article) => article.depositIndex === depositIndex)
-      .slice(-PENDING_ARTICLES_PER_PRO);
-    if (reserved.length < PENDING_ARTICLES_PER_PRO) {
-      console.warn(
-        `⚠️  Fiche ${depositIndex} : ${reserved.length} articles disponibles pour ${PENDING_ARTICLES_PER_PRO} demandés`
-      );
+    for (const category of PENDING_PRO_CATEGORIES) {
+      const reserved = articles
+        .filter((article) => article.depositIndex === depositIndex && article.category === category)
+        .slice(-PENDING_ARTICLES_PER_CATEGORY);
+      if (reserved.length < PENDING_ARTICLES_PER_CATEGORY) {
+        console.warn(
+          `⚠️  Fiche ${depositIndex} / ${category} : ${reserved.length} articles disponibles pour ${PENDING_ARTICLES_PER_CATEGORY} demandés`
+        );
+      }
+      for (const article of reserved) codes.add(article.code);
     }
-    for (const article of reserved) codes.add(article.code);
   }
   return codes;
 }
@@ -481,7 +485,7 @@ if (depotState) {
     "📦 Mode état de dépôt : ni vente, ni article vendu, ni contrôle de caisse, ni chèque rendu."
   );
   console.log(
-    `📦 ${PENDING_ARTICLES_PER_PRO} articles réservés non réceptionnés sur les fiches pro ${PENDING_PRO_DEPOSIT_INDEXES.join(', ')}.\n`
+    `📦 ${PENDING_ARTICLES_PER_CATEGORY} articles non réceptionnés par catégorie (${PENDING_PRO_CATEGORIES.join(', ')}) réservés sur les fiches pro ${PENDING_PRO_DEPOSIT_INDEXES.join(', ')}.\n`
   );
 }
 importAll();
