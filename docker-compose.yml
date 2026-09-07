@@ -30,6 +30,14 @@ services:
       target: backend-prod
     container_name: cmr_backend
     restart: unless-stopped
+    # `pnpm traces` reads these logs through `docker compose logs`. Rotated so
+    # a long event cannot fill the disk; ten files of 100 MB hold weeks of
+    # polling from nine PCs.
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
     ports:
       - "13000:3000"
     environment:

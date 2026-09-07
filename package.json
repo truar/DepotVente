@@ -19,6 +19,7 @@
     "docker:dev": "docker compose -f docker-compose.dev.yml up --build -d",
     "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
     "docker:logs": "docker compose logs -f",
+    "traces": "node scripts/traces.mjs",
     "docker:clean": "docker compose down -v",
     "start": "docker compose up --build -d"
   },

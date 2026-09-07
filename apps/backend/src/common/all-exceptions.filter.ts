@@ -31,8 +31,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const reply = http.getResponse<FastifyReply>()
 
     const { status, body } = classify(exception)
+    // What `pnpm traces errors` reads: the code and status the client got,
+    // the route, and which outbox operation it was about.
     const context = {
       err: exception,
+      code: body.code,
+      status,
       route: request.routeOptions.url ?? request.url,
       body: summarizeBody(request.body),
     }
