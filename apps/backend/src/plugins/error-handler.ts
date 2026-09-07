@@ -1,4 +1,5 @@
-import type { FastifyError, FastifyInstance } from 'fastify'
+import fp from 'fastify-plugin'
+import type { FastifyError } from 'fastify'
 import { Prisma } from 'database'
 
 // Every error leaves the server as `{ code, message }` with a status that
@@ -7,24 +8,27 @@ import { Prisma } from 'database'
 //   5xx - the server or the database hiccupped; the client retries later.
 // Before this handler a malformed push and a database outage both produced an
 // opaque 500, so the client could only retry both, forever.
-export function registerErrorHandler(fastify: FastifyInstance) {
-  fastify.setErrorHandler((error: FastifyError, request, reply) => {
-    const { code, status, message } = classify(error)
-    const context = {
-      err: error,
-      route: request.routeOptions.url,
-      body: summarizeBody(request.body),
-    }
+export default fp(
+  async (fastify) => {
+    fastify.setErrorHandler((error: FastifyError, request, reply) => {
+      const { code, status, message } = classify(error)
+      const context = {
+        err: error,
+        route: request.routeOptions.url,
+        body: summarizeBody(request.body),
+      }
 
-    if (status >= 500) {
-      request.log.error(context, message)
-    } else {
-      request.log.warn(context, message)
-    }
+      if (status >= 500) {
+        request.log.error(context, message)
+      } else {
+        request.log.warn(context, message)
+      }
 
-    return reply.code(status).send({ code, message })
-  })
-}
+      return reply.code(status).send({ code, message })
+    })
+  },
+  { name: 'error-handler' },
+)
 
 function classify(error: FastifyError): {
   code: string
