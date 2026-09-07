@@ -104,12 +104,26 @@ function renderArticle(article: ScanArticle) {
 type Group = { title: string; articles: ScanArticle[] };
 type Family = { title: string; note?: string; groups: Group[] };
 
+const ARTICLES_PER_ROW = 3;
+
+// Les lignes sont des blocs explicites plutôt qu'un seul conteneur flex : Safari
+// et Word ne savent pas couper un conteneur flex entre deux pages et le
+// repoussent entier sur la page suivante, ce qui laisse la première page vide.
+// Un bloc par ligne se coupe proprement entre deux lignes partout.
+function renderRows(articles: ScanArticle[]) {
+  const rows: string[] = [];
+  for (let start = 0; start < articles.length; start += ARTICLES_PER_ROW) {
+    rows.push(`      <div class="row">
+${articles.slice(start, start + ARTICLES_PER_ROW).map(renderArticle).join('\n')}
+      </div>`);
+  }
+  return rows.join('\n');
+}
+
 function renderGroup(group: Group) {
   return `    <section>
       <h3>${escapeHtml(group.title)} <small>${group.articles.length} articles à scanner</small></h3>
-      <div class="grid">
-${group.articles.map(renderArticle).join('\n')}
-      </div>
+${renderRows(group.articles)}
     </section>`;
 }
 
@@ -142,19 +156,19 @@ function renderHtml(families: Family[]) {
   body { font-family: Arial, Helvetica, sans-serif; margin: 12mm; color: #000; }
   h1 { font-size: 16pt; margin: 0 0 2mm; }
   .intro { font-size: 9pt; color: #444; margin: 0 0 8mm; }
-  h2 { font-size: 13pt; margin: 10mm 0 2mm; border-bottom: 2px solid #000; padding-bottom: 1mm; }
+  h2 { font-size: 13pt; margin: 10mm 0 2mm; border-bottom: 2px solid #000; padding-bottom: 1mm; break-after: avoid; page-break-after: avoid; }
   h2:first-of-type { margin-top: 4mm; }
   h2 small, h3 small { font-weight: normal; font-size: 9pt; color: #444; }
-  h3 { font-size: 11pt; margin: 5mm 0 3mm; border-bottom: 1px solid #999; padding-bottom: 1mm; }
+  h3 { font-size: 11pt; margin: 5mm 0 3mm; border-bottom: 1px solid #999; padding-bottom: 1mm; break-after: avoid; page-break-after: avoid; }
   .note { font-size: 8.5pt; color: #444; margin: 0 0 3mm; }
-  .grid { display: flex; flex-wrap: wrap; gap: 4mm; }
-  .article { margin: 0; width: 52mm; break-inside: avoid; page-break-inside: avoid; }
+  .row { display: flex; gap: 4mm; margin-bottom: 4mm; break-inside: avoid; page-break-inside: avoid; }
+  .article { margin: 0; width: 52mm; }
   .article img { display: block; width: 50mm; height: 12mm; image-rendering: crisp-edges; }
   figcaption { display: flex; flex-direction: column; }
   .code { font-family: "Courier New", monospace; font-size: 11pt; font-weight: bold; letter-spacing: 0.5px; }
   .details { font-size: 7.5pt; color: #444; }
   .owner { font-size: 7.5pt; color: #444; font-style: italic; }
-  section { break-inside: auto; }
+  section { break-inside: auto; page-break-inside: auto; }
   @page { size: A4; margin: 10mm; }
   @media print { body { margin: 0; } .intro { display: none; } }
 </style>
