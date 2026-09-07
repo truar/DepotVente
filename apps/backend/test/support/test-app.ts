@@ -1,15 +1,23 @@
 import { Writable } from 'node:stream'
 import { randomUUID } from 'node:crypto'
-import { buildApp, type App } from '../../src/app.js'
+import { JwtService } from '@nestjs/jwt'
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify'
+import { Test } from '@nestjs/testing'
+import { AppModule } from '../../src/app.module.js'
+import { configureApp } from '../../src/app.js'
+import { DatasetEpochService } from '../../src/sync/dataset-epoch.service.js'
 
 export type LogLine = Record<string, unknown> & {
   level: number
   msg?: string
-  reqId?: string
+  req?: { id?: string | number; url?: string }
 }
 
 export type TestApp = {
-  app: App
+  app: NestFastifyApplication
   epoch: string
   token: string
   // Every log line the app wrote, parsed. A real pino logger writing to an
@@ -17,7 +25,9 @@ export type TestApp = {
   logs: LogLine[]
   // Headers of a well-behaved client: token, identity, current epoch.
   // Override or drop any of them to build a misbehaving one.
-  headers: (overrides?: Record<string, string | undefined>) => Record<string, string>
+  headers: (
+    overrides?: Record<string, string | undefined>,
+  ) => Record<string, string>
 }
 
 export const CLIENT = {
@@ -26,9 +36,10 @@ export const CLIENT = {
   appVersion: 'test-build',
 }
 
-// Boots the real application (all plugins, real database) without opening a
-// port. Requests go through `app.inject()`, Fastify's built-in HTTP
-// simulation: the same routing, hooks, validation and serialization as a
+// Boots the real application (all modules, real database) without opening a
+// port. Nest's testing module compiles the same AppModule main.ts uses; the
+// Fastify adapter then answers `app.inject()`, Fastify's built-in HTTP
+// simulation: the same routing, middleware, guards, pipes and filters as a
 // socket, minus the socket.
 export async function createTestApp(): Promise<TestApp> {
   const logs: LogLine[] = []
@@ -41,16 +52,27 @@ export async function createTestApp(): Promise<TestApp> {
     },
   })
 
-  const app = await buildApp({
-    logger: { level: 'info', stream },
-    jwtSecret: 'test-secret',
-  })
-  await app.ready()
+  const moduleRef = await Test.createTestingModule({
+    imports: [
+      AppModule.register({
+        logger: { level: 'info', stream },
+        jwtSecret: 'test-secret',
+      }),
+    ],
+  }).compile()
 
-  const token = app.jwt.sign({
+  const app = moduleRef.createNestApplication<NestFastifyApplication>(
+    new FastifyAdapter({ logger: false }),
+    { bufferLogs: true },
+  )
+  configureApp(app)
+  await app.init()
+  await app.getHttpAdapter().getInstance().ready()
+
+  const token = app.get(JwtService).sign({
     payload: { id: randomUUID(), role: 'ADMIN' },
   })
-  const epoch = app.datasetEpoch
+  const epoch = app.get(DatasetEpochService).epoch
 
   const headers: TestApp['headers'] = (overrides = {}) => {
     const all: Record<string, string | undefined> = {

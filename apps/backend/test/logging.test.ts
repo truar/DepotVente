@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { truncateAll } from './support/database'
-import { CLIENT, createTestApp, pushBody, type TestApp } from './support/test-app'
+import {
+  CLIENT,
+  createTestApp,
+  pushBody,
+  type TestApp,
+} from './support/test-app'
 
 describe('request logging', () => {
   let t: TestApp
@@ -21,20 +26,18 @@ describe('request logging', () => {
     })
     expect(res.statusCode).toBe(409)
 
-    const incoming = t.logs.find(
-      (line) =>
-        line.msg === 'incoming request' &&
-        (line.req as { url?: string } | undefined)?.url === '/api/push',
+    const completed = t.logs.find(
+      (line) => line.msg === 'request completed' && line.req?.url === '/api/push',
     )
-    expect(incoming?.reqId).toBeDefined()
+    expect(completed?.req?.id).toBeDefined()
     const forThisRequest = t.logs.filter(
-      (line) => line.reqId === incoming?.reqId,
+      (line) => line.req?.id === completed?.req?.id,
     )
 
-    // Fastify's own lines around the epoch refusal written by our hook.
+    // The guard's refusal, the exception filter, then pino-http's own line.
     expect(forThisRequest.map((line) => line.msg)).toEqual([
-      'incoming request',
       'Client synced against a previous database, refused',
+      'La base de données du serveur a été réinitialisée depuis la dernière synchronisation de ce poste.',
       'request completed',
     ])
     for (const line of forThisRequest) {
