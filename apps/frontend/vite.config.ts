@@ -5,9 +5,30 @@ import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import { execSync } from 'node:child_process'
+
+// Build identifier sent by every client on its sync requests (X-App-Version),
+// so the server log says which build a computer runs. The git sha is absent
+// in the Docker build (no .git in the context); the timestamp always is.
+function appVersion(): string {
+  const builtAt = new Date().toISOString().slice(0, 16).replace('T', ' ')
+  try {
+    const sha = execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim()
+    return `${sha} (${builtAt})`
+  } catch {
+    return builtAt
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion()),
+  },
   plugins: [
     tanstackRouter({
       target: 'react',

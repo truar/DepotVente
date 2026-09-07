@@ -1,4 +1,5 @@
 import { syncService } from '@/services/sync-service.ts'
+
 let syncInterval: NodeJS.Timeout | null = null
 const DELTA_SYNC_INTERVAL = 20000
 
@@ -39,6 +40,14 @@ self.onmessage = async (event) => {
       break
     case 'PROCESS_OUTBOX':
       await syncService.processOutbox()
+      break
+    case 'RESET_LOCAL':
+      try {
+        await syncService.resetLocal()
+        self.postMessage({ type: 'SYNC_COMPLETE' })
+      } catch (error) {
+        self.postMessage({ type: 'SYNC_ERROR', error: error })
+      }
       break
   }
 }

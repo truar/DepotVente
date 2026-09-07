@@ -1,18 +1,52 @@
-import { db, type OutboxOperation } from '@/db.ts'
 import { v4 as uuid } from 'uuid'
 import { liveQuery } from 'dexie'
+import type { EpochMismatch, OutboxOperation } from '@/db.ts'
+import { db } from '@/db.ts'
+import { clientHeaders } from '@/services/client-identity.ts'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 const MAX_RETRIES = 10
 const BASE_DELAY = 1000 // 1 second
+// How long to wait before re-trying a push refused for lack of a valid
+// token. A fresh login re-kicks the queue immediately anyway (setToken).
+const UNAUTHENTICATED_DELAY = 30_000
+
+// Shape of every error body the backend sends (see plugins/error-handler.ts).
+type ServerError = {
+  code?: string
+  message?: string
+  serverEpoch?: string
+}
+
+// What happened to one outbox operation:
+//   applied  - the server took it, removed from the outbox
+//   rejected - the server refused it for good, parked for a human
+//   retry    - transient failure, come back after `retryDelay`
+//   blocked  - the whole queue must stop (server database reset)
+type SyncOutcome =
+  | { outcome: 'applied' | 'rejected' | 'blocked' }
+  | { outcome: 'retry'; retryDelay: number }
+
+const DATA_TABLES = [
+  db.deposits,
+  db.articles,
+  db.contacts,
+  db.sales,
+  db.refunds,
+  db.predeposits,
+  db.predepositArticles,
+  db.cashRegisterControls,
+]
 
 class SyncService {
   private isSyncing = false
   private syncInProgress = false
   private token: string | null = null
 
-  setToken(token: string) {
+  setToken(token: string | null) {
     this.token = token
+    // Writes made while logged out are waiting for this.
+    if (token) void this.processOutbox()
   }
 
   private getToken() {
@@ -71,6 +105,105 @@ class SyncService {
     return outboxOperation.id
   }
 
+  // ---------------------------------------------------------------------
+  // HTTP plumbing
+  // ---------------------------------------------------------------------
+
+  /**
+   * fetch() against the API with the auth token, the client identity headers
+   * and the dataset epoch this computer synced against.
+   */
+  private async request(path: string, init: RequestInit = {}) {
+    const headers: Record<string, string> = {
+      ...(await clientHeaders()),
+      ...(init.headers as Record<string, string> | undefined),
+    }
+    const token = this.getToken()
+    if (token) headers.Authorization = `Bearer ${token}`
+    const epoch = await this.getMetadata('datasetEpoch')
+    if (typeof epoch === 'string') headers['X-Dataset-Epoch'] = epoch
+
+    return fetch(`${API_BASE_URL}${path}`, { ...init, headers })
+  }
+
+  private async readError(response: Response): Promise<ServerError> {
+    try {
+      const body = await response.json()
+      return body && typeof body === 'object' ? (body as ServerError) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Dataset epoch
+  // ---------------------------------------------------------------------
+
+  /**
+   * The epoch header is mandatory on push and delta. A computer that has
+   * never stored one (first run, or a build older than the epoch feature)
+   * adopts whatever the server currently reports.
+   */
+  private async ensureEpoch(): Promise<string | null> {
+    const stored = await this.getMetadata('datasetEpoch')
+    if (typeof stored === 'string') return stored
+
+    try {
+      const response = await this.request('/sync/ping')
+      if (!response.ok) return null
+      const { datasetEpoch } = await response.json()
+      if (typeof datasetEpoch !== 'string') return null
+      await this.adoptEpoch(datasetEpoch)
+      return datasetEpoch
+    } catch (error) {
+      console.error('Could not fetch dataset epoch:', error)
+      return null
+    }
+  }
+
+  /**
+   * Record the epoch we are now synced against. Moving from one epoch to
+   * another means the server database was rebuilt: every local write still
+   * waiting in the outbox refers to records the server no longer knows, so
+   * they are dropped rather than pushed into the new dataset.
+   */
+  private async adoptEpoch(serverEpoch: string) {
+    const previous = await this.getMetadata('datasetEpoch')
+    if (previous === serverEpoch) return
+
+    if (typeof previous === 'string') {
+      const dropped = await db.outbox.count()
+      await db.outbox.clear()
+      console.warn(
+        `Dataset epoch changed (${previous} -> ${serverEpoch}), ${dropped} outbox operation(s) dropped`,
+      )
+    }
+    await this.setMetadata('datasetEpoch', serverEpoch)
+    await db.syncMetadata.delete('epochMismatch')
+  }
+
+  private async flagEpochMismatch(serverEpoch: string | undefined) {
+    const localEpoch = await this.getMetadata('datasetEpoch')
+    const mismatch: EpochMismatch = {
+      serverEpoch: serverEpoch ?? 'inconnu',
+      localEpoch: typeof localEpoch === 'string' ? localEpoch : null,
+      detectedAt: Date.now(),
+    }
+    await this.setMetadata('epochMismatch', mismatch)
+    console.error(
+      '❌ The server database was reset since this computer last synced; sync is paused until the local base is rebuilt',
+      mismatch,
+    )
+  }
+
+  private async hasEpochMismatch() {
+    return (await this.getMetadata('epochMismatch')) !== undefined
+  }
+
+  // ---------------------------------------------------------------------
+  // Pull
+  // ---------------------------------------------------------------------
+
   // Initial full sync
   async initialSync() {
     if (this.syncInProgress) {
@@ -80,63 +213,48 @@ class SyncService {
 
     this.syncInProgress = true
     console.log(' Starting initial sync...')
-    const token = this.getToken()
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/sync/initial`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
+      const response = await this.request('/sync/initial')
 
       if (!response.ok) {
-        throw new Error(`Sync failed: ${response.statusText}`)
+        const error = await this.readError(response)
+        throw new Error(
+          `Sync failed: ${error.message ?? response.statusText} (HTTP ${response.status})`,
+        )
       }
 
       const data = await response.json()
 
       // Bulk update IndexedDB
-      await db.transaction(
-        'rw',
-        [
-          db.deposits,
-          db.articles,
-          db.contacts,
-          db.sales,
-          db.refunds,
-          db.predeposits,
-          db.predepositArticles,
-          db.cashRegisterControls,
-        ],
-        async () => {
-          await db.deposits.clear()
-          await db.deposits.bulkPut(data.deposits)
+      await db.transaction('rw', DATA_TABLES, async () => {
+        await db.deposits.clear()
+        await db.deposits.bulkPut(data.deposits)
 
-          await db.articles.clear()
-          await db.articles.bulkPut(data.articles)
+        await db.articles.clear()
+        await db.articles.bulkPut(data.articles)
 
-          await db.contacts.clear()
-          await db.contacts.bulkPut(data.contacts)
+        await db.contacts.clear()
+        await db.contacts.bulkPut(data.contacts)
 
-          await db.sales.clear()
-          await db.sales.bulkPut(data.sales)
+        await db.sales.clear()
+        await db.sales.bulkPut(data.sales)
 
-          await db.refunds.clear()
-          await db.refunds.bulkPut(data.refunds ?? [])
+        await db.refunds.clear()
+        await db.refunds.bulkPut(data.refunds ?? [])
 
-          await db.predeposits.clear()
-          await db.predeposits.bulkPut(data.predeposits)
+        await db.predeposits.clear()
+        await db.predeposits.bulkPut(data.predeposits)
 
-          await db.predepositArticles.clear()
-          await db.predepositArticles.bulkPut(data.predepositArticles)
+        await db.predepositArticles.clear()
+        await db.predepositArticles.bulkPut(data.predepositArticles)
 
-          await db.cashRegisterControls.clear()
-          await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
-        },
-      )
+        await db.cashRegisterControls.clear()
+        await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
+      })
 
+      if (typeof data.datasetEpoch === 'string') {
+        await this.adoptEpoch(data.datasetEpoch)
+      }
       await this.setMetadata('lastSync', data.syncedAt)
 
       console.log('✅ Initial sync complete')
@@ -146,6 +264,29 @@ class SyncService {
     } finally {
       this.syncInProgress = false
     }
+  }
+
+  /**
+   * Forget everything this computer knows about the dataset (records,
+   * unsent writes, sync cursor, epoch) and pull a fresh copy. The answer to
+   * an EPOCH_MISMATCH. Workstation settings (cash register number, device
+   * id) are kept.
+   */
+  async resetLocal() {
+    const dropped = await db.outbox.count()
+    await db.transaction(
+      'rw',
+      [...DATA_TABLES, db.outbox, db.syncMetadata],
+      async () => {
+        for (const table of DATA_TABLES) await table.clear()
+        await db.outbox.clear()
+        await db.syncMetadata.clear()
+      },
+    )
+    console.warn(
+      `Local base reset, ${dropped} unsent operation(s) dropped; pulling from server`,
+    )
+    await this.initialSync()
   }
 
   // Initial full sync
@@ -164,57 +305,53 @@ class SyncService {
 
   // Delta sync (fetch changes since last sync)
   async deltaSync() {
+    if (await this.hasEpochMismatch()) {
+      console.warn('Delta sync skipped: local base must be reset first')
+      return
+    }
+
     const lastSync = await this.getMetadata('lastSync')
 
     if (!lastSync) {
       return this.initialSync()
     }
 
-    const token = this.getToken()
+    if (!(await this.ensureEpoch())) {
+      console.warn('Delta sync skipped: dataset epoch unavailable')
+      return
+    }
+
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/sync/delta?since=${lastSync}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
+      const response = await this.request(`/sync/delta?since=${lastSync}`)
 
       if (!response.ok) {
-        throw new Error(`Delta sync failed: ${response.statusText}`)
+        const error = await this.readError(response)
+        if (error.code === 'EPOCH_MISMATCH') {
+          await this.flagEpochMismatch(error.serverEpoch)
+          return
+        }
+        throw new Error(
+          `Delta sync failed: ${error.message ?? response.statusText} (HTTP ${response.status})`,
+        )
       }
 
       const data = await response.json()
 
       // Apply delta changes
-      await db.transaction(
-        'rw',
-        [
-          db.deposits,
-          db.articles,
-          db.contacts,
-          db.sales,
-          db.refunds,
-          db.predeposits,
-          db.predepositArticles,
-          db.cashRegisterControls,
-        ],
-        async () => {
-          if (data.deposits.length > 0) await db.deposits.bulkPut(data.deposits)
-          if (data.articles.length > 0) await db.articles.bulkPut(data.articles)
-          if (data.contacts.length > 0) await db.contacts.bulkPut(data.contacts)
-          if (data.sales.length > 0) await db.sales.bulkPut(data.sales)
-          if (data.refunds && data.refunds.length > 0)
-            await db.refunds.bulkPut(data.refunds)
-          if (data.predeposits.length > 0)
-            await db.predeposits.bulkPut(data.predeposits)
-          if (data.predepositArticles.length > 0)
-            await db.predepositArticles.bulkPut(data.predepositArticles)
-          if (data.cashRegisterControls.length > 0)
-            await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
-        },
-      )
+      await db.transaction('rw', DATA_TABLES, async () => {
+        if (data.deposits.length > 0) await db.deposits.bulkPut(data.deposits)
+        if (data.articles.length > 0) await db.articles.bulkPut(data.articles)
+        if (data.contacts.length > 0) await db.contacts.bulkPut(data.contacts)
+        if (data.sales.length > 0) await db.sales.bulkPut(data.sales)
+        if (data.refunds && data.refunds.length > 0)
+          await db.refunds.bulkPut(data.refunds)
+        if (data.predeposits.length > 0)
+          await db.predeposits.bulkPut(data.predeposits)
+        if (data.predepositArticles.length > 0)
+          await db.predepositArticles.bulkPut(data.predepositArticles)
+        if (data.cashRegisterControls.length > 0)
+          await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
+      })
 
       await this.setMetadata('lastSync', data.syncedAt)
 
@@ -237,6 +374,10 @@ class SyncService {
     await db.syncMetadata.put({ key, value })
   }
 
+  // ---------------------------------------------------------------------
+  // Push
+  // ---------------------------------------------------------------------
+
   /**
    * Process all pending operations in the outbox
    */
@@ -248,6 +389,19 @@ class SyncService {
     this.isSyncing = true
 
     try {
+      if (await this.hasEpochMismatch()) {
+        console.warn('Outbox paused: local base must be reset first')
+        return
+      }
+      if (!this.getToken()) {
+        console.warn('Outbox paused: not authenticated')
+        return
+      }
+      if (!(await this.ensureEpoch())) {
+        console.warn('Outbox paused: dataset epoch unavailable')
+        return
+      }
+
       const pendingOps = await db.outbox
         .where('status')
         .anyOf('pending', 'failed')
@@ -256,15 +410,17 @@ class SyncService {
       for (const op of pendingOps) {
         const result = await this.syncOperation(op)
 
-        if (!result.success) {
-          // Schedule a retry for the outbox based on the needed delay
-          if (result.retryDelay !== undefined) {
-            setTimeout(() => {
-              this.processOutbox()
-            }, result.retryDelay)
-          }
+        if (result.outcome === 'retry') {
+          // Strict FIFO: wait for this one before sending the next ones
+          setTimeout(() => {
+            this.processOutbox()
+          }, result.retryDelay)
           break
         }
+        if (result.outcome === 'blocked') {
+          break
+        }
+        // 'applied' and 'rejected' both move on to the next operation
       }
     } catch (error) {
       console.error('Error processing outbox:', error)
@@ -274,11 +430,9 @@ class SyncService {
   }
 
   /**
-   * Sync a single operation to the server. Returns status and potential retry delay.
+   * Sync a single operation to the server.
    */
-  private async syncOperation(
-    op: OutboxOperation,
-  ): Promise<{ success: boolean; retryDelay?: number }> {
+  private async syncOperation(op: OutboxOperation): Promise<SyncOutcome> {
     // Check if we should retry based on exponential backoff
     if (op.lastAttempt) {
       const backoffDelay = this.calculateBackoff(op.retryCount)
@@ -286,7 +440,7 @@ class SyncService {
 
       if (timeSinceLastAttempt < backoffDelay) {
         return {
-          success: false,
+          outcome: 'retry',
           retryDelay: backoffDelay - timeSinceLastAttempt,
         }
       }
@@ -296,13 +450,11 @@ class SyncService {
     if (op.retryCount >= MAX_RETRIES) {
       console.error(`Operation ${op.id} exceeded max retries`)
       await db.outbox.update(op.id, {
-        status: 'failed',
-        error: 'Max retries exceeded',
+        status: 'rejected',
+        errorCode: 'MAX_RETRIES',
+        error: `Abandon après ${op.retryCount} tentatives: ${op.error ?? 'erreur inconnue'}`,
       })
-      // We return true here to "skip" this poisoned message and move to the next in FIFO
-      // or false if you want to block the queue until manual intervention.
-      // Usually, for FIFO strictly, we might want to block or alert.
-      return { success: true }
+      return { outcome: 'rejected' }
     }
 
     // Update status to syncing
@@ -312,14 +464,9 @@ class SyncService {
     })
 
     try {
-      // ... existing auth and fetch setup ...
-      const token = this.getToken()
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (token) headers.Authorization = `Bearer ${token}`
-
-      const response = await fetch(`${API_BASE_URL}/push`, {
+      const response = await this.request('/push', {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operationId: op.id,
           collection: op.collection,
@@ -330,15 +477,53 @@ class SyncService {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      if (response.ok) {
+        // Success - remove from outbox
+        await db.outbox.delete(op.id)
+        console.log(`✓ Successfully synced operation ${op.id}`)
+        return { outcome: 'applied' }
       }
 
-      // Success - remove from outbox
-      await db.outbox.delete(op.id)
-      console.log(`✓ Successfully synced operation ${op.id}`)
-      return { success: true }
+      const error = await this.readError(response)
+
+      if (response.status === 401) {
+        // Token missing or stale: not this operation's fault, and no amount
+        // of backoff fixes it. Wait for a login.
+        await db.outbox.update(op.id, {
+          status: 'failed',
+          error: 'Non authentifié',
+          httpStatus: 401,
+        })
+        return { outcome: 'retry', retryDelay: UNAUTHENTICATED_DELAY }
+      }
+
+      if (error.code === 'EPOCH_MISMATCH') {
+        await db.outbox.update(op.id, { status: 'pending' })
+        await this.flagEpochMismatch(error.serverEpoch)
+        return { outcome: 'blocked' }
+      }
+
+      if (response.status < 500) {
+        // The server understood the request and refuses it: sending the same
+        // bytes again cannot succeed. Park it and carry on with the queue.
+        const message = error.message ?? response.statusText
+        console.error(
+          `✗ Operation ${op.id} rejected by server (${error.code ?? response.status}): ${message}`,
+        )
+        await db.outbox.update(op.id, {
+          status: 'rejected',
+          error: message,
+          errorCode: error.code ?? `HTTP_${response.status}`,
+          httpStatus: response.status,
+        })
+        return { outcome: 'rejected' }
+      }
+
+      throw new Error(
+        `HTTP ${response.status}: ${error.message ?? response.statusText}`,
+      )
     } catch (error) {
+      // Network down, server down, database down: retry with backoff
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
       console.error(`✗ Failed to sync operation ${op.id}:`, errorMessage)
@@ -350,8 +535,10 @@ class SyncService {
         error: errorMessage,
       })
 
-      const nextDelay = this.calculateBackoff(newRetryCount)
-      return { success: false, retryDelay: nextDelay }
+      return {
+        outcome: 'retry',
+        retryDelay: this.calculateBackoff(newRetryCount),
+      }
     }
   }
 
@@ -365,6 +552,8 @@ class SyncService {
       retryCount: 0,
       lastAttempt: undefined,
       error: undefined,
+      errorCode: undefined,
+      httpStatus: undefined,
     })
     await this.processOutbox()
   }

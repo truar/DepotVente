@@ -31,6 +31,11 @@ class SyncManager {
   triggerDeltaSync() {
     this.worker?.postMessage({ type: 'DELTA_SYNC' })
   }
+
+  // Wipe the local copy (unsent writes included) and pull the server's.
+  resetLocal() {
+    this.worker?.postMessage({ type: 'RESET_LOCAL' })
+  }
 }
 
 export const syncManager = new SyncManager()

@@ -1,4 +1,5 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie from 'dexie'
+import type { EntityTable } from 'dexie'
 
 export type Workstation = {
   incrementStart: number
@@ -128,6 +129,15 @@ export type Contact = {
   deletedAt: Date | null
 }
 
+// Lifecycle of a local write waiting to reach the server:
+//   pending  - not sent yet
+//   syncing  - request in flight
+//   failed   - the server or the network did not answer (5xx, timeout);
+//              retried automatically with backoff
+//   rejected - the server refused the write itself (4xx) or the retries ran
+//              out; never retried automatically, needs a human
+export type OutboxStatus = 'pending' | 'syncing' | 'failed' | 'rejected'
+
 export type OutboxOperation = {
   id: string // UUID
   timestamp: number // When operation was created
@@ -138,7 +148,10 @@ export type OutboxOperation = {
   retryCount: number
   lastAttempt?: number
   error?: string
-  status: 'pending' | 'syncing' | 'failed'
+  // Machine-readable reason from the server (e.g. INVALID_DATA), if any
+  errorCode?: string
+  httpStatus?: number
+  status: OutboxStatus
 }
 
 export type CashRegisterControl = {
@@ -170,9 +183,22 @@ export type CashRegisterControl = {
   deletedAt: Date | null
 }
 
+// Keys:
+//   lastSync      - server timestamp of the last successful pull
+//   datasetEpoch  - lifetime of the server database this computer synced
+//                   against (see the backend's DatasetEpoch model)
+//   epochMismatch - set when the server refused us with EPOCH_MISMATCH; the
+//                   app then shows the reset dialog until the local base is
+//                   rebuilt
 export type SyncMetadata = {
   key: string
   value: unknown
+}
+
+export type EpochMismatch = {
+  serverEpoch: string
+  localEpoch: string | null
+  detectedAt: number
 }
 
 export type WorkstationMetadata = {

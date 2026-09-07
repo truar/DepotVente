@@ -8,6 +8,9 @@ import jwt from '@fastify/jwt';
 import { authRoutes } from './routes/auth.routes.js';
 import { replicationRoutes } from './routes/replication.route.js';
 import { syncRoutes } from './routes/sync.routes.js';
+import { clientAwareChildLogger } from './plugins/client-context.js';
+import { registerDatasetEpoch } from './plugins/dataset-epoch.js';
+import { registerErrorHandler } from './plugins/error-handler.js';
 
 // Étendre le type FastifyInstance pour inclure notre decorator
 declare module "fastify" {
@@ -20,8 +23,14 @@ declare module "fastify" {
 }
 
 const fastify = Fastify({
-  logger: true,
+  logger: {
+    level: process.env.LOG_LEVEL || 'info',
+  },
 });
+
+// Tag every request log line with the client identity headers.
+fastify.setChildLoggerFactory(clientAwareChildLogger);
+registerErrorHandler(fastify);
 
 // Register CORS
 await fastify.register(cors, {
@@ -79,6 +88,8 @@ fastify.get("/api/health", async () => {
     eventLoopLagMs: Math.round(eventLoopLagMs * 10) / 10,
   };
 });
+
+await registerDatasetEpoch(fastify);
 
 // Register routes (all mounted under /api)
 await fastify.register(authRoutes, { prefix: "/api" });
