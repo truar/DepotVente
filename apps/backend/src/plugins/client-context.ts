@@ -1,4 +1,4 @@
-import type { FastifyChildLoggerFactory } from 'fastify/types/logger.js'
+import fp from 'fastify-plugin'
 import type { IncomingMessage } from 'node:http'
 
 // Identity a client attaches to every sync request (see the frontend's
@@ -10,37 +10,63 @@ export type ClientContext = {
   datasetEpoch?: string
 }
 
-const header = (req: IncomingMessage, name: string): string | undefined => {
-  const value = req.headers[name]
-  return Array.isArray(value) ? value[0] : value
-}
-
-export function readClientContext(req: IncomingMessage): ClientContext {
-  return {
-    deviceId: header(req, 'x-device-id'),
-    workstation: header(req, 'x-workstation'),
-    appVersion: header(req, 'x-app-version'),
-    datasetEpoch: header(req, 'x-dataset-epoch'),
+declare module 'fastify' {
+  interface FastifyRequest {
+    client: ClientContext
   }
 }
 
-// Fastify child-logger factory: every log line emitted for a request (the
-// built-in "request completed" included) carries which computer sent it.
-// Without this, an error in the server log cannot be traced back to a PC.
-export const clientAwareChildLogger: FastifyChildLoggerFactory = function (
-  logger,
-  bindings,
-  opts,
-  rawReq,
-) {
-  const { deviceId, workstation, appVersion } = readClientContext(rawReq)
-  return logger.child(
-    {
-      ...bindings,
-      ...(deviceId && { device: deviceId }),
-      ...(workstation && { workstation }),
-      ...(appVersion && { appVersion }),
-    },
-    opts,
-  )
+const kClientContext = Symbol('clientContext')
+
+type TaggedRawRequest = IncomingMessage & {
+  [kClientContext]?: ClientContext
 }
+
+function parse(raw: IncomingMessage): ClientContext {
+  const header = (name: string) => {
+    const value = raw.headers[name]
+    return Array.isArray(value) ? value[0] : value
+  }
+  return {
+    deviceId: header('x-device-id'),
+    workstation: header('x-workstation'),
+    appVersion: header('x-app-version'),
+    datasetEpoch: header('x-dataset-epoch'),
+  }
+}
+
+// The one place the client headers are read.
+//
+// Fastify builds each request's logger through the child logger factory,
+// before the request object, the hooks or the handler exist. Parsing the
+// headers there means every line written for the request - "incoming
+// request", "request completed", anything a hook or handler logs - carries
+// device / workstation / appVersion without the caller doing anything. The
+// parsed context is stashed on the raw request and exposed as
+// `request.client` for the code that needs the values (the epoch check).
+export default fp(
+  async (fastify) => {
+    fastify.setChildLoggerFactory(function (logger, bindings, opts, rawReq) {
+      const client = parse(rawReq)
+      ;(rawReq as TaggedRawRequest)[kClientContext] = client
+
+      const { deviceId, workstation, appVersion } = client
+      return logger.child(
+        {
+          ...bindings,
+          ...(deviceId && { device: deviceId }),
+          ...(workstation && { workstation }),
+          ...(appVersion && { appVersion }),
+        },
+        opts,
+      )
+    })
+
+    fastify.decorateRequest('client', {
+      getter() {
+        return (this.raw as TaggedRawRequest)[kClientContext] ?? {}
+      },
+    })
+  },
+  { name: 'client-context' },
+)
