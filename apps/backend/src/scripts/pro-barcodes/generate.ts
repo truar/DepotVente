@@ -136,8 +136,9 @@ function renderHtml(families: Family[]) {
 <meta charset="utf-8" />
 <title>Codes-barres — articles à scanner</title>
 <style>
-  /* Les largeurs sont en millimètres : un module fait ~0,35 mm à l'impression,
-     bien au-dessus du minimum lisible par une douchette. */
+  /* Les largeurs sont en millimètres : un module fait ~0,3 mm à l'impression,
+     bien au-dessus du minimum lisible par une douchette. Trois codes par ligne
+     sur A4 : 3 × 52 mm + 2 × 4 mm = 164 mm, dans les 190 mm laissés par @page. */
   body { font-family: Arial, Helvetica, sans-serif; margin: 12mm; color: #000; }
   h1 { font-size: 16pt; margin: 0 0 2mm; }
   .intro { font-size: 9pt; color: #444; margin: 0 0 8mm; }
@@ -147,14 +148,15 @@ function renderHtml(families: Family[]) {
   h3 { font-size: 11pt; margin: 5mm 0 3mm; border-bottom: 1px solid #999; padding-bottom: 1mm; }
   .note { font-size: 8.5pt; color: #444; margin: 0 0 3mm; }
   .grid { display: flex; flex-wrap: wrap; gap: 4mm; }
-  .article { margin: 0; width: 60mm; break-inside: avoid; page-break-inside: avoid; }
-  .article img { display: block; width: 58mm; height: 14mm; image-rendering: crisp-edges; }
+  .article { margin: 0; width: 52mm; break-inside: avoid; page-break-inside: avoid; }
+  .article img { display: block; width: 50mm; height: 12mm; image-rendering: crisp-edges; }
   figcaption { display: flex; flex-direction: column; }
   .code { font-family: "Courier New", monospace; font-size: 11pt; font-weight: bold; letter-spacing: 0.5px; }
   .details { font-size: 7.5pt; color: #444; }
   .owner { font-size: 7.5pt; color: #444; font-style: italic; }
   section { break-inside: auto; }
-  @media print { body { margin: 8mm; } .intro { display: none; } }
+  @page { size: A4; margin: 10mm; }
+  @media print { body { margin: 0; } .intro { display: none; } }
 </style>
 </head>
 <body>
