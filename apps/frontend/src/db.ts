@@ -141,6 +141,11 @@ export type OutboxStatus = 'pending' | 'syncing' | 'failed' | 'rejected'
 export type OutboxOperation = {
   id: string // UUID
   timestamp: number // When operation was created
+  // Insertion order within the same millisecond. A deposit and its contact
+  // are written in one transaction and share a timestamp; without this the
+  // deposit can be pushed before the contact it references. Absent on rows
+  // written by older builds.
+  seq?: number
   collection: string // e.g., 'users', 'products'
   operation: 'create' | 'update' | 'delete'
   recordId: string // ID of the record being synced

@@ -27,6 +27,19 @@ type SyncOutcome =
   | { outcome: 'applied' | 'rejected' | 'blocked' }
   | { outcome: 'retry'; retryDelay: number }
 
+// Outbox operations are pushed in the order they were written. Timestamps
+// alone cannot express it: everything written in one Dexie transaction shares
+// a millisecond, and a child (article) pushed before its parent (deposit) is
+// refused by the server's foreign keys.
+let lastSequence = 0
+function nextSequence() {
+  return ++lastSequence
+}
+
+export function compareOutboxOrder(a: OutboxOperation, b: OutboxOperation) {
+  return a.timestamp - b.timestamp || (a.seq ?? 0) - (b.seq ?? 0)
+}
+
 const DATA_TABLES = [
   db.deposits,
   db.articles,
@@ -91,6 +104,7 @@ class SyncService {
     const outboxOperation: OutboxOperation = {
       id: uuid(),
       timestamp: Date.now(),
+      seq: nextSequence(),
       collection,
       operation,
       recordId,
@@ -402,10 +416,9 @@ class SyncService {
         return
       }
 
-      const pendingOps = await db.outbox
-        .where('status')
-        .anyOf('pending', 'failed')
-        .sortBy('timestamp')
+      const pendingOps = (
+        await db.outbox.where('status').anyOf('pending', 'failed').toArray()
+      ).sort(compareOutboxOrder)
 
       for (const op of pendingOps) {
         const result = await this.syncOperation(op)

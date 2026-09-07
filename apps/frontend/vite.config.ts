@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
+import { URL, fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
+import { defineConfig } from 'vitest/config'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { fileURLToPath, URL } from 'node:url'
-import { execSync } from 'node:child_process'
 
 // Build identifier sent by every client on its sync requests (X-App-Version),
 // so the server log says which build a computer runs. The git sha is absent
@@ -151,5 +151,11 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  test: {
+    include: ['src/test/**/*.test.ts'],
+    // Hooks render through React, so the DOM has to exist.
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
   },
 })
