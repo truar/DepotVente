@@ -285,3 +285,21 @@ model PredepositArticle {
 // Voir le fichier de migration pour les détails des triggers:
 // - notify_stats_changed() : notifie sur le canal 'stats_changed'
 // - notify_sales_changed() : notifie sur le canal 'sales_changed'
+
+// Dataset epoch - identifies one lifetime of this database.
+//
+// A single row is created the first time the backend boots against an empty
+// database. Every client stores the epoch it first synced against and sends
+// it back on each push and delta poll. When the database is reset (new
+// volume, `prisma migrate reset`, restored dump...), a new epoch appears and
+// every client still holding the old one is refused with 409 EPOCH_MISMATCH
+// instead of silently pushing records the server can no longer relate to.
+model DatasetEpoch {
+  id String @id @default(uuid()) @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("dataset_epochs")
+}

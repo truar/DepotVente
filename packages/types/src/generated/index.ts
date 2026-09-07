@@ -53,6 +53,8 @@ export const PredepositScalarFieldEnumSchema = z.enum(['id','predepositIndex','s
 
 export const PredepositArticleScalarFieldEnumSchema = z.enum(['id','price','category','discipline','brand','model','size','color','year','identificationLetter','articleIndex','predepositId','createdAt','updatedAt','deletedAt']);
 
+export const DatasetEpochScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','deletedAt']);
+
 export const SortOrderSchema = z.enum(['asc','desc']);
 
 export const QueryModeSchema = z.enum(['default','insensitive']);
@@ -276,6 +278,19 @@ export const PredepositArticleSchema = z.object({
 })
 
 export type PredepositArticle = z.infer<typeof PredepositArticleSchema>
+
+/////////////////////////////////////////
+// DATASET EPOCH SCHEMA
+/////////////////////////////////////////
+
+export const DatasetEpochSchema = z.object({
+  id: z.uuid(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  deletedAt: z.coerce.date().nullable(),
+})
+
+export type DatasetEpoch = z.infer<typeof DatasetEpochSchema>
 
 /////////////////////////////////////////
 // SELECT & INCLUDE
@@ -584,6 +599,16 @@ export const PredepositArticleSelectSchema: z.ZodType<Prisma.PredepositArticleSe
   updatedAt: z.boolean().optional(),
   deletedAt: z.boolean().optional(),
   predeposit: z.union([z.boolean(),z.lazy(() => PredepositArgsSchema)]).optional(),
+}).strict()
+
+// DATASET EPOCH
+//------------------------------------------------------
+
+export const DatasetEpochSelectSchema: z.ZodType<Prisma.DatasetEpochSelect> = z.object({
+  id: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  deletedAt: z.boolean().optional(),
 }).strict()
 
 
@@ -1560,6 +1585,56 @@ export const PredepositArticleScalarWhereWithAggregatesInputSchema: z.ZodType<Pr
   identificationLetter: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   articleIndex: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   predepositId: z.union([ z.lazy(() => UuidNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
+});
+
+export const DatasetEpochWhereInputSchema: z.ZodType<Prisma.DatasetEpochWhereInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => DatasetEpochWhereInputSchema), z.lazy(() => DatasetEpochWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => DatasetEpochWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => DatasetEpochWhereInputSchema), z.lazy(() => DatasetEpochWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+});
+
+export const DatasetEpochOrderByWithRelationInputSchema: z.ZodType<Prisma.DatasetEpochOrderByWithRelationInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+});
+
+export const DatasetEpochWhereUniqueInputSchema: z.ZodType<Prisma.DatasetEpochWhereUniqueInput> = z.object({
+  id: z.uuid(),
+})
+.and(z.strictObject({
+  id: z.uuid().optional(),
+  AND: z.union([ z.lazy(() => DatasetEpochWhereInputSchema), z.lazy(() => DatasetEpochWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => DatasetEpochWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => DatasetEpochWhereInputSchema), z.lazy(() => DatasetEpochWhereInputSchema).array() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
+  deletedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.coerce.date() ]).optional().nullable(),
+}));
+
+export const DatasetEpochOrderByWithAggregationInputSchema: z.ZodType<Prisma.DatasetEpochOrderByWithAggregationInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  _count: z.lazy(() => DatasetEpochCountOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => DatasetEpochMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => DatasetEpochMinOrderByAggregateInputSchema).optional(),
+});
+
+export const DatasetEpochScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.DatasetEpochScalarWhereWithAggregatesInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => DatasetEpochScalarWhereWithAggregatesInputSchema), z.lazy(() => DatasetEpochScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => DatasetEpochScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => DatasetEpochScalarWhereWithAggregatesInputSchema), z.lazy(() => DatasetEpochScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidWithAggregatesFilterSchema), z.string() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   deletedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema), z.coerce.date() ]).optional().nullable(),
@@ -2675,6 +2750,55 @@ export const PredepositArticleUncheckedUpdateManyInputSchema: z.ZodType<Prisma.P
   deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
+export const DatasetEpochCreateInputSchema: z.ZodType<Prisma.DatasetEpochCreateInput> = z.strictObject({
+  id: z.uuid().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const DatasetEpochUncheckedCreateInputSchema: z.ZodType<Prisma.DatasetEpochUncheckedCreateInput> = z.strictObject({
+  id: z.uuid().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const DatasetEpochUpdateInputSchema: z.ZodType<Prisma.DatasetEpochUpdateInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const DatasetEpochUncheckedUpdateInputSchema: z.ZodType<Prisma.DatasetEpochUncheckedUpdateInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const DatasetEpochCreateManyInputSchema: z.ZodType<Prisma.DatasetEpochCreateManyInput> = z.strictObject({
+  id: z.uuid().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  deletedAt: z.coerce.date().optional().nullable(),
+});
+
+export const DatasetEpochUpdateManyMutationInputSchema: z.ZodType<Prisma.DatasetEpochUpdateManyMutationInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
+export const DatasetEpochUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DatasetEpochUncheckedUpdateManyInput> = z.strictObject({
+  id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  deletedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+});
+
 export const UuidFilterSchema: z.ZodType<Prisma.UuidFilter> = z.strictObject({
   equals: z.string().optional(),
   in: z.string().array().optional(),
@@ -3654,6 +3778,27 @@ export const PredepositArticleSumOrderByAggregateInputSchema: z.ZodType<Prisma.P
   price: z.lazy(() => SortOrderSchema).optional(),
   year: z.lazy(() => SortOrderSchema).optional(),
   articleIndex: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const DatasetEpochCountOrderByAggregateInputSchema: z.ZodType<Prisma.DatasetEpochCountOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const DatasetEpochMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DatasetEpochMaxOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
+});
+
+export const DatasetEpochMinOrderByAggregateInputSchema: z.ZodType<Prisma.DatasetEpochMinOrderByAggregateInput> = z.strictObject({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  deletedAt: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const StringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.StringFieldUpdateOperationsInput> = z.strictObject({
@@ -6314,6 +6459,63 @@ export const PredepositArticleFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.Pred
   where: PredepositArticleWhereUniqueInputSchema, 
 }).strict();
 
+export const DatasetEpochFindFirstArgsSchema: z.ZodType<Prisma.DatasetEpochFindFirstArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereInputSchema.optional(), 
+  orderBy: z.union([ DatasetEpochOrderByWithRelationInputSchema.array(), DatasetEpochOrderByWithRelationInputSchema ]).optional(),
+  cursor: DatasetEpochWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ DatasetEpochScalarFieldEnumSchema, DatasetEpochScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const DatasetEpochFindFirstOrThrowArgsSchema: z.ZodType<Prisma.DatasetEpochFindFirstOrThrowArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereInputSchema.optional(), 
+  orderBy: z.union([ DatasetEpochOrderByWithRelationInputSchema.array(), DatasetEpochOrderByWithRelationInputSchema ]).optional(),
+  cursor: DatasetEpochWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ DatasetEpochScalarFieldEnumSchema, DatasetEpochScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const DatasetEpochFindManyArgsSchema: z.ZodType<Prisma.DatasetEpochFindManyArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereInputSchema.optional(), 
+  orderBy: z.union([ DatasetEpochOrderByWithRelationInputSchema.array(), DatasetEpochOrderByWithRelationInputSchema ]).optional(),
+  cursor: DatasetEpochWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ DatasetEpochScalarFieldEnumSchema, DatasetEpochScalarFieldEnumSchema.array() ]).optional(),
+}).strict();
+
+export const DatasetEpochAggregateArgsSchema: z.ZodType<Prisma.DatasetEpochAggregateArgs> = z.object({
+  where: DatasetEpochWhereInputSchema.optional(), 
+  orderBy: z.union([ DatasetEpochOrderByWithRelationInputSchema.array(), DatasetEpochOrderByWithRelationInputSchema ]).optional(),
+  cursor: DatasetEpochWhereUniqueInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict();
+
+export const DatasetEpochGroupByArgsSchema: z.ZodType<Prisma.DatasetEpochGroupByArgs> = z.object({
+  where: DatasetEpochWhereInputSchema.optional(), 
+  orderBy: z.union([ DatasetEpochOrderByWithAggregationInputSchema.array(), DatasetEpochOrderByWithAggregationInputSchema ]).optional(),
+  by: DatasetEpochScalarFieldEnumSchema.array(), 
+  having: DatasetEpochScalarWhereWithAggregatesInputSchema.optional(), 
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict();
+
+export const DatasetEpochFindUniqueArgsSchema: z.ZodType<Prisma.DatasetEpochFindUniqueArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereUniqueInputSchema, 
+}).strict();
+
+export const DatasetEpochFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.DatasetEpochFindUniqueOrThrowArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereUniqueInputSchema, 
+}).strict();
+
 export const UserCreateArgsSchema: z.ZodType<Prisma.UserCreateArgs> = z.object({
   select: UserSelectSchema.optional(),
   data: z.union([ UserCreateInputSchema, UserUncheckedCreateInputSchema ]),
@@ -6789,5 +6991,55 @@ export const PredepositArticleUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.Pr
 
 export const PredepositArticleDeleteManyArgsSchema: z.ZodType<Prisma.PredepositArticleDeleteManyArgs> = z.object({
   where: PredepositArticleWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const DatasetEpochCreateArgsSchema: z.ZodType<Prisma.DatasetEpochCreateArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  data: z.union([ DatasetEpochCreateInputSchema, DatasetEpochUncheckedCreateInputSchema ]),
+}).strict();
+
+export const DatasetEpochUpsertArgsSchema: z.ZodType<Prisma.DatasetEpochUpsertArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereUniqueInputSchema, 
+  create: z.union([ DatasetEpochCreateInputSchema, DatasetEpochUncheckedCreateInputSchema ]),
+  update: z.union([ DatasetEpochUpdateInputSchema, DatasetEpochUncheckedUpdateInputSchema ]),
+}).strict();
+
+export const DatasetEpochCreateManyArgsSchema: z.ZodType<Prisma.DatasetEpochCreateManyArgs> = z.object({
+  data: z.union([ DatasetEpochCreateManyInputSchema, DatasetEpochCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict();
+
+export const DatasetEpochCreateManyAndReturnArgsSchema: z.ZodType<Prisma.DatasetEpochCreateManyAndReturnArgs> = z.object({
+  data: z.union([ DatasetEpochCreateManyInputSchema, DatasetEpochCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict();
+
+export const DatasetEpochDeleteArgsSchema: z.ZodType<Prisma.DatasetEpochDeleteArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  where: DatasetEpochWhereUniqueInputSchema, 
+}).strict();
+
+export const DatasetEpochUpdateArgsSchema: z.ZodType<Prisma.DatasetEpochUpdateArgs> = z.object({
+  select: DatasetEpochSelectSchema.optional(),
+  data: z.union([ DatasetEpochUpdateInputSchema, DatasetEpochUncheckedUpdateInputSchema ]),
+  where: DatasetEpochWhereUniqueInputSchema, 
+}).strict();
+
+export const DatasetEpochUpdateManyArgsSchema: z.ZodType<Prisma.DatasetEpochUpdateManyArgs> = z.object({
+  data: z.union([ DatasetEpochUpdateManyMutationInputSchema, DatasetEpochUncheckedUpdateManyInputSchema ]),
+  where: DatasetEpochWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const DatasetEpochUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.DatasetEpochUpdateManyAndReturnArgs> = z.object({
+  data: z.union([ DatasetEpochUpdateManyMutationInputSchema, DatasetEpochUncheckedUpdateManyInputSchema ]),
+  where: DatasetEpochWhereInputSchema.optional(), 
+  limit: z.number().optional(),
+}).strict();
+
+export const DatasetEpochDeleteManyArgsSchema: z.ZodType<Prisma.DatasetEpochDeleteManyArgs> = z.object({
+  where: DatasetEpochWhereInputSchema.optional(), 
   limit: z.number().optional(),
 }).strict();

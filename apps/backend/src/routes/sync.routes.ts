@@ -33,6 +33,7 @@ export async function syncRoutes(fastify: FastifyInstance) {
         predepositArticles,
         cashRegisterControls,
         syncedAt,
+        datasetEpoch: fastify.datasetEpoch,
       };
     }
   );
@@ -41,17 +42,21 @@ export async function syncRoutes(fastify: FastifyInstance) {
   fastify.get<{ Querystring: { since?: string } }>(
     '/sync/delta',
     {
-      onRequest: [fastify.authenticate],
+      onRequest: [fastify.authenticate, fastify.requireDatasetEpoch],
     },
     async (request, reply) => {
       const { since } = request.query
       const syncedAt = Date.now();
 
-      if (!since) {
-        return reply.code(400).send({ error: 'since is required' });
+      const sinceMs = Number(since);
+      if (!since || !Number.isFinite(sinceMs)) {
+        return reply.code(400).send({
+          code: 'INVALID_SINCE',
+          message: 'since doit être un timestamp en millisecondes',
+        });
       }
 
-      const sinceDate = new Date(parseInt(since));
+      const sinceDate = new Date(sinceMs);
 
       // Fetch changes since timestamp
       const [deposits, articles, contacts, sales, refunds, predeposits, predepositArticles, cashRegisterControls] = await Promise.all([
@@ -107,11 +112,17 @@ export async function syncRoutes(fastify: FastifyInstance) {
         predepositArticles,
         cashRegisterControls,
         syncedAt,
+        datasetEpoch: fastify.datasetEpoch,
       };
     }
   );
-  // Health check endpoint
+  // Health check endpoint. Also how a client learns the current epoch before
+  // its first push.
   fastify.get('/sync/ping', async () => {
-    return { status: 'ok', timestamp: Date.now() };
+    return {
+      status: 'ok',
+      timestamp: Date.now(),
+      datasetEpoch: fastify.datasetEpoch,
+    };
   });
 }

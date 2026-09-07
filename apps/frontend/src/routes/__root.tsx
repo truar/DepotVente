@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
 import { ErrorAlertHost } from '@/components/custom/ErrorAlertHost'
+import { DatasetResetDialog } from '@/components/custom/DatasetResetDialog'
 
 export const Route = createRootRoute({
   component: () => (
@@ -10,6 +11,7 @@ export const Route = createRootRoute({
       <Outlet />
       <Toaster position="bottom-left" />
       <ErrorAlertHost />
+      <DatasetResetDialog />
       {import.meta.env.DEV && (
         <TanStackDevtools
           config={{
