@@ -17,6 +17,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  headerRight: {
+    width: 260,
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  presentationNotice: {
+    fontFamily: 'Helvetica-Bold',
+    fontStyle: 'normal',
+    fontSize: 18,
+    textAlign: 'right',
+    lineHeight: 1.1,
+  },
   subHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -153,10 +165,11 @@ export const PredepositsPdf = (props: PdfsProps) => {
               <Text>Pré-Dépôt</Text>
             </View>
           </View>
-          <View>
-            <View>
-              <Text>Pré-dépôt n° {data.deposit.depositIndex}</Text>
-            </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.presentationNotice}>
+              MERCI DE PRESENTER LES ARTICLES DANS L'ORDRE DE LA LISTE
+            </Text>
+            <Text>Pré-dépôt n° {data.deposit.depositIndex}</Text>
           </View>
         </View>
         <View style={styles.subHeader}>
