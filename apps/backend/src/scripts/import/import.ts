@@ -9,6 +9,8 @@ import { extractPredeposits, PredepositData } from './extract-predeposits';
 import { extractPredepositArticles, PredepositArticleData } from './extract-predepositArticles';
 import { CashRegisterDeposit, extractCashRegisterDeposits } from './extract-deposit-cash-register';
 import { extractCashRegisterSales } from './extract-sale-cash-register';
+import { extraPredeposits } from './extra-predeposits';
+import { TARGET_YEAR } from './utils';
 
 // NOTE: these imports deliberately do NOT set `updatedAt`.
 //
@@ -41,6 +43,12 @@ import { extractCashRegisterSales } from './extract-sale-cash-register';
 // nombre d'articles voulu à scanner par catégorie (30 skis et 30 chaussures par
 // fiche), et la sélection est déterministe (les derniers articles du fichier) :
 // un ré-import redonne le même lot.
+
+// Même logique côté pré-dépôt : l'export ne laisse que 4 pré-dépôts non
+// confirmés, donc le mode état de dépôt ajoute les pré-dépôts de
+// extra-predeposits.ts, numérotés à la suite de ceux du fichier et sans dépôt
+// associé. On a ainsi de quoi rejouer « déposer un pré-dépôt » sans toucher aux
+// fiches déjà importées.
 
 const PENDING_PRO_DEPOSIT_INDEXES = [2, 3];
 const PENDING_PRO_CATEGORIES = ['Skis', 'Chaussures'];
@@ -385,6 +393,63 @@ async function importPredepositArticles(articlesFromImport: PredepositArticleDat
   console.log('='.repeat(50));
 }
 
+// Crée les pré-dépôts de extra-predeposits.ts avec leurs articles. Le numéro de
+// fiche et l'indice d'article reprennent à la suite de ceux du fichier, pour ne
+// pas empiéter sur les pré-dépôts importés.
+async function importExtraPredeposits(nextPredepositIndex: number, nextArticleIndex: number) {
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const [offset, fiche] of extraPredeposits.entries()) {
+    const predepositIndex = nextPredepositIndex + offset;
+    try {
+      await prisma.predeposit.create({
+        data: {
+          predepositIndex: predepositIndex,
+          sellerLastName: fiche.lastName,
+          sellerFirstName: fiche.firstName,
+          sellerPhoneNumber: fiche.phoneNumber,
+          sellerCity: fiche.city,
+          depositId: null,
+          createdAt: new Date(),
+          articles: {
+            create: fiche.articles.map((article, index) => ({
+              price: article.price,
+              category: article.category,
+              discipline: article.discipline,
+              brand: article.brand,
+              model: article.model,
+              size: article.size,
+              color: article.color,
+              year: TARGET_YEAR,
+              identificationLetter: article.identificationLetter,
+              articleIndex: nextArticleIndex + index,
+              createdAt: new Date(),
+            })),
+          },
+        },
+      });
+
+      successCount++;
+      console.log(
+        `✅ Imported extra predeposit ${predepositIndex} for ${fiche.firstName} ${fiche.lastName} (${fiche.articles.length} articles)`
+      );
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `❌ Error importing extra predeposit for ${fiche.firstName} ${fiche.lastName}:`,
+        error
+      );
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log(`✅ Successfully imported: ${successCount}`);
+  console.log(`❌ Failed: ${errorCount}`);
+  console.log(`📊 Total: ${extraPredeposits.length}`);
+  console.log('='.repeat(50));
+}
+
 async function importCashRegister(controls: CashRegisterDeposit[], type: 'DEPOSIT' | 'SALE') {
   let successCount = 0;
   let errorCount = 0;
@@ -460,6 +525,12 @@ async function importAll() {
     const predepositArticles = extractPredepositArticles()
     await importPredepositArticles(predepositArticles, predeposits)
 
+    if (depotState) {
+      const lastPredepositIndex = Math.max(...predepositFiches.map((fiche) => fiche.predepositIndex))
+      const lastArticleIndex = Math.max(...predepositArticles.map((article) => article.articleIndex))
+      await importExtraPredeposits(lastPredepositIndex + 1, lastArticleIndex + 1)
+    }
+
     // Les contrôles de caisse - dépôt comme vente - décrivent une journée déjà
     // jouée. En mode état de dépôt on part caisses vides, pour pouvoir refaire
     // le contrôle de caisse du dépôt pendant la répétition.
@@ -486,6 +557,9 @@ if (depotState) {
   );
   console.log(
     `📦 ${PENDING_ARTICLES_PER_CATEGORY} articles non réceptionnés par catégorie (${PENDING_PRO_CATEGORIES.join(', ')}) réservés sur les fiches pro ${PENDING_PRO_DEPOSIT_INDEXES.join(', ')}.\n`
+  );
+  console.log(
+    `📦 ${extraPredeposits.length} pré-dépôts non confirmés ajoutés (${extraPredeposits.map((fiche) => `${fiche.lastName} ${fiche.firstName}`).join(', ')}).\n`
   );
 }
 importAll();
