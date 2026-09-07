@@ -69,7 +69,7 @@ EXPOSE 3000
 
 # Apply any pending migrations before booting. Without this a rebuild onto a
 # fresh volume comes up with no schema and fails at the first query.
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma && node apps/backend/dist/index.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma && node apps/backend/dist/main.js"]
 
 ###################
 # FRONTEND DEV

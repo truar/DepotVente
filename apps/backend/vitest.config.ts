@@ -1,7 +1,21 @@
+import swc from 'unplugin-swc'
 import { defineConfig } from 'vitest/config'
 import { TEST_DATABASE_URL } from './test/support/database-url'
 
 export default defineConfig({
+  // Nest's dependency injection reads the constructor parameter types that
+  // `emitDecoratorMetadata` writes. Vitest's default transformer (esbuild)
+  // cannot emit them; SWC can.
+  plugins: [
+    swc.vite({
+      module: { type: 'es6' },
+      jsc: {
+        target: 'es2022',
+        parser: { syntax: 'typescript', decorators: true },
+        transform: { legacyDecorator: true, decoratorMetadata: true },
+      },
+    }),
+  ],
   test: {
     include: ['test/**/*.test.ts'],
     // Creates the test database and applies the migrations, once per run.
