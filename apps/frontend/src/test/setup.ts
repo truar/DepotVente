@@ -5,13 +5,22 @@
 // unchanged. Every test starts from an empty base.
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
-import { beforeEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach, beforeEach } from 'vitest'
 import { db } from '@/db.ts'
 
 beforeEach(async () => {
   await db.transaction('rw', db.tables, async () => {
     for (const table of db.tables) await table.clear()
   })
+})
+
+// Unmount whatever a screen test rendered; without `globals` the testing
+// library does not do it on its own. The print iframes live outside the
+// React root and would otherwise leak into the next test.
+afterEach(() => {
+  cleanup()
+  document.querySelectorAll('iframe').forEach((iframe) => iframe.remove())
 })
 
 // ---------------------------------------------------------------------------

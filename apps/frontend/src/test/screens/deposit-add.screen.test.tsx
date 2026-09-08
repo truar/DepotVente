@@ -13,6 +13,30 @@ import {
   waitFor,
 } from '@/test/screen.tsx'
 
+type User = Awaited<ReturnType<typeof openScreen>>['user']
+
+const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
+
+// The predeposit combobox, then its "Valider" button next to it.
+async function pickPredeposit(user: User, name: string) {
+  await user.click(screen.getByText(PREDEPOSIT_PLACEHOLDER))
+  await user.click(await screen.findByRole('option', { name }))
+}
+async function validatePredeposit(user: User) {
+  await user.click(screen.getByRole('button', { name: 'Valider' }))
+  await waitFor(() =>
+    expect(screen.getByLabelText('Nom')).toHaveValue('Martin'),
+  )
+}
+async function chooseStatusPrintAndSave(user: User, status: string) {
+  await user.click(screen.getByText('Statut').closest('button')!)
+  await user.click(await screen.findByRole('option', { name: status }))
+  await printSummary(user)
+  await user.click(
+    screen.getByRole('button', { name: 'Valider et enregistrer le dépôt' }),
+  )
+}
+
 // The same story as scenarios/deposit-from-predeposit.test.ts, but played
 // on the real screen: the volunteer on cash register 1000 picks the
 // predeposit in the combobox, validates it, sees the form filled, chooses
@@ -41,17 +65,10 @@ describe('Screen: register a deposit from a predeposit', () => {
     const { user } = await openScreen('/deposits/add')
     await screen.findByRole('heading', { name: 'Enregistrer des articles' })
 
-    // Pick the predeposit and validate it
-    await user.click(screen.getByText(/Rechercher une fiche/))
-    await user.click(
-      await screen.findByRole('option', { name: 'Martin Lucie' }),
-    )
-    await user.click(screen.getByRole('button', { name: 'Valider' }))
+    await pickPredeposit(user, 'Martin Lucie')
+    await validatePredeposit(user)
 
     // The seller block shows the predeposit's seller
-    await waitFor(() =>
-      expect(screen.getByLabelText('Nom')).toHaveValue('Martin'),
-    )
     expect(screen.getByLabelText('Prénom')).toHaveValue('Lucie')
     expect(screen.getByLabelText('Téléphone')).toHaveValue('0611111111')
     expect(screen.getByDisplayValue('Chambéry')).toBeInTheDocument()
@@ -62,14 +79,7 @@ describe('Screen: register a deposit from a predeposit', () => {
     expect(screen.getByText('Salomon')).toBeInTheDocument()
     expect(screen.getByText('Nordica')).toBeInTheDocument()
 
-    // Contribution status, then print the summary, then save
-    await user.click(screen.getByText('Statut').closest('button')!)
-    await user.click(await screen.findByRole('option', { name: 'A payer' }))
-    await printSummary(user)
-    await user.click(
-      screen.getByRole('button', { name: 'Valider et enregistrer le dépôt' }),
-    )
-
+    await chooseStatusPrintAndSave(user, 'A payer')
     await screen.findByText('Dépôt 1001 enregistré')
 
     const [contact] = await local.contacts()
@@ -107,5 +117,36 @@ describe('Screen: register a deposit from a predeposit', () => {
       ['articles', 'create'],
       ['predeposits', 'update'],
     ])
+  })
+
+  // Current behaviour, pinned: validating does not clear the combobox, so
+  // the volunteer can see which predeposit the form came from while filling
+  // it. The selection clears with the form once the deposit is saved, and
+  // the predeposit, now used, is no longer offered.
+  it('keeps the predeposit selected until the deposit is saved, then clears it and stops offering it', async () => {
+    const { user } = await openScreen('/deposits/add')
+    await screen.findByRole('heading', { name: 'Enregistrer des articles' })
+
+    await pickPredeposit(user, 'Martin Lucie')
+    expect(screen.getByText('Martin Lucie')).toBeInTheDocument()
+    expect(screen.queryByText(PREDEPOSIT_PLACEHOLDER)).not.toBeInTheDocument()
+
+    await validatePredeposit(user)
+    expect(screen.getByText('Martin Lucie')).toBeInTheDocument()
+
+    await chooseStatusPrintAndSave(user, 'A payer')
+    await screen.findByText('Dépôt 1001 enregistré')
+
+    // Combobox back to its placeholder, form empty, ready for the next seller
+    expect(screen.getByText(PREDEPOSIT_PLACEHOLDER)).toBeInTheDocument()
+    expect(screen.queryByText('Martin Lucie')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Nom')).toHaveValue('')
+
+    // The used predeposit is gone from the list
+    await user.click(screen.getByText(PREDEPOSIT_PLACEHOLDER))
+    await screen.findByText('Vide')
+    expect(
+      screen.queryByRole('option', { name: 'Martin Lucie' }),
+    ).not.toBeInTheDocument()
   })
 })
