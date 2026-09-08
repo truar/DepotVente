@@ -12,3 +12,6 @@ usb-kit/
 
 # Load and soak test output
 results/
+
+# Finder
+.DS_Store

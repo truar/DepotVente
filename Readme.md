@@ -10,9 +10,12 @@ The users are volunteers of the ski association whom main tasks are :
 
 Each user is attributed a "Computer" with a dedicated Id.
 
-An admin part of the application is also available for admin to oversee the "Bourse au ski", like :
-* A complete list of articles with basic filters capabilities (seller, sold...)
-* The global amount for the entire sale (and per Computer)
+An admin part of the application (login with an `ADMIN` account) adds:
+* The end-of-sale reports (`/reports/*`): bilan, recap of deposits and sales,
+  material lists, unreturned and pending articles, as printable PDFs.
+* The settings page (`/settings`): cash register number, cheque print offsets,
+  and the sync diagnostics (identity of the computer, dataset epoch, writes the
+  server refused).
 
 ---
 
@@ -28,6 +31,13 @@ The frontend app uses :
 * Tailwind CSS (for the styling)
 * TanStack Router (for the routing)
 * Dexie (for the IndexedDB)
+
+The backend is a thin propagation hub, not the source of truth (see
+`.claude/CLAUDE.md` for the model):
+* NestJS on the Fastify adapter, logging with pino (`nestjs-pino`)
+* Prisma over PostgreSQL (`packages/database`)
+* Docker Compose for the server Mac: Postgres, backend, nginx-served frontend,
+  Caddy for HTTPS on the LAN
 
 ## Getting Started
 
@@ -72,25 +82,38 @@ Follow these steps to set up the project locally on your machine:
 
 ### Running the Project
 
-1. Start the development server using Vite:
+1. Start Postgres, then the backend (NestJS, watch mode) and the frontend
+   (Vite) together:
    ```bash
-   pnpm frontend dev
+   docker compose up -d postgres
+   pnpm dev
    ```
+   or one of them: `pnpm dev:backend` / `pnpm dev:frontend`.
 
 2. Open your browser and navigate to:
    ```
-   http://localhost:3000
+   http://localhost:15173
    ```
-   (The exact port may vary; the terminal will display the correct URL.)
+   The frontend proxies `/api` to the backend on port 3000.
 
 ---
 
 ### Build the Project for Production
 
-1. To create an optimized production build, run:
+1. To create an optimized production build of both apps, run:
    ```bash
-   pnpm frontend build
+   pnpm build
    ```
+   The server Mac does not need this step: `docker compose up --build` builds
+   the images itself.
+
+### Tests
+
+```bash
+pnpm test                        # both suites
+pnpm --filter backend test       # integration tests against a cmr_test database
+pnpm --filter frontend test      # application tests on an in-memory IndexedDB
+```
 ---
 
 ## Production deployment (LAN "server" mode)
@@ -516,7 +539,7 @@ Two things are still forbidden, for different reasons:
   indefinitely.
 
 Note that operations queued while the server is down stop retrying after about
-17 minutes and land in *Paramètres → Outbox — opérations échouées*, where an
+17 minutes and land in *Paramètres → Outbox — opérations refusées*, where an
 admin can resend them once the server is back.
 
 **Postgres data is lost.** Restore from the most recent dump — that is the only
@@ -647,23 +670,29 @@ service from the browser.
 ## Project Structure
 
 ```plaintext
-├── src/
-│   ├── components/       // React components
-│   ├── routes/           // Router configurations
-│   └── main.tsx          // Entry point of the application
-├── public/               // Static assets
-├── package.json          // Project metadata and scripts
-├── tailwind.config.js    // Tailwind CSS configuration
-├── pnpm-lock.yaml        // pnpm lockfile
-└── vite.config.ts        // Vite configuration
+├── apps/
+│   ├── backend/            // NestJS API (src/), integration tests (test/)
+│   │   └── src/scripts/    // one-off scripts: create-user, import, pro-barcodes
+│   └── frontend/           // React app (src/), application tests (src/test/)
+├── packages/
+│   ├── database/           // Prisma schema, migrations, extended client
+│   └── types/              // types shared by both apps (generated from Prisma)
+├── scripts/                // server-day scripts, traces.mjs, loadtest/
+├── docker-compose.yml      // the server Mac stack
+├── Dockerfile              // backend and frontend images
+└── Caddyfile               // HTTPS on the LAN
 ```
 
 ---
 
 ## Available Scripts
 
-- **`pnpm frontenv dev`**: Start the development server.
-- **`pnpm frontenv build`**: Build the app for production.
+- **`pnpm dev`**: Start the backend and the frontend in watch mode.
+- **`pnpm build`**: Build both apps for production.
+- **`pnpm test`**: Run both test suites.
+- **`pnpm traces <command>`**: Supervision over the backend logs (see the
+  runbook's Supervision section).
+- **`scripts/loadtest/`**: Load and soak tests (see its README).
 - **`./scripts/start-server.sh`**: Start everything for the sale. Use this one.
 - **`./scripts/status.sh`**: Is the server healthy right now? Safe at any time.
 - **`./scripts/stop-server.sh`**: Take a final backup and stop cleanly.
