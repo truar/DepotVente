@@ -5,40 +5,10 @@ import {
   givenWorkstation,
   local,
 } from '@/test/harness.ts'
-import {
-  openScreen,
-  printSummary,
-  screen,
-  signedInAs,
-  waitFor,
-} from '@/test/screen.tsx'
+import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
+import { signedInAs } from '@/test/screen.tsx'
 
-type User = Awaited<ReturnType<typeof openScreen>>['user']
-
-const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
-
-// The predeposit combobox, then its "Valider" button next to it.
-async function pickPredeposit(user: User, name: string) {
-  await user.click(screen.getByText(PREDEPOSIT_PLACEHOLDER))
-  await user.click(await screen.findByRole('option', { name }))
-}
-async function validatePredeposit(user: User) {
-  await user.click(screen.getByRole('button', { name: 'Valider' }))
-  await waitFor(() =>
-    expect(screen.getByLabelText('Nom')).toHaveValue('Martin'),
-  )
-}
-async function chooseStatusPrintAndSave(user: User, status: string) {
-  await user.click(screen.getByText('Statut').closest('button')!)
-  await user.click(await screen.findByRole('option', { name: status }))
-  await printSummary(user)
-  await user.click(
-    screen.getByRole('button', { name: 'Valider et enregistrer le dépôt' }),
-  )
-}
-
-// The same story as scenarios/deposit-from-predeposit.test.ts, but played
-// on the real screen: the volunteer on cash register 1000 picks the
+// Played on the real screen: the volunteer on cash register 1000 picks a
 // predeposit in the combobox, validates it, sees the form filled, chooses
 // the contribution status, prints the summary and saves.
 describe('Screen: register a deposit from a predeposit', () => {
@@ -62,25 +32,25 @@ describe('Screen: register a deposit from a predeposit', () => {
   })
 
   it('fills the form from the predeposit and saves the deposit', async () => {
-    const { user } = await openScreen('/deposits/add')
-    await screen.findByRole('heading', { name: 'Enregistrer des articles' })
+    const page = await depositAddPage()
 
-    await pickPredeposit(user, 'Martin Lucie')
-    await validatePredeposit(user)
+    await page.pickPredeposit('Martin Lucie')
+    await page.validatePredeposit()
 
-    // The seller block shows the predeposit's seller
-    expect(screen.getByLabelText('Prénom')).toHaveValue('Lucie')
-    expect(screen.getByLabelText('Téléphone')).toHaveValue('0611111111')
-    expect(screen.getByDisplayValue('Chambéry')).toBeInTheDocument()
+    expect(page.seller()).toEqual({
+      lastName: 'Martin',
+      firstName: 'Lucie',
+      phoneNumber: '0611111111',
+    })
+    expect(page.hasDisplayValue('Chambéry')).toBe(true)
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
+    expect(page.hasText('Salomon')).toBe(true)
+    expect(page.hasText('Nordica')).toBe(true)
 
-    // Both articles are there, with their codes under the new deposit number
-    expect(screen.getByDisplayValue('1001 A')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('1001 B')).toBeInTheDocument()
-    expect(screen.getByText('Salomon')).toBeInTheDocument()
-    expect(screen.getByText('Nordica')).toBeInTheDocument()
-
-    await chooseStatusPrintAndSave(user, 'A payer')
-    await screen.findByText('Dépôt 1001 enregistré')
+    await page.chooseStatus('A payer')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
 
     const [contact] = await local.contacts()
     const [deposit] = await local.deposits()
@@ -124,29 +94,21 @@ describe('Screen: register a deposit from a predeposit', () => {
   // it. The selection clears with the form once the deposit is saved, and
   // the predeposit, now used, is no longer offered.
   it('keeps the predeposit selected until the deposit is saved, then clears it and stops offering it', async () => {
-    const { user } = await openScreen('/deposits/add')
-    await screen.findByRole('heading', { name: 'Enregistrer des articles' })
+    const page = await depositAddPage()
 
-    await pickPredeposit(user, 'Martin Lucie')
-    expect(screen.getByText('Martin Lucie')).toBeInTheDocument()
-    expect(screen.queryByText(PREDEPOSIT_PLACEHOLDER)).not.toBeInTheDocument()
+    await page.pickPredeposit('Martin Lucie')
+    expect(page.selectedPredeposit()).toBe('Martin Lucie')
 
-    await validatePredeposit(user)
-    expect(screen.getByText('Martin Lucie')).toBeInTheDocument()
+    await page.validatePredeposit()
+    expect(page.selectedPredeposit()).toBe('Martin Lucie')
 
-    await chooseStatusPrintAndSave(user, 'A payer')
-    await screen.findByText('Dépôt 1001 enregistré')
+    await page.chooseStatus('A payer')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
 
-    // Combobox back to its placeholder, form empty, ready for the next seller
-    expect(screen.getByText(PREDEPOSIT_PLACEHOLDER)).toBeInTheDocument()
-    expect(screen.queryByText('Martin Lucie')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Nom')).toHaveValue('')
-
-    // The used predeposit is gone from the list
-    await user.click(screen.getByText(PREDEPOSIT_PLACEHOLDER))
-    await screen.findByText('Vide')
-    expect(
-      screen.queryByRole('option', { name: 'Martin Lucie' }),
-    ).not.toBeInTheDocument()
+    expect(page.selectedPredeposit()).toBeNull()
+    expect(page.seller().lastName).toBe('')
+    expect(await page.offeredPredeposits()).toEqual([])
   })
 })

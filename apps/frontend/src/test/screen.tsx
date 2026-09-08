@@ -39,14 +39,6 @@ export async function openScreen(path: string) {
   return { user, router }
 }
 
-// Click "Imprimer" and wait for the summary to reach the printer: the page
-// hands the rendered PDF to the browser's print dialog through an iframe,
-// and the form only saves once that has happened.
-export async function printSummary(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Imprimer' }))
-  await waitFor(() => expect(document.querySelector('iframe')).not.toBeNull(), {
-    timeout: 15_000,
-  })
-}
+export type User = ReturnType<typeof userEvent.setup>
 
 export { screen, waitFor, within }
