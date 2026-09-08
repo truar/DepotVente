@@ -585,6 +585,27 @@ exact command to put things back.
 > they have already sent, so it will not come back on its own. Before restoring,
 > and before letting anyone reload or clear a client, work out what is missing.
 
+### Supervision: who is talking to the server, and what it refuses
+
+Every request a client PC sends carries the identity shown on that PC's
+Paramètres page (Identifiant du poste, numéro de caisse, version de
+l'application). The backend writes it on every log line, so from the Mac you can
+answer "which PCs are alive, which build do they run, what did the server
+refuse" without walking over.
+
+```bash
+pnpm traces postes             # every PC seen: caisse, version, last seen, refused requests
+pnpm traces tail --poste 4     # live log of cash register 4 (or of a device id prefix)
+pnpm traces errors --since 1h  # everything refused in the last hour, with the code
+pnpm traces epochs             # the server's epoch, and PCs still holding an old one
+pnpm traces stats              # request volume and response times per route
+pnpm traces --help
+```
+
+It reads `docker compose logs backend`. In dev, point it at a file instead:
+`pnpm traces postes --file path/to/backend.log`, or pipe:
+`tail -f backend.log | pnpm traces tail --file -`.
+
 ---
 
 ## DYMO label printing on Windows 7 clients
