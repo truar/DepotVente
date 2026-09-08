@@ -153,7 +153,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/test/**/*.test.ts'],
+    include: ['src/test/**/*.test.{ts,tsx}'],
     // Hooks render through React, so the DOM has to exist.
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],

@@ -12,7 +12,7 @@ export const Route = createRootRoute({
       <Toaster position="bottom-left" />
       <ErrorAlertHost />
       <DatasetResetDialog />
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && !import.meta.env.TEST && (
         <TanStackDevtools
           config={{
             position: 'bottom-right',
