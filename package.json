@@ -2,7 +2,6 @@
   "name": "depot-vente",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "pnpm run --parallel --filter './apps/*' dev",
     "dev:frontend": "pnpm --filter frontend dev",
@@ -16,8 +15,6 @@
     "db:studio": "pnpm --filter database db:studio",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "docker:dev": "docker compose -f docker-compose.dev.yml up --build -d",
-    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
     "docker:logs": "docker compose logs -f",
     "traces": "node scripts/traces.mjs",
     "docker:clean": "docker compose down -v",

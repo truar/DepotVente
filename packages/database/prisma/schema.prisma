@@ -281,11 +281,6 @@ model PredepositArticle {
   @@map("predepositArticles")
 }
 
-// Note: Les triggers PostgreSQL doivent être créés via une migration SQL
-// Voir le fichier de migration pour les détails des triggers:
-// - notify_stats_changed() : notifie sur le canal 'stats_changed'
-// - notify_sales_changed() : notifie sur le canal 'sales_changed'
-
 // Dataset epoch - identifies one lifetime of this database.
 //
 // A single row is created the first time the backend boots against an empty

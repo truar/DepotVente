@@ -23,7 +23,7 @@ services:
           cpus: "2"
           memory: 2g
 
-  # Backend (Fastify + Prisma)
+  # Backend (NestJS on the Fastify adapter + Prisma)
   backend:
     build:
       context: .

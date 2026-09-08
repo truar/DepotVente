@@ -31,18 +31,6 @@ RUN pnpm --filter database db:generate \
  && pnpm --filter @cmr-apps/types build
 
 ###################
-# BACKEND DEV
-###################
-FROM pruned AS backend-dev
-
-# Copy backend source
-COPY apps/backend ./apps/backend
-
-EXPOSE 3000
-
-CMD ["pnpm", "--filter", "backend", "dev"]
-
-###################
 # BACKEND PROD
 ###################
 FROM pruned AS backend-build
@@ -70,18 +58,6 @@ EXPOSE 3000
 # Apply any pending migrations before booting. Without this a rebuild onto a
 # fresh volume comes up with no schema and fails at the first query.
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma && node apps/backend/dist/main.js"]
-
-###################
-# FRONTEND DEV
-###################
-FROM pruned AS frontend-dev
-
-# Copy frontend source
-COPY apps/frontend ./apps/frontend
-
-EXPOSE 5173
-
-CMD ["pnpm", "--filter", "frontend", "dev"]
 
 ###################
 # FRONTEND PROD

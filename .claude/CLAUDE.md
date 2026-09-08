@@ -52,7 +52,7 @@ two writers at the same time. Conflict-freedom is a property of the
                               ┌──────────────────────────────┐
                               │           SERVER             │
                               │  ┌────────────────────────┐  │
-                              │  │  Backend (Fastify)     │  │
+                              │  │  Backend (NestJS)      │  │
                               │  │  • accept writes       │  │
                               │  │  • serve poll reads    │  │
                               │  │  • trigger replication │  │
@@ -133,3 +133,28 @@ two writers at the same time. Conflict-freedom is a property of the
   naïve concurrency model safe — by the time a buyer is at a Sale PC, the
   article has already been replicated everywhere via at least one poll
   cycle.
+
+## Sync contract (what the thin backend actually enforces)
+
+The backend is NestJS on the Fastify adapter (`apps/backend/src/app.module.ts`).
+It stays thin, but three things are part of the contract every client honours:
+
+- **Dataset epoch.** One row (`DatasetEpoch`) identifies the current lifetime
+  of the server database. `/api/sync/initial` and `/api/sync/ping` return it;
+  `/api/push` and `/api/sync/delta` require it as `X-Dataset-Epoch` and answer
+  `409 EPOCH_MISMATCH` when it names a previous database. A client that gets
+  that pauses all sync and asks the operator to rebuild the local base. This is
+  how a server reset during tests is detected instead of silently corrupting
+  pushes.
+- **Client identity.** Every request carries `X-Device-Id` (uuid generated once
+  per browser), `X-Workstation` (cash register number) and `X-App-Version`
+  (build). The backend tags every log line with them; `pnpm traces` reads those
+  logs (see `scripts/traces.mjs`).
+- **Final vs transient answers.** Any `4xx` from `/api/push` is final: the
+  client parks the write as `rejected` (visible in Paramètres) and moves on.
+  Only network errors and `5xx` are retried. The outbox is pushed in write
+  order (`timestamp`, then `seq`), because a deposit written in the same
+  transaction as its contact must reach the server after it.
+
+Do not weaken any of these three when touching the sync code; the integration
+tests in `apps/backend/test` and `apps/frontend/src/test` pin them.

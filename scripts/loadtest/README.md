@@ -46,6 +46,14 @@ node scripts/loadtest/run.mjs --duration 14400 --no-stampede --out results/soak
 Writes `health-*.csv` every 30 seconds from `/api/health`: `heapUsedMb`, `rssMb`
 and `eventLoopLagMs`.
 
+`monitor.sh` samples what the process cannot see about itself — container CPU
+and memory, database connections, dead tuples, socket count — and warns if the
+backend restarted during the run:
+
+```bash
+./scripts/loadtest/monitor.sh results/soak 30     # alongside run.mjs, Ctrl-C to stop
+```
+
 **Read `heapUsedMb`, not `rssMb`.** Container RSS drifts upward from heap
 fragmentation even when nothing leaks, so a rising `docker stats` line proves
 nothing. A flat or sawtooth `heapUsedMb` is healthy; a monotonic climb is not.
