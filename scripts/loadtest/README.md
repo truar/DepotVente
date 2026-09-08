@@ -25,6 +25,18 @@ Polling is aligned by default (`--stagger none`) because that is the worst case
 and the realistic one — the PCs are switched on together. `--stagger jitter`
 spreads them out for comparison.
 
+Each simulated PC identifies itself like a real one (`X-Device-Id`
+`loadtest-pc-N`, cash register `100+N`, writers `200+N`) and sends the dataset
+epoch it learned from `/sync/ping`, so `pnpm traces postes` lists them and
+`pnpm traces tail --poste 104` follows one of them. `--stale 1` makes the first
+PC send an old epoch: every one of its polls is refused with `409
+EPOCH_MISMATCH`, which `pnpm traces errors` and `pnpm traces epochs` should
+show. Those refusals are reported under a `stale` phase and not counted as
+failures.
+
+Behind nginx, use `--base http://localhost:15173/api`; behind Caddy the default
+`https://localhost/api`.
+
 ## Soak test — does it drift over four hours?
 
 ```bash

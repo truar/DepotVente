@@ -4,8 +4,13 @@
 //
 //   node scripts/loadtest/run.mjs --clients 9 --writers 3 --duration 300
 //   node scripts/loadtest/run.mjs --duration 14400 --out results/soak    # 4h soak
+//   node scripts/loadtest/run.mjs --stale 1        # one PC holds an old dataset epoch
 //
 // Plain Node, no dependencies - it only speaks HTTP.
+//
+// Each simulated PC identifies itself the way a real one does (X-Device-Id,
+// X-Workstation, X-App-Version) and sends the dataset epoch it learned at
+// sign-in, so `pnpm traces` sees the run exactly as it would see the event.
 //
 import { writeFileSync, appendFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -33,6 +38,7 @@ const CFG = {
   stagger:   arg('stagger', 'none'),         // none = worst case, all aligned
   healthMs:  +arg('health', 30000),
   skipStampede: has('no-stampede'),
+  stale:     +arg('stale', 0),               // clients polling with a bogus epoch
 }
 
 if (!CFG.email || !CFG.password) {
@@ -79,6 +85,23 @@ async function timed(client, phase, endpoint, fn) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// ------------------------------------------------------- client identity
+// Learned once from /sync/ping; every delta and push must carry it, or the
+// server answers 400 EPOCH_REQUIRED / 409 EPOCH_MISMATCH.
+let EPOCH = ''
+const STALE_EPOCH = '00000000-0000-4000-8000-00000000dead'
+
+function headers(who, token, { stale = false } = {}) {
+  const [kind, n] = who
+  return {
+    Authorization: `Bearer ${token}`,
+    'X-Device-Id': `loadtest-${kind}-${n}`,
+    'X-Workstation': String((kind === 'pc' ? 100 : 200) + n),
+    'X-App-Version': `loadtest ${RUN_ID}`,
+    'X-Dataset-Epoch': stale ? STALE_EPOCH : EPOCH,
+  }
+}
+
 // ---------------------------------------------------------------- sign in
 async function signIn(n) {
   const res = await fetch(`${CFG.base}/signin`, {
@@ -95,23 +118,23 @@ async function signIn(n) {
 // -------------------------------------------------------------- the client
 async function client(n, token, deposits) {
   let lastSync = Date.now()
+  const stale = n < CFG.stale
+  const h = headers(['pc', n], token, { stale })
 
   // Stampede: every PC boots at once and pulls the whole dataset. The heaviest
   // thing the backend ever does - 8 unbounded findMany() through single-threaded
   // JSON serialisation.
   if (!CFG.skipStampede) {
     const r = await timed(n, 'stampede', '/sync/initial', () =>
-      fetch(`${CFG.base}/sync/initial`, { headers: { Authorization: `Bearer ${token}` } }))
+      fetch(`${CFG.base}/sync/initial`, { headers: h }))
     if (r.ok) lastSync = Date.now()
   }
 
   if (CFG.stagger === 'jitter') await sleep(Math.random() * CFG.pollMs)
 
   while (!stopping) {
-    const r = await timed(n, 'steady', '/sync/delta', () =>
-      fetch(`${CFG.base}/sync/delta?since=${lastSync}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }))
+    const r = await timed(n, stale ? 'stale' : 'steady', '/sync/delta', () =>
+      fetch(`${CFG.base}/sync/delta?since=${lastSync}`, { headers: h }))
     if (r.ok) lastSync = Date.now()
     await sleep(CFG.pollMs)
   }
@@ -121,7 +144,8 @@ async function client(n, token, deposits) {
 // Rows created here are marked with an LT- code prefix so cleanup.sh can remove
 // exactly them and nothing else. Never touches existing data.
 let written = 0
-async function writer(n, deposits) {
+async function writer(n, token, deposits) {
+  const h = { ...headers(['writer', n], token), 'Content-Type': 'application/json' }
   const pick = () => deposits[Math.floor(Math.random() * deposits.length)]
   while (!stopping) {
     const dep = pick()
@@ -145,12 +169,8 @@ async function writer(n, deposits) {
           depositId: dep.id,
         },
       }
-      await timed(n, 'steady', '/push', () =>
-        fetch(`${CFG.base}/push`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        }))
+      await timed(`w${n}`, 'steady', '/push', () =>
+        fetch(`${CFG.base}/push`, { method: 'POST', headers: h, body: JSON.stringify(body) }))
     }
     await sleep(CFG.writeMs)
   }
@@ -193,7 +213,7 @@ function summary() {
   for (const [key, list] of groups) {
     const ms = list.map((s) => s.ms).sort((a, b) => a - b)
     const errs = list.filter((s) => s.status === 'ERR' || +s.status >= 400).length
-    failures += errs
+    if (!key.startsWith('stale')) failures += errs
     const mb = list.reduce((a, s) => a + s.bytes, 0) / 1048576
     console.log(
       `  ${key.padEnd(24)} ${String(list.length).padStart(4)} ` +
@@ -219,8 +239,14 @@ async function main() {
   for (let i = 0; i < CFG.clients; i++) tokens.push(await signIn(i))
   console.log(`  signed in ${tokens.length} clients`)
 
+  const ping = await fetch(`${CFG.base}/sync/ping`)
+  if (!ping.ok) throw new Error(`ping failed: HTTP ${ping.status}`)
+  EPOCH = (await ping.json()).datasetEpoch
+  if (!EPOCH) throw new Error('ping returned no datasetEpoch - is the backend up to date?')
+  console.log(`  dataset epoch ${EPOCH}${CFG.stale ? ` (${CFG.stale} client(s) will send a stale one)` : ''}`)
+
   // One initial pull to learn real deposit ids for the writers.
-  const res = await fetch(`${CFG.base}/sync/initial`, { headers: { Authorization: `Bearer ${tokens[0]}` } })
+  const res = await fetch(`${CFG.base}/sync/initial`, { headers: headers(['pc', 0], tokens[0]) })
   if (!res.ok) throw new Error(`initial sync failed: HTTP ${res.status}`)
   const data = await res.json()
   const deposits = (data.deposits ?? []).map((d) => ({ id: d.id, depositIndex: d.depositIndex }))
@@ -231,7 +257,7 @@ async function main() {
 
   const work = []
   for (let i = 0; i < CFG.clients; i++) work.push(client(i, tokens[i], deposits))
-  for (let i = 0; i < CFG.writers; i++) work.push(writer(`w${i}`, deposits))
+  for (let i = 0; i < CFG.writers; i++) work.push(writer(i, tokens[i % tokens.length], deposits))
   work.push(healthSampler())
 
   console.log('  running - Ctrl-C to stop early\n')

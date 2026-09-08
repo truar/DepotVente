@@ -182,7 +182,11 @@ const red = (s) => paint(31, s);
 const hhmmss = (t) =>
   new Date(t).toLocaleTimeString("fr-FR", { hour12: false });
 const dateTime = (t) => new Date(t).toLocaleString("fr-FR", { hour12: false });
-const short = (device) => (device ? device.slice(0, 8) : "--------");
+// Real device ids are UUIDs, distinctive in their first eight characters;
+// anything else (test clients, curl) is shown whole, within reason.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
+const short = (device) =>
+  device ? (UUID.test(device) ? device.slice(0, 8) : device.slice(0, 18)) : "--------";
 const posteLabel = (rec) =>
   `${(rec.workstation ? `P${rec.workstation}` : "P?").padEnd(6)} ${short(rec.device)}`;
 

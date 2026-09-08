@@ -2,6 +2,8 @@
  * Client HTTP générique pour les appels API
  */
 
+import { clientHeaders } from '@/services/client-identity.ts'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 interface RequestOptions extends RequestInit {
@@ -33,9 +35,12 @@ class ApiClient {
     const authStorage = localStorage.getItem('auth-storage')
     const token = authStorage ? JSON.parse(authStorage).state?.token : null
 
-    // Headers par défaut
+    // Headers par défaut. L'identité du poste accompagne aussi ces appels
+    // (connexion...), pas seulement la synchronisation, pour que les journaux
+    // du serveur les attribuent à un ordinateur.
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      ...(await clientHeaders()),
       ...(fetchOptions.headers as Record<string, string>),
     }
 
