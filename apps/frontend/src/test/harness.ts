@@ -3,12 +3,20 @@
 // the operator would see locally and at what the server would receive.
 import { renderHook, waitFor } from '@testing-library/react'
 import { expect } from 'vitest'
+import { v4 as uuid } from 'uuid'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
+import type { Predeposit, PredepositArticle } from '@/db.ts'
 import { db } from '@/db.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { loadDepositFormFromPredeposit } from '@/services/deposit-from-predeposit.ts'
 import { compareOutboxOrder } from '@/services/sync-service.ts'
-import { generateArticleCode, getYear, shortArticleCode } from '@/utils'
+import {
+  generateArticleCode,
+  generateIdentificationLetter,
+  getYear,
+  shortArticleCode,
+} from '@/utils'
 
 // ---------------------------------------------------------------------------
 // Given: the computer's settings
@@ -16,6 +24,50 @@ import { generateArticleCode, getYear, shortArticleCode } from '@/utils'
 
 export async function givenWorkstation(incrementStart: number) {
   await db.workstation.put({ key: 'incrementStart', value: incrementStart })
+}
+
+// A predeposit already in the local base (they come from the server, filled
+// in by the sellers before the day), with one article per entry of
+// `articles`, lettered A, B, C... in order.
+export async function givenPredeposit(
+  overrides: Partial<Predeposit> = {},
+  articles: Array<Partial<PredepositArticle>> = [{}],
+): Promise<Predeposit> {
+  const now = new Date()
+  const predeposit: Predeposit = {
+    id: uuid(),
+    predepositIndex: 7,
+    sellerLastName: 'Martin',
+    sellerFirstName: 'Lucie',
+    sellerPhoneNumber: '0611111111',
+    sellerCity: 'Chambéry',
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...overrides,
+  }
+  await db.predeposits.add(predeposit)
+  await db.predepositArticles.bulkAdd(
+    articles.map((article, index) => ({
+      id: uuid(),
+      predepositId: predeposit.id,
+      price: 150,
+      category: 'Skis',
+      discipline: 'Alpin',
+      brand: 'Salomon',
+      model: 'S/Max',
+      size: '165',
+      color: 'bleu',
+      year: YEAR - 2,
+      identificationLetter: generateIdentificationLetter(index),
+      articleIndex: index,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      ...article,
+    })),
+  )
+  return predeposit
 }
 
 // ---------------------------------------------------------------------------
@@ -37,10 +89,31 @@ export async function runHook<T>(hook: () => T): Promise<T> {
   return result.current.value
 }
 
+type ContributionStatus = NonNullable<
+  DepositFormType['deposit']['contributionStatus']
+>
+
 export const app = {
   async createDeposit(form: DepositFormType['deposit']) {
     const { mutate } = await runHook(useCreateDepot)
     await mutate(form)
+  },
+
+  // The predeposit screen: "Valider" fills the form from the predeposit, the
+  // operator picks the contribution status, then saves. Returns the form as
+  // it was filled, for assertions on what the operator saw.
+  async createDepositFromPredeposit(
+    predepositId: string,
+    {
+      depositIndex,
+      contributionStatus = 'PAYE',
+    }: { depositIndex: number; contributionStatus?: ContributionStatus },
+  ) {
+    const form = await loadDepositFormFromPredeposit(predepositId, depositIndex)
+    if (!form)
+      throw new Error(`No predeposit ${predepositId} in the local base`)
+    await app.createDeposit({ ...form, contributionStatus })
+    return form
   },
 }
 
@@ -52,6 +125,7 @@ export const local = {
   contacts: () => db.contacts.toArray(),
   deposits: () => db.deposits.toArray(),
   articles: () => db.articles.toArray(),
+  predeposits: () => db.predeposits.toArray(),
   // In the order the sync service will push them.
   outbox: async () => (await db.outbox.toArray()).sort(compareOutboxOrder),
 }
