@@ -11,12 +11,16 @@ import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
 
 export async function depositAddPage(user?: User) {
-  const opened = user ? { user } : await openScreen('/deposits/add')
+  const opened = user
+    ? { user, router: undefined }
+    : await openScreen('/deposits/add')
   await screen.findByRole('heading', { name: 'Enregistrer des articles' })
   const u = opened.user
 
   const page = {
     user: u,
+    // Where the router is, e.g. after leaving the screen.
+    pathname: () => opened.router?.state.location.pathname ?? null,
 
     // ---- predeposit combobox ------------------------------------------
     async pickPredeposit(name: string) {
@@ -85,9 +89,13 @@ export async function depositAddPage(user?: User) {
       phoneNumber: string
       city?: string
     }) {
-      await u.type(screen.getByLabelText('Nom'), seller.lastName)
-      await u.type(screen.getByLabelText('Prénom'), seller.firstName)
-      await u.type(screen.getByLabelText('Téléphone'), seller.phoneNumber)
+      // An empty value leaves the field as it is.
+      const type = async (label: string, value: string) => {
+        if (value) await u.type(screen.getByLabelText(label), value)
+      }
+      await type('Nom', seller.lastName)
+      await type('Prénom', seller.firstName)
+      await type('Téléphone', seller.phoneNumber)
       if (seller.city) {
         // Datalist field: its label is not bound to the input.
         const city = document.querySelector<HTMLInputElement>(
@@ -185,6 +193,35 @@ export async function depositAddPage(user?: User) {
       return screen
         .queryAllByText(/^Merci/)
         .map((line) => line.textContent.trim())
+    },
+
+    // ---- leaving or resetting the screen ------------------------------
+    async cancel() {
+      await u.click(screen.getByRole('button', { name: 'Annuler' }))
+    },
+    async backToMenu() {
+      await u.click(screen.getByRole('link', { name: 'Retour au menu' }))
+    },
+    // The confirmation dialog currently open, with its two answers.
+    async dialog() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
+    isDialogOpen() {
+      return screen.queryByRole('alertdialog') !== null
+    },
+    isArticleDeleted(index: number) {
+      return (
+        within(page.articleRow(index)).queryByRole('button', {
+          name: "Restaurer l'article",
+        }) !== null
+      )
     },
 
     // ---- contribution, print, save -------------------------------------
