@@ -6,6 +6,7 @@ import {
   local,
 } from '@/test/harness.ts'
 import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
+import { lastPrintedText } from '@/test/printed.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // Played on the real screen: the volunteer on cash register 1000 picks a
@@ -49,6 +50,20 @@ describe('Screen: register a deposit from a predeposit', () => {
 
     await page.chooseStatus('A payer')
     await page.printSummary()
+
+    // The sheet is the seller's receipt, printed in two copies.
+    const sheet = await lastPrintedText()
+    expect(sheet).toContain('Fiche N° 1001')
+    expect(sheet).toContain('MARTIN Lucie')
+    expect(sheet).toContain('Chambéry')
+    expect(sheet).toContain('Nb articles : 2')
+    expect(sheet).toContain('Cotisations : 2,00 € (A Payer)')
+    expect(sheet).toContain('1001 A Skis Salomon Alpin bleu 165 S/Max 150,00 €')
+    expect(sheet).toContain(
+      '1001 B Chaussures Nordica Alpin bleu 27.5 Speedmachine 80,00 €',
+    )
+    expect(sheet.match(/Fiche N° 1001/g)).toHaveLength(2)
+
     await page.save()
     await page.savedToast(1001)
 

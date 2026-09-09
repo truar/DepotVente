@@ -21,6 +21,7 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup()
   document.querySelectorAll('iframe').forEach((iframe) => iframe.remove())
+  printedBlobs.length = 0
 })
 
 // ---------------------------------------------------------------------------
@@ -40,9 +41,15 @@ Element.prototype.hasPointerCapture = () => false
 Element.prototype.setPointerCapture = () => {}
 Element.prototype.releasePointerCapture = () => {}
 
-// The summary PDF is handed to the browser's print dialog through a blob
-// iframe; jsdom has no object URLs and nothing to print to.
-URL.createObjectURL = () => 'blob:jsdom'
+// Printing hands a PDF blob to the browser's print dialog through an
+// iframe; jsdom has no object URLs and nothing to print to. The blobs are
+// kept so a story can read back what would have come out of the printer
+// (see printed.ts).
+export const printedBlobs: Array<Blob> = []
+URL.createObjectURL = (blob: Blob | MediaSource) => {
+  if (blob instanceof Blob) printedBlobs.push(blob)
+  return `blob:jsdom/${printedBlobs.length}`
+}
 URL.revokeObjectURL = () => {}
 window.matchMedia = (query: string) =>
   ({

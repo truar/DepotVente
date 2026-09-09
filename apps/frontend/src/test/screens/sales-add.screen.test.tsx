@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
+import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import { signedInAs } from '@/test/screen.tsx'
 
 const buyer = {
@@ -187,5 +188,97 @@ describe('Screen: refused scans', () => {
 
     expect(page.scannedCodes()).toEqual([codes.ok])
     expect(page.total()).toBe(120)
+  })
+})
+
+// The invoice is the buyer's receipt. It is printed on demand, follows the
+// same rules as the save, and is not required to save.
+describe('Screen: the invoice', () => {
+  let codes: Array<string>
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { price: 120 },
+      { price: 80, category: 'Chaussures', brand: 'Nordica' },
+    ])
+    codes = articles.map((a) => a.code)
+  })
+
+  it('is not printed for an incomplete sale', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.pay({ cash: 120 })
+
+    await page.clickInvoice()
+
+    expect(page.errors()).toEqual([
+      'Le nom est requis',
+      'Le prénom est requis',
+      'Le téléphone est requis',
+    ])
+    expect(printedDocuments()).toBe(0)
+  })
+
+  it('is not printed while the payment is short', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 100 })
+
+    await page.clickInvoice()
+
+    expect(page.errors()).toEqual([
+      'Merci de vérifier que le montant total est couvert par les 4 modes de règlements.',
+    ])
+    expect(printedDocuments()).toBe(0)
+  })
+
+  it('prints the buyer, the articles, the total and the payment split', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.scan(codes[1])
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 150, card: 50 })
+
+    await page.printInvoice()
+
+    expect(printedDocuments()).toBe(1)
+    const text = await lastPrintedText()
+    expect(text).toContain('Facture N°2001')
+    expect(text).toContain('PETIT Anna')
+    expect(text).toContain('0633333333')
+    expect(text).toContain(codes[0])
+    expect(text).toContain(codes[1])
+    expect(text).toContain('Rossignol')
+    expect(text).toContain('Nordica')
+    expect(text).toContain("Nombre d'articles : 2")
+    expect(text).toContain('Total : 200,00 €')
+    expect(text).toContain('Espèces : 150,00 €')
+    expect(text).toContain('Carte : 50,00 €')
+    expect(text).toContain('Chèque : 0,00 €')
+
+    // Printing is not a condition for saving; the sale still saves after it.
+    await page.save()
+    await page.savedToast(2001)
+  })
+
+  // Current behaviour, pinned: the deferred part of a payment is not on the
+  // invoice, so its payment lines add up to less than its total. To revisit.
+  it('does not print the deferred amount', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.fillBuyer(buyer)
+    await page.pay({ card: 70, deferred: 50 })
+
+    await page.printInvoice()
+
+    const text = await lastPrintedText()
+    expect(text).toContain('Total : 120,00 €')
+    expect(text).toContain('Carte : 70,00 €')
+    expect(text).not.toMatch(/[Dd]ifféré/)
+    // Nothing on the paper says 50 € remain due.
+    expect(text).not.toContain('50,00 €')
   })
 })
