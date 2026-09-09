@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 import type {
   Article,
+  CashRegisterControl,
   Contact,
   Deposit,
   Predeposit,
@@ -148,6 +149,46 @@ export async function givenDeposit(
   return { contact, deposit, articles: rows }
 }
 
+// A cash count already saved for a register: the evening's first pass,
+// reopened for a correction. Counts and amounts default to an empty drawer
+// with the 80 € float.
+export async function givenCashRegisterControl(
+  overrides: Partial<CashRegisterControl> = {},
+): Promise<CashRegisterControl> {
+  const now = new Date()
+  const control: CashRegisterControl = {
+    id: uuid(),
+    cashRegisterId: 1000,
+    type: 'DEPOSIT',
+    initialAmount: 80,
+    theoreticalCashAmount: 0,
+    realCashAmount: 0,
+    difference: 0,
+    totalAmount: 0,
+    cash200: 0,
+    cash100: 0,
+    cash50: 0,
+    cash20: 0,
+    cash10: 0,
+    cash5: 0,
+    cash2: 0,
+    cash1: 0,
+    cash05: 0,
+    cash02: 0,
+    cash01: 0,
+    cash005: 0,
+    cash002: 0,
+    cash001: 0,
+    comment: null,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...overrides,
+  }
+  await db.cashRegisterControls.add(control)
+  return control
+}
+
 // ---------------------------------------------------------------------------
 // When: run a hook as a screen would
 // ---------------------------------------------------------------------------
@@ -205,6 +246,7 @@ export const local = {
   articles: () => db.articles.toArray(),
   predeposits: () => db.predeposits.toArray(),
   sales: () => db.sales.toArray(),
+  cashRegisterControls: () => db.cashRegisterControls.toArray(),
   // In the order the sync service will push them.
   outbox: async () => (await db.outbox.toArray()).sort(compareOutboxOrder),
 }
