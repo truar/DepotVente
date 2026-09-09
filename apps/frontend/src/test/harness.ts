@@ -14,6 +14,7 @@ import type {
   PredepositArticle,
 } from '@/db.ts'
 import { db } from '@/db.ts'
+import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { loadDepositFormFromPredeposit } from '@/services/deposit-from-predeposit.ts'
@@ -216,6 +217,14 @@ export const app = {
   async createDeposit(form: DepositFormType['deposit']) {
     const { mutate } = await runHook(useCreateDepot)
     await mutate(form)
+  },
+
+  // What the return listing's "Lancer le calcul des retours" does for one
+  // deposit: read its sold articles, work out the club's share, the
+  // contribution still due and what is left for the seller.
+  async computeReturn(depositId: string) {
+    const { mutate } = await runHook(useComputeReturnMutation)
+    await mutate(depositId)
   },
 
   // The predeposit screen: "Valider" fills the form from the predeposit, the
