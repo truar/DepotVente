@@ -5,7 +5,13 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { expect } from 'vitest'
 import { v4 as uuid } from 'uuid'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
-import type { Predeposit, PredepositArticle } from '@/db.ts'
+import type {
+  Article,
+  Contact,
+  Deposit,
+  Predeposit,
+  PredepositArticle,
+} from '@/db.ts'
 import { db } from '@/db.ts'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
@@ -70,6 +76,78 @@ export async function givenPredeposit(
   return predeposit
 }
 
+// A deposit already registered (on another PC, typically), with its seller
+// and one article per entry of `articles`, lettered A, B, C... Articles are
+// received and for sale unless an entry says otherwise. Codes follow the
+// label: "<year> <depositIndex><letter>".
+export async function givenDeposit(
+  overrides: Partial<Deposit> & { seller?: Partial<Contact> } = {},
+  articles: Array<Partial<Article>> = [{}],
+): Promise<{ contact: Contact; deposit: Deposit; articles: Array<Article> }> {
+  const now = new Date()
+  const { seller, ...depositOverrides } = overrides
+  const contact: Contact = {
+    id: uuid(),
+    lastName: 'Durand',
+    firstName: 'Camille',
+    phoneNumber: '0600000000',
+    city: 'Grenoble',
+    postalCode: null,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...seller,
+  }
+  const deposit: Deposit = {
+    id: uuid(),
+    type: 'PARTICULIER',
+    sellerId: contact.id,
+    contributionStatus: 'PAYE',
+    contributionAmount: 2,
+    depositIndex: 12,
+    incrementStart: 1,
+    dropWorkstationId: 1,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...depositOverrides,
+  }
+  const rows: Array<Article> = articles.map((article, index) => {
+    const identificationLetter = generateIdentificationLetter(index)
+    return {
+      id: uuid(),
+      depositId: deposit.id,
+      saleId: null,
+      status: 'RECEPTION_OK',
+      code: generateArticleCode(
+        YEAR,
+        deposit.depositIndex,
+        identificationLetter,
+      ),
+      price: 120,
+      category: 'Skis',
+      discipline: 'Alpin',
+      brand: 'Rossignol',
+      model: 'Hero',
+      serialNumber: null,
+      size: '170',
+      color: 'rouge',
+      year: YEAR - 3,
+      depositIndex: deposit.depositIndex,
+      identificationLetter,
+      articleIndex: index,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      ...article,
+    }
+  })
+  await db.contacts.add(contact)
+  await db.deposits.add(deposit)
+  await db.articles.bulkAdd(rows)
+  return { contact, deposit, articles: rows }
+}
+
 // ---------------------------------------------------------------------------
 // When: run a hook as a screen would
 // ---------------------------------------------------------------------------
@@ -126,6 +204,7 @@ export const local = {
   deposits: () => db.deposits.toArray(),
   articles: () => db.articles.toArray(),
   predeposits: () => db.predeposits.toArray(),
+  sales: () => db.sales.toArray(),
   // In the order the sync service will push them.
   outbox: async () => (await db.outbox.toArray()).sort(compareOutboxOrder),
 }

@@ -557,6 +557,7 @@ function ScannedArticles() {
                   type="button"
                   onClick={() => onRemove(index)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Retirer l'article"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -606,9 +607,7 @@ function PaymentForm() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Règlements</h3>
-      {totalPriceError && (
-        <p className="text-red-600">{totalPriceError}</p>
-      )}
+      {totalPriceError && <p className="text-red-600">{totalPriceError}</p>}
       <div className="grid grid-cols-8 gap-6 align-baseline">
         <Controller
           name="cardAmount"
