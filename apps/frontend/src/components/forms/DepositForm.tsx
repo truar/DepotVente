@@ -277,10 +277,7 @@ function ArticleForm(props: ArticleFormProps) {
     })
   }, [depositIndex, trigger, append, getValues])
 
-  const removeArticle = useCallback(
-    (index: number) => remove(index),
-    [remove],
-  )
+  const removeArticle = useCallback((index: number) => remove(index), [remove])
 
   const lastIndex = fields.length - 1
 
@@ -380,10 +377,7 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
           <Controller
             name="deposit.contributionStatus"
             render={({ field: controllerField, fieldState }) => (
-              <Field
-                orientation="responsive"
-                data-invalid={fieldState.invalid}
-              >
+              <Field orientation="responsive" data-invalid={fieldState.invalid}>
                 <Select
                   name={controllerField.name}
                   value={controllerField.value ?? ''}
@@ -597,6 +591,7 @@ const ArticleLineForm = memo(function ArticleLineForm(
                     setValue(`deposit.articles.${index}.isDeleted`, false)
                   }
                   className="p-2 text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                  aria-label="Restaurer l'article"
                 >
                   <RotateCcwIcon className="w-4 h-4" />
                 </Button>
@@ -610,6 +605,7 @@ const ArticleLineForm = memo(function ArticleLineForm(
                       : setValue(`deposit.articles.${index}.isDeleted`, true)
                   }
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  aria-label="Supprimer l'article"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

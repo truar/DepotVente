@@ -6,7 +6,7 @@
 // story does the expecting.
 import { expect } from 'vitest'
 import type { User } from '@/test/screen.tsx'
-import { openScreen, screen, waitFor } from '@/test/screen.tsx'
+import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
 
@@ -76,6 +76,115 @@ export async function depositAddPage(user?: User) {
     },
     hasText(text: string) {
       return screen.queryByText(text) !== null
+    },
+
+    // ---- seller, typed by hand ---------------------------------------
+    async fillSeller(seller: {
+      lastName: string
+      firstName: string
+      phoneNumber: string
+      city?: string
+    }) {
+      await u.type(screen.getByLabelText('Nom'), seller.lastName)
+      await u.type(screen.getByLabelText('Prénom'), seller.firstName)
+      await u.type(screen.getByLabelText('Téléphone'), seller.phoneNumber)
+      if (seller.city) {
+        // Datalist field: its label is not bound to the input.
+        const city = document.querySelector<HTMLInputElement>(
+          'input[name="deposit.city"]',
+        )
+        if (!city) throw new Error('No city input on the screen')
+        await u.type(city, seller.city)
+      }
+    },
+
+    // ---- article rows ------------------------------------------------
+    async addArticle() {
+      await u.click(
+        screen.getByRole('button', { name: 'Ajouter un nouvel article' }),
+      )
+    },
+    // Rows of the articles table: the ones holding the category, brand and
+    // discipline comboboxes (the colour datalist input counts as one too).
+    articleRows() {
+      return screen
+        .getAllByRole('row')
+        .filter((row) => within(row).queryAllByRole('combobox').length === 4)
+    },
+    articleRow(index: number) {
+      const row = page.articleRows().at(index)
+      if (!row) throw new Error(`No article row ${index}`)
+      return row
+    },
+    async fillArticle(
+      index: number,
+      article: Partial<{
+        category: string
+        brand: string
+        discipline: string
+        color: string
+        size: string
+        model: string
+        price: string
+      }>,
+    ) {
+      const row = page.articleRow(index)
+      const comboboxes = within(row).getAllByRole('combobox')
+      const [category, brand, discipline] = comboboxes.filter(
+        (el) => el.tagName === 'BUTTON',
+      )
+      const color = comboboxes.find((el) => el.tagName === 'INPUT')
+      if (!color) throw new Error('No colour input in the article row')
+      // As a volunteer does: open, type to narrow the list, pick the match.
+      const pick = async (combobox: HTMLElement, value: string) => {
+        await u.click(combobox)
+        const popover = await screen.findByRole('dialog')
+        await u.type(within(popover).getByRole('combobox'), value)
+        await u.click(await screen.findByRole('option', { name: value }))
+      }
+      if (article.category) await pick(category, article.category)
+      if (article.brand) await pick(brand, article.brand)
+      if (article.discipline) await pick(discipline, article.discipline)
+      // Text inputs, in column order after the read-only code: size, model,
+      // price.
+      const [, size, model, price] = within(row).getAllByRole('textbox')
+      if (article.color) await u.type(color, article.color)
+      if (article.size) await u.type(size, article.size)
+      if (article.model) await u.type(model, article.model)
+      if (article.price) {
+        await u.clear(price)
+        await u.type(price, article.price)
+      }
+    },
+    async removeArticle(index: number) {
+      const row = page.articleRow(index)
+      await u.click(
+        within(row).getByRole('button', { name: "Supprimer l'article" }),
+      )
+    },
+    async restoreArticle(index: number) {
+      const row = page.articleRow(index)
+      await u.click(
+        within(row).getByRole('button', { name: "Restaurer l'article" }),
+      )
+    },
+    articleCount(): number {
+      return Number(
+        screen.getByText(/Nombre d'articles/).textContent.replace(/\D/g, ''),
+      )
+    },
+    contributionAmount(): number {
+      return Number(
+        screen
+          .getByText(/Montant droit de dépôt/)
+          .textContent.replace(/[^\d.]/g, ''),
+      )
+    },
+    // The red lines above the form, if any.
+    errors(): Array<string> {
+      return screen
+        .queryAllByText(/^Merci/)
+        .map((line) => line.textContent.trim())
     },
 
     // ---- contribution, print, save -------------------------------------
