@@ -120,10 +120,33 @@ export async function salesAddPage() {
         screen.getByText(/Total règlement/).textContent.replace(/[^\d.]/g, ''),
       )
     },
+    // The error lines above the form (not the ones under a field): the
+    // list of field messages, and the payment paragraph.
     errors(): Array<string> {
-      return screen
-        .queryAllByText(/^Merci|requis$/)
-        .map((line) => line.textContent.trim())
+      const texts = (elements: Array<HTMLElement>) =>
+        elements.map((el) => el.textContent.trim())
+      return [
+        ...texts(screen.queryAllByRole('listitem')).filter((text) =>
+          /^Merci|requis$/.test(text),
+        ),
+        ...texts(screen.queryAllByText(/^Merci de vérifier/)),
+      ]
+    },
+
+    // ---- invoice -----------------------------------------------------
+    // "Facture" prints only a valid, fully paid sale; the story checks
+    // printedDocuments() to know whether it did.
+    async clickInvoice() {
+      await u.click(screen.getByRole('button', { name: 'Facture' }))
+    },
+    async printInvoice() {
+      const before = document.querySelectorAll('iframe').length
+      await page.clickInvoice()
+      await waitFor(
+        () =>
+          expect(document.querySelectorAll('iframe').length).toBe(before + 1),
+        { timeout: 15_000 },
+      )
     },
 
     // ---- save ------------------------------------------------------------
