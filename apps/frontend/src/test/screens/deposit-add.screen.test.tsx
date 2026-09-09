@@ -6,7 +6,7 @@ import {
   local,
 } from '@/test/harness.ts'
 import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
-import { signedInAs } from '@/test/screen.tsx'
+import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // Played on the real screen: the volunteer on cash register 1000 picks a
 // predeposit in the combobox, validates it, sees the form filled, chooses
@@ -276,5 +276,179 @@ describe('Screen: the contribution follows the number of articles', () => {
     await page.restoreArticle(10)
     expect(page.articleCount()).toBe(11)
     expect(page.contributionAmount()).toBe(4)
+  })
+})
+
+const validArticle = {
+  category: 'Skis',
+  brand: 'Rossignol',
+  discipline: 'Alpin',
+  color: 'Rouge',
+  price: '120',
+}
+
+describe('Screen: required fields block the save', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  it('points out missing fields until they are filled, and writes nothing meanwhile', async () => {
+    const page = await depositAddPage()
+    // No last name, and an article without a price
+    await page.fillSeller({
+      lastName: '',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, { ...validArticle, price: '0' })
+    await page.chooseStatus('Payé')
+
+    await page.save()
+    expect(page.errors()).toEqual([
+      'Merci de compléter les champs obligatoires',
+    ])
+    expect(await local.deposits()).toEqual([])
+
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: '',
+      phoneNumber: '',
+    })
+    await page.save()
+    expect(page.errors()).toEqual([
+      'Merci de compléter les champs obligatoires',
+    ])
+
+    await page.fillArticle(0, { price: '120' })
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+    expect(await local.deposits()).toHaveLength(1)
+  })
+})
+
+describe('Screen: article rows', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  // Half-filled rows would otherwise pile up.
+  it('does not add a second row while the first one is incomplete', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+    await page.addArticle()
+    expect(page.articleCodes()).toEqual(['1001 A'])
+
+    await page.fillArticle(0, validArticle)
+    await page.addArticle()
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
+  })
+
+  // A letter, once assigned, is never reused: it may already be on a label.
+  // Only the last row can disappear; earlier rows are struck through and
+  // keep their letter.
+  it('removes only the last row outright, strikes through earlier ones', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    await page.addArticle()
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
+
+    await page.removeArticle(0)
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
+    expect(page.isArticleDeleted(0)).toBe(true)
+    expect(page.articleCount()).toBe(1)
+
+    await page.removeArticle(1)
+    expect(page.articleCodes()).toEqual(['1001 A'])
+    expect(page.articleCount()).toBe(0)
+    expect(page.contributionAmount()).toBe(0)
+  })
+
+  // Rows that came from a predeposit are never removed outright: the seller
+  // declared them, so the deposit keeps a trace of what was refused.
+  it('saves a struck-through predeposit article as DELETED', async () => {
+    await givenPredeposit({}, [
+      {},
+      { category: 'Chaussures', brand: 'Nordica' },
+    ])
+    const page = await depositAddPage()
+    await page.pickPredeposit('Martin Lucie')
+    await page.validatePredeposit()
+
+    await page.removeArticle(1)
+    expect(page.isArticleDeleted(1)).toBe(true)
+    expect(page.articleCount()).toBe(1)
+    expect(page.contributionAmount()).toBe(2)
+
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+
+    const articles = (await local.articles()).sort((a, b) =>
+      a.identificationLetter.localeCompare(b.identificationLetter),
+    )
+    expect(articles.map((a) => [a.code, a.status])).toEqual([
+      [`${YEAR} 1001A`, 'RECEPTION_OK'],
+      [`${YEAR} 1001B`, 'DELETED'],
+    ])
+    expect((await local.deposits())[0]).toMatchObject({ contributionAmount: 2 })
+  })
+})
+
+describe('Screen: leaving a half-typed deposit', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+    await givenPredeposit()
+  })
+
+  it('"Annuler" asks first, then wipes the form and the predeposit selection', async () => {
+    const page = await depositAddPage()
+    await page.pickPredeposit('Martin Lucie')
+    await page.validatePredeposit()
+
+    await page.cancel()
+    let dialog = await page.dialog()
+    expect(dialog.title).toBe('Etes vous sur de vouloir annuler ?')
+    await dialog.decline()
+    expect(page.seller().lastName).toBe('Martin')
+    expect(page.selectedPredeposit()).toBe('Martin Lucie')
+
+    await page.cancel()
+    dialog = await page.dialog()
+    await dialog.confirm()
+    expect(page.seller().lastName).toBe('')
+    expect(page.articleCodes()).toEqual([])
+    expect(page.selectedPredeposit()).toBeNull()
+    expect(await local.deposits()).toEqual([])
+    expect(await local.outbox()).toEqual([])
+  })
+
+  it('"Retour au menu" asks first, then leaves without saving', async () => {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+
+    await page.backToMenu()
+    let dialog = await page.dialog()
+    expect(dialog.title).toBe('Etes vous sur de vouloir quitter cette page ?')
+    await dialog.decline()
+    expect(page.pathname()).toBe('/deposits/add')
+    expect(page.seller().lastName).toBe('Bernard')
+
+    await page.backToMenu()
+    dialog = await page.dialog()
+    await dialog.confirm()
+    await waitFor(() => expect(page.pathname()).toBe('/deposits'))
+    expect(await local.deposits()).toEqual([])
+    expect(await local.outbox()).toEqual([])
   })
 })
