@@ -7,6 +7,7 @@ import {
   createMemoryHistory,
   createRouter,
 } from '@tanstack/react-router'
+import { IntlProvider } from 'react-intl'
 import { expect } from 'vitest'
 import { routeTree } from '@/routeTree.gen'
 import { useAuthStore } from '@/stores/authStore'
@@ -33,7 +34,12 @@ export async function openScreen(path: string) {
     history: createMemoryHistory({ initialEntries: [path] }),
   })
   const user = userEvent.setup()
-  render(<RouterProvider router={router} />)
+  // Same wrapper as main.tsx: screens format money with react-intl.
+  render(
+    <IntlProvider locale="fr-FR">
+      <RouterProvider router={router} />
+    </IntlProvider>,
+  )
   // The route's guards run and its data loads before anything renders.
   await waitFor(() => expect(router.state.status).toBe('idle'))
   return { user, router }
