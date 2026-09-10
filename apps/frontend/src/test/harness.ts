@@ -12,6 +12,8 @@ import type {
   Deposit,
   Predeposit,
   PredepositArticle,
+  Refund,
+  Sale,
 } from '@/db.ts'
 import { db } from '@/db.ts'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
@@ -150,6 +152,67 @@ export async function givenDeposit(
   return { contact, deposit, articles: rows }
 }
 
+// A sale rung up on a till, with its buyer. Amounts default to a 100 €
+// sale paid in cash.
+export async function givenSale(
+  overrides: Partial<Sale> & { buyer?: Partial<Contact> } = {},
+): Promise<{ sale: Sale; buyer: Contact }> {
+  const now = new Date()
+  const { buyer: buyerOverrides, ...saleOverrides } = overrides
+  const buyer: Contact = {
+    id: uuid(),
+    lastName: 'Petit',
+    firstName: 'Anna',
+    phoneNumber: '0633333333',
+    city: 'Annecy',
+    postalCode: null,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...buyerOverrides,
+  }
+  const sale: Sale = {
+    id: uuid(),
+    buyerId: buyer.id,
+    saleIndex: 2001,
+    incrementStart: 2000,
+    cardAmount: 0,
+    cashAmount: 100,
+    checkAmount: 0,
+    deferredAmount: 0,
+    totalRefundAmount: 0,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...saleOverrides,
+  }
+  await db.contacts.add(buyer)
+  await db.sales.add(sale)
+  return { sale, buyer }
+}
+
+// Money handed back to a buyer at the till, in cash or on the card.
+export async function givenRefund(
+  sale: Sale,
+  overrides: Partial<Refund> = {},
+): Promise<Refund> {
+  const now = new Date()
+  const refund: Refund = {
+    id: uuid(),
+    saleId: sale.id,
+    incrementStart: sale.incrementStart,
+    cardAmount: 0,
+    cashAmount: 0,
+    comment: 'Article rendu',
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    ...overrides,
+  }
+  await db.refunds.add(refund)
+  return refund
+}
+
 // A cash count already saved for a register: the evening's first pass,
 // reopened for a correction. Counts and amounts default to an empty drawer
 // with the 80 € float.
@@ -256,6 +319,7 @@ export const local = {
   predeposits: () => db.predeposits.toArray(),
   sales: () => db.sales.toArray(),
   cashRegisterControls: () => db.cashRegisterControls.toArray(),
+  refunds: () => db.refunds.toArray(),
   // In the order the sync service will push them.
   outbox: async () => (await db.outbox.toArray()).sort(compareOutboxOrder),
 }
