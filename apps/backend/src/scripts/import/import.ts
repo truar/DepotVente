@@ -50,7 +50,7 @@ import { TARGET_YEAR } from './utils';
 // associé. On a ainsi de quoi rejouer « déposer un pré-dépôt » sans toucher aux
 // fiches déjà importées.
 
-const PENDING_PRO_DEPOSIT_INDEXES = [2, 3];
+const PENDING_PRO_DEPOSIT_INDEXES = [2, 3, 4];
 const PENDING_PRO_CATEGORIES = ['Skis', 'Chaussures'];
 const PENDING_ARTICLES_PER_CATEGORY = 30;
 
