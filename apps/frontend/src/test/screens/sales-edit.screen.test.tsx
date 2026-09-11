@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db, type Sale } from '@/db.ts'
+import type { Sale } from '@/db.ts'
+import { db } from '@/db.ts'
 import {
   YEAR,
   givenDeposit,
@@ -27,9 +28,6 @@ async function givenASaleOfTwoArticles() {
   return { sale, skis: `${YEAR} 12A`, boots: `${YEAR} 12B` }
 }
 
-// What the screen does today when an article comes back. These stories are
-// written against the behaviour as it stands, so that what the fix for
-// multi-till refunds changes is visible in the diff.
 describe('Screen: an article brought back and the money handed over', () => {
   let sale: Sale
   let skis: string
@@ -44,12 +42,18 @@ describe('Screen: an article brought back and the money handed over', () => {
     await givenWorkstation(2000)
     const page = await salesEditPage(sale.id)
     expect(page.articles()).toEqual([skis, boots])
+    // One line, empty, on the till in front of the volunteer.
+    expect(page.refunds()).toEqual([
+      { caisse: '2000', card: '0', cash: '0', comment: '' },
+    ])
 
     await page.returnArticle(skis)
     expect(page.articlesTotal()).toBe(80)
     expect(page.amountToRefund()).toBe(120)
+    expect(page.remainingToRefund()).toBe(120)
 
     await page.refund({ cash: 120, comment: 'Skis trop grands' })
+    expect(page.remainingToRefund()).toBe(0)
     await page.save()
     await page.savedToast(2001)
 
@@ -91,20 +95,20 @@ describe('Screen: an article brought back and the money handed over', () => {
 
     const second = await salesEditPage(sale.id)
     expect(second.articles()).toEqual([boots])
-    expect(second.refundEntered()).toEqual({
-      card: '0',
-      cash: '120',
-      comment: 'Skis trop grands',
-    })
+    expect(second.refunds()).toEqual([
+      { caisse: '2000', card: '0', cash: '120', comment: 'Skis trop grands' },
+      // The line this visit would fill, on the same till today.
+      { caisse: '2000', card: '0', cash: '0', comment: '' },
+    ])
     // Nothing new is given back on this visit, so the sale still adds up.
     expect(second.amountToRefund()).toBe(120)
+    expect(second.remainingToRefund()).toBe(0)
   })
 
-  // TODAY'S BEHAVIOUR, AND THE BUG REPORTED: the sale carries a single
-  // refund record. A second article brought back to another till lands on
-  // the record of the till that refunded first, and that till's drawer is
-  // the one missing the money.
-  it('puts a second refund made on another till onto the first till', async () => {
+  // The buyer brings the skis back to till 2000, then the boots to till
+  // 3000 an hour later. Each till hands over its own money, so each refund
+  // has to be counted in the drawer of the till that paid it.
+  it('books each refund on the till that handed the money back', async () => {
     await givenWorkstation(2000)
     const first = await salesEditPage(sale.id)
     await first.returnArticle(skis)
@@ -114,19 +118,66 @@ describe('Screen: an article brought back and the money handed over', () => {
 
     await givenWorkstation(3000)
     const second = await salesEditPage(sale.id)
+    // Till 2000's refund is shown as it was entered, and 3000 gets a line
+    // of its own.
+    expect(second.refunds()).toEqual([
+      { caisse: '2000', card: '0', cash: '120', comment: 'Skis trop grands' },
+      { caisse: '3000', card: '0', cash: '0', comment: '' },
+    ])
+
     await second.returnArticle(boots)
-    // The whole refund of the sale has to be typed again, till 2000's
-    // included, for the sale to add up.
     expect(second.amountToRefund()).toBe(200)
-    await second.refund({ cash: 200, comment: 'Chaussures trop petites' })
+    // Only what this till hands over is left to type.
+    expect(second.remainingToRefund()).toBe(80)
+
+    await second.refund({ cash: 80, comment: 'Chaussures trop petites' })
+    await second.save()
+    await second.savedToast(2001)
+
+    const refunds = (await local.refunds()).sort(
+      (a, b) => a.incrementStart - b.incrementStart,
+    )
+    expect(refunds).toMatchObject([
+      { incrementStart: 2000, cashAmount: 120, comment: 'Skis trop grands' },
+      {
+        incrementStart: 3000,
+        cashAmount: 80,
+        comment: 'Chaussures trop petites',
+      },
+    ])
+    const [saved] = await local.sales()
+    expect(saved.totalRefundAmount).toBe(200)
+    expect(
+      (await local.outbox())
+        .filter((op) => op.collection === 'refunds')
+        .map((op) => op.operation),
+    ).toEqual(['create', 'create'])
+  })
+
+  // A mistake on the split between card and cash is corrected from
+  // whichever till has the sale open: it is still the other till's money.
+  it('leaves a refund on its till when another till corrects its amounts', async () => {
+    await givenWorkstation(2000)
+    const first = await salesEditPage(sale.id)
+    await first.returnArticle(skis)
+    await first.refund({ cash: 120, comment: 'Skis trop grands' })
+    await first.save()
+    await first.savedToast(2001)
+
+    await givenWorkstation(3000)
+    const second = await salesEditPage(sale.id)
+    await second.fillRefund(0, { card: 120, cash: 0 })
     await second.save()
     await second.savedToast(2001)
 
     expect(await local.refunds()).toMatchObject([
-      { incrementStart: 2000, cashAmount: 200 },
+      { incrementStart: 2000, cardAmount: 120, cashAmount: 0 },
     ])
-    const [saved] = await local.sales()
-    expect(saved.totalRefundAmount).toBe(200)
+    expect(
+      (await local.outbox())
+        .filter((op) => op.collection === 'refunds')
+        .map((op) => op.operation),
+    ).toEqual(['create', 'update'])
   })
 
   it('refuses a refund that does not match what the sale owes', async () => {
@@ -161,7 +212,7 @@ describe('Screen: an article brought back and the money handed over', () => {
 
   // A refund can only be taken back by making the sale add up again: the
   // article is no longer in the sale, so its price has to come off the
-  // payment. Clearing the refund on its own is refused.
+  // payment. Clearing the line on its own is refused.
   it('only takes a refund back when the payment is corrected with it', async () => {
     await givenWorkstation(2000)
     const first = await salesEditPage(sale.id)
@@ -171,7 +222,7 @@ describe('Screen: an article brought back and the money handed over', () => {
     await first.savedToast(2001)
 
     const second = await salesEditPage(sale.id)
-    await second.refund({ cash: 0 })
+    await second.fillRefund(0, { cash: 0 })
     await second.save()
     expect(second.errors()).toContain(
       'Les montants saisis sont incohérents. Vérifiez les règlements et remboursements.',

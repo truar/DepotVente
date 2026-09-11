@@ -9,19 +9,17 @@ export async function salesEditPage(saleId: string) {
   const { user: u, router } = await openScreen(`/sales/${saleId}/edit`)
   await screen.findByRole('heading', { name: /^Modifier la vente/ })
 
-  // The only table on the screen is the one of the articles; its first row
-  // is the header.
-  const articleRows = () => screen.getAllByRole('row').slice(1)
+  const rowsOf = (table: string) =>
+    within(screen.getByRole('table', { name: table }))
+      .getAllByRole('row')
+      .slice(1)
   const cells = (row: HTMLElement) =>
     within(row)
       .getAllByRole('cell')
       .map((cell) => cell.textContent.trim())
 
-  const field = (label: string) => {
-    const block = screen.getByText(label).closest('[data-slot="field-content"]')
-    if (!block) throw new Error(`No field "${label}" on the screen`)
-    return within(block as HTMLElement).getByRole('textbox')
-  }
+  const field = (label: string) =>
+    screen.getByLabelText<HTMLInputElement>(label)
 
   const page = {
     user: u,
@@ -29,13 +27,17 @@ export async function salesEditPage(saleId: string) {
 
     // ---- the articles of the sale ---------------------------------------
     articles(): Array<string> {
-      return articleRows().map((row) => cells(row)[0])
+      return rowsOf('Articles de la vente').map((row) => cells(row)[0])
     },
     // The buyer hands an article back: the line is struck from the sale.
     async returnArticle(code: string) {
-      const row = articleRows().find((line) => cells(line)[0] === code)
+      const row = rowsOf('Articles de la vente').find(
+        (line) => cells(line)[0] === code,
+      )
       if (!row) throw new Error(`No article ${code} in this sale`)
-      await u.click(within(row).getAllByRole('button')[0])
+      await u.click(
+        within(row).getByRole('button', { name: "Retirer l'article" }),
+      )
     },
     // "Montant total : 80€", under the article table.
     articlesTotal(): number {
@@ -44,34 +46,50 @@ export async function salesEditPage(saleId: string) {
       )
     },
 
-    // ---- the refund ------------------------------------------------------
-    // "Montant à rembourser": what the sale owes the buyer in all, this
-    // visit included.
+    // ---- the refunds -----------------------------------------------------
+    // What the sale owes the buyer in all, this visit included, and what is
+    // left to hand over once the lines are filled.
     amountToRefund(): number {
-      return Number(
-        (field('Montant à rembourser') as HTMLInputElement).value,
-      )
+      return Number(field('Montant à rembourser').value)
     },
-    // What the screen shows as already entered for the refund.
-    refundEntered(): { card: string; cash: string; comment: string } {
-      const value = (label: string) =>
-        (field(label) as HTMLInputElement).value
-      return {
-        card: value('Remboursement CB'),
-        cash: value('Remboursement espèce'),
-        comment: value('Commentaire'),
-      }
+    remainingToRefund(): number {
+      return Number(field('Reste à rembourser').value)
     },
-    async refund(entry: RefundEntry) {
+    // One line per refund: those of the previous visits, on their own till,
+    // then the empty line of the till in front of the volunteer.
+    refunds(): Array<{
+      caisse: string
+      card: string
+      cash: string
+      comment: string
+    }> {
+      return rowsOf('Remboursements').map((row) => {
+        const value = (label: string) =>
+          within(row).getByLabelText<HTMLInputElement>(label).value
+        return {
+          caisse: cells(row)[0],
+          card: value('Remboursement CB'),
+          cash: value('Remboursement espèce'),
+          comment: value('Commentaire du remboursement'),
+        }
+      })
+    },
+    async fillRefund(index: number, entry: RefundEntry) {
+      const row = rowsOf('Remboursements').at(index)
+      if (!row) throw new Error(`No refund line ${index} on the screen`)
       const set = async (label: string, value?: number | string) => {
         if (value === undefined) return
-        const input = field(label)
+        const input = within(row).getByLabelText(label)
         await u.clear(input)
         if (String(value) !== '') await u.type(input, String(value))
       }
       await set('Remboursement CB', entry.card)
       await set('Remboursement espèce', entry.cash)
-      await set('Commentaire', entry.comment)
+      await set('Commentaire du remboursement', entry.comment)
+    },
+    // The refund this till is handing over: the last line.
+    async refund(entry: RefundEntry) {
+      await page.fillRefund(rowsOf('Remboursements').length - 1, entry)
     },
 
     // ---- what the buyer paid --------------------------------------------

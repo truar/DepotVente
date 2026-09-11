@@ -6,6 +6,7 @@ import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { useSalesDb } from '@/hooks/useSalesDb.ts'
 import { useRefundsDb } from '@/hooks/useRefundsDb.ts'
 import type { EditSaleFormType } from '@/types/EditSaleForm.ts'
+import { refundLineTotal } from '@/types/EditSaleForm.ts'
 
 export function useEditSale() {
   const [workstation] = useWorkstation()
@@ -43,49 +44,50 @@ export function useEditSale() {
           updatedAt: currentDate,
         })
 
-        const refundCardAmount = data.refundCardAmount ?? 0
-        const refundCashAmount = data.refundCashAmount ?? 0
-        const refundTotal = refundCardAmount + refundCashAmount
-        const existingRefund = await refundsDb.getBySaleId(data.id)
-        const isExistingActive =
-          existingRefund != null && existingRefund.deletedAt == null
-
-        if (refundTotal === 0) {
-          if (isExistingActive) {
-            await refundsDb.update(existingRefund.id, {
+        // Chaque ligne appartient à la caisse qui a sorti l'argent : une
+        // ligne déjà enregistrée garde la sienne, quelle que soit la caisse
+        // qui la corrige ; la ligne saisie ici est apposée à celle du poste.
+        for (const line of data.refunds) {
+          const cardAmount = line.cardAmount ?? 0
+          const cashAmount = line.cashAmount ?? 0
+          const comment = line.comment ?? ''
+          if (line.id == null) {
+            if (refundLineTotal(line) === 0) continue
+            await refundsDb.insert({
+              id: v4(),
+              saleId: data.id,
+              incrementStart: workstation.incrementStart,
+              cardAmount,
+              cashAmount,
+              comment,
+              createdAt: currentDate,
+              updatedAt: currentDate,
+              deletedAt: null,
+            })
+            continue
+          }
+          const existing = await db.refunds.get(line.id)
+          if (!existing) continue
+          if (refundLineTotal(line) === 0) {
+            await refundsDb.update(line.id, {
               deletedAt: currentDate,
               updatedAt: currentDate,
             })
+            continue
           }
-        } else if (isExistingActive) {
-          // Pin-once: keep the existing incrementStart, only update amounts.
-          await refundsDb.update(existingRefund.id, {
-            cardAmount: refundCardAmount,
-            cashAmount: refundCashAmount,
-            comment: data.refundComment ?? '',
+          // Rien de changé sur cette ligne : ne pas la repousser au serveur.
+          if (
+            existing.cardAmount === cardAmount &&
+            existing.cashAmount === cashAmount &&
+            existing.comment === comment
+          ) {
+            continue
+          }
+          await refundsDb.update(line.id, {
+            cardAmount,
+            cashAmount,
+            comment,
             updatedAt: currentDate,
-          })
-        } else if (existingRefund) {
-          // Soft-deleted row exists; resurrect it, pinned to the current caisse.
-          await refundsDb.update(existingRefund.id, {
-            incrementStart: workstation.incrementStart,
-            cardAmount: refundCardAmount,
-            cashAmount: refundCashAmount,
-            comment: data.refundComment ?? '',
-            deletedAt: null,
-            updatedAt: currentDate,
-          })
-        } else {
-          await refundsDb.insert({
-            id: v4(),
-            saleId: data.id,
-            incrementStart: workstation.incrementStart,
-            cardAmount: refundCardAmount,
-            cashAmount: refundCashAmount,
-            comment: data.refundComment ?? '',
-            createdAt: currentDate,
-            updatedAt: currentDate,
-            deletedAt: null,
           })
         }
 
