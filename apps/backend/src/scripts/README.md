@@ -72,7 +72,8 @@ Ce que le mode change :
 | Statut des articles pro | `RECEPTION_PENDING` | colonne `ReceptOK` de l'export |
 
 **Articles réservés pour tester le scan.** Les fiches pro listées dans
-`PENDING_PRO_DEPOSIT_INDEXES` (par défaut `2` = PERRILLAT et `3` = ALLOSKI)
+`PENDING_PRO_DEPOSIT_INDEXES` (par défaut `2` = PERRILLAT, `3` = ALLOSKI et
+`4` = SPORT)
 gardent, pour chaque catégorie de `PENDING_PRO_CATEGORIES` (par défaut `Skis`
 et `Chaussures`), exactement `PENDING_ARTICLES_PER_CATEGORY` articles (par
 défaut 30) en `RECEPTION_PENDING` — soit 30 skis et 30 chaussures par fiche,
