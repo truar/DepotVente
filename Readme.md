@@ -410,6 +410,10 @@ tab keeps working against the version it already has.
 
 Nine client PCs, one Mac as the server, one day. Work top to bottom.
 
+> Rehearsing rather than running the real sale? See
+> **[REHEARSAL.md](REHEARSAL.md)**: what the base is loaded with, printing the
+> barcode sheet, the four exercises, and how to replay them.
+
 ### 1. Before leaving
 
 - [ ] `certs/` copied to a USB key. It is gitignored — nothing else backs it up,
