@@ -5,9 +5,12 @@ the till, and the evening close. One Mac as the server, the client PCs as they
 will be on the day.
 
 For the real event, follow the _Day-of runbook_ in [Readme.md](Readme.md)
-instead — certificates, USB kit, DHCP reservation, backups. This page assumes
-the stack is already running on the local network and concentrates on what to
-do, what to watch, and how to replay.
+instead — certificates, USB kit, DHCP reservation, backups. This page picks up
+once the stack runs on the local network, and covers preparing the data, what
+to do at each desk, what to watch, and how to replay.
+
+The server can be any machine on the venue network, not necessarily the one the
+data was prepared on: section 2 says what to carry over and how to load it.
 
 ---
 
@@ -30,7 +33,62 @@ Check it before starting:
 
 ---
 
-## 2. Before the volunteers arrive — on the Mac
+## 2. Setting up the server machine
+
+Skip this if the server already holds the data and you only want to run the
+day again — see _Replaying_ at the end.
+
+**If the server is not the machine the data was prepared on**, two things it
+needs are deliberately kept out of git and must be carried over on a USB key:
+
+| From the prepared machine                         | To the server, same path |
+| ------------------------------------------------- | ------------------------ |
+| `packages/database/.env`                          | `packages/database/.env` |
+| `apps/backend/src/scripts/import/*.tsv` (8 files) | the same folder          |
+
+The `.env` is one line, so it can also just be typed:
+
+```
+DATABASE_URL="postgresql://cmr_user:cmr_password@localhost:15432/cmr_db?schema=public"
+```
+
+Without the `.tsv` files the import has nothing to load; without the `.env`
+every `db:*` command and every script fails on a missing `DATABASE_URL`.
+
+**Erase the database and load the rehearsal data**, from the repository root:
+
+```bash
+docker compose down -v                  # erase: drops the Postgres volume
+docker compose up -d --build            # rebuild and start; the backend migrates
+pnpm install                            # first time on this machine
+pnpm --filter database db:generate      # first time on this machine
+
+pnpm --filter database db:reset         # empty schema + the two accounts
+pnpm --filter backend script:import     # the 2025 deposits, articles, predeposits
+pnpm --filter backend script:reserve-pro --fiches 2,3,4   # 180 articles to scan
+pnpm --filter backend script:pro-barcodes                 # tmp/pro-barcodes.html
+```
+
+`docker compose down -v` is the real erase: it removes the volume, so nothing
+of the previous run survives. `db:reset` then gives a clean schema and recreates
+`admin@cmr.com` / `admin` and `benevole@cmr.com` / `benevole`.
+
+> If you only bring the stack up on a fresh volume without `db:reset`, the
+> backend applies the migrations at boot but **no account exists** and nobody
+> can log in. `pnpm --filter database db:seed` creates them without erasing
+> anything.
+
+Check the result against the table above:
+
+```bash
+./scripts/status.sh
+```
+
+Everything the client PCs hold from a previous run is now stale: they will each
+raise the reset dialog on their next poll and must reload from the server. That
+is expected after an erase.
+
+## 3. Before the volunteers arrive — on the server
 
 **Print the barcode sheet.** This is what the desks scan.
 
@@ -49,7 +107,7 @@ needs the last page.
 
 ---
 
-## 3. Each client PC — five minutes, do not skip
+## 4. Each client PC — five minutes, do not skip
 
 - [ ] Open `https://bourseauski.local`, log in.
 - [ ] **Set the cash register number**: _Paramètres → Numéro de caisse_. Give
@@ -62,7 +120,7 @@ needs the last page.
 
 ---
 
-## 4. The four exercises
+## 5. The four exercises
 
 ### a. Pro reception — _Réceptionner les articles des pros_
 
@@ -113,7 +171,7 @@ code already sold, and an article that was never received.
 
 ---
 
-## 5. Supervision — from the Mac, while it runs
+## 6. Supervision — from the server, while it runs
 
 ```bash
 pnpm traces postes             # every PC seen: register, build, last seen, refusals
@@ -140,7 +198,7 @@ What to react to:
 
 ---
 
-## 6. What to watch on a client PC
+## 7. What to watch on a client PC
 
 There is no sync indicator in the app yet. The check is _Paramètres_, which an
 admin account can open on any PC:
@@ -156,7 +214,7 @@ admin account can open on any PC:
 
 ---
 
-## 7. Replaying
+## 8. Replaying
 
 **The pro reception, as many times as you like** — this re-arms the same 180
 articles without touching anything else:
@@ -169,21 +227,16 @@ pnpm --filter backend script:reserve-pro --fiches 2,3,4 --dry-run   # see first
 The client PCs pick it up on their next poll, within 20 seconds.
 
 **Sales cannot be un-sold**, and deposits registered during the rehearsal stay.
-To start the whole day again from the 2025 data:
+To start the whole day again from the 2025 data, run the erase and reload of
+_Setting up the server machine_ above.
 
-```bash
-pnpm --filter database db:reset          # drops, migrates, recreates both accounts
-pnpm --filter backend script:import      # reloads the 2025 deposits and articles
-pnpm --filter backend script:pro-barcodes
-```
-
-> ⚠️ A reset gives the server a **new database epoch**. Every client PC will
-> raise the reset dialog on its next poll and must reload from the server.
-> That is the intended behaviour, and it is worth rehearsing once on purpose.
+> ⚠️ An erase gives the server a **new database epoch**. Every client PC will
+> raise the reset dialog on its next poll and must reload from the server. That
+> is the intended behaviour, and it is worth rehearsing once on purpose.
 
 ---
 
-## 8. Known quirks — not bugs to report
+## 9. Known quirks — not bugs to report
 
 - The **deferred amount does not appear on the invoice**, so an invoice paid
   partly on credit shows payment lines adding up to less than its total.
@@ -197,7 +250,7 @@ pnpm --filter backend script:pro-barcodes
 
 ---
 
-## 9. Worth writing down during the day
+## 10. Worth writing down during the day
 
 Anything a volunteer hesitates over, any screen where the next step was not
 obvious, and every refusal nobody could explain. Those are worth more than the
