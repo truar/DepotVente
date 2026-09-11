@@ -12,7 +12,7 @@ import { groupByCategory, sampleAcrossSellersAndCategories } from './sample.js';
 // Deux familles, dans le même fichier :
 //  - les articles PRO non réceptionnés (RECEPTION_PENDING), groupés par fiche
 //    puis par catégorie (l'import --depot-state réserve 30 skis et 30
-//    chaussures sur les fiches 2 et 3), qui servent à répéter la partie humaine
+//    chaussures sur les fiches 2, 3 et 4), qui servent à répéter la partie humaine
 //    de la réception pro : on imprime la planche (ou on la colle dans un
 //    document Word) et on scanne les codes un par un dans l'écran
 //    « Réceptionner les articles des pros » ;
@@ -42,8 +42,9 @@ const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'tmp', 'pro-barcodes.html');
 const DEFAULT_PARTICULIER_SAMPLE = 30;
 
 // Pseudo-catégories de l'export (article absent / refusé au dépôt) : ce ne
-// sont pas des articles en rayon, on ne les propose pas au scan.
-const EXCLUDED_PARTICULIER_CATEGORIES = ['Zabsent', 'Zrefusé'];
+// sont pas des articles en rayon, on ne les propose au scan ni côté pro ni
+// côté particulier.
+const EXCLUDED_CATEGORIES = ['Zabsent', 'Zrefusé'];
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -194,7 +195,11 @@ async function generate() {
     include: {
       seller: true,
       articles: {
-        where: { status: 'RECEPTION_PENDING', deletedAt: null },
+        where: {
+          status: 'RECEPTION_PENDING',
+          deletedAt: null,
+          category: { notIn: EXCLUDED_CATEGORIES },
+        },
         orderBy: { articleIndex: 'asc' },
       },
     },
@@ -204,6 +209,7 @@ async function generate() {
   // même fiche se scannent en deux passes distinctes.
   const proGroups: Group[] = [];
   for (const deposit of deposits) {
+    if (deposit.articles.length === 0) continue;
     const sellerName = `${deposit.seller.firstName} ${deposit.seller.lastName}`.trim();
     for (const [category, articles] of groupByCategory(deposit.articles)) {
       proGroups.push({ title: `Fiche ${deposit.depositIndex} — ${sellerName} · ${category}`, articles });
@@ -215,7 +221,7 @@ async function generate() {
   const particulierWhere = {
     status: 'RECEPTION_OK',
     deletedAt: null,
-    category: { notIn: EXCLUDED_PARTICULIER_CATEGORIES },
+    category: { notIn: EXCLUDED_CATEGORIES },
     deposit: { type: 'PARTICULIER' as const, deletedAt: null },
   };
   const unsold =

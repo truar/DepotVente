@@ -136,12 +136,15 @@ pnpm --filter database db:reset
 # 2. Régénérer le client Prisma (si le schéma a changé)
 pnpm --filter database db:generate
 
-# 3. Créer l'utilisateur admin
-pnpm --filter backend script:create-user --email admin@cmr.com --password admin --role ADMIN
-
-# 4. Importer les données historiques
+# 3. Importer les données historiques
 pnpm --filter backend script:import
 ```
+
+`db:reset` recrée au passage les deux comptes de service (`prisma/seed.ts`) :
+`admin@cmr.com` / `admin` (ADMIN) et `benevole@cmr.com` / `benevole`
+(BENEVOLE). `pnpm --filter database db:seed` les remet sur une base déjà en
+place, sans rien effacer. `script:create-user` reste là pour un compte
+supplémentaire.
 
 **Autres commandes `database` disponibles :**
 - `db:push` - Pousse le schéma vers la base sans migration
@@ -149,6 +152,7 @@ pnpm --filter backend script:import
 - `db:migrate:dev` - Crée/applique une migration en dev
 - `db:generate` - Régénère le client Prisma
 - `db:studio` - Ouvre Prisma Studio
+- `db:seed` - (Re)crée les comptes admin et bénévole
 
 ## Où lancer ces scripts
 
