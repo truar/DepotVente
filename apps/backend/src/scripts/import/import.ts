@@ -51,7 +51,7 @@ import { TARGET_YEAR } from './utils';
 // fiches déjà importées.
 
 const PENDING_PRO_DEPOSIT_INDEXES = [2, 3, 4];
-const PENDING_PRO_CATEGORIES = ['Skis', 'Chaussures'];
+const PENDING_PRO_CATEGORIES = ['Skis', 'Chaussures', 'Bâtons'];
 const PENDING_ARTICLES_PER_CATEGORY = 30;
 
 const depotState = process.argv.includes('--depot-state');

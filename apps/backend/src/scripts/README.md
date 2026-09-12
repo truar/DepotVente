@@ -74,9 +74,9 @@ Ce que le mode change :
 **Articles réservés pour tester le scan.** Les fiches pro listées dans
 `PENDING_PRO_DEPOSIT_INDEXES` (par défaut `2` = PERRILLAT, `3` = ALLOSKI et
 `4` = SPORT)
-gardent, pour chaque catégorie de `PENDING_PRO_CATEGORIES` (par défaut `Skis`
-et `Chaussures`), exactement `PENDING_ARTICLES_PER_CATEGORY` articles (par
-défaut 30) en `RECEPTION_PENDING` — soit 30 skis et 30 chaussures par fiche,
+gardent, pour chaque catégorie de `PENDING_PRO_CATEGORIES` (par défaut `Skis`,
+`Chaussures` et `Bâtons`), exactement `PENDING_ARTICLES_PER_CATEGORY` articles
+(par défaut 30) en `RECEPTION_PENDING` — soit trois lots de 30 par fiche,
 leurs 30 derniers de chaque catégorie dans le fichier, donc la sélection est
 déterministe et un ré-import redonne le même lot. Le reste de ces fiches passe
 en `RECEPTION_OK`. Les trois constantes sont en haut de `import/import.ts`.

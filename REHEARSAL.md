@@ -16,14 +16,14 @@ data was prepared on: section 2 says what to carry over and how to load it.
 
 ## 1. What is loaded
 
-|                             |                                                                       |
-| --------------------------- | --------------------------------------------------------------------- |
-| Deposits                    | 211 — 203 private sellers, 8 professionals                            |
-| Articles                    | 3202                                                                  |
-| Pro articles to receive     | 180 — fiches 2 PERRILLAT, 3 ALLOSKI, 4 SPORT, 30 skis + 30 boots each |
-| Articles ready for the till | 1132 received and unsold, from 203 sellers                            |
-| Predeposits still free      | 6 (the other 55 already became deposits in 2025)                      |
-| Accounts                    | `admin@cmr.com` / `admin` · `benevole@cmr.com` / `benevole`           |
+|                             |                                                                                                    |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| Deposits                    | 211 — 203 private sellers, 8 professionals                                                         |
+| Articles                    | 3202                                                                                               |
+| Pro articles to receive     | 260 — fiches 2 PERRILLAT, 3 ALLOSKI, 4 SPORT; skis, boots and poles, 30 each (20 poles on fiche 4) |
+| Articles ready for the till | 1132 received and unsold, from 203 sellers                                                         |
+| Predeposits still free      | 6 (the other 55 already became deposits in 2025)                                                   |
+| Accounts                    | `admin@cmr.com` / `admin` · `benevole@cmr.com` / `benevole`                                        |
 
 Check it before starting:
 
@@ -65,7 +65,7 @@ pnpm --filter database db:generate      # first time on this machine
 
 pnpm --filter database db:reset         # empty schema + the two accounts
 pnpm --filter backend script:import     # the 2025 deposits, articles, predeposits
-pnpm --filter backend script:reserve-pro --fiches 2,3,4   # 180 articles to scan
+pnpm --filter backend script:reserve-pro --fiches 2,3,4   # 260 articles to scan
 pnpm --filter backend script:pro-barcodes                 # tmp/pro-barcodes.html
 ```
 
@@ -97,13 +97,14 @@ pnpm --filter backend script:pro-barcodes            # tmp/pro-barcodes.html
 pnpm --filter backend script:pro-barcodes --particuliers 60   # more till codes
 ```
 
-210 codes by default: one section per pro fiche and category (six sections of
-30), then 30 private-seller articles, one per seller, for the till. Open the
+290 codes by default: one section per pro fiche and category (nine sections,
+30 each but 20 poles on fiche 4), then 30 private-seller articles, one per
+seller, for the till. Open the
 file in a browser and print it, or paste it into a document. The barcodes are
 Code 128, the same as the DYMO labels, so a scanner reads them off paper.
 
-**Hand out the pages.** The reception desk needs the six pro sections; the till
-needs the last page.
+**Hand out the pages.** The reception desk needs the nine pro sections, three
+per professional; the till needs the last page.
 
 ---
 
@@ -216,7 +217,7 @@ admin account can open on any PC:
 
 ## 8. Replaying
 
-**The pro reception, as many times as you like** — this re-arms the same 180
+**The pro reception, as many times as you like** — this re-arms the same 260
 articles without touching anything else:
 
 ```bash
