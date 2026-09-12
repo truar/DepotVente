@@ -53,7 +53,7 @@ export type Deposit = {
   clubAmount?: number
   sellerAmount?: number
   signatory?: string
-  collectedAt?: Date
+  collectedAt?: StoredDate
   collectWorkstationId?: number
   // Caisse qui a encaissé la cotisation soldée le soir (statut SOLDE).
   contributionCollectWorkstationId?: number | null
@@ -209,6 +209,29 @@ export type EpochMismatch = {
 export type WorkstationMetadata = {
   key: string
   value: unknown
+}
+
+// Une date stockée localement a deux formes selon le chemin d'écriture, et les
+// deux cohabitent dans la même table :
+//
+//   - un objet `Date` quand l'enregistrement a été écrit sur ce poste : Dexie
+//     stocke la valeur telle quelle (structured clone) ;
+//   - une chaîne ISO quand il arrive par la synchro : sync-service fait un
+//     `bulkPut` du JSON brut du serveur, sans réhydrater les dates.
+//
+// Le type le dit pour `collectedAt`, seul champ date réellement lu et formaté
+// par un écran. Les autres (`createdAt`, `updatedAt`, `returnedCalculationDate`)
+// ont la même dualité mais ne sont aujourd'hui que testés contre null : si l'un
+// d'eux se met à être formaté, il doit passer par `toIsoString` lui aussi.
+export type StoredDate = Date | string
+
+export function toIsoString(
+  value: StoredDate | null | undefined,
+): string | undefined {
+  if (value == null) return undefined
+  if (typeof value === 'string') return value
+  // Une Date invalide (`new Date('')`) donnerait "Invalid Date" à l'affichage.
+  return Number.isNaN(value.getTime()) ? undefined : value.toISOString()
 }
 
 const db = new Dexie('DepotVenteDatabase') as Dexie & {

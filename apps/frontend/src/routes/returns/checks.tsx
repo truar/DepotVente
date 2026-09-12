@@ -3,7 +3,7 @@ import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
-import { type Contact, db } from '@/db.ts'
+import { type Contact, type StoredDate, db, toIsoString } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
@@ -38,6 +38,22 @@ function RouteComponent() {
   )
 }
 
+// « 2026-09-12T14:58:00.000Z » -> « 2026-09-12 14:58:00 ».
+//
+// La valeur lue est soit une chaîne ISO (enregistrement venu de la synchro),
+// soit un objet Date (retour saisi sur ce poste) - voir StoredDate. L'ancien
+// code castait en `string` et appelait `.split`, ce qui jetait un TypeError sur
+// la seconde forme et, faute d'error boundary, emportait toute la page.
+//
+// On formate depuis l'ISO et non en heure locale : c'est déjà ce qu'affichait
+// la page pour les enregistrements synchronisés, et convertir ferait changer
+// l'heure affichée d'un même retour au premier delta qui l'écrase.
+function formatCollectedAt(value: StoredDate | undefined): string {
+  const [date, time] = toIsoString(value)?.split('T') ?? []
+  if (!date) return ''
+  return `${date} ${time?.split('.')[0] ?? ''}`.trim()
+}
+
 function ChecksDataTable() {
   const deposits = useLiveQuery(() =>
     db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
@@ -58,10 +74,6 @@ function ChecksDataTable() {
         ?.map((deposit) => {
           const seller = contactMap.get(deposit.sellerId)
           if (!seller) return
-          // FIXME by reading the DB, collectedAt is a string `2025-11-01T14:58:00.000Z` not a Date
-          const collectedAt = (
-            deposit.collectedAt as string | undefined
-          )?.split('T')
           return {
             index: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
@@ -69,7 +81,7 @@ function ChecksDataTable() {
             collectWorkstationId: deposit.collectWorkstationId,
             checkId: deposit.checkId,
             signatory: deposit.signatory,
-            collectedAt: `${collectedAt?.at(0) ?? ''} ${collectedAt?.at(1)?.split('.')[0] ?? ''}`,
+            collectedAt: formatCollectedAt(deposit.collectedAt),
           }
         })
         .filter(
