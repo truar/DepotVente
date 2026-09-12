@@ -16,22 +16,42 @@ export const EditArticleSchema = ArticleSchema.extend({
   type: z.string().optional(),
 })
 
+// Une ligne par remboursement rendu à l'acheteur. Une ligne déjà
+// enregistrée porte son id et la caisse qui a sorti l'argent ; la ligne en
+// cours de saisie n'a ni l'un ni l'autre : la caisse du poste y est apposée
+// à l'enregistrement.
+export const RefundLineSchema = z.object({
+  id: z.string().nullable(),
+  incrementStart: z.number().nullable(),
+  cardAmount: z.coerce.number().nullable(),
+  cashAmount: z.coerce.number().nullable(),
+  comment: z.string().nullable().optional(),
+})
+
+export type RefundLineType = z.infer<typeof RefundLineSchema>
+
+export function refundLineTotal(line: RefundLineType): number {
+  return (line.cardAmount ?? 0) + (line.cashAmount ?? 0)
+}
+
+export function refundsTotal(lines: Array<RefundLineType> = []): number {
+  return lines.reduce((total, line) => total + refundLineTotal(line), 0)
+}
+
 export const EditSaleSchema = SaleFormSchema.extend({
   id: z.string(),
-  refundCardAmount: z.coerce.number().nullable(),
-  refundCashAmount: z.coerce.number().nullable(),
-  refundComment: z.string().nullable().optional(),
+  refunds: z.array(RefundLineSchema),
   articles: z.array(EditArticleSchema),
 }).superRefine((data, ctx) => {
-  const refundTotal =
-    (data.refundCardAmount ?? 0) + (data.refundCashAmount ?? 0)
-  if (refundTotal > 0 && !data.refundComment?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['refundComment'],
-      message: 'Merci de saisir un commentaire pour le remboursement',
-    })
-  }
+  data.refunds.forEach((line, index) => {
+    if (refundLineTotal(line) > 0 && !line.comment?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['refunds', index, 'comment'],
+        message: 'Merci de saisir un commentaire pour le remboursement',
+      })
+    }
+  })
 })
 
 export type EditSaleFormType = z.infer<typeof EditSaleSchema>

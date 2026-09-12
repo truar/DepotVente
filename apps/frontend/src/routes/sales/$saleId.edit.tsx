@@ -9,6 +9,7 @@ import {
   Controller,
   FormProvider,
   type SubmitHandler,
+  useFieldArray,
   useForm,
   useFormContext,
 } from 'react-hook-form'
@@ -72,12 +73,23 @@ function RouteComponent() {
     () => db.articles.where({ saleId }).sortBy('code'),
     [saleId],
   )
-  const refund = useLiveQuery(
-    () => db.refunds.where({ saleId }).first(),
+  // Une vente peut avoir été remboursée plusieurs fois, sur plusieurs
+  // caisses : elles sont toutes affichées, chacune sur sa ligne.
+  const refunds = useLiveQuery(
+    () =>
+      db.refunds
+        .where({ saleId })
+        .filter((refund) => refund.deletedAt == null)
+        .sortBy('createdAt'),
     [saleId],
   )
-  if (!sale || !contact || !articles) return
-  const activeRefund = refund && refund.deletedAt == null ? refund : null
+  const workstation = useLiveQuery(() =>
+    db.workstation.get('incrementStart'),
+  )
+  // Le formulaire prend ses valeurs par défaut au montage : tant que les
+  // remboursements et le numéro de caisse ne sont pas chargés, il manquerait
+  // leurs lignes.
+  if (!sale || !contact || !articles || !refunds || !workstation) return
   return (
     <>
       <Page
@@ -98,7 +110,8 @@ function RouteComponent() {
           sale={sale}
           buyer={contact}
           articles={articles}
-          refund={activeRefund}
+          refunds={refunds}
+          incrementStart={workstation.value as number}
         />
       </Page>
       <ConfirmationDialog
@@ -115,10 +128,29 @@ type SaleFormProps = {
   sale: Sale
   articles: Article[]
   buyer: Contact
-  refund: Refund | null
+  refunds: Array<Refund>
+  incrementStart: number
 }
+
+const toNumber = (value: unknown) => {
+  const n = typeof value === 'number' ? value : parseFloat(value as string)
+  return Number.isNaN(n) ? 0 : n
+}
+
+// Ce que les lignes du formulaire rendent à l'acheteur, saisie en cours
+// comprise.
+function enteredRefunds(data: Pick<EditSaleFormType, 'refunds'>) {
+  return data.refunds.reduce(
+    (total, line) => ({
+      card: total.card + toNumber(line.cardAmount),
+      cash: total.cash + toNumber(line.cashAmount),
+    }),
+    { card: 0, cash: 0 },
+  )
+}
+
 function SaleForm(props: SaleFormProps) {
-  const { sale, articles, buyer, refund } = props
+  const { sale, articles, buyer, refunds, incrementStart } = props
   const mutation = useEditSale()
   const navigate = useNavigate()
   const methods = useForm<EditSaleFormType>({
@@ -131,9 +163,24 @@ function SaleForm(props: SaleFormProps) {
       cashAmount: sale.cashAmount,
       cardAmount: sale.cardAmount,
       deferredAmount: sale.deferredAmount,
-      refundCardAmount: refund?.cardAmount || 0,
-      refundCashAmount: refund?.cashAmount || 0,
-      refundComment: refund?.comment ?? '',
+      // Les remboursements déjà rendus, puis la ligne vide de la caisse du
+      // poste, celle que cette visite va remplir.
+      refunds: [
+        ...refunds.map((refund) => ({
+          id: refund.id,
+          incrementStart: refund.incrementStart,
+          cardAmount: refund.cardAmount,
+          cashAmount: refund.cashAmount,
+          comment: refund.comment,
+        })),
+        {
+          id: null,
+          incrementStart: null,
+          cardAmount: 0,
+          cashAmount: 0,
+          comment: '',
+        },
+      ],
       buyer: {
         city: buyer.city,
         lastName: buyer.lastName,
@@ -165,10 +212,6 @@ function SaleForm(props: SaleFormProps) {
   const { handleSubmit, setError, trigger, getValues, watch } = methods
   const watchedArticles = watch('articles')
   const hasArticles = (watchedArticles ?? []).some((a) => !a.isDeleted)
-  const toNumber = (value: unknown) => {
-    const n = typeof value === 'number' ? value : parseFloat(value as string)
-    return Number.isNaN(n) ? 0 : n
-  }
   const checkPaymentTotal = (data: EditSaleFormType) => {
     const totalPrice =
       data.articles?.reduce(
@@ -179,15 +222,14 @@ function SaleForm(props: SaleFormProps) {
     const cardAmount = toNumber(data.cardAmount)
     const checkAmount = toNumber(data.checkAmount)
     const deferredAmount = toNumber(data.deferredAmount)
-    const refundCardAmount = toNumber(data.refundCardAmount)
-    const refundCashAmount = toNumber(data.refundCashAmount)
+    const refunded = enteredRefunds(data)
     if (
       totalPrice !==
       cashAmount +
         cardAmount +
         checkAmount +
         deferredAmount -
-        (refundCardAmount + refundCashAmount)
+        (refunded.card + refunded.cash)
     ) {
       setError('root.totalPrice', {
         type: 'value',
@@ -245,8 +287,8 @@ function SaleForm(props: SaleFormProps) {
           price: article.price,
         })),
       payments: {
-        cash: toNumber(formData.cashAmount) - toNumber(formData.refundCashAmount),
-        card: toNumber(formData.cardAmount) - toNumber(formData.refundCardAmount),
+        cash: toNumber(formData.cashAmount) - enteredRefunds(formData).cash,
+        card: toNumber(formData.cardAmount) - enteredRefunds(formData).card,
         check: toNumber(formData.checkAmount),
       },
     }
@@ -264,7 +306,10 @@ function SaleForm(props: SaleFormProps) {
           <BuyerInformationForm />
           <ArticleForm />
           <PaymentForm />
-          <RefundForm previousTotalRefund={sale.totalRefundAmount ?? 0} />
+          <RefundForm
+            previousTotalRefund={sale.totalRefundAmount ?? 0}
+            incrementStart={incrementStart}
+          />
           <div className="flex justify-end gap-4">
             <ConfirmationDialog
               trigger={
@@ -417,7 +462,7 @@ function ArticleForm() {
   }, 0)
   return (
     <>
-      <Table>
+      <Table aria-label="Articles de la vente">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Code</TableHead>
@@ -452,6 +497,7 @@ function ArticleForm() {
                 {article.isDeleted ? (
                   <button
                     type="button"
+                    aria-label="Remettre l'article dans la vente"
                     onClick={() => onAccept(index)}
                     className="p-2 text-green-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                   >
@@ -460,6 +506,7 @@ function ArticleForm() {
                 ) : (
                   <button
                     type="button"
+                    aria-label="Retirer l'article"
                     onClick={() => onRemove(index)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                   >
@@ -586,25 +633,38 @@ function PaymentForm() {
   )
 }
 
-function RefundForm({ previousTotalRefund }: { previousTotalRefund: number }) {
-  const { watch } = useFormContext<EditSaleFormType>()
+function RefundForm({
+  previousTotalRefund,
+  incrementStart,
+}: {
+  previousTotalRefund: number
+  incrementStart: number
+}) {
+  const { control, watch } = useFormContext<EditSaleFormType>()
+  const { fields } = useFieldArray({ control, name: 'refunds' })
   const articles = watch('articles')
+  const refunds = watch('refunds')
   const newRefundDelta = (articles ?? []).reduce((acc, cur) => {
     acc += cur.isDeleted ? cur.price : 0
     return acc
   }, 0)
+  // Ce que la vente doit à l'acheteur en tout : ce qui lui a déjà été rendu
+  // lors des passages précédents, plus les articles repris ici.
   const totalRefund = previousTotalRefund + newRefundDelta
+  const entered = enteredRefunds({ refunds })
+  const remaining = totalRefund - (entered.card + entered.cash)
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Remboursement</h3>
       <div className="grid grid-cols-6 gap-6 align-baseline">
         <Field>
           <FieldContent>
-            <Label>Montant à rembourser</Label>
+            <Label htmlFor="refundTotal">Montant à rembourser</Label>
             <InputGroup>
               <InputGroupInput
-                id="checkAmount"
+                id="refundTotal"
                 type="text"
+                readOnly
                 value={totalRefund}
               />
               <InputGroupAddon align="inline-end">
@@ -613,72 +673,110 @@ function RefundForm({ previousTotalRefund }: { previousTotalRefund: number }) {
             </InputGroup>
           </FieldContent>
         </Field>
-        <Controller
-          name="refundCardAmount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <Label htmlFor="refundCardAmount">Remboursement CB</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    {...field}
-                    id="refundCardAmount"
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    autoComplete="off"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <Euro />
-                  </InputGroupAddon>
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-        <Controller
-          name="refundCashAmount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <Label htmlFor="refundCashAmount">Remboursement espèce</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    {...field}
-                    id="refundCashAmount"
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                    autoComplete="off"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <Euro />
-                  </InputGroupAddon>
-                </InputGroup>
-              </FieldContent>
-            </Field>
-          )}
-        />
-        <Controller
-          name="refundComment"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="col-span-2">
-              <FieldContent>
-                <Label htmlFor="refundComment">Commentaire</Label>
-                <InputGroup>
-                  <InputGroupInput
-                    {...field}
-                    id="refundComment"
-                    aria-invalid={fieldState.invalid}
-                    type="text"
-                  />
-                </InputGroup>
-                {fieldState.invalid && fieldState.error?.message && (
-                  <FieldError>{fieldState.error.message}</FieldError>
-                )}
-              </FieldContent>
-            </Field>
-          )}
-        />
+        <Field>
+          <FieldContent>
+            <Label htmlFor="refundRemaining">Reste à rembourser</Label>
+            <InputGroup>
+              <InputGroupInput
+                id="refundRemaining"
+                type="text"
+                readOnly
+                value={remaining}
+              />
+              <InputGroupAddon align="inline-end">
+                <Euro />
+              </InputGroupAddon>
+            </InputGroup>
+          </FieldContent>
+        </Field>
       </div>
+      {/* Une ligne par remboursement rendu : celles des passages précédents,
+          sur leur caisse, puis celle de la caisse du poste. */}
+      <Table aria-label="Remboursements">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Caisse</TableHead>
+            <TableHead>Remboursement CB</TableHead>
+            <TableHead>Remboursement espèce</TableHead>
+            <TableHead>Commentaire</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {fields.map((field, index) => {
+            const line = refunds[index]
+            return (
+              <TableRow key={field.id}>
+                <TableCell className="font-medium">
+                  {line.incrementStart ?? incrementStart}
+                </TableCell>
+                <TableCell>
+                  <Controller
+                    name={`refunds.${index}.cardAmount`}
+                    render={({ field: controllerField, fieldState }) => (
+                      <InputGroup>
+                        <InputGroupInput
+                          {...controllerField}
+                          value={controllerField.value ?? 0}
+                          aria-label="Remboursement CB"
+                          aria-invalid={fieldState.invalid}
+                          type="text"
+                          autoComplete="off"
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <Euro />
+                        </InputGroupAddon>
+                      </InputGroup>
+                    )}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Controller
+                    name={`refunds.${index}.cashAmount`}
+                    render={({ field: controllerField, fieldState }) => (
+                      <InputGroup>
+                        <InputGroupInput
+                          {...controllerField}
+                          value={controllerField.value ?? 0}
+                          aria-label="Remboursement espèce"
+                          aria-invalid={fieldState.invalid}
+                          type="text"
+                          autoComplete="off"
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <Euro />
+                        </InputGroupAddon>
+                      </InputGroup>
+                    )}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Controller
+                    name={`refunds.${index}.comment`}
+                    render={({ field: controllerField, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldContent>
+                          <InputGroup>
+                            <InputGroupInput
+                              {...controllerField}
+                              value={controllerField.value ?? ''}
+                              aria-label="Commentaire du remboursement"
+                              aria-invalid={fieldState.invalid}
+                              type="text"
+                            />
+                          </InputGroup>
+                          {fieldState.invalid && fieldState.error?.message && (
+                            <FieldError>{fieldState.error.message}</FieldError>
+                          )}
+                        </FieldContent>
+                      </Field>
+                    )}
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
     </div>
   )
 }

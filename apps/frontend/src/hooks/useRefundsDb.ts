@@ -2,8 +2,14 @@ import { db, type Refund } from '@/db.ts'
 import { syncService } from '@/services/sync-service.ts'
 
 export function useRefundsDb() {
-  function getBySaleId(saleId: string) {
-    return db.refunds.where({ saleId }).first()
+  // Tous les remboursements encore actifs de la vente, du plus ancien au
+  // plus récent : une vente peut être remboursée en plusieurs fois, sur
+  // plusieurs caisses.
+  function listBySaleId(saleId: string) {
+    return db.refunds
+      .where({ saleId })
+      .filter((refund) => refund.deletedAt == null)
+      .sortBy('createdAt')
   }
 
   async function insert(refund: Refund) {
@@ -17,5 +23,5 @@ export function useRefundsDb() {
     await syncService.addToOutbox('refunds', 'update', id, data)
   }
 
-  return { getBySaleId, insert, update }
+  return { listBySaleId, insert, update }
 }

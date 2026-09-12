@@ -220,3 +220,71 @@ describe('Screen: reopening the till count', () => {
     await waitFor(() => expect(page.theoretical()).toBe(170))
   })
 })
+
+// A buyer does not always come back to the till that sold to them. The
+// money leaves the drawer of the till that hands it over, so that is the
+// till whose count has to carry it — whichever till rang the sale up.
+describe('Screen: the till count when the refund was made elsewhere', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    // Sold on till 1000, 40 € handed back here in cash.
+    const elsewhere = await givenSale({
+      saleIndex: 1001,
+      incrementStart: 1000,
+      cashAmount: 100,
+      buyer: { lastName: 'Blanc', firstName: 'Eva', city: 'Alby' },
+    })
+    await givenRefund(elsewhere.sale, { incrementStart: 2000, cashAmount: 40 })
+    // Sold here on the card, 50 € handed back on till 3000.
+    const here = await givenSale({
+      saleIndex: 2002,
+      cashAmount: 0,
+      cardAmount: 150,
+      buyer: { lastName: 'Roche', firstName: 'Marc', city: 'Rumilly' },
+    })
+    await givenRefund(here.sale, { incrementStart: 3000, cardAmount: 50 })
+  })
+
+  it('lists the refunds this till handed over, whatever sale they belong to', async () => {
+    const page = await salesControlPage()
+    await page.open('refunds')
+
+    await waitFor(() => expect(page.rows()).toHaveLength(1))
+    expect(page.rows()[0]).toEqual([
+      '1001',
+      'Blanc Eva',
+      '0633333333',
+      'Alby',
+      'CASH',
+      'Article rendu',
+      '100,00 €',
+      '40,00 €',
+    ])
+    expect(page.total()).toBe('40,00 €')
+  })
+
+  it('takes the money out of this drawer, and leaves the other till its own', async () => {
+    const page = await salesControlPage()
+    await page.open('cashSales')
+
+    // No cash sale of this till, and 40 € handed back for till 1000's sale
+    await waitFor(() => expect(page.rows()).toHaveLength(1))
+    expect(page.rows()[0].slice(0, 1).concat(page.rows()[0].slice(5))).toEqual([
+      '1001',
+      '-40,00 €',
+    ])
+    await page.open('drawer')
+    await waitFor(() => expect(page.theoretical()).toBe(-40))
+  })
+
+  it('leaves the card refund made on another till out of this count', async () => {
+    const page = await salesControlPage()
+    await page.open('card')
+
+    // The 150 € sale only: till 3000 handed the 50 € back, not this one
+    await waitFor(() => expect(page.rows()).toHaveLength(1))
+    expect(page.rows()[0][0]).toBe('2002')
+    expect(page.total()).toBe('150,00 €')
+  })
+})
