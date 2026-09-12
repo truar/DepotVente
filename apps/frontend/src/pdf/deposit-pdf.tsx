@@ -150,16 +150,24 @@ export type DepositPdfProps = {
   data: DepositPdfData
   showCategorySubtotals?: boolean
   showSerialNumber?: boolean
+  showMemberInformation?: boolean
 }
 
 export const DepositPdf = (props: DepositPdfProps) => {
-  const { data, copy = 1, showCategorySubtotals, showSerialNumber } = props
+  const {
+    data,
+    copy = 1,
+    showCategorySubtotals,
+    showSerialNumber,
+    showMemberInformation,
+  } = props
   return (
     <DepositsPdf
       copy={copy}
       data={[data]}
       showCategorySubtotals={showCategorySubtotals}
       showSerialNumber={showSerialNumber}
+      showMemberInformation={showMemberInformation}
     />
   )
 }
@@ -185,6 +193,10 @@ export type DepositsPdfProps = {
   data: Array<DepositPdfData>
   showCategorySubtotals?: boolean
   showSerialNumber?: boolean
+  // Les annonces aux adhérents (assemblée générale, permanence carte-neige)
+  // n'ont leur place que sur la fiche remise au déposant : la liste de
+  // travail des articles pro non réceptionnés s'en passe.
+  showMemberInformation?: boolean
 }
 
 export const DepositsPdf = (props: DepositsPdfProps) => {
@@ -193,6 +205,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
     copy = 1,
     showCategorySubtotals = false,
     showSerialNumber = false,
+    showMemberInformation = true,
   } = props
   const colStyle = showSerialNumber ? styles.tableColNarrow : styles.tableCol
   const depositPages = deposits.map((data) => {
@@ -317,17 +330,19 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             <View style={styles.pickupInformation}>
               <Text>Matériel à récupérer samedi soir entre 18h30 et 20h30</Text>
             </View>
-            <View style={styles.information}>
-              <Text>Information:</Text>
-              <Text>
-                Assembléé générale le vendredi 14 novembre 2025 à 20h au Centre
-                de loisirs du Bouchet
-              </Text>
-              <Text>
-                1ère permanence pour la vente des licences carte-neige: vendredi
-                28 novembre 2025 à 19h au gymnase de l'Albanais
-              </Text>
-            </View>
+            {showMemberInformation && (
+              <View style={styles.information}>
+                <Text>Information:</Text>
+                <Text>
+                  Assembléé générale le vendredi 14 novembre 2025 à 20h au
+                  Centre de loisirs du Bouchet
+                </Text>
+                <Text>
+                  1ère permanence pour la vente des licences carte-neige:
+                  vendredi 28 novembre 2025 à 19h au gymnase de l'Albanais
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 

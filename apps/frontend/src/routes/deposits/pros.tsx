@@ -126,7 +126,12 @@ function ProArticlesForm(props: ProArticlesFormProps) {
     const data = await loadPendingArticlesPdfData(depositId)
     if (!data) return
     await printPdf(
-      <DepositPdf data={data} showCategorySubtotals showSerialNumber />,
+      <DepositPdf
+        data={data}
+        showCategorySubtotals
+        showSerialNumber
+        showMemberInformation={false}
+      />,
     )
   }, [depositId])
   return (
