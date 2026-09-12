@@ -112,6 +112,7 @@ if [ "$(container_health cmr_postgres)" = healthy ]; then
     2>/dev/null | tr '|' ' ')
   if [ -n "${d:-}" ]; then
     ok "$d deposits, $a articles, $s sales"
+    info "The figures of the day: ./scripts/activity.sh"
   else
     problem "Could not read the database"
   fi

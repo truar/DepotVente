@@ -183,6 +183,7 @@ pnpm traces errors --since 1h  # everything the server refused, with the reason
 pnpm traces epochs             # PCs holding an old database epoch
 pnpm traces stats              # volume and response times per route
 ./scripts/status.sh --watch    # services, certificate, memory, backups
+./scripts/activity.sh --watch  # the figures: deposits, reception, sales, tills
 ```
 
 What normal looks like: every PC appears in `postes` with 0 refused, a delta
