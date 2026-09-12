@@ -24,6 +24,7 @@ import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { loadPendingArticlesPdfData } from '@/pdf/load-pending-articles-pdf-data.ts'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { articleColumns } from '@/components/custom/articleColumns.tsx'
+import { normalizeArticleCode } from '@/utils'
 
 export const Route = createFileRoute('/deposits/pros')({
   beforeLoad: requireAuthAndWorkstation,
@@ -238,7 +239,7 @@ function ReceiveArticleInput(props: { depositId: string }) {
           id="articleCode"
           autoFocus
           value={articleCode}
-          onChange={(e) => setArticleCode(e.target.value)}
+          onChange={(e) => setArticleCode(normalizeArticleCode(e.target.value))}
           onKeyDown={checkKeyDown}
         />
       </div>

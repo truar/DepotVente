@@ -23,6 +23,7 @@ import { articleColumns } from '@/components/custom/articleColumns.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { loadUnreturnedArticlesPdfData } from '@/pdf/load-unreturned-articles-pdf-data.ts'
+import { normalizeArticleCode } from '@/utils'
 
 export const Route = createFileRoute('/returns/pros')({
   beforeLoad: requireAuthAndWorkstation,
@@ -219,7 +220,7 @@ function ReturnArticleInput(props: { depositId: string }) {
           id="articleCode"
           autoFocus
           value={articleCode}
-          onChange={(e) => setArticleCode(e.target.value)}
+          onChange={(e) => setArticleCode(normalizeArticleCode(e.target.value))}
           onKeyDown={checkKeyDown}
         />
       </div>

@@ -212,7 +212,9 @@ describe('Screen: receiving a professional’s articles', () => {
     [
       'unknown to the app',
       'inconnu-code',
-      (c: string) => `Article ${c} inconnu`,
+      // The field upper-cases what is entered, so the alert names the code
+      // the app actually looked for.
+      (c: string) => `Article ${c.toUpperCase()} inconnu`,
     ],
   ])('refuses a code %s', async (_label, scanned, message) => {
     const page = await proReceptionPage()
