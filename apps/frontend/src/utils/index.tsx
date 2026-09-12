@@ -182,8 +182,13 @@ export function numberToFrenchWords(input: number | string): string {
 
   const integerWords = convertUpTo9999(integerPart)
 
-  if (centsPart === 0) return `${integerWords} euro`
+  // Un euro, deux euros : le chèque porte le montant en toutes lettres, la
+  // marque du pluriel comprise. Zéro reste au singulier.
+  const euros = integerPart >= 2 ? 'euros' : 'euro'
+
+  if (centsPart === 0) return `${integerWords} ${euros}`
 
   const centsWords = convertLessThanHundred(centsPart)
-  return `${integerWords} euro et ${centsWords} centimes`
+  const centimes = centsPart >= 2 ? 'centimes' : 'centime'
+  return `${integerWords} ${euros} et ${centsWords} ${centimes}`
 }

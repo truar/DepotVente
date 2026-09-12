@@ -235,9 +235,7 @@ function DepositSearchForm(props: DepositSearchFormProps) {
     () =>
       allDeposits?.filter(
         (deposit) =>
-          !deposit.signatory &&
-          !!deposit.soldAmount &&
-          deposit.soldAmount > 0,
+          !deposit.signatory && !!deposit.soldAmount && deposit.soldAmount > 0,
       ) ?? [],
     [allDeposits],
   )
@@ -311,8 +309,8 @@ function DepositData(props: DepositDataProps) {
         <TableRow>
           <TableHead className="w-[100px]">Fiche</TableHead>
           <TableHead className="w-[200px]">Nom</TableHead>
-          <TableHead className="text-right w-[100px]">Montant total</TableHead>
-          <TableHead className="text-right w-[100px]">Montant due</TableHead>
+          <TableHead className="text-right w-[100px]">Montant vendu</TableHead>
+          <TableHead className="text-right w-[100px]">Montant dû</TableHead>
           <TableHead>Montant</TableHead>
         </TableRow>
       </TableHeader>
