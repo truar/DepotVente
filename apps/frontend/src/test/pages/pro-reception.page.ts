@@ -71,6 +71,17 @@ export async function proReceptionPage() {
     async showPending() {
       await u.click(screen.getByRole('radio', { name: 'Non réceptionnés' }))
     },
+    // "Imprimer", under the pending list: the sheet of what is still
+    // missing, handed to the professional.
+    async printPending() {
+      const before = document.querySelectorAll('iframe').length
+      await u.click(screen.getByRole('button', { name: 'Imprimer' }))
+      await waitFor(
+        () =>
+          expect(document.querySelectorAll('iframe').length).toBe(before + 1),
+        { timeout: 15_000 },
+      )
+    },
     // Rows of the table below, in the order they are displayed:
     // [code, discipline, category, brand, ...].
     rows(): Array<Array<string>> {

@@ -3,6 +3,7 @@ import type { Article } from '@/db.ts'
 import { categories } from '@/types/categories.ts'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { proReceptionPage } from '@/test/pages/pro-reception.page.ts'
+import { lastPrintedText } from '@/test/printed.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // Articles arrive at the desk in category groups: all the skis, then all
@@ -144,6 +145,29 @@ describe('Screen: receiving a professional’s articles', () => {
     for (const category of categories) {
       expect(options).toContain(category)
     }
+  })
+
+  // The sheet of what is still missing is a working list for the desk and
+  // the professional: the announcements to the club members have no place
+  // on it, unlike on the deposit sheet a private seller takes home.
+  it('prints the pending articles without the club announcements', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+    await page.showPending()
+    await waitFor(() => expect(page.listedCodes()).toHaveLength(4))
+
+    await page.printPending()
+
+    const sheet = await lastPrintedText()
+    expect(sheet).toContain('Fiche N° 3')
+    expect(sheet).toContain('ALLO Ski')
+    expect(sheet).toContain('Sous-total Skis : 2 articles')
+    expect(sheet).toContain(
+      'Matériel à récupérer samedi soir entre 18h30 et 20h30',
+    )
+    expect(sheet).not.toContain('Information:')
+    expect(sheet).not.toContain('Assembléé générale')
+    expect(sheet).not.toContain('carte-neige')
   })
 
   it('refuses an article that belongs to another professional', async () => {
