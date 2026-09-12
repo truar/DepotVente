@@ -26,7 +26,7 @@ export async function proReceptionPage() {
     // The volunteer types a fragment of the professional's name or its
     // deposit number, then picks the single match.
     async pickPro(search: string) {
-      await u.click(screen.getByText(/Rechercher un professionel/))
+      await u.click(screen.getByText(/Rechercher un professionnel/))
       const popover = await screen.findByRole('dialog')
       await u.type(within(popover).getByRole('combobox'), search)
       await u.click(

@@ -91,11 +91,11 @@ function ProSearchForm(props: ProSearchFormProps) {
     <div className="grid grid-cols-6 gap-2 w-[500px]">
       <div className="col-span-4">
         <Combobox
-          emptyLabel="Aucun dépôt professionel"
+          emptyLabel="Aucun dépôt professionnel"
           items={items}
           value={value}
           onSelect={setValue}
-          placeholder="Rechercher un professionel"
+          placeholder="Rechercher un professionnel"
         />
       </div>
       <div>
