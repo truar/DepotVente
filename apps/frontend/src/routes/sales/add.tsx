@@ -699,12 +699,19 @@ function PaymentForm() {
             </Field>
           )}
         />
-        <Field data-invalid={cashReceivedInvalid}>
+        {/* Le rendu de monnaie n'est pas un règlement : ces deux champs
+            aident le caissier à compter, ils ne nourrissent pas la vente.
+            D'où la place à part, tout à droite de la ligne, et l'italique. */}
+        <Field
+          className="col-start-7 italic"
+          data-invalid={cashReceivedInvalid}
+        >
           <FieldContent>
             <Label htmlFor="cashReceived">Espèces reçues</Label>
             <InputGroup>
               <InputGroupInput
                 id="cashReceived"
+                className="italic"
                 aria-invalid={cashReceivedInvalid}
                 type="text"
                 value={cashReceived}
@@ -717,12 +724,13 @@ function PaymentForm() {
             </InputGroup>
           </FieldContent>
         </Field>
-        <Field>
+        <Field className="italic">
           <FieldContent>
             <Label>Monnaie rendue</Label>
             <InputGroup>
               <InputGroupInput
                 id="cashReceived"
+                className="italic"
                 type="text"
                 value={cashReturned}
                 readOnly
