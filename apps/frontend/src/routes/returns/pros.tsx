@@ -145,7 +145,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
               checked={listMode === 'RETURNED'}
               onChange={() => setListMode('RETURNED')}
             />
-            Scannés
+            Déjà scannés
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -155,7 +155,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
               checked={listMode === 'RECEPTION_OK'}
               onChange={() => setListMode('RECEPTION_OK')}
             />
-            À scanner
+            En attente de scan
           </label>
         </div>
       </div>
