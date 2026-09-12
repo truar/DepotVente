@@ -198,8 +198,18 @@ function ReturnArticleInput(props: { depositId: string }) {
       setArticleCode('')
       return
     }
-    if (article.status === 'RETURNED') {
-      showErrorAlert(`Retour de l'article ${articleCode} déja effectué`)
+    // Seul un article reçu peut repartir chez le professionnel : celui qui
+    // n'a jamais été réceptionné n'est pas là, et celui qui est vendu est
+    // reparti avec un acheteur. Le bénévole a l'article en main, le message
+    // doit lui dire quoi en faire.
+    if (article.status !== 'RECEPTION_OK') {
+      const reason: Record<typeof article.status, string> = {
+        RECEPTION_PENDING: `L'article ${articleCode} n'a pas été réceptionné`,
+        SOLD: `L'article ${articleCode} a été vendu`,
+        DELETED: `L'article ${articleCode} a été supprimé`,
+        RETURNED: `Retour de l'article ${articleCode} déja effectué`,
+      }
+      showErrorAlert(reason[article.status])
       setArticleCode('')
       return
     }
