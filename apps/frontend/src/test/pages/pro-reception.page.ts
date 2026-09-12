@@ -87,6 +87,30 @@ export async function proReceptionPage() {
           .filter((cells) => cells.length > 1)
       )
     },
+    // The "Catégorie" column filter, opened: every option it offers. The
+    // filters live in a second header row, under the titles.
+    async categoryFilterOptions(): Promise<Array<string>> {
+      const headerRows = screen
+        .getAllByRole('row')
+        .filter((row) => within(row).queryAllByRole('columnheader').length > 0)
+      const titles = within(headerRows[0]).getAllByRole('columnheader')
+      const column = titles.findIndex((cell) =>
+        cell.textContent.includes('Catégorie'),
+      )
+      if (column < 0 || !headerRows[1]) {
+        throw new Error('No category filter on the screen')
+      }
+      const filterCell = within(headerRows[1]).getAllByRole('columnheader')[
+        column
+      ]
+      await u.click(within(filterCell).getByRole('combobox'))
+      const listbox = await screen.findByRole('listbox')
+      const options = within(listbox)
+        .getAllByRole('option')
+        .map((option) => option.textContent.trim())
+      await u.keyboard('{Escape}')
+      return options
+    },
     listedCodes: () => page.rows().map((cells) => cells[0]),
     listedCategories: () => page.rows().map((cells) => cells[2]),
     async listShows(codes: Array<string>) {

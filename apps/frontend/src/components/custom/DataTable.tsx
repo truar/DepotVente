@@ -39,6 +39,11 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     filterVariant?: 'text' | 'select'
+    // Valeurs toujours proposées par le filtre « select », même quand aucune
+    // ligne affichée ne les porte : à la réception pro, la liste ne contient
+    // que ce qui reste à scanner, et un bénévole doit pouvoir choisir sa
+    // catégorie avant d'en avoir scanné une.
+    filterOptions?: Array<string>
   }
 }
 
@@ -113,9 +118,7 @@ export function DataTable<TData, TValue>({
             {!hideGlobalFilter && (
               <Input
                 value={globalFilter}
-                onChange={(e) =>
-                  table.setGlobalFilter(String(e.target.value))
-                }
+                onChange={(e) => table.setGlobalFilter(String(e.target.value))}
                 placeholder="Rechercher..."
               />
             )}
@@ -129,8 +132,7 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const canSort =
-                    enableColumnSort && header.column.getCanSort()
+                  const canSort = enableColumnSort && header.column.getCanSort()
                   return (
                     <TableHead
                       key={header.id}
@@ -215,11 +217,7 @@ export function DataTable<TData, TValue>({
   )
 }
 
-function SortIndicator({
-  direction,
-}: {
-  direction: false | 'asc' | 'desc'
-}) {
+function SortIndicator({ direction }: { direction: false | 'asc' | 'desc' }) {
   if (direction === 'asc') return <ArrowUp className="size-3" />
   if (direction === 'desc') return <ArrowDown className="size-3" />
   return <ChevronsUpDown className="size-3 opacity-50" />
@@ -258,20 +256,27 @@ function SelectColumnFilter<TData, TValue>({
   column: Column<TData, TValue>
 }) {
   const facets = column.getFacetedUniqueValues()
+  const declared = column.columnDef.meta?.filterOptions
+  // Les valeurs déclarées et celles réellement présentes : l'import d'une
+  // année passée peut porter une catégorie absente du vocabulaire, elle doit
+  // rester filtrable.
   const uniqueValues = useMemo(
     () =>
-      Array.from(facets.keys())
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
-        .sort((a, b) => a.localeCompare(b, 'fr')),
-    [facets],
+      Array.from(
+        new Set([
+          ...(declared ?? []),
+          ...Array.from(facets.keys()).filter(
+            (v): v is string => typeof v === 'string' && v.length > 0,
+          ),
+        ]),
+      ).sort((a, b) => a.localeCompare(b, 'fr')),
+    [facets, declared],
   )
   const current = (column.getFilterValue() as string | undefined) ?? 'all'
   return (
     <Select
       value={current}
-      onValueChange={(v) =>
-        column.setFilterValue(v === 'all' ? undefined : v)
-      }
+      onValueChange={(v) => column.setFilterValue(v === 'all' ? undefined : v)}
     >
       <SelectTrigger className="h-8 w-full">
         <SelectValue />

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Article } from '@/db.ts'
+import { categories } from '@/types/categories.ts'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { proReceptionPage } from '@/test/pages/pro-reception.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
@@ -119,6 +120,30 @@ describe('Screen: receiving a professional’s articles', () => {
     ])
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toEqual([]))
+  })
+
+  // A volunteer picks the category they are about to scan, before any
+  // article of it is on the list. Filtering on a category with nothing left
+  // to receive is how the desk checks a group is finished.
+  it('offers every category in the filter, even those with nothing to scan', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+    await page.showPending()
+    await waitFor(() => expect(page.listedCodes()).toHaveLength(4))
+
+    const options = await page.categoryFilterOptions()
+
+    // The list holds skis and boots only; the filter offers the lot.
+    expect(page.listedCategories()).toEqual([
+      'Chaussures',
+      'Chaussures',
+      'Skis',
+      'Skis',
+    ])
+    expect(options).toContain('Toutes')
+    for (const category of categories) {
+      expect(options).toContain(category)
+    }
   })
 
   it('refuses an article that belongs to another professional', async () => {

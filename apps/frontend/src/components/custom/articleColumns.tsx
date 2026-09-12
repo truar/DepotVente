@@ -1,5 +1,6 @@
 import { type ColumnDef } from '@tanstack/react-table'
 import { type Article } from '@/db.ts'
+import { categories } from '@/types/categories.ts'
 import { compareIdentificationLetters } from '@/utils'
 
 export const articleColumns: ColumnDef<Article>[] = [
@@ -24,27 +25,24 @@ export const articleColumns: ColumnDef<Article>[] = [
     header: 'Catégorie',
     sortingFn: (a, b) =>
       a.original.category.localeCompare(b.original.category, 'fr'),
-    meta: { filterVariant: 'select' },
+    meta: { filterVariant: 'select', filterOptions: categories },
   },
   {
     accessorKey: 'brand',
     header: 'Marque',
-    sortingFn: (a, b) =>
-      a.original.brand.localeCompare(b.original.brand, 'fr'),
+    sortingFn: (a, b) => a.original.brand.localeCompare(b.original.brand, 'fr'),
     meta: { filterVariant: 'select' },
   },
   {
     accessorKey: 'model',
     header: 'Descriptif',
-    sortingFn: (a, b) =>
-      a.original.model.localeCompare(b.original.model, 'fr'),
+    sortingFn: (a, b) => a.original.model.localeCompare(b.original.model, 'fr'),
     meta: { filterVariant: 'text' },
   },
   {
     accessorKey: 'color',
     header: 'Couleur',
-    sortingFn: (a, b) =>
-      a.original.color.localeCompare(b.original.color, 'fr'),
+    sortingFn: (a, b) => a.original.color.localeCompare(b.original.color, 'fr'),
     meta: { filterVariant: 'select' },
   },
   {
