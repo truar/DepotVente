@@ -4,9 +4,12 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
 import { ErrorAlertHost } from '@/components/custom/ErrorAlertHost'
 import { DatasetResetDialog } from '@/components/custom/DatasetResetDialog'
+import { useIgnoreScannerShortcut } from '@/hooks/useIgnoreScannerShortcut'
 
-export const Route = createRootRoute({
-  component: () => (
+function RootDocument() {
+  // A scan must not also open the browser's Downloads tab.
+  useIgnoreScannerShortcut()
+  return (
     <>
       <Outlet />
       <Toaster position="bottom-left" />
@@ -26,7 +29,11 @@ export const Route = createRootRoute({
         />
       )}
     </>
-  ),
+  )
+}
+
+export const Route = createRootRoute({
+  component: RootDocument,
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
       <div className="text-center">

@@ -23,6 +23,15 @@ export async function salesAddPage() {
       await u.clear(input)
       await u.type(input, `${code}{Enter}`)
     },
+    // A scanner configured with a CR+LF suffix: the LF reaches the browser as
+    // Ctrl+J, right after the code and before the Enter.
+    async scanWithLineFeedSuffix(code: string) {
+      const input = screen.getByLabelText('Scanner un article')
+      await u.clear(input)
+      await u.type(input, code)
+      await u.keyboard('{Control>}j{/Control}')
+      await u.keyboard('{Enter}')
+    },
     scannedCodes(): Array<string> {
       return screen
         .queryAllByRole('row')
