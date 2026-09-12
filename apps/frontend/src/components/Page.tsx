@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button.tsx'
+import { Slottable } from '@radix-ui/react-slot'
 import { ChevronLeft } from 'lucide-react'
 import { type ReactNode } from 'react'
 import { LogoutButton } from '@/components/LogoutButton.tsx'
@@ -17,9 +18,11 @@ export function Page(props: PageProps) {
       <div className="flex flex-row justify-between px-3 py-3">
         {navigation && (
           <div>
-            <Button variant="link" className="cursor-pointer">
+            {/* Le lien EST le bouton : le chevron et le padding font partie de
+                sa zone cliquable, sinon seul le texte réagit au clic. */}
+            <Button asChild variant="link" className="cursor-pointer">
               <ChevronLeft />
-              {navigation}
+              <Slottable>{navigation}</Slottable>
             </Button>
           </div>
         )}
