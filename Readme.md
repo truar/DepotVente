@@ -621,7 +621,9 @@ answer "which PCs are alive, which build do they run, what did the server
 refuse" without walking over.
 
 ```bash
-pnpm traces postes             # every PC seen: caisse, version, last seen, refused requests
+pnpm traces postes             # every PC seen: caisse, version, last seen, sent, refused
+pnpm traces pushes --since 1h  # what each PC sent: collection, operation, how many
+pnpm traces tail --route push  # live, only what the PCs send (no polling noise)
 pnpm traces tail --poste 4     # live log of cash register 4 (or of a device id prefix)
 pnpm traces errors --since 1h  # everything refused in the last hour, with the code
 pnpm traces epochs             # the server's epoch, and PCs still holding an old one
