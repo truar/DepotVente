@@ -42,15 +42,25 @@ q() {
 # happened", which is the one thing a supervision tool must never fake.
 qtable() {
   local out
+  # lc_numeric pinned to C so `eur_sql` below always has "," for thousands and
+  # "." for decimals to translate, whatever locale the server was built with.
   if ! out="$(docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" \
-    -v ON_ERROR_STOP=1 -c "$1" 2>&1)"; then
+    -v ON_ERROR_STOP=1 -c "set lc_numeric = 'C'; $1" 2>&1)"; then
     warn "Query failed:"
   fi
-  printf '%s\n' "$out" | sed '/^$/d; s/^/  /'
+  printf '%s\n' "$out" | sed '/^$/d; s/^/  /; s/^  SET$//; /^$/d'
 }
 # Amounts as the volunteers read them: 186 720,98 €. Grouped by hand rather
 # than through a locale: a shell builtin's printf does not group under
 # LC_NUMERIC on macOS, and the figures here run into six digits.
+# The same figure, written by psql inside a table: 12 345,67. The mask has no
+# FM, so to_char pads it to a fixed width and a column of amounts reads as one
+# - and unlike lpad(), a wider figure is never truncated (that would silently
+# drop the cents, then the euros); beyond 999 999,99 it prints as # instead,
+# which is a hundred times the takings of a till.
+eur_sql() {
+  printf "translate(to_char(coalesce(%s,0), '999G990D00'), ',.', ' ,')" "$1"
+}
 eur() {
   awk -v n="${1:-0}" 'BEGIN {
     sign = (n < 0) ? "-" : ""; if (n < 0) n = -n
@@ -155,12 +165,12 @@ if [ "${SALES:-0}" -gt 0 ] || [ "${REFUNDS:-0}" -gt 0 ]; then
     )
     select coalesce(v.c, r.c) as \"Caisse\",
            coalesce(v.n, 0) as \"Ventes\",
-           to_char(coalesce(v.esp,0), 'FM999999990.00') as \"Espèces\",
-           to_char(coalesce(v.cb,0), 'FM999999990.00') as \"CB\",
-           to_char(coalesce(v.chq,0), 'FM999999990.00') as \"Chèques\",
-           to_char(coalesce(v.dif,0), 'FM999999990.00') as \"Différé\",
+           $(eur_sql v.esp) as \"Espèces\",
+           $(eur_sql v.cb) as \"CB\",
+           $(eur_sql v.chq) as \"Chèques\",
+           $(eur_sql v.dif) as \"Différé\",
            coalesce(r.n, 0) as \"Remb.\",
-           to_char(coalesce(r.tot,0), 'FM999999990.00') as \"Remboursé\"
+           $(eur_sql r.tot) as \"Remboursé\"
     from v full outer join r on r.c = v.c
     order by 1"
 fi
