@@ -505,6 +505,8 @@ Service Workers shows one registered.
 ```bash
 ./scripts/status.sh            # once
 ./scripts/status.sh --watch    # keep it on screen, refreshing every 15s
+./scripts/activity.sh          # the figures of the day, from the database
+./scripts/activity.sh --watch  # same, refreshing every 15s
 ```
 
 Run it whenever something feels wrong. It checks the four services, whether the
@@ -513,6 +515,11 @@ current address — the most likely day-of failure), the row counts, database
 connection usage, recent errors, memory and swap, and how long ago the last
 backup was taken. It ends with either *Everything is working* or a list of
 problems with the fix for each.
+
+`activity.sh` answers the other question — how the sale is going, not whether
+the server is well: fiches deposited and their value, how many of each
+professional's articles are still to check in, what is on the shelves, what
+has been sold, and the takings of each cash register with its refunds.
 
 Raw tools if you need them: `docker stats`, `sysctl vm.swapusage`,
 `docker compose logs -f backend`.
@@ -621,7 +628,9 @@ answer "which PCs are alive, which build do they run, what did the server
 refuse" without walking over.
 
 ```bash
-pnpm traces postes             # every PC seen: caisse, version, last seen, refused requests
+pnpm traces postes             # every PC seen: caisse, version, last seen, sent, refused
+pnpm traces pushes --since 1h  # what each PC sent: collection, operation, how many
+pnpm traces tail --route push  # live, only what the PCs send (no polling noise)
 pnpm traces tail --poste 4     # live log of cash register 4 (or of a device id prefix)
 pnpm traces errors --since 1h  # everything refused in the last hour, with the code
 pnpm traces epochs             # the server's epoch, and PCs still holding an old one
@@ -699,6 +708,9 @@ service from the browser.
 - **`scripts/loadtest/`**: Load and soak tests (see its README).
 - **`./scripts/start-server.sh`**: Start everything for the sale. Use this one.
 - **`./scripts/status.sh`**: Is the server healthy right now? Safe at any time.
+- **`./scripts/activity.sh`**: What the day has produced — deposits, the
+  professionals' reception, the shelves, the sales and what each cash register
+  took. Read-only, safe at any time.
 - **`./scripts/stop-server.sh`**: Take a final backup and stop cleanly.
 - **`./scripts/prepare-server.sh`**: Certificate step only — called by
   `start-server.sh`. Run it alone if the Mac's address changes mid-event.

@@ -24,14 +24,16 @@ const REPO_ROOT = path.resolve(
 const HELP = `Usage: pnpm traces <command> [options]
 
 Commands
-  postes    every client PC seen: cash register, build, first/last seen, refused requests
-  tail      one line per request, live; narrow with --poste
+  postes    every client PC seen: cash register, build, first/last seen, what it sent
+  pushes    what each PC sent: collection, operation, how many, when
+  tail      one line per request, live; narrow with --poste or --route
   errors    everything the server refused (4xx) or failed on (5xx), with the code
   epochs    the server's dataset epoch(s) and clients refused for holding another one
   stats     request counts and response times per route
 
 Options
   --poste <id>     device id (or a unique prefix of it) or a cash register number
+  --route <part>   only requests whose path contains this, e.g. --route push
   --since <dur>    only the last 30m / 2h / 1d ... (tail: 10m, others: all)
   --file <path>    read this log file instead of docker compose; "-" reads stdin
   -n <N>           tail: how many past lines to show before following (50)
@@ -41,6 +43,8 @@ Options
 
 Examples
   pnpm traces postes
+  pnpm traces pushes --since 1h
+  pnpm traces tail --route push        # only what the PCs send, no polling
   pnpm traces tail --poste 4
   pnpm traces errors --since 1h
   tail -f dev-backend.log | pnpm traces tail --file -
@@ -56,6 +60,7 @@ function parseArgs(argv) {
     const a = argv[i];
     const next = () => argv[++i];
     if (a === "--poste") args.poste = next();
+    else if (a === "--route") args.route = next();
     else if (a === "--since") args.since = next();
     else if (a === "--file") args.file = next();
     else if (a === "-n") args.n = Number(next());
@@ -135,6 +140,10 @@ function parseLine(raw) {
     ms: d.responseTime,
     code: d.code,
     route: d.route,
+    collection: d.collection,
+    operation: d.operation,
+    recordId: d.recordId,
+    outcome: d.outcome,
     body: d.body,
     clientEpoch: d.clientEpoch,
     datasetEpoch: d.datasetEpoch,
@@ -153,6 +162,7 @@ async function* records(args) {
     if (!rec) continue;
     if (cutoff && rec.time < cutoff) continue;
     if (args.poste && !matchesPoste(rec, args.poste)) continue;
+    if (args.route && !matchesRoute(rec, args.route)) continue;
     if (!args.keepProbes && isHealthProbe(rec)) continue;
     yield rec;
   }
@@ -168,6 +178,18 @@ function matchesPoste(rec, poste) {
   if (/^\d+$/.test(poste)) return rec.workstation === poste;
   return typeof rec.device === "string" && rec.device.startsWith(poste);
 }
+
+function matchesRoute(rec, route) {
+  return typeof rec.url === "string" && rec.url.includes(route);
+}
+
+// The two lines a view of "what happened" is made of: one per request, and
+// one per write a PC sent (ReplicationService, see `pushes`).
+const isRequestLine = (rec) => rec.msg === "request completed";
+const isPushLine = (rec) => rec.msg === "Push applied";
+// Warnings and errors are always shown; the rest of the info chatter is not.
+const isNoise = (rec) =>
+  rec.level === 30 && !isRequestLine(rec) && !isPushLine(rec);
 
 // ---------------------------------------------------------------------------
 // Formatting
@@ -199,6 +221,12 @@ function colourStatus(status) {
 
 function formatLine(rec) {
   const head = `${dim(hhmmss(rec.time))}  ${posteLabel(rec)}  `;
+  // What the PC actually sent, right under its POST /api/push line.
+  if (isPushLine(rec)) {
+    const outcome =
+      rec.outcome && rec.outcome !== "applied" ? yellow(` (${rec.outcome})`) : "";
+    return `${head}${dim("push")} ${summary(rec)}${outcome}`;
+  }
   if (rec.msg === "request completed") {
     const ms =
       rec.ms === undefined ? "" : `${Math.round(rec.ms)}ms`.padStart(6);
@@ -256,7 +284,7 @@ const percentile = (sorted, p) =>
 async function postes(args) {
   const byDevice = new Map();
   for await (const rec of records({ ...args, follow: false })) {
-    if (rec.level === 30 && rec.msg !== "request completed") continue;
+    if (isNoise(rec)) continue;
     const key = rec.device ?? "(sans identifiant)";
     const p = byDevice.get(key) ?? {
       device: key,
@@ -265,6 +293,7 @@ async function postes(args) {
       first: rec.time,
       last: rec.time,
       requests: 0,
+      sent: 0,
       refused: 0,
       failed: 0,
       staleEpoch: null,
@@ -273,11 +302,12 @@ async function postes(args) {
     if (rec.appVersion) p.versions.add(rec.appVersion);
     p.first = Math.min(p.first, rec.time);
     p.last = Math.max(p.last, rec.time);
-    if (rec.msg === "request completed") {
+    if (isRequestLine(rec)) {
       p.requests++;
       if (rec.status >= 500) p.failed++;
       else if (rec.status >= 400) p.refused++;
     }
+    if (isPushLine(rec)) p.sent++;
     if (rec.clientEpoch) p.staleEpoch = rec.clientEpoch;
     byDevice.set(key, p);
   }
@@ -302,6 +332,8 @@ async function postes(args) {
     { label: "Vu de", get: (r) => dateTime(r.first) },
     { label: "à", get: (r) => dateTime(r.last) },
     { label: "Requêtes", get: (r) => r.requests },
+    // Polling is most of "Requêtes"; this is what the PC actually sent.
+    { label: "Envois", get: (r) => r.sent },
     {
       label: "Refusées",
       get: (r) => r.refused,
@@ -324,7 +356,7 @@ async function postes(args) {
 async function tail(args) {
   const buffer = [];
   for await (const rec of records({ ...args, follow: false })) {
-    if (rec.level === 30 && rec.msg !== "request completed") continue;
+    if (isNoise(rec)) continue;
     buffer.push(rec);
     if (buffer.length > args.n) buffer.shift();
   }
@@ -337,9 +369,73 @@ async function tailFollow(args) {
   await tail({ ...args, since: args.since ?? "10m" });
   console.log(dim("--- live ---"));
   for await (const rec of records({ ...args, since: "1s", follow: true })) {
-    if (rec.level === 30 && rec.msg !== "request completed") continue;
+    if (isNoise(rec)) continue;
     console.log(args.json ? rec.raw : formatLine(rec));
   }
+}
+
+// What each PC has sent, as opposed to what it polled: one row per cash
+// register, collection and operation. A refused push is not here - it never
+// reached the database; `errors` has it with its code.
+async function pushes(args) {
+  const byKey = new Map();
+  let total = 0;
+  for await (const rec of records({ ...args, follow: false })) {
+    if (!isPushLine(rec)) continue;
+    const key = `${rec.device ?? "?"}|${rec.collection}|${rec.operation}`;
+    const row = byKey.get(key) ?? {
+      device: rec.device,
+      workstation: rec.workstation,
+      collection: rec.collection ?? "?",
+      operation: rec.operation ?? "?",
+      applied: 0,
+      duplicate: 0,
+      missing: 0,
+      last: rec.time,
+    };
+    row[rec.outcome ?? "applied"]++;
+    row.last = Math.max(row.last, rec.time);
+    row.workstation = rec.workstation ?? row.workstation;
+    byKey.set(key, row);
+    total++;
+  }
+  const rows = [...byKey.values()].sort(
+    (a, b) =>
+      String(a.workstation).localeCompare(String(b.workstation)) ||
+      a.collection.localeCompare(b.collection) ||
+      a.operation.localeCompare(b.operation),
+  );
+  if (args.json) return console.log(JSON.stringify(rows, null, 2));
+  if (rows.length === 0) {
+    console.log("Aucun envoi dans ce log.");
+    console.log(
+      dim(
+        "Un poste qui envoie apparaît aussi comme POST /api/push dans `tail` " +
+          "et `stats` ;\nle détail ci-dessus n'existe que pour les envois " +
+          "reçus par un serveur à jour.",
+      ),
+    );
+    return;
+  }
+  table(rows, [
+    { label: "Poste", get: (r) => posteLabel(r) },
+    { label: "Collection", get: (r) => r.collection },
+    { label: "Opération", get: (r) => r.operation },
+    { label: "Envois", get: (r) => r.applied },
+    {
+      label: "Doublons",
+      get: (r) => r.duplicate || "",
+      paint: (t) => yellow(t),
+    },
+    {
+      label: "Déjà supprimés",
+      get: (r) => r.missing || "",
+      paint: (t) => yellow(t),
+    },
+    { label: "Dernier", get: (r) => dateTime(r.last) },
+  ]);
+  const postes = new Set(rows.map((r) => r.device)).size;
+  console.log(dim(`\n${total} envoi(s) de ${postes} poste(s)`));
 }
 
 async function errors(args) {
@@ -491,6 +587,7 @@ async function stats(args) {
 const args = parseArgs(process.argv.slice(2));
 const commands = {
   postes,
+  pushes,
   tail: (a) => (a.follow && a.file !== "-" ? tailFollow(a) : tail(a)),
   errors,
   epochs,

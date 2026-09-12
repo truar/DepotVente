@@ -40,6 +40,17 @@ export class ReplicationService {
   async apply({ collection, operation, data, recordId, operationId }: PushDto) {
     const delegate = this.delegates[collection]
     const now = new Date()
+    // Une ligne par opération acceptée : c'est la seule trace qui dise quel
+    // poste a envoyé quoi (`pnpm traces pushes`). Un refus, lui, est déjà
+    // tracé par le filtre d'exception, avec son code.
+    //   applied   - l'écriture est passée
+    //   duplicate - création déjà enregistrée, le poste n'avait pas vu le 200
+    //   missing   - suppression d'un enregistrement déjà supprimé
+    const trace = (outcome: 'applied' | 'duplicate' | 'missing') =>
+      this.logger.info(
+        { collection, operation, recordId, operationId, outcome },
+        'Push applied',
+      )
 
     switch (operation) {
       case 'create':
@@ -47,15 +58,13 @@ export class ReplicationService {
           await delegate.create({
             data: { ...data, createdAt: now, updatedAt: now },
           })
+          trace('applied')
         } catch (err) {
           // P2002 = unique constraint. The original push reached the DB but
           // the client never saw the 200 (network drop). Treat the retry as
           // success so the outbox can drop the operation.
           if (isKnownError(err, 'P2002')) {
-            this.logger.info(
-              { collection, recordId, operationId },
-              'Duplicate create ignored (idempotent retry)',
-            )
+            trace('duplicate')
           } else {
             throw err
           }
@@ -67,6 +76,7 @@ export class ReplicationService {
           where: { id: recordId },
           data: { ...data, updatedAt: now },
         })
+        trace('applied')
         break
 
       case 'delete':
@@ -77,14 +87,12 @@ export class ReplicationService {
             where: { id: recordId },
             data: { deletedAt: now, updatedAt: now },
           })
+          trace('applied')
         } catch (err) {
           // P2025 = no live record with this id: already deleted by an
           // earlier attempt whose response was lost. Idempotent success.
           if (isKnownError(err, 'P2025')) {
-            this.logger.info(
-              { collection, recordId, operationId },
-              'Delete of a missing record ignored (idempotent retry)',
-            )
+            trace('missing')
           } else {
             throw err
           }
