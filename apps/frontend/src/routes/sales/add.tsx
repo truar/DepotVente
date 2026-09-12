@@ -51,7 +51,7 @@ import { Euro, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { showErrorAlert } from '@/stores/errorAlertStore'
 import { useCreateSale } from '@/hooks/useCreateSale.ts'
-import { getYear, shortArticleCode } from '@/utils'
+import { getYear, normalizeArticleCode, shortArticleCode } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
@@ -488,7 +488,9 @@ function SaleArticlesForm() {
                 name="articleCode"
                 id="articleCode"
                 value={articleCode}
-                onChange={(e) => setArticleCode(e.target.value)}
+                onChange={(e) =>
+                  setArticleCode(normalizeArticleCode(e.target.value))
+                }
                 onKeyDown={checkKeyDown}
               />
             </div>

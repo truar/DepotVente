@@ -31,7 +31,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import type { EditArticleFormType } from '@/types/EditArticleForm.ts'
 import { EditArticleSchema } from '@/types/EditArticleForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { shortArticleCode } from '@/utils'
+import { normalizeArticleCode, shortArticleCode } from '@/utils'
 import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -128,7 +128,7 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
         <div>
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => setCode(normalizeArticleCode(e.target.value))}
             placeholder="Ex: 2026 1001A"
             onKeyDown={checkKeyDown}
             autoFocus

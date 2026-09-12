@@ -20,6 +20,15 @@ export function generateArticleCode(
   return `${year} ${depotIndex}${articleIndex}`
 }
 
+// Article codes are built with upper-case letters (see
+// generateIdentificationLetter) and looked up by exact match, so a lower-case
+// letter finds nothing. Every field that takes an article code runs what is
+// entered through here: a scanner that reads in lower case, or a volunteer
+// typing a code by hand, still lands on the article.
+export function normalizeArticleCode(value: string) {
+  return value.toUpperCase()
+}
+
 export function shortArticleCode(
   depositIndex: number,
   identificationLetter: string,
@@ -38,7 +47,10 @@ export function sortByIdentificationLetter<
   T extends { identificationLetter: string },
 >(items: T[]): T[] {
   return [...items].sort((a, b) =>
-    compareIdentificationLetters(a.identificationLetter, b.identificationLetter),
+    compareIdentificationLetters(
+      a.identificationLetter,
+      b.identificationLetter,
+    ),
   )
 }
 
