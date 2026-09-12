@@ -75,6 +75,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
     DepositFormType['deposit'] | undefined
   >(undefined)
   const [predepositId, setPredepositId] = useState<string | null>(null)
+  const [changeOpen, setChangeOpen] = useState(false)
   const loadPredeposit = useCallback(
     async (predepositId: string) => {
       if (!depositIndex) return
@@ -86,10 +87,22 @@ function DepositAddComponent(props: DepositAddComponentProps) {
     },
     [depositIndex],
   )
+  // Charger une fiche écrase le formulaire : dès qu'un pré-dépôt y est déjà
+  // chargé, on demande confirmation avant de le remplacer par un autre.
+  const requestPredeposit = useCallback(
+    (id: string) => {
+      if (formData) {
+        setChangeOpen(true)
+        return
+      }
+      void loadPredeposit(id)
+    },
+    [formData, loadPredeposit],
+  )
   return (
     <div className="flex flex-col gap-5">
       <PredepositComboBox
-        onChange={loadPredeposit}
+        onChange={requestPredeposit}
         value={predepositId}
         onSelect={setPredepositId}
       />
@@ -101,6 +114,13 @@ function DepositAddComponent(props: DepositAddComponentProps) {
           setFormData(undefined)
           setPredepositId(null)
         }}
+      />
+      <ConfirmationDialog
+        open={changeOpen}
+        onOpenChange={setChangeOpen}
+        title="Etes vous sur de vouloir changer de fiche de pré-dépot ?"
+        description="Les données non enregistrées seront perdues."
+        onConfirm={() => void loadPredeposit(predepositId ?? '')}
       />
     </div>
   )

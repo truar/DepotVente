@@ -28,9 +28,14 @@ export async function depositAddPage(user?: User) {
       await u.click(await screen.findByRole('option', { name }))
     },
     async validatePredeposit() {
-      await u.click(screen.getByRole('button', { name: 'Valider' }))
+      await page.clickValidatePredeposit()
       // The form is filled asynchronously from the local base.
       await waitFor(() => expect(page.seller().lastName).not.toBe(''))
+    },
+    // Validating without waiting for the form: used when the screen asks
+    // before replacing a fiche already loaded.
+    async clickValidatePredeposit() {
+      await u.click(screen.getByRole('button', { name: 'Valider' }))
     },
     // The fiche the combobox shows, or null when it shows its placeholder.
     selectedPredeposit(): string | null {

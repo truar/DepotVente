@@ -130,6 +130,36 @@ describe('Screen: register a deposit from a predeposit', () => {
     expect(page.seller().lastName).toBe('')
     expect(await page.offeredPredeposits()).toEqual([])
   })
+
+  // Loading a fiche overwrites everything already on the form, so the
+  // screen asks before swapping one loaded fiche for another.
+  it('asks before replacing the fiche already loaded in the form', async () => {
+    await givenPredeposit({
+      predepositIndex: 8,
+      sellerLastName: 'Durand',
+      sellerFirstName: 'Sophie',
+    })
+    const page = await depositAddPage()
+
+    await page.pickPredeposit('Martin Lucie')
+    await page.validatePredeposit()
+    expect(page.seller().lastName).toBe('Martin')
+
+    await page.pickPredeposit('Durand Sophie')
+    await page.clickValidatePredeposit()
+    let dialog = await page.dialog()
+    expect(dialog.title).toBe(
+      'Etes vous sur de vouloir changer de fiche de pré-dépot ?',
+    )
+    await dialog.decline()
+    expect(page.seller().lastName).toBe('Martin')
+
+    await page.clickValidatePredeposit()
+    dialog = await page.dialog()
+    await dialog.confirm()
+    await waitFor(() => expect(page.seller().lastName).toBe('Durand'))
+    expect(page.seller().firstName).toBe('Sophie')
+  })
 })
 
 // The most common path of the day: a seller walks in with no predeposit,
