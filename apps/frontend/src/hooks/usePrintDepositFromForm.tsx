@@ -6,7 +6,9 @@ import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { toDepositPdfData } from '@/pdf/deposit-pdf-data.ts'
 import { printPdf } from '@/pdf/print.tsx'
 
-export function usePrintDepositFromForm() {
+export function usePrintDepositFromForm(
+  depositType: 'PARTICULIER' | 'PRO' = 'PARTICULIER',
+) {
   const { getValues, trigger, setValue } = useFormContext<DepositFormType>()
   return useCallback(async () => {
     const valid = await trigger('deposit')
@@ -22,6 +24,7 @@ export function usePrintDepositFromForm() {
         year: getYear(),
         contributionStatus: formData.contributionStatus,
         contributionAmount: formData.contributionAmount,
+        type: depositType,
       },
       contact: {
         lastName: formData.lastName,
@@ -44,5 +47,5 @@ export function usePrintDepositFromForm() {
     })
     await printPdf(<DepositPdf data={data} copy={2} />)
     setValue('isSummaryPrinted', true)
-  }, [getValues, trigger, setValue])
+  }, [getValues, trigger, setValue, depositType])
 }

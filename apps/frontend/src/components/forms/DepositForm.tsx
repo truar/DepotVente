@@ -146,7 +146,7 @@ export function DepositForm(props: DepositFormProps) {
           <ArticleForm depositIndex={depositIndex} />
 
           <div className="flex justify-end gap-4">
-            <SummaryPrintButton />
+            <SummaryPrintButton depositType={depositType} />
             <ConfirmationDialog
               trigger={
                 <CustomButton type="button" variant="destructive">
@@ -667,8 +667,8 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
   )
 }
 
-function SummaryPrintButton() {
-  const print = usePrintDepositFromForm()
+function SummaryPrintButton(props: { depositType: 'PARTICULIER' | 'PRO' }) {
+  const print = usePrintDepositFromForm(props.depositType)
 
   return (
     <CustomButton type="button" onClick={print} variant="secondary">

@@ -178,8 +178,11 @@ type DepositPdfData = {
     year: number
     contributionAmount: number
     contributionStatus: string
+    // Absent sur les fiches construites avant que le type ne soit porté
+    // jusqu'ici : traitées comme des fiches particulier.
+    type?: 'PRO' | 'PARTICULIER'
   }
-  articles?: Article[]
+  articles?: Array<Article>
   contact: {
     lastName: string
     firstName: string
@@ -211,8 +214,11 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
   const depositPages = deposits.map((data) => {
     const {
       articles = [],
-      deposit: { contributionStatus },
+      deposit: { contributionStatus, type: depositType },
     } = data
+    // Un pro ne vient pas récupérer son matériel le samedi soir avec les
+    // déposants, et les annonces aux adhérents ne le concernent pas.
+    const isPro = depositType === 'PRO'
     let contribution = null
     if (contributionStatus === 'A_PAYER') {
       contribution = (
@@ -276,8 +282,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             subPageNumber > 1 ? (
               <>
                 <Text style={styles.name}>
-                  {data.contact.lastName.toUpperCase()}{' '}
-                  {data.contact.firstName}
+                  {data.contact.lastName.toUpperCase()} {data.contact.firstName}
                 </Text>
                 <Text>Fiche N° {data.deposit.depositIndex}</Text>
               </>
@@ -327,10 +332,14 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             </View>
           </View>
           <View style={styles.globalInformation}>
-            <View style={styles.pickupInformation}>
-              <Text>Matériel à récupérer samedi soir entre 18h30 et 20h30</Text>
-            </View>
-            {showMemberInformation && (
+            {!isPro && (
+              <View style={styles.pickupInformation}>
+                <Text>
+                  Matériel à récupérer samedi soir entre 18h30 et 20h30
+                </Text>
+              </View>
+            )}
+            {showMemberInformation && !isPro && (
               <View style={styles.information}>
                 <Text>Information:</Text>
                 <Text>
@@ -381,7 +390,9 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             </View>
 
             {articles.map((article, index) => {
-              const cellStyle = article.isDeleted ? styles.deletedCell : undefined
+              const cellStyle = article.isDeleted
+                ? styles.deletedCell
+                : undefined
               const rowStyle = article.isDeleted
                 ? [styles.tableRow, styles.tableRowDeleted]
                 : styles.tableRow
@@ -465,10 +476,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
   )
 }
 
-function CategorySubtotalRow(props: {
-  category: string
-  articles: Article[]
-}) {
+function CategorySubtotalRow(props: { category: string; articles: Array<Article> }) {
   const { category, articles } = props
   const inCategory = articles.filter(
     (a) => a.category === category && !a.isDeleted,

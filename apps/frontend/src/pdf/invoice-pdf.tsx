@@ -152,7 +152,7 @@ type InvoicePdfData = {
     date: Date
     year: number
   }
-  articles?: Article[]
+  articles?: Array<Article>
   contact: {
     lastName: string
     firstName: string

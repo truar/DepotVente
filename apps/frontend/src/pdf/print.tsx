@@ -1,10 +1,11 @@
+import {  pdf } from '@react-pdf/renderer'
+import type {DocumentProps} from '@react-pdf/renderer';
 import type { ReactElement } from 'react'
-import { type DocumentProps, pdf } from '@react-pdf/renderer'
 
 export async function printPdf(Pdf: ReactElement<DocumentProps>) {
   const blob = await pdf(Pdf).toBlob()
   const blobURL = URL.createObjectURL(blob)
-  const iframe = document.createElement('iframe') //load content in an iframe to print later
+  const iframe = document.createElement('iframe') // load content in an iframe to print later
   document.body.appendChild(iframe)
 
   iframe.style.display = 'none'

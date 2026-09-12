@@ -22,6 +22,7 @@ export async function loadPendingArticlesPdfData(
       depositIndex: deposit.depositIndex,
       contributionStatus: deposit.contributionStatus,
       contributionAmount: deposit.contributionAmount,
+      type: deposit.type,
       year: getYear(),
     },
     contact: {

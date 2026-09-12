@@ -148,7 +148,7 @@ type ReturnDepositsPdfData = {
     dueContributionAmount: number
     countSoldArticles: number
   }
-  articles?: Article[]
+  articles?: Array<Article>
   contact: {
     lastName: string
     firstName: string

@@ -20,6 +20,7 @@ export type DepositPdfDataSource = {
     year: number
     contributionStatus: string
     contributionAmount: number
+    type?: 'PRO' | 'PARTICULIER'
   }
   contact: {
     lastName: string

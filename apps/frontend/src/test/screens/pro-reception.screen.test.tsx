@@ -150,7 +150,7 @@ describe('Screen: receiving a professional’s articles', () => {
   // The sheet of what is still missing is a working list for the desk and
   // the professional: the announcements to the club members have no place
   // on it, unlike on the deposit sheet a private seller takes home.
-  it('prints the pending articles without the club announcements', async () => {
+  it('prints the pending articles without the notices meant for members', async () => {
     const page = await proReceptionPage()
     await page.pickPro('Allo')
     await page.showPending()
@@ -162,9 +162,9 @@ describe('Screen: receiving a professional’s articles', () => {
     expect(sheet).toContain('Fiche N° 3')
     expect(sheet).toContain('ALLO Ski')
     expect(sheet).toContain('Sous-total Skis : 2 articles')
-    expect(sheet).toContain(
-      'Matériel à récupérer samedi soir entre 18h30 et 20h30',
-    )
+    // A professional collects nothing on Saturday evening, and the club's
+    // announcements are not addressed to a shop.
+    expect(sheet).not.toMatch(/Matériel à récupérer/)
     expect(sheet).not.toContain('Information:')
     expect(sheet).not.toContain('Assembléé générale')
     expect(sheet).not.toContain('carte-neige')
