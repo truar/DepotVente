@@ -62,7 +62,12 @@ eur_sql() {
   printf "translate(to_char(coalesce(%s,0), '999G990D00'), ',.', ' ,')" "$1"
 }
 eur() {
-  awk -v n="${1:-0}" 'BEGIN {
+  # LC_ALL=C est indispensable : sous une locale française, awk formate %.2f en
+  # "188040,66", le split sur "." ne trouve rien, et la boucle de groupement
+  # découpe la virgule des centimes comme un séparateur de milliers - on
+  # obtenait "188 040 ,66, €". Les octaux du € sont des octets bruts, ils ne
+  # dépendent pas de la locale.
+  LC_ALL=C awk -v n="${1:-0}" 'BEGIN {
     sign = (n < 0) ? "-" : ""; if (n < 0) n = -n
     split(sprintf("%.2f", n), part, ".")
     whole = part[1]; grouped = ""
@@ -85,7 +90,12 @@ fi
 
 # Every count below ignores what was deleted: a deleted article never existed
 # as far as the day is concerned, and a deleted sale was rung up by mistake.
-LIVE_ARTICLES="deleted_at is null and status <> 'DELETED'"
+# Le préfixe est porté par chaque prédicat, pas seulement le premier :
+# "a.$LIVE_ARTICLES" ne qualifiait que `deleted_at` et laissait `status` nu, ce
+# qui ne marchait que parce qu'`articles` est la seule table du schéma à avoir
+# une colonne de ce nom. Ici l'alias est passé en argument.
+live_articles() { local a="${1:+$1.}"; printf "%sdeleted_at is null and %sstatus <> 'DELETED'" "$a" "$a"; }
+LIVE_ARTICLES="$(live_articles)"
 
 say "Deposits"
 if ! read -r FICHES PARTICULIERS PROS < <(q "
@@ -106,7 +116,7 @@ read -r PRO_PENDING PRO_RECEIVED PRO_TOTAL < <(q "
          count(*) filter (where a.status<>'RECEPTION_PENDING'),
          count(*)
   from articles a join deposits d on d.id = a.deposit_id
-  where a.$LIVE_ARTICLES and d.deleted_at is null and d.type='PRO'")
+  where $(live_articles a) and d.deleted_at is null and d.type='PRO'")
 if [ "${PRO_TOTAL:-0}" -eq 0 ]; then
   warn "No professional article in the base"
 else
@@ -119,7 +129,7 @@ else
            count(a.id) as \"Total\"
     from deposits d
     join contacts c on c.id = d.seller_id
-    left join articles a on a.deposit_id = d.id and a.$LIVE_ARTICLES
+    left join articles a on a.deposit_id = d.id and $(live_articles a)
     where d.type='PRO' and d.deleted_at is null
     group by 1, 2 order by 1"
 fi
