@@ -98,6 +98,11 @@ La planche ajoute un échantillon d'articles **particuliers** invendus
 chaussure, un vêtement, ...) pour mélanger vendeurs et rayons. Les
 pseudo-catégories `Zabsent` et `Zrefusé` sont exclues.
 
+À l'impression, **chaque groupe pro (fiche × catégorie) commence sur une page
+neuve**, et la partie particuliers aussi : on scanne une catégorie d'une traite
+sans qu'un autre lot traîne en bas de la feuille. L'échantillon particulier
+reste un seul groupe, qui coule sur autant de pages qu'il faut.
+
 ```bash
 # Sortie par défaut : tmp/pro-barcodes.html (dossier ignoré par git)
 pnpm --filter backend script:pro-barcodes

@@ -103,7 +103,13 @@ function renderArticle(article: ScanArticle) {
 }
 
 type Group = { title: string; articles: ScanArticle[] };
-type Family = { title: string; note?: string; groups: Group[] };
+// `pageBreakBetweenGroups` : chaque groupe de la famille commence sur une page
+// neuve (hors le premier, qui suit son titre de famille). C'est ce qu'on veut
+// côté pro — une planche par fiche et par catégorie, qu'on scanne d'une traite
+// sans qu'une autre catégorie traîne en bas de page — et pas côté particulier,
+// où l'échantillon reste un seul groupe qui coule sur autant de pages qu'il
+// faut.
+type Family = { title: string; note?: string; groups: Group[]; pageBreakBetweenGroups?: boolean };
 
 const ARTICLES_PER_ROW = 3;
 
@@ -121,8 +127,8 @@ ${articles.slice(start, start + ARTICLES_PER_ROW).map(renderArticle).join('\n')}
   return rows.join('\n');
 }
 
-function renderGroup(group: Group) {
-  return `    <section>
+function renderGroup(group: Group, pageBreak: boolean) {
+  return `    <section${pageBreak ? ' class="page-break"' : ''}>
       <h3>${escapeHtml(group.title)} <small>${group.articles.length} articles à scanner</small></h3>
 ${renderRows(group.articles)}
     </section>`;
@@ -132,18 +138,20 @@ function countArticles(groups: Group[]) {
   return groups.reduce((sum, group) => sum + group.articles.length, 0);
 }
 
-function renderFamily(family: Family) {
+function renderFamily(family: Family, pageBreak: boolean) {
   const count = countArticles(family.groups);
-  return `  <h2>${escapeHtml(family.title)} <small>${count} code${count > 1 ? 's' : ''}</small></h2>${
+  return `  <h2${pageBreak ? ' class="page-break"' : ''}>${escapeHtml(family.title)} <small>${count} code${count > 1 ? 's' : ''}</small></h2>${
     family.note ? `\n  <p class="note">${escapeHtml(family.note)}</p>` : ''
   }
-${family.groups.map(renderGroup).join('\n')}`;
+${family.groups
+    .map((group, index) => renderGroup(group, family.pageBreakBetweenGroups === true && index > 0))
+    .join('\n')}`;
 }
 
 function renderHtml(families: Family[]) {
   const shown = families.filter((family) => family.groups.length > 0);
   const total = shown.reduce((sum, family) => sum + countArticles(family.groups), 0);
-  const sections = shown.map(renderFamily).join('\n');
+  const sections = shown.map((family, index) => renderFamily(family, index > 0)).join('\n');
 
   return `<!doctype html>
 <html lang="fr">
@@ -170,6 +178,10 @@ function renderHtml(families: Family[]) {
   .details { font-size: 7.5pt; color: #444; }
   .owner { font-size: 7.5pt; color: #444; font-style: italic; }
   section { break-inside: auto; page-break-inside: auto; }
+  /* Une planche par groupe pro, et la famille suivante sur sa propre page :
+     on scanne une catégorie d'une traite, sans qu'un autre lot traîne en bas
+     de la feuille. */
+  .page-break { break-before: page; page-break-before: always; }
   @page { size: A4; margin: 10mm; }
   @media print { body { margin: 0; } .intro { display: none; } }
 </style>
@@ -239,7 +251,7 @@ async function generate() {
   const sampledCategories = new Set(sample.map((article) => article.category)).size;
 
   const families: Family[] = [
-    { title: 'Articles pro non réceptionnés', groups: proGroups },
+    { title: 'Articles pro non réceptionnés', groups: proGroups, pageBreakBetweenGroups: true },
     {
       title: 'Articles particuliers invendus',
       note:
