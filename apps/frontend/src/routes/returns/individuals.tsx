@@ -14,7 +14,6 @@ import { FieldError } from '@/components/ui/field.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
-import { Button } from '@/components/ui/button.tsx'
 import { FormattedNumber } from 'react-intl'
 import {
   Table,
@@ -183,7 +182,10 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
         </div>
         <div className="flex flex-col gap-5">
           <div className="flex flex-row gap-5">
-            <DepositSearchForm onClick={(id) => setValue('depositId', id)} />
+            <DepositSearchForm
+              value={depositId ?? null}
+              onSelect={(id) => setValue('depositId', id)}
+            />
           </div>
           {depositId && <DepositData depositId={depositId} />}
         </div>
@@ -219,12 +221,12 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
 }
 
 type DepositSearchFormProps = {
-  onClick: (depositId: string | null) => void
+  value: string | null
+  onSelect: (depositId: string) => void
 }
 
 function DepositSearchForm(props: DepositSearchFormProps) {
-  const { onClick } = props
-  const [value, setValue] = useState<string | null>(null)
+  const { value, onSelect } = props
   const contactsDb = useContactsDb()
   const allDeposits = useLiveQuery(
     () => db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
@@ -269,27 +271,24 @@ function DepositSearchForm(props: DepositSearchFormProps) {
     )
   }, [toBeTreated, contacts])
 
+  // Choisir une fiche dans la liste l'ouvre aussitôt ; la rechoisir ne fait
+  // rien.
+  const handleSelect = useCallback(
+    (depositId: string) => {
+      if (depositId) onSelect(depositId)
+    },
+    [onSelect],
+  )
+
   return (
-    <div className="grid grid-cols-6 gap-2 w-[500px]">
-      <div className="col-span-4">
-        <Combobox
-          emptyLabel="Aucune fiche dépôt"
-          items={items}
-          value={value}
-          onSelect={setValue}
-          placeholder="Rechercher une fiche"
-        />
-      </div>
-      <div>
-        <Button
-          className="col-span-2"
-          type="button"
-          variant="secondary"
-          onClick={() => onClick(value)}
-        >
-          Valider
-        </Button>
-      </div>
+    <div className="w-[500px]">
+      <Combobox
+        emptyLabel="Aucune fiche dépôt"
+        items={items}
+        value={value}
+        onSelect={handleSelect}
+        placeholder="Rechercher une fiche"
+      />
     </div>
   )
 }

@@ -12,7 +12,6 @@ import { DepositForm } from '@/components/forms/DepositForm.tsx'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { db } from '@/db.ts'
 import { Combobox } from '@/components/Combobox.tsx'
-import { Button } from '@/components/ui/button.tsx'
 import { loadDepositFormFromPredeposit } from '@/services/deposit-from-predeposit.ts'
 
 export const Route = createFileRoute('/deposits/add')({
@@ -74,8 +73,14 @@ function DepositAddComponent(props: DepositAddComponentProps) {
   const [formData, setFormData] = useState<
     DepositFormType['deposit'] | undefined
   >(undefined)
-  const [predepositId, setPredepositId] = useState<string | null>(null)
-  const [changeOpen, setChangeOpen] = useState(false)
+  // La fiche chargée dans le formulaire, que la liste affiche ; et celle
+  // choisie en attendant la confirmation de remplacement.
+  const [loadedPredepositId, setLoadedPredepositId] = useState<string | null>(
+    null,
+  )
+  const [requestedPredepositId, setRequestedPredepositId] = useState<
+    string | null
+  >(null)
   const loadPredeposit = useCallback(
     async (predepositId: string) => {
       if (!depositIndex) return
@@ -83,28 +88,32 @@ function DepositAddComponent(props: DepositAddComponentProps) {
         predepositId,
         depositIndex,
       )
-      if (data) setFormData(data)
+      if (!data) return
+      setFormData(data)
+      setLoadedPredepositId(predepositId)
     },
     [depositIndex],
   )
-  // Charger une fiche écrase le formulaire : dès qu'un pré-dépôt y est déjà
-  // chargé, on demande confirmation avant de le remplacer par un autre.
+  // Choisir une fiche dans la liste la charge aussitôt. Charger une fiche
+  // écrase le formulaire : dès qu'un pré-dépôt y est déjà chargé, on demande
+  // confirmation avant de le remplacer par un autre. Rechoisir la fiche déjà
+  // chargée ne fait rien.
   const requestPredeposit = useCallback(
     (id: string) => {
+      if (!id || id === loadedPredepositId) return
       if (formData) {
-        setChangeOpen(true)
+        setRequestedPredepositId(id)
         return
       }
       void loadPredeposit(id)
     },
-    [formData, loadPredeposit],
+    [formData, loadedPredepositId, loadPredeposit],
   )
   return (
     <div className="flex flex-col gap-5">
       <PredepositComboBox
-        onChange={requestPredeposit}
-        value={predepositId}
-        onSelect={setPredepositId}
+        value={loadedPredepositId}
+        onSelect={requestPredeposit}
       />
       <DepositForm
         depositIndex={depositIndex}
@@ -112,27 +121,28 @@ function DepositAddComponent(props: DepositAddComponentProps) {
         mutation={createDepotMutation}
         onReset={() => {
           setFormData(undefined)
-          setPredepositId(null)
+          setLoadedPredepositId(null)
         }}
       />
       <ConfirmationDialog
-        open={changeOpen}
-        onOpenChange={setChangeOpen}
+        open={requestedPredepositId !== null}
+        onOpenChange={(open) => {
+          if (!open) setRequestedPredepositId(null)
+        }}
         title="Etes vous sur de vouloir changer de fiche de pré-dépot ?"
         description="Les données non enregistrées seront perdues."
-        onConfirm={() => void loadPredeposit(predepositId ?? '')}
+        onConfirm={() => void loadPredeposit(requestedPredepositId ?? '')}
       />
     </div>
   )
 }
 
 type PredepositComboBoxProps = {
-  onChange?: (id: string) => void
   value: string | null
-  onSelect: (id: string | null) => void
+  onSelect: (id: string) => void
 }
 function PredepositComboBox(props: PredepositComboBoxProps) {
-  const { onChange, value: predepositId, onSelect: setPredepositId } = props
+  const { value, onSelect } = props
   const predepositItems = useLiveQuery(async () => {
     const collator = new Intl.Collator('fr', { sensitivity: 'base' })
     const predeposits = await db.predeposits
@@ -150,29 +160,14 @@ function PredepositComboBox(props: PredepositComboBoxProps) {
     }))
   }, [])
 
-  const handleClick = useCallback(
-    () => onChange?.(predepositId ?? ''),
-    [onChange, predepositId],
-  )
-
   return (
-    <div className="grid grid-cols-6 gap-2 w-[500px]">
-      <div className="col-span-4">
-        <Combobox
-          items={predepositItems ?? []}
-          value={predepositId}
-          onSelect={setPredepositId}
-          placeholder="Rechercher une fiche de pré-dépot"
-        />
-      </div>
-      <Button
-        className="col-span-2"
-        type="button"
-        variant="secondary"
-        onClick={handleClick}
-      >
-        Valider
-      </Button>
+    <div className="w-[500px]">
+      <Combobox
+        items={predepositItems ?? []}
+        value={value}
+        onSelect={onSelect}
+        placeholder="Rechercher une fiche de pré-dépot"
+      />
     </div>
   )
 }

@@ -61,6 +61,8 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('starts with nothing received and the whole deposit to check in', async () => {
     const page = await proReceptionPage()
+    // Picking a professional is enough: there is no "Valider" after it.
+    expect(page.hasButton('Valider')).toBe(false)
     await page.pickPro('Allo')
 
     expect(page.scannedCount()).toBe(0)

@@ -42,19 +42,19 @@ export function RouteComponent() {
       title="Retourner les articles des pros"
     >
       <div className="flex flex-col gap-5">
-        <ProSearchForm onClick={setDepositId} />
+        <ProSearchForm value={depositId} onSelect={setDepositId} />
         {depositId && <ProArticlesForm depositId={depositId} />}
       </div>
     </Page>
   )
 }
 type ProSearchFormProps = {
-  onClick: (depositId: string | null) => void
+  value: string | null
+  onSelect: (depositId: string) => void
 }
 
 function ProSearchForm(props: ProSearchFormProps) {
-  const { onClick } = props
-  const [value, setValue] = useState<string | null>(null)
+  const { value, onSelect } = props
   const depositsDb = useDepositsDb()
   const contactsDb = useContactsDb()
   const deposits = useLiveQuery(() => depositsDb.findProfessionals())
@@ -88,27 +88,24 @@ function ProSearchForm(props: ProSearchFormProps) {
     )
   }, [deposits, contacts])
 
+  // Choisir un pro dans la liste l'ouvre aussitôt ; le rechoisir ne fait
+  // rien.
+  const handleSelect = useCallback(
+    (depositId: string) => {
+      if (depositId) onSelect(depositId)
+    },
+    [onSelect],
+  )
+
   return (
-    <div className="grid grid-cols-6 gap-2 w-[500px]">
-      <div className="col-span-4">
-        <Combobox
-          emptyLabel="Aucun dépôt professionnel"
-          items={items}
-          value={value}
-          onSelect={setValue}
-          placeholder="Rechercher un professionnel"
-        />
-      </div>
-      <div>
-        <Button
-          className="col-span-2"
-          type="button"
-          variant="secondary"
-          onClick={() => onClick(value)}
-        >
-          Valider
-        </Button>
-      </div>
+    <div className="w-[500px]">
+      <Combobox
+        emptyLabel="Aucun dépôt professionnel"
+        items={items}
+        value={value}
+        onSelect={handleSelect}
+        placeholder="Rechercher un professionnel"
+      />
     </div>
   )
 }
@@ -274,9 +271,7 @@ function ArticleList(props: ArticleListProps) {
   const { depositId, mode } = props
 
   const articles = useLiveQuery(async () => {
-    const rows = await db.articles
-      .where({ depositId, status: mode })
-      .toArray()
+    const rows = await db.articles.where({ depositId, status: mode }).toArray()
     rows.sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),

@@ -23,19 +23,20 @@ export async function depositAddPage(user?: User) {
     pathname: () => opened.router?.state.location.pathname ?? null,
 
     // ---- predeposit combobox ------------------------------------------
+    // Picking a fiche in the list loads it at once, unless the screen first
+    // asks before replacing the one already loaded.
     async pickPredeposit(name: string) {
       await u.click(page.predepositCombobox())
       await u.click(await screen.findByRole('option', { name }))
     },
-    async validatePredeposit() {
-      await page.clickValidatePredeposit()
-      // The form is filled asynchronously from the local base.
+    // Picking a fiche on an empty form, and waiting for the form to fill:
+    // it is filled asynchronously from the local base.
+    async loadPredeposit(name: string) {
+      await page.pickPredeposit(name)
       await waitFor(() => expect(page.seller().lastName).not.toBe(''))
     },
-    // Validating without waiting for the form: used when the screen asks
-    // before replacing a fiche already loaded.
-    async clickValidatePredeposit() {
-      await u.click(screen.getByRole('button', { name: 'Valider' }))
+    hasButton(name: string) {
+      return screen.queryByRole('button', { name }) !== null
     },
     // The fiche the combobox shows, or null when it shows its placeholder.
     selectedPredeposit(): string | null {

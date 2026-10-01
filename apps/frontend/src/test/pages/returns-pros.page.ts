@@ -31,12 +31,13 @@ export async function returnsProsPage() {
       await u.click(
         await screen.findByRole('option', { name: new RegExp(search, 'i') }),
       )
-      await u.click(screen.getByRole('button', { name: 'Valider' }))
       await screen.findByText("Nombre d'articles scannés")
     },
     // The search above the form; the article table below has its own
     // column filters, which are comboboxes too.
     proCombobox: () => screen.getAllByRole('combobox')[0],
+    hasButton: (name: string) =>
+      screen.queryByRole('button', { name }) !== null,
     // The professional the combobox shows, e.g. "4 - Jean Perrillat".
     selectedPro: () => page.proCombobox().textContent.trim(),
 

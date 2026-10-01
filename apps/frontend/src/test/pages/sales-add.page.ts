@@ -103,13 +103,30 @@ export async function salesAddPage() {
       if (!city) throw new Error('No city input on the screen')
       return city.value
     },
-    // The contact combobox above the buyer block, then its "Valider".
+    hasButton: (name: string) =>
+      screen.queryByRole('button', { name }) !== null,
+    // The contact the combobox shows, or null when it shows its placeholder.
+    // The contact search, the only combobox that is a button (the city is a
+    // datalist input).
+    buyerCombobox() {
+      const button = screen
+        .getAllByRole('combobox')
+        .find((el) => el.tagName === 'BUTTON')
+      if (!button) throw new Error('No contact combobox on the screen')
+      return button
+    },
+    // The contact the combobox shows, or null when it shows its placeholder.
+    selectedBuyer(): string | null {
+      const text = page.buyerCombobox().textContent.trim()
+      return text === 'Rechercher un nom' ? null : text
+    },
+    // The contact combobox above the buyer block: picking a contact fills
+    // the buyer at once.
     async pickBuyer(name: string) {
-      await u.click(screen.getByText(/Rechercher un nom/))
+      await u.click(page.buyerCombobox())
       const popover = await screen.findByRole('dialog')
       await u.type(within(popover).getByRole('combobox'), name)
       await u.click(await screen.findByRole('option', { name }))
-      await u.click(screen.getByRole('button', { name: 'Valider' }))
       await waitFor(() => expect(page.buyer().lastName).not.toBe(''))
     },
 

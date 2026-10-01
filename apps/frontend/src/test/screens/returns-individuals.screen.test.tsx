@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
+import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { returnsIndividualsPage } from '@/test/pages/returns-individuals.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
@@ -23,9 +23,11 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     })
   })
 
+  // Picking a fiche is enough: there is no "Valider" to press after it.
   it('shows the amounts of the fiche picked in the list', async () => {
     const page = await returnsIndividualsPage()
     expect(page.depositRow()).toBeNull()
+    expect(page.hasButton('Valider')).toBe(false)
 
     await page.pickDeposit('Durand')
 
@@ -48,5 +50,34 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     expect(page.selectedDeposit()).toBe('13 - Jean Bon')
     await waitFor(() => expect(page.depositRow()?.[0]).toBe('13'))
     expect(page.depositRow()?.[3]).toBe('22,00 €')
+  })
+
+  // Picking the open fiche a second time, by a slip of the hand, must not
+  // close it.
+  it('keeps the fiche open when it is picked again', async () => {
+    const page = await returnsIndividualsPage()
+    await page.pickDeposit('Durand')
+
+    await page.pickDeposit('Durand')
+
+    expect(page.selectedDeposit()).toBe('12 - Camille Durand')
+    expect(page.depositRow()?.[0]).toBe('12')
+  })
+
+  // Once its cheque is written, the fiche is done: the list empties, ready
+  // for the next seller, and no longer offers it.
+  it('empties the list once the cheque is written, and stops offering the fiche', async () => {
+    const page = await returnsIndividualsPage()
+    await page.pickDeposit('Durand')
+    await page.fillCheque({ signatory: 'Paul', checkId: '1042' })
+    await page.printCheque()
+
+    await page.nextCheque()
+
+    await waitFor(() => expect(page.depositRow()).toBeNull())
+    expect(page.selectedDeposit()).toBe('Rechercher une fiche')
+    expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon'])
+    const durand = (await local.deposits()).find((d) => d.depositIndex === 12)
+    expect(durand).toMatchObject({ signatory: 'Paul', checkId: '1042' })
   })
 })

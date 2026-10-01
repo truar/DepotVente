@@ -101,7 +101,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
         </CommandItem>
       )
     })
-  }, [items, value])
+  }, [items, value, onSelect])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

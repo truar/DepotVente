@@ -278,41 +278,34 @@ function ContactSearchForm() {
     [contacts],
   )
 
-  const [contactId, setContactId] = useState<string | null>(null)
-  const formContactId = watch('buyer.contactId')
-  useEffect(() => {
-    if (formContactId == null) setContactId(null)
-  }, [formContactId])
-  const prefillBuyerInformation = useCallback(async () => {
-    if (!contactId) return
-    const contact = await contactsDb.findById(contactId)
-    if (!contact) return
-    setValue('buyer.contactId', contact.id)
-    setValue('buyer.lastName', contact.lastName)
-    setValue('buyer.firstName', contact.firstName)
-    setValue('buyer.phoneNumber', contact.phoneNumber)
-    setValue('buyer.city', contact.city)
-    articleCodeRef?.current?.focus()
-  }, [setValue, contactId, contactsDb, articleCodeRef])
+  // La liste affiche le contact chargé dans le bloc Acheteur ; elle se vide
+  // dès que l'acheteur est retouché à la main ou que la vente est réinitialisée.
+  const contactId = watch('buyer.contactId') ?? null
+  // Choisir un contact dans la liste remplit aussitôt le bloc Acheteur ; le
+  // rechoisir ne fait rien.
+  const prefillBuyerInformation = useCallback(
+    async (id: string) => {
+      if (!id) return
+      const contact = await contactsDb.findById(id)
+      if (!contact) return
+      setValue('buyer.contactId', contact.id)
+      setValue('buyer.lastName', contact.lastName)
+      setValue('buyer.firstName', contact.firstName)
+      setValue('buyer.phoneNumber', contact.phoneNumber)
+      setValue('buyer.city', contact.city)
+      articleCodeRef?.current?.focus()
+    },
+    [setValue, contactsDb, articleCodeRef],
+  )
 
   return (
-    <div className="grid grid-cols-6 gap-2 w-[500px]">
-      <div className="col-span-4">
-        <Combobox
-          items={contactItems}
-          value={contactId}
-          onSelect={setContactId}
-          placeholder="Rechercher un nom"
-        />
-      </div>
-      <Button
-        className="col-span-2"
-        type="button"
-        variant="secondary"
-        onClick={prefillBuyerInformation}
-      >
-        Valider
-      </Button>
+    <div className="w-[500px]">
+      <Combobox
+        items={contactItems}
+        value={contactId}
+        onSelect={(id) => void prefillBuyerInformation(id)}
+        placeholder="Rechercher un nom"
+      />
     </div>
   )
 }

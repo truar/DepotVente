@@ -35,8 +35,7 @@ describe('Screen: register a deposit from a predeposit', () => {
   it('fills the form from the predeposit and saves the deposit', async () => {
     const page = await depositAddPage()
 
-    await page.pickPredeposit('Martin Lucie')
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
 
     expect(page.seller()).toEqual({
       lastName: 'Martin',
@@ -108,17 +107,25 @@ describe('Screen: register a deposit from a predeposit', () => {
     ])
   })
 
-  // Current behaviour, pinned: validating does not clear the combobox, so
-  // the volunteer can see which predeposit the form came from while filling
-  // it. The selection clears with the form once the deposit is saved, and
-  // the predeposit, now used, is no longer offered.
+  // Picking a fiche is enough: there is no "Valider" to press after it.
+  it('fills the form as soon as the fiche is picked in the list', async () => {
+    const page = await depositAddPage()
+    expect(page.hasButton('Valider')).toBe(false)
+
+    await page.pickPredeposit('Martin Lucie')
+
+    await waitFor(() => expect(page.seller().lastName).toBe('Martin'))
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
+  })
+
+  // The combobox keeps showing the fiche, so the volunteer can see which
+  // predeposit the form came from while filling it. The selection clears
+  // with the form once the deposit is saved, and the predeposit, now used,
+  // is no longer offered.
   it('keeps the predeposit selected until the deposit is saved, then clears it and stops offering it', async () => {
     const page = await depositAddPage()
 
-    await page.pickPredeposit('Martin Lucie')
-    expect(page.selectedPredeposit()).toBe('Martin Lucie')
-
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
     expect(page.selectedPredeposit()).toBe('Martin Lucie')
 
     await page.chooseStatus('A payer')
@@ -131,8 +138,23 @@ describe('Screen: register a deposit from a predeposit', () => {
     expect(await page.offeredPredeposits()).toEqual([])
   })
 
+  // Picking the loaded fiche a second time, by a slip of the hand, must not
+  // empty the list nor touch what was typed on the form.
+  it('keeps the fiche and the form when the loaded fiche is picked again', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+    await page.fillSeller({ lastName: '', firstName: '', phoneNumber: '22' })
+
+    await page.pickPredeposit('Martin Lucie')
+
+    expect(page.isDialogOpen()).toBe(false)
+    expect(page.selectedPredeposit()).toBe('Martin Lucie')
+    expect(page.seller().phoneNumber).toBe('061111111122')
+  })
+
   // Loading a fiche overwrites everything already on the form, so the
-  // screen asks before swapping one loaded fiche for another.
+  // screen asks before swapping one loaded fiche for another. Answering
+  // "Non" leaves both the form and the list on the fiche already loaded.
   it('asks before replacing the fiche already loaded in the form', async () => {
     await givenPredeposit({
       predepositIndex: 8,
@@ -141,24 +163,24 @@ describe('Screen: register a deposit from a predeposit', () => {
     })
     const page = await depositAddPage()
 
-    await page.pickPredeposit('Martin Lucie')
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
     expect(page.seller().lastName).toBe('Martin')
 
     await page.pickPredeposit('Durand Sophie')
-    await page.clickValidatePredeposit()
     let dialog = await page.dialog()
     expect(dialog.title).toBe(
       'Etes vous sur de vouloir changer de fiche de pré-dépot ?',
     )
     await dialog.decline()
     expect(page.seller().lastName).toBe('Martin')
+    expect(page.selectedPredeposit()).toBe('Martin Lucie')
 
-    await page.clickValidatePredeposit()
+    await page.pickPredeposit('Durand Sophie')
     dialog = await page.dialog()
     await dialog.confirm()
     await waitFor(() => expect(page.seller().lastName).toBe('Durand'))
     expect(page.seller().firstName).toBe('Sophie')
+    expect(page.selectedPredeposit()).toBe('Durand Sophie')
   })
 })
 
@@ -309,8 +331,7 @@ describe('Screen: the contribution follows the number of articles', () => {
 
   it('charges 4 € for eleven articles, 2 € once one is removed, 4 € again when it is restored', async () => {
     const page = await depositAddPage()
-    await page.pickPredeposit('Martin Lucie')
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
 
     expect(page.articleCount()).toBe(11)
     expect(page.contributionAmount()).toBe(4)
@@ -425,8 +446,7 @@ describe('Screen: article rows', () => {
       { category: 'Chaussures', brand: 'Nordica' },
     ])
     const page = await depositAddPage()
-    await page.pickPredeposit('Martin Lucie')
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
 
     await page.removeArticle(1)
     expect(page.isArticleDeleted(1)).toBe(true)
@@ -458,8 +478,7 @@ describe('Screen: leaving a half-typed deposit', () => {
 
   it('"Annuler" asks first, then wipes the form and the predeposit selection', async () => {
     const page = await depositAddPage()
-    await page.pickPredeposit('Martin Lucie')
-    await page.validatePredeposit()
+    await page.loadPredeposit('Martin Lucie')
 
     await page.cancel()
     let dialog = await page.dialog()

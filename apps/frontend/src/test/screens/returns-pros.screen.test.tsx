@@ -35,6 +35,8 @@ describe('Screen: return the unsold articles to a professional', () => {
   it('opens the professional picked in the list, then scans their articles out', async () => {
     const page = await returnsProsPage()
     expect(page.isScanOpen()).toBe(false)
+    // Picking a professional is enough: there is no "Valider" after it.
+    expect(page.hasButton('Valider')).toBe(false)
 
     await page.pickPro('Perrillat')
 
@@ -61,5 +63,17 @@ describe('Screen: return the unsold articles to a professional', () => {
     await page.pickPro('Allo')
     expect(page.selectedPro()).toBe('3 - Ski Allo')
     await waitFor(() => expect(page.toReturnCount()).toBe(1))
+  })
+
+  // Picking the open professional a second time, by a slip of the hand,
+  // must not close their articles.
+  it('keeps the professional open when picked again', async () => {
+    const page = await returnsProsPage()
+    await page.pickPro('Perrillat')
+
+    await page.pickPro('Perrillat')
+
+    expect(page.selectedPro()).toBe('4 - Jean Perrillat')
+    expect(page.isScanOpen()).toBe(true)
   })
 })

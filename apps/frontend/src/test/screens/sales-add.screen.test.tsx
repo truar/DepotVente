@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
 import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
-import { signedInAs } from '@/test/screen.tsx'
+import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 const buyer = {
   lastName: 'Petit',
@@ -301,6 +301,8 @@ describe('Screen: sell to a buyer already known', () => {
   it('fills the buyer from the contact picked in the list, and sells to that contact', async () => {
     const page = await salesAddPage()
     await page.scan(code)
+    // Picking a contact is enough: there is no "Valider" after it.
+    expect(page.hasButton('Valider')).toBe(false)
 
     await page.pickBuyer('Durand Camille')
 
@@ -318,5 +320,29 @@ describe('Screen: sell to a buyer already known', () => {
     const [sale] = await local.sales()
     expect(sale.buyerId).toBe(camilleId)
     expect(await local.contacts()).toHaveLength(1)
+  })
+
+  // Picking the same contact a second time, by a slip of the hand, must
+  // not undo it.
+  it('keeps the buyer when the same contact is picked again', async () => {
+    const page = await salesAddPage()
+    await page.pickBuyer('Durand Camille')
+
+    await page.pickBuyer('Durand Camille')
+
+    expect(page.buyer().lastName).toBe('Durand')
+    expect(page.selectedBuyer()).toBe('Durand Camille')
+  })
+
+  // The list shows the contact the buyer block was filled from; once the
+  // volunteer retypes the buyer by hand, it is no longer that contact.
+  it('empties the list when the buyer is then retyped by hand', async () => {
+    const page = await salesAddPage()
+    await page.pickBuyer('Durand Camille')
+    expect(page.selectedBuyer()).toBe('Durand Camille')
+
+    await page.fillBuyer({ phoneNumber: '1' })
+
+    await waitFor(() => expect(page.selectedBuyer()).toBeNull())
   })
 })

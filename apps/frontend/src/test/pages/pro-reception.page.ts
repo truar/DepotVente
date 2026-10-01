@@ -32,9 +32,10 @@ export async function proReceptionPage() {
       await u.click(
         await screen.findByRole('option', { name: new RegExp(search, 'i') }),
       )
-      await u.click(screen.getByRole('button', { name: 'Valider' }))
       await screen.findByText("Nombre d'articles scannés")
     },
+    hasButton: (name: string) =>
+      screen.queryByRole('button', { name }) !== null,
 
     // ---- scanning ------------------------------------------------------
     // A barcode scanner types the code and presses Enter.
