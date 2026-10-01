@@ -1,14 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { proReceptionPage } from '@/test/pages/pro-reception.page.ts'
+import { returnsProsPage } from '@/test/pages/returns-pros.page.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
-import {
-  openScreen,
-  screen,
-  signedInAs,
-  waitFor,
-  within,
-} from '@/test/screen.tsx'
+import { openScreen, screen, signedInAs, waitFor } from '@/test/screen.tsx'
 
 // Article codes are stored with upper-case letters. A scanner that reads a
 // label in lower case — or a volunteer typing a code with caps lock off —
@@ -60,22 +55,10 @@ describe('Screen: an article code entered in lower case', () => {
       },
       [{ price: 90, status: 'RECEPTION_OK' }],
     )
-    const { user } = await openScreen('/returns/pros')
-    await screen.findByRole('heading', {
-      name: 'Retourner les articles des pros',
-    })
-    await user.click(screen.getByText(/Rechercher un professionnel/))
-    const popover = await screen.findByRole('dialog')
-    await user.type(within(popover).getByRole('combobox'), 'Perrillat')
-    await user.click(await screen.findByRole('option', { name: /Perrillat/i }))
-    await user.click(screen.getByRole('button', { name: 'Valider' }))
+    const page = await returnsProsPage()
+    await page.pickPro('Perrillat')
 
-    const input = await waitFor(() => {
-      const field = document.querySelector<HTMLInputElement>('#articleCode')
-      if (!field) throw new Error('No scan input on the screen')
-      return field
-    })
-    await user.type(input, `${articles[0].code.toLowerCase()}{Enter}`)
+    await page.scan(articles[0].code.toLowerCase())
 
     await waitFor(async () =>
       expect((await local.articles())[0].status).toBe('RETURNED'),

@@ -282,3 +282,41 @@ describe('Screen: the invoice', () => {
     expect(text).not.toContain('50,00 €')
   })
 })
+
+// Camille Durand left skis this morning; in the afternoon she buys boots.
+// She is already a contact: the volunteer finds her in the list instead of
+// typing her again.
+describe('Screen: sell to a buyer already known', () => {
+  let code: string
+  let camilleId: string
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { contact, articles } = await givenDeposit({}, [{ price: 80 }])
+    code = articles[0].code
+    camilleId = contact.id
+  })
+
+  it('fills the buyer from the contact picked in the list, and sells to that contact', async () => {
+    const page = await salesAddPage()
+    await page.scan(code)
+
+    await page.pickBuyer('Durand Camille')
+
+    expect(page.buyer()).toEqual({
+      lastName: 'Durand',
+      firstName: 'Camille',
+      phoneNumber: '0600000000',
+    })
+    expect(page.buyerCity()).toBe('Grenoble')
+
+    await page.pay({ cash: 80 })
+    await page.save()
+    await page.savedToast(2001)
+
+    const [sale] = await local.sales()
+    expect(sale.buyerId).toBe(camilleId)
+    expect(await local.contacts()).toHaveLength(1)
+  })
+})

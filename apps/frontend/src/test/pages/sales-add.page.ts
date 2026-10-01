@@ -95,6 +95,14 @@ export async function salesAddPage() {
         phoneNumber: value('Téléphone'),
       }
     },
+    // Datalist field: its label is not bound to the input.
+    buyerCity() {
+      const city = document.querySelector<HTMLInputElement>(
+        'input[name="buyer.city"]',
+      )
+      if (!city) throw new Error('No city input on the screen')
+      return city.value
+    },
     // The contact combobox above the buyer block, then its "Valider".
     async pickBuyer(name: string) {
       await u.click(screen.getByText(/Rechercher un nom/))
