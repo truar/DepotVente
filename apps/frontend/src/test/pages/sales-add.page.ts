@@ -121,6 +121,20 @@ export async function salesAddPage() {
       await waitFor(() => expect(page.buyer().lastName).not.toBe(''))
     },
 
+    // The contacts the list offers for what is typed in its search, e.g.
+    // ['Durand Camille'].
+    async offeredBuyers(search: string): Promise<Array<string>> {
+      await u.click(page.buyerCombobox())
+      const popover = await screen.findByRole('dialog')
+      await u.type(within(popover).getByRole('combobox'), search)
+      await screen.findByRole('listbox')
+      const names = screen
+        .queryAllByRole('option')
+        .map((option) => option.textContent.trim())
+      await u.keyboard('{Escape}')
+      return names
+    },
+
     // ---- payment -------------------------------------------------------
     async pay(amounts: {
       cash?: number

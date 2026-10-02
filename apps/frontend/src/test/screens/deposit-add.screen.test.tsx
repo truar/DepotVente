@@ -5,7 +5,9 @@ import {
   givenWorkstation,
   local,
 } from '@/test/harness.ts'
+import { articleEditPage } from '@/test/pages/article-edit.page.ts'
 import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
+import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
 import { lastPrintedText } from '@/test/printed.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
@@ -389,9 +391,14 @@ describe('Screen: the contribution follows the number of articles', () => {
     await page.printSummary()
     await page.save()
     await page.savedToast(1001)
-    expect((await local.deposits())[0]).toMatchObject({
-      contributionStatus: 'PRO',
-      contributionAmount: 0,
+
+    // The deposits list shows it as saved: "Pro", nothing owed.
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.deposit(1001)).toMatchObject({
+      articleCount: 12,
+      contributionStatus: 'Pro',
+      contributionAmount: '0,00 €',
     })
   })
 })
@@ -464,20 +471,29 @@ describe('Screen: required fields block the save', () => {
     expect(page.errors()).toEqual([
       'Merci de compléter les champs obligatoires',
     ])
-    expect(await local.deposits()).toEqual([])
-    expect(await local.contacts()).toEqual([])
-    expect(await local.articles()).toEqual([])
-    expect(await local.outbox()).toEqual([])
+    expect(page.hasText('Dépôt 1001 enregistré')).toBe(false)
+    expect(page.seller().lastName).toBe('Bernard')
 
+    // Once chosen, the deposit saves under the first number: the refused
+    // attempt used none up, and the list holds this deposit alone.
     await page.chooseStatus('Payé')
     await page.printSummary()
     await page.save()
     await page.savedToast(1001)
-    expect(await local.deposits()).toHaveLength(1)
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.depositNumbers()).toEqual([1001])
+    expect(listing.deposit(1001)).toMatchObject({
+      seller: 'Bernard Paul',
+      articleCount: 1,
+      contributionStatus: 'Payé',
+    })
   })
 
   // A seller with nothing to leave is not a deposit: no number is used up
-  // and nothing goes to the server.
+  // and nothing is recorded. Once an article is added, the deposit saves
+  // under the first number and is the only one in the list.
   it('refuses to save a deposit without any article', async () => {
     const page = await depositAddPage()
     await page.fillSeller({
@@ -493,9 +509,22 @@ describe('Screen: required fields block the save', () => {
     expect(page.errors()).toEqual([
       'Merci de compléter les champs obligatoires',
     ])
-    expect(await local.deposits()).toEqual([])
-    expect(await local.contacts()).toEqual([])
-    expect(await local.outbox()).toEqual([])
+    expect(page.hasText('Dépôt 1001 enregistré')).toBe(false)
+    expect(page.seller().lastName).toBe('Bernard')
+
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.depositNumbers()).toEqual([1001])
+    expect(listing.deposit(1001)).toMatchObject({
+      seller: 'Bernard Paul',
+      articleCount: 1,
+    })
   })
 })
 
@@ -562,13 +591,18 @@ describe('Screen: article rows', () => {
     await page.save()
     await page.savedToast(1001)
 
-    const saved = await local.articles()
-    expect(saved).toHaveLength(27)
-    const aa = saved.find((a) => a.identificationLetter === 'AA')
-    expect(aa).toMatchObject({ code: `${YEAR} 1001AA`, brand: 'Rossignol' })
-    expect(saved.find((a) => a.identificationLetter === 'Z')).toMatchObject({
-      code: `${YEAR} 1001Z`,
-    })
+    // The deposit holds the 27 articles...
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.deposit(1001).articleCount).toBe(27)
+
+    // ...and the barcode on each label finds its article: Z is the last
+    // predeposit row, AA the one typed by hand, at its price.
+    const articles = await articleEditPage()
+    await articles.search(`${YEAR} 1001Z`, '1001 Z')
+    expect(articles.price()).toBe('150')
+    await articles.search(`${YEAR} 1001AA`, '1001 AA')
+    expect(articles.price()).toBe('120')
   })
 
   // Rows that came from a predeposit are never removed outright: the seller
@@ -629,15 +663,17 @@ describe('Screen: Enter in a field does not save', () => {
     await page.pressEnterInArticle(0, 'price')
 
     expect(page.errors()).toEqual([])
+    expect(page.hasText('Dépôt 1001 enregistré')).toBe(false)
     expect(page.seller().lastName).toBe('Bernard')
     expect(page.articleCodes()).toEqual(['1001 A'])
-    expect(await local.deposits()).toEqual([])
-    expect(await local.outbox()).toEqual([])
 
     // The button still saves it, once.
     await page.save()
     await page.savedToast(1001)
-    expect(await local.deposits()).toHaveLength(1)
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.depositNumbers()).toEqual([1001])
   })
 })
 
@@ -674,16 +710,18 @@ describe('Screen: a predeposit whose letters skip one', () => {
     await page.save()
     await page.savedToast(1001)
 
-    const saved = (await local.articles()).sort((a, b) =>
-      a.code.localeCompare(b.code),
-    )
-    expect(saved.map((a) => [a.brand, a.identificationLetter, a.code])).toEqual(
-      [
-        ['Salomon', 'A', `${YEAR} 1001A`],
-        ['Nordica', 'C', `${YEAR} 1001C`],
-        ['Rossignol', 'D', `${YEAR} 1001D`],
-      ],
-    )
+    // Each label's barcode finds its article: C is still the Nordica row
+    // of the predeposit, D the one typed by hand, at its price.
+    const articles = await articleEditPage()
+    await articles.search(`${YEAR} 1001A`, '1001 A')
+    await articles.search(`${YEAR} 1001C`, '1001 C')
+    expect(articles.price()).toBe('150')
+    await articles.search(`${YEAR} 1001D`, '1001 D')
+    expect(articles.price()).toBe('120')
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.deposit(1001).articleCount).toBe(3)
   })
 })
 

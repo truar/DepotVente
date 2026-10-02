@@ -1,13 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { Article } from '@/db.ts'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { depositEditPage } from '@/test/pages/deposit-edit.page.ts'
-import { signedInAs } from '@/test/screen.tsx'
-
-const byLetter = (articles: Array<Article>) =>
-  [...articles].sort((a, b) =>
-    a.identificationLetter.localeCompare(b.identificationLetter),
-  )
+import { proReceptionPage } from '@/test/pages/pro-reception.page.ts'
+import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 const boots = {
   category: 'Chaussures',
@@ -18,11 +13,16 @@ const boots = {
   price: '80',
 }
 
-const statuses = async () =>
-  byLetter(await local.articles()).map((article) => [
-    article.identificationLetter,
-    article.status,
-  ])
+// A professional's articles still to scan in, as the reception desk
+// (/deposits/pros) lists them.
+const code = (depositIndex: number, letter: string) =>
+  `${YEAR} ${depositIndex}${letter}`
+
+async function proReceptionOf(pro: string) {
+  const reception = await proReceptionPage()
+  await reception.pickPro(pro)
+  return reception
+}
 
 // Played on the real screen: a volunteer opens "Modifier la fiche" from the
 // deposits list to correct a deposit registered earlier (on this PC or on
@@ -43,7 +43,7 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    expect(page.pathname()).toBe('/deposits/listing')
+    await page.depositsListShown()
     const outbox = await local.outbox()
     expect(
       outbox.map((op) => [op.collection, op.operation, op.recordId]),
@@ -108,12 +108,13 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    expect(await statuses()).toEqual([
-      ['A', 'DELETED'],
-      ['B', 'RECEPTION_OK'],
-      ['C', 'DELETED'],
-    ])
-    expect(await local.articles()).toHaveLength(3)
+    // Reopened, the fiche shows what was saved.
+    const reopened = await depositEditPage(deposit.id)
+    expect(reopened.articleCodes()).toEqual(['12 A', '12 B', '12 C'])
+    expect(reopened.isArticleDeleted(0)).toBe(true)
+    expect(reopened.isArticleDeleted(1)).toBe(false)
+    expect(reopened.isArticleDeleted(2)).toBe(true)
+    expect(reopened.articleCount()).toBe(1)
   })
 
   // A sold or returned article is locked on the fiche (a
@@ -133,11 +134,11 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    expect(await statuses()).toEqual([
-      ['A', 'SOLD'],
-      ['B', 'RETURNED'],
-      ['C', 'RECEPTION_OK'],
-    ])
+    const reopened = await depositEditPage(deposit.id)
+    expect(reopened.articleBadge(0)).toBe('Vendu')
+    expect(reopened.articleBadge(1)).toBe('Rendu')
+    expect(reopened.articleBadge(2)).toBeNull()
+    expect(reopened.isArticleDeleted(2)).toBe(false)
   })
 
   // A professional's articles stay pending until they are scanned
@@ -157,11 +158,17 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    expect(await statuses()).toEqual([
-      ['A', 'RECEPTION_PENDING'],
-      ['B', 'RECEPTION_OK'],
-      ['C', 'RECEPTION_PENDING'],
-    ])
+    // At the reception desk, A and C are still waiting to be scanned.
+    const reception = await proReceptionOf('Allo')
+    expect(reception.scannedCount()).toBe(1)
+    expect(reception.totalCount()).toBe(3)
+    await reception.showPending()
+    await waitFor(() =>
+      expect([...reception.listedCodes()].sort()).toEqual([
+        code(12, 'A'),
+        code(12, 'C'),
+      ]),
+    )
   })
 
   // An article forgotten at the deposit desk can be added to the fiche
@@ -184,33 +191,40 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    const articles = await local.articles()
-    expect(articles).toHaveLength(11)
-    expect(articles.find((a) => a.identificationLetter === 'K')).toMatchObject({
-      depositId: deposit.id,
-      depositIndex: 12,
-      code: `${YEAR} 12K`,
-      status: 'RECEPTION_OK',
-      saleId: null,
-      category: 'Chaussures',
-      brand: 'Nordica',
-      price: 80,
-    })
+    // The article goes to the other computers as a new one.
     const outbox = await local.outbox()
     expect(
       outbox
         .filter((op) => op.collection === 'articles')
         .map((op) => op.operation),
     ).toEqual([...Array.from({ length: 10 }, () => 'update'), 'create'])
-    const [saved] = await local.deposits()
-    expect(saved.contributionAmount).toBe(4)
+
+    // Reopened, the fiche holds it, as an article like the others.
+    const reopened = await depositEditPage(deposit.id)
+    expect(reopened.articleCodes()).toHaveLength(11)
+    expect(reopened.articleCodes().at(-1)).toBe('12 K')
+    expect(reopened.article(10)).toMatchObject({
+      category: 'Chaussures',
+      brand: 'Nordica',
+      discipline: 'Alpin',
+      price: '80',
+    })
+    expect(reopened.isArticleDeleted(10)).toBe(false)
+    expect(reopened.articleBadge(10)).toBeNull()
+    expect(reopened.articleCount()).toBe(11)
+    expect(reopened.contributionAmount()).toBe(4)
   })
 
   // On a professional's fiche too: the article is added at the desk, in
   // front of the volunteer, so it is received there and then.
   it('saves an article added to a professional fiche as received', async () => {
     const { deposit } = await givenDeposit(
-      { type: 'PRO', contributionStatus: 'PRO', contributionAmount: 0 },
+      {
+        type: 'PRO',
+        contributionStatus: 'PRO',
+        contributionAmount: 0,
+        seller: { lastName: 'Allo', firstName: 'Ski' },
+      },
       [{ status: 'RECEPTION_PENDING' }],
     )
     const page = await depositEditPage(deposit.id)
@@ -220,9 +234,13 @@ describe('Screen: correct a registered deposit', () => {
     await page.save()
     await page.savedToast(12)
 
-    expect(await statuses()).toEqual([
-      ['A', 'RECEPTION_PENDING'],
-      ['B', 'RECEPTION_OK'],
-    ])
+    // At the reception desk, B counts as scanned; only A is still awaited.
+    const reception = await proReceptionOf('Allo')
+    expect(reception.scannedCount()).toBe(1)
+    expect(reception.totalCount()).toBe(2)
+    await reception.showPending()
+    await waitFor(() =>
+      expect(reception.listedCodes()).toEqual([code(12, 'A')]),
+    )
   })
 })

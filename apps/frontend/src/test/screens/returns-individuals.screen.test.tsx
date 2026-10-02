@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
+import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
+import { returnsChecksPage } from '@/test/pages/returns-checks.page.ts'
 import { returnsIndividualsPage } from '@/test/pages/returns-individuals.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
@@ -77,7 +78,13 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     await waitFor(() => expect(page.depositRow()).toBeNull())
     expect(page.selectedDeposit()).toBe('Rechercher une fiche')
     expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon'])
-    const durand = (await local.deposits()).find((d) => d.depositIndex === 12)
-    expect(durand).toMatchObject({ signatory: 'Paul', checkId: '1042' })
+
+    // The cheque is listed for the evening review: Durand's fiche, cheque
+    // n°1042 signed by Paul, for what she was owed.
+    const checks = await returnsChecksPage()
+    await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
+    // [Numéro du chèque, Signature]
+    expect(checks.rowText(12).slice(3, 5)).toEqual(['1042', 'Paul'])
+    expect(checks.amount(12)).toBe('178,00 €')
   })
 })

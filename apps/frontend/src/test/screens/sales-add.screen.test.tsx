@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
 import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
-import { signedInAs, waitFor } from '@/test/screen.tsx'
+import {
+  openScreen,
+  screen,
+  signedInAs,
+  waitFor,
+  within,
+} from '@/test/screen.tsx'
 
 const buyer = {
   lastName: 'Petit',
@@ -288,15 +294,26 @@ describe('Screen: the invoice', () => {
 // typing her again.
 describe('Screen: sell to a buyer already known', () => {
   let code: string
-  let camilleId: string
 
   beforeEach(async () => {
     signedInAs()
     await givenWorkstation(2000)
-    const { contact, articles } = await givenDeposit({}, [{ price: 80 }])
+    const { articles } = await givenDeposit({}, [{ price: 80 }])
     code = articles[0].code
-    camilleId = contact.id
   })
+
+  // A sale's line in « Gérer les ventes », found by its number.
+  const saleRow = (saleIndex: number): Array<string> => {
+    const row = screen
+      .queryAllByRole('row')
+      .map((line) =>
+        within(line)
+          .queryAllByRole('cell')
+          .map((cell) => cell.textContent.trim()),
+      )
+      .find((cells) => cells.includes(String(saleIndex)))
+    return row ?? []
+  }
 
   it('fills the buyer from the contact picked in the list, and sells to that contact', async () => {
     const page = await salesAddPage()
@@ -317,9 +334,14 @@ describe('Screen: sell to a buyer already known', () => {
     await page.save()
     await page.savedToast(2001)
 
-    const [sale] = await local.sales()
-    expect(sale.buyerId).toBe(camilleId)
-    expect(await local.contacts()).toHaveLength(1)
+    // The sale is Camille's in the list of sales…
+    await openScreen('/sales/listing')
+    await screen.findByRole('heading', { name: 'Gérer les ventes' })
+    await waitFor(() => expect(saleRow(2001)).toContain('Durand Camille'))
+
+    // …and no second Camille was made: the next sale offers her once.
+    const next = await salesAddPage()
+    expect(await next.offeredBuyers('Durand')).toEqual(['Durand Camille'])
   })
 
   // Picking the same contact a second time, by a slip of the hand, must
@@ -363,8 +385,13 @@ describe('Screen: sell to a buyer already known', () => {
     await page.save()
     await page.savedToast(2001)
 
-    const [sale] = await local.sales()
-    expect(sale.buyerId).toBe(camilleId)
-    expect(await local.contacts()).toHaveLength(1)
+    // The sale is Camille's in the list of sales…
+    await openScreen('/sales/listing')
+    await screen.findByRole('heading', { name: 'Gérer les ventes' })
+    await waitFor(() => expect(saleRow(2001)).toContain('Durand Camille'))
+
+    // …and no second Camille was made: the next sale offers her once.
+    const next = await salesAddPage()
+    expect(await next.offeredBuyers('Durand')).toEqual(['Durand Camille'])
   })
 })

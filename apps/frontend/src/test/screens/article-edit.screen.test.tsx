@@ -30,21 +30,13 @@ describe('Screen: correcting an article', () => {
     await page.lastToast(`Article ${skis.code} mis à jour`)
     await waitFor(() => expect(page.pathname()).toBe('/deposits'))
 
-    // Saved here, the serial number trimmed and the price a number again.
-    const [saved] = await local.articles()
-    expect(saved).toMatchObject({
-      id: skis.id,
-      code: skis.code,
-      price: 95,
-      model: 'Hero Elite, fixations Look',
-      serialNumber: 'SN-42',
-      status: 'RECEPTION_OK',
-      category: 'Skis',
-      brand: 'Rossignol',
-    })
-    expect(saved.updatedAt.getTime()).toBeGreaterThanOrEqual(
-      skis.updatedAt.getTime(),
-    )
+    // Searched again, the article shows the correction: the serial number
+    // trimmed, the price as typed.
+    const again = await articleEditPage()
+    await again.search(skis.code, '12 A')
+    expect(again.price()).toBe('95')
+    expect(again.description()).toBe('Hero Elite, fixations Look')
+    expect(again.serialNumber()).toBe('SN-42')
 
     // Queued for the server: one update of the article, carrying every
     // field of the form (not only those that changed).
@@ -70,8 +62,9 @@ describe('Screen: correcting an article', () => {
     })
   })
 
-  // A serial number typed on the wrong article is wiped out: the base keeps
-  // no serial number at all rather than an empty one.
+  // A serial number typed on the wrong article is wiped out: searched again,
+  // the article shows none, and the server is sent no serial number at all
+  // rather than an empty one.
   it('stores no serial number when the field is emptied', async () => {
     const { articles } = await givenDeposit({}, [{ serialNumber: 'SN-OLD' }])
     const [skis] = articles
@@ -82,8 +75,9 @@ describe('Screen: correcting an article', () => {
     await page.validate()
 
     await page.lastToast(`Article ${skis.code} mis à jour`)
-    const [saved] = await local.articles()
-    expect(saved.serialNumber).toBeNull()
+    const again = await articleEditPage()
+    await again.search(skis.code, '12 A')
+    expect(again.serialNumber()).toBe('')
     const [update] = await local.outbox()
     expect(update.data).toMatchObject({ serialNumber: null })
   })

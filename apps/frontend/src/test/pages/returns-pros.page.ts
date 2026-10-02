@@ -48,6 +48,26 @@ export async function returnsProsPage() {
 
     returnedCount: () => countBeside("Nombre d'articles scannés"),
     toReturnCount: () => countBeside("Nombre d'articles à retourner"),
+
+    // ---- the article list --------------------------------------------
+    // "Liste articles": what was already scanned out (shown first), or what
+    // is still waiting for its scan.
+    async showPending() {
+      await u.click(screen.getByRole('radio', { name: 'En attente de scan' }))
+    },
+    // The codes of the list, its first column.
+    listedCodes: (): Array<string> =>
+      screen
+        .queryAllByRole('row')
+        .map((row) =>
+          within(row)
+            .queryAllByRole('cell')
+            .map((cell) => cell.textContent.trim()),
+        )
+        // An empty table renders a single "Aucun résultat" cell spanning
+        // every column; only real rows have one cell per column.
+        .filter((cells) => cells.length > 1)
+        .map((cells) => cells[0]),
   }
   return page
 }

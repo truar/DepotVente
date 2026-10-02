@@ -38,7 +38,13 @@ export async function articleEditPage() {
       await u.clear(input)
       if (text) await u.type(input, text)
     },
+    // What the form shows for the article opened.
     price: () => screen.getByLabelText<HTMLInputElement>('Prix').value,
+    description: () =>
+      screen.getByLabelText<HTMLInputElement>('Descriptif/Motif suppression')
+        .value,
+    serialNumber: () =>
+      screen.getByLabelText<HTMLInputElement>('N° Série').value,
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

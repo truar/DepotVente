@@ -16,6 +16,13 @@ export async function depositEditPage(depositId: string) {
     // Where the router is, e.g. after saving.
     pathname: () => router.state.location.pathname,
 
+    // Back on "Gérer les fiches des dépôts", where saving leads.
+    async depositsListShown() {
+      return screen.findByRole('heading', {
+        name: 'Gérer les fiches des dépôts',
+      })
+    },
+
     // ---- article rows ------------------------------------------------
     // Rows of the articles table: the ones holding the category, brand and
     // discipline comboboxes (the colour datalist input counts as one too).
@@ -34,6 +41,17 @@ export async function depositEditPage(depositId: string) {
       return screen
         .queryAllByDisplayValue<HTMLInputElement>(/^\d+ [A-Z]+$/)
         .map((input) => input.value)
+    },
+    // What a row shows: the category, brand and discipline picked, and the
+    // price typed.
+    article(index: number) {
+      const row = page.articleRow(index)
+      const [category, brand, discipline] = within(row)
+        .getAllByRole('combobox')
+        .filter((el) => el.tagName === 'BUTTON')
+        .map((el) => el.textContent.trim())
+      const price = within(row).getAllByRole('textbox')[3] as HTMLInputElement
+      return { category, brand, discipline, price: price.value }
     },
     async addArticle() {
       await u.click(

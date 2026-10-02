@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
+import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
 import { returnsProsPage } from '@/test/pages/returns-pros.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
@@ -48,10 +48,11 @@ describe('Screen: return the unsold articles to a professional', () => {
 
     await waitFor(() => expect(page.returnedCount()).toBe(1))
     expect(page.toReturnCount()).toBe(1)
-    const returned = (await local.articles()).filter(
-      (a) => a.status === 'RETURNED',
-    )
-    expect(returned.map((a) => a.code)).toEqual([perrillatCodes[0]])
+    // The pair scanned out is listed as already scanned; the other one is
+    // still waiting for its scan.
+    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[0]]))
+    await page.showPending()
+    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[1]]))
   })
 
   it('switches to another professional picked in the list', async () => {
