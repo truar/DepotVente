@@ -641,12 +641,11 @@ describe('Screen: Enter in a field does not save', () => {
   })
 })
 
-// Current behaviour, pinned until it is decided, not because it is right.
-// A predeposit lettered A then C (no B row in the local base):
-// the rows show the predeposit letters, the barcodes follow the row
-// positions (A, B), and an article added by hand takes the letter of the
-// next position, C, which the second row already shows.
-describe('Screen: a predeposit whose letters skip one (current behaviour)', () => {
+// A predeposit lettered A then C (no B row in the local base): the rows
+// keep the predeposit letters, on the label as on the barcode, and an
+// article added by hand takes the letter after the last one, D, so no two
+// articles of the fiche share a letter.
+describe('Screen: a predeposit whose letters skip one', () => {
   beforeEach(async () => {
     signedInAs()
     await givenWorkstation(1000)
@@ -661,14 +660,14 @@ describe('Screen: a predeposit whose letters skip one (current behaviour)', () =
     ])
   })
 
-  it('shows "1001 C" on the second row and gives "1001 C" again to the article added by hand', async () => {
+  it('keeps "1001 C" on the second row and gives "1001 D" to the article added by hand', async () => {
     const page = await depositAddPage()
     await page.loadPredeposit('Martin Lucie')
     expect(page.articleCodes()).toEqual(['1001 A', '1001 C'])
 
     await page.addArticle()
     await page.fillArticle(2, validArticle)
-    expect(page.articleCodes()).toEqual(['1001 A', '1001 C', '1001 C'])
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 C', '1001 D'])
 
     await page.chooseStatus('Payé')
     await page.printSummary()
@@ -681,8 +680,8 @@ describe('Screen: a predeposit whose letters skip one (current behaviour)', () =
     expect(saved.map((a) => [a.brand, a.identificationLetter, a.code])).toEqual(
       [
         ['Salomon', 'A', `${YEAR} 1001A`],
-        ['Nordica', 'C', `${YEAR} 1001B`],
-        ['Rossignol', 'C', `${YEAR} 1001C`],
+        ['Nordica', 'C', `${YEAR} 1001C`],
+        ['Rossignol', 'D', `${YEAR} 1001D`],
       ],
     )
   })

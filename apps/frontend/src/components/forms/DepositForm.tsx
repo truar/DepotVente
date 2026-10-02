@@ -19,8 +19,8 @@ import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import {
   computeContributionAmount,
   generateArticleCode,
-  generateIdentificationLetter,
   getYear,
+  nextIdentificationLetter,
 } from '@/utils'
 import { cities } from '@/types/cities.ts'
 import { disciplineItems } from '@/types/disciplines.ts'
@@ -254,7 +254,9 @@ function ArticleForm(props: ArticleFormProps) {
       }
     }
     const year = getYear()
-    const identificationLetter = generateIdentificationLetter(articles.length)
+    const identificationLetter = nextIdentificationLetter(
+      articles.map((article) => article.identificationLetter),
+    )
     const articleCode = generateArticleCode(
       year,
       depositIndex,

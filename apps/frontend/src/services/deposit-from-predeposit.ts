@@ -4,16 +4,15 @@ import { db } from '@/db.ts'
 import {
   computeContributionAmount,
   generateArticleCode,
-  generateIdentificationLetter,
   getYear,
   shortArticleCode,
   sortByIdentificationLetter,
 } from '@/utils'
 
-// What the "Valider" button next to the predeposit combobox does: turn a
-// predeposit and its articles into the values of the deposit form, under
-// the deposit number this cash register is about to assign. The operator
-// still picks the contribution status and may edit anything before saving.
+// What picking a predeposit in the list does: turn a predeposit and its
+// articles into the values of the deposit form, under the deposit number
+// this cash register is about to assign. The operator still picks the
+// contribution status and may edit anything before saving.
 export function depositFormFromPredeposit(
   predeposit: Predeposit,
   predepositArticles: Array<PredepositArticle>,
@@ -32,14 +31,16 @@ export function depositFormFromPredeposit(
     contributionStatus:
       null as unknown as DepositFormType['deposit']['contributionStatus'],
     contributionAmount: computeContributionAmount(articles.length),
-    articles: articles.map((article, index) => {
-      const identificationLetter = generateIdentificationLetter(index)
+    articles: articles.map((article) => {
       return {
         id: article.id,
+        // The barcode carries the predeposit's own letter, the one on the
+        // label and on the seller's predeposit sheet, even when the letters
+        // skip one.
         articleCode: generateArticleCode(
           year,
           depositIndex,
-          identificationLetter,
+          article.identificationLetter,
         ),
         price: article.price,
         color: article.color,

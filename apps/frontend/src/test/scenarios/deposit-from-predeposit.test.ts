@@ -169,14 +169,13 @@ describe('Deposit created from a predeposit of 27 articles', () => {
   })
 })
 
-// Current behaviour, pinned until it is decided, not because it is right.
-// A predeposit's letters come from the predeposit itself (the
-// imported file), while the barcode is rebuilt from the article's position
-// in the list. When the letters skip one (A then C: the B row is missing
-// from the local base), the label reads "12 C" while the barcode says 12B,
-// and that is what is saved.
+// A predeposit's letters come from the predeposit itself (the imported
+// file), and they can skip one: A then C when the B row is missing from the
+// local base. The seller knows their articles by those letters, so the
+// letter stays the reference: the barcode follows it, 12C, rather than the
+// row's position.
 describe('Deposit created from a predeposit whose letters skip one', () => {
-  it('keeps the predeposit letter but builds the barcode from the position (current behaviour)', async () => {
+  it('keeps the predeposit letter on the label and on the barcode', async () => {
     await givenWorkstation(3)
     const { id } = await givenPredeposit({}, [
       {},
@@ -201,14 +200,14 @@ describe('Deposit created from a predeposit whose letters skip one', () => {
       ]),
     ).toEqual([
       ['Salomon', 'A', '12 A', `${YEAR} 12A`],
-      ['Nordica', 'C', '12 C', `${YEAR} 12B`],
+      ['Nordica', 'C', '12 C', `${YEAR} 12C`],
     ])
     const saved = (await local.articles()).sort((a, b) =>
       a.brand.localeCompare(b.brand),
     )
     expect(saved.map((a) => [a.brand, a.identificationLetter, a.code])).toEqual(
       [
-        ['Nordica', 'C', `${YEAR} 12B`],
+        ['Nordica', 'C', `${YEAR} 12C`],
         ['Salomon', 'A', `${YEAR} 12A`],
       ],
     )

@@ -11,6 +11,24 @@ export function generateIdentificationLetter(articleIndex: number) {
   return result
 }
 
+// The reverse of generateIdentificationLetter: A -> 0, Z -> 25, AA -> 26.
+export function identificationLetterIndex(letter: string) {
+  let index = 0
+  for (const char of letter) {
+    index = index * 26 + (char.charCodeAt(0) - 64)
+  }
+  return index - 1
+}
+
+// The letter of an article added to a fiche: the one after the highest
+// letter already on it, not after the number of rows. A fiche loaded from a
+// predeposit keeps the predeposit's letters, which can skip one (A, C): the
+// next article then gets D, never a second C.
+export function nextIdentificationLetter(letters: Array<string>) {
+  const highest = Math.max(-1, ...letters.map(identificationLetterIndex))
+  return generateIdentificationLetter(highest + 1)
+}
+
 export function generateArticleCode(
   year: number,
   depotIndex: number,
