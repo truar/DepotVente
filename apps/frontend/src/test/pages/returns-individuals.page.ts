@@ -55,9 +55,47 @@ export async function returnsIndividualsPage() {
       await u.clear(checkId)
       await u.type(checkId, cheque.checkId)
     },
+    // Typed one at a time, for the checks on what the form refuses. An
+    // empty string leaves the field blank.
+    async typeSignatory(text: string) {
+      const field = screen.getByLabelText('Édition chèque signé par')
+      await u.clear(field)
+      if (text) await u.type(field, text)
+    },
+    async typeCheckId(text: string) {
+      const field = screen.getByLabelText('N° de chèque')
+      await u.clear(field)
+      if (text) await u.type(field, text)
+    },
+    checkIdText: () =>
+      screen.getByLabelText<HTMLInputElement>('N° de chèque').value,
+    workstationText: () =>
+      screen.getByLabelText<HTMLInputElement>('N° du poste').value,
+    // The messages under the fields, e.g. "Le signataire est obligatoire".
+    errors(): Array<string> {
+      return screen
+        .queryAllByText(/obligatoire/)
+        .map((line) => line.textContent.trim())
+    },
+    // Asks for the print, whatever comes of it (a refused form prints
+    // nothing).
+    async askToPrint() {
+      await u.click(screen.getByRole('button', { name: /mprimer le chèque$/ }))
+    },
+    // "Imprimer le chèque" before the print, "Réimprimer le chèque" after.
+    printButtonLabel: () =>
+      screen
+        .getByRole('button', { name: /mprimer le chèque$/ })
+        .textContent.trim(),
+    printReminderShown: () =>
+      screen.queryByText('Imprimez le chèque avant de valider') !== null,
+    nextChequeButton: () =>
+      screen.getByRole('button', {
+        name: 'Valider et passer au chèque suivant',
+      }),
     async printCheque() {
       const before = document.querySelectorAll('iframe').length
-      await u.click(screen.getByRole('button', { name: 'Imprimer le chèque' }))
+      await page.askToPrint()
       await waitFor(
         () =>
           expect(document.querySelectorAll('iframe').length).toBe(before + 1),
