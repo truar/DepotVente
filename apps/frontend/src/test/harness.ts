@@ -4,6 +4,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { expect } from 'vitest'
 import { v4 as uuid } from 'uuid'
+import Dexie from 'dexie'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
 import type {
   Article,
@@ -369,5 +370,42 @@ export function aDepositForm(
     contributionAmount: 2,
     articles: [aSkiArticle({ depotIndex })],
     ...overrides,
+  }
+}
+
+// A disk that can refuse to write. Dexie builds its middleware stack when
+// the base opens, so the switch is installed now, before any test opens it,
+// and turned on by givenLocalWritesFail.
+const disk = { failing: false }
+db.use({
+  stack: 'dbcore',
+  name: 'failing-disk',
+  level: 0,
+  create: (down) => ({
+    ...down,
+    table: (tableName) => {
+      const table = down.table(tableName)
+      return {
+        ...table,
+        mutate: (request) =>
+          disk.failing
+            ? Promise.reject(
+                new Dexie.QuotaExceededError(
+                  'The disk of this computer is full',
+                ),
+              )
+            : table.mutate(request),
+      }
+    },
+  }),
+})
+
+// From now on, this computer's disk refuses every write (full, evicted by
+// the browser, corrupted): IndexedDB answers each one with an error, as it
+// would in the browser, while reads still work. Returns the repair.
+export function givenLocalWritesFail(): () => void {
+  disk.failing = true
+  return () => {
+    disk.failing = false
   }
 }

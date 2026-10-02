@@ -5,10 +5,13 @@ import { Toaster } from '@/components/ui/sonner'
 import { ErrorAlertHost } from '@/components/custom/ErrorAlertHost'
 import { DatasetResetDialog } from '@/components/custom/DatasetResetDialog'
 import { useIgnoreScannerShortcut } from '@/hooks/useIgnoreScannerShortcut'
+import { useAlertOnFailedLocalWrite } from '@/hooks/useAlertOnFailedLocalWrite'
 
 function RootDocument() {
   // A scan must not also open the browser's Downloads tab.
   useIgnoreScannerShortcut()
+  // A save this computer could not write must not pass unnoticed.
+  useAlertOnFailedLocalWrite()
   return (
     <>
       <Outlet />

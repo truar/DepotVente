@@ -62,3 +62,24 @@ window.matchMedia = (query: string) =>
     removeEventListener() {},
     dispatchEvent: () => false,
   }) as MediaQueryList
+
+// A browser hands a promise rejection nobody caught to the window, as an
+// 'unhandledrejection' event the app may handle (and cancel); jsdom does
+// not. Forward it the same way. A rejection the app leaves alone still
+// reaches Vitest's own listeners and fails the run, as before.
+type RejectionListener = (reason: unknown, promise: Promise<unknown>) => void
+const bridged = process as typeof process & { rejectionBridge?: true }
+if (!bridged.rejectionBridge) {
+  bridged.rejectionBridge = true
+  const reporters = process.listeners(
+    'unhandledRejection',
+  ) as Array<RejectionListener>
+  process.removeAllListeners('unhandledRejection')
+  process.on('unhandledRejection', (reason, promise) => {
+    const event = new Event('unhandledrejection', { cancelable: true })
+    Object.assign(event, { reason, promise })
+    window.dispatchEvent(event)
+    if (event.defaultPrevented) return
+    for (const report of reporters) report(reason, promise)
+  })
+}
