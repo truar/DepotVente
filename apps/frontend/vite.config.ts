@@ -157,5 +157,7 @@ export default defineConfig({
     // Hooks render through React, so the DOM has to exist.
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Keep the machine usable while the suite runs: at most 30% of the cores.
+    maxWorkers: '30%',
   },
 })
