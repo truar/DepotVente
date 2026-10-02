@@ -90,6 +90,39 @@ describe('Screen: receiving a professional’s articles', () => {
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toHaveLength(3))
     expect(page.listedCodes()).not.toContain(code(3, 'A'))
+
+    // The other computers learn it through the server: the reception is
+    // queued as an update of the article carrying its new status only.
+    expect(await local.outbox()).toEqual([
+      expect.objectContaining({
+        collection: 'articles',
+        operation: 'update',
+        recordId: day.allosky.articles[0].id,
+        status: 'pending',
+        data: { status: 'RECEPTION_OK', updatedAt: expect.any(Date) },
+      }),
+    ])
+  })
+
+  it('queues one reception per article scanned in, for the other computers', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+
+    await page.scan(code(3, 'A'))
+    await page.scan(code(3, 'C'))
+    await waitFor(() => expect(page.scannedCount()).toBe(2))
+
+    const queued = await local.outbox()
+    expect(
+      queued.map((op) => [op.collection, op.operation, op.recordId]),
+    ).toEqual([
+      ['articles', 'update', day.allosky.articles[0].id],
+      ['articles', 'update', day.allosky.articles[2].id],
+    ])
+    expect(queued.map((op) => op.data.status)).toEqual([
+      'RECEPTION_OK',
+      'RECEPTION_OK',
+    ])
   })
 
   // The desk works category by category: the skis, then the boots. Each
