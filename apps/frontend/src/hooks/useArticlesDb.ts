@@ -26,13 +26,13 @@ export function useArticlesDb() {
       status: 'RETURNED' as const,
       updatedAt: new Date(),
     }
-    db.articles.update(articleId, changes)
+    await db.articles.update(articleId, changes)
 
     await syncService.addToOutbox('articles', 'update', articleId, changes)
   }
 
   async function batchUpsert(articles: Article[]) {
-    db.articles.bulkPut(articles)
+    await db.articles.bulkPut(articles)
 
     for (const article of articles) {
       await syncService.addToOutbox('articles', 'create', article.id, article)
@@ -46,7 +46,7 @@ export function useArticlesDb() {
   async function batchUpdate(
     articles: readonly { key: string; changes: Partial<Article> }[],
   ) {
-    db.articles.bulkUpdate(articles)
+    await db.articles.bulkUpdate(articles)
 
     for (const article of articles) {
       await syncService.addToOutbox(
