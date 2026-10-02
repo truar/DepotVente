@@ -170,6 +170,20 @@ export async function depositAddPage(user?: User) {
         await u.type(price, article.price)
       }
     },
+    // Enter typed at the end of a field, as a volunteer used to forms
+    // that move on with Enter would do.
+    async pressEnterInSeller(label: 'Nom' | 'Prénom' | 'Téléphone') {
+      await u.type(screen.getByLabelText(label), '{Enter}')
+    },
+    async pressEnterInArticle(
+      index: number,
+      field: 'size' | 'model' | 'price',
+    ) {
+      const [, size, model, price] = within(
+        page.articleRow(index),
+      ).getAllByRole('textbox')
+      await u.type({ size, model, price }[field], '{Enter}')
+    },
     async removeArticle(index: number) {
       const row = page.articleRow(index)
       await u.click(
@@ -231,9 +245,23 @@ export async function depositAddPage(user?: User) {
     },
 
     // ---- contribution, print, save -------------------------------------
+    // The status select shows its placeholder "Statut" until one is
+    // chosen, then the chosen label: find it by its markup, so the status
+    // can be changed more than once.
     async chooseStatus(label: string) {
-      await u.click(screen.getByText('Statut').closest('button')!)
+      await u.click(page.statusSelect())
       await u.click(await screen.findByRole('option', { name: label }))
+    },
+    // What the status select shows, "Statut" while none is chosen.
+    status(): string {
+      return page.statusSelect().textContent.trim()
+    },
+    statusSelect() {
+      const trigger = document.querySelector<HTMLElement>(
+        '[data-slot="select-trigger"]',
+      )
+      if (!trigger) throw new Error('No status select on the screen')
+      return trigger
     },
     // The summary is handed to the browser's print dialog through an iframe;
     // the form only saves once that has happened.

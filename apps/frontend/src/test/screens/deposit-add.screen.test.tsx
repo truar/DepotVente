@@ -347,6 +347,53 @@ describe('Screen: the contribution follows the number of articles', () => {
     expect(page.articleCount()).toBe(11)
     expect(page.contributionAmount()).toBe(4)
   })
+
+  // Professionals and the sellers the club exempts pay nothing, however
+  // many articles they bring. Changing one's mind back to a paying status
+  // charges the count again.
+  it('charges nothing for "Gratuit" even as articles are added, and charges again once back to "Payé"', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+    expect(page.contributionAmount()).toBe(4)
+
+    await page.chooseStatus('Gratuit')
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.addArticle()
+    expect(page.articleCount()).toBe(12)
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.chooseStatus('Payé')
+    expect(page.contributionAmount()).toBe(4)
+  })
+
+  // Saved as the screen showed it: a "Pro" deposit owes nothing.
+  it('saves a "Pro" deposit with no contribution, and charges again once back to "A payer"', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+
+    await page.chooseStatus('Pro')
+    expect(page.contributionAmount()).toBe(0)
+    await page.removeArticle(10)
+    await page.restoreArticle(10)
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.chooseStatus('A payer')
+    expect(page.contributionAmount()).toBe(4)
+
+    await page.chooseStatus('Pro')
+    await page.addArticle()
+    await page.fillArticle(11, validArticle)
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+    expect((await local.deposits())[0]).toMatchObject({
+      contributionStatus: 'PRO',
+      contributionAmount: 0,
+    })
+  })
 })
 
 const validArticle = {
@@ -397,6 +444,59 @@ describe('Screen: required fields block the save', () => {
     await page.savedToast(1001)
     expect(await local.deposits()).toHaveLength(1)
   })
+
+  // The contribution status decides what the seller owes: the volunteer
+  // must choose it, the form never guesses one. Everything else is filled
+  // here, so the status alone holds the save back.
+  it('refuses to save while the contribution status is not chosen', async () => {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    expect(page.status()).toBe('Statut')
+
+    await page.save()
+
+    expect(page.errors()).toEqual([
+      'Merci de compléter les champs obligatoires',
+    ])
+    expect(await local.deposits()).toEqual([])
+    expect(await local.contacts()).toEqual([])
+    expect(await local.articles()).toEqual([])
+    expect(await local.outbox()).toEqual([])
+
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+    expect(await local.deposits()).toHaveLength(1)
+  })
+
+  // A seller with nothing to leave is not a deposit: no number is used up
+  // and nothing goes to the server.
+  it('refuses to save a deposit without any article', async () => {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.chooseStatus('Payé')
+    expect(page.articleCodes()).toEqual([])
+
+    await page.save()
+
+    expect(page.errors()).toEqual([
+      'Merci de compléter les champs obligatoires',
+    ])
+    expect(await local.deposits()).toEqual([])
+    expect(await local.contacts()).toEqual([])
+    expect(await local.outbox()).toEqual([])
+  })
 })
 
 describe('Screen: article rows', () => {
@@ -438,6 +538,39 @@ describe('Screen: article rows', () => {
     expect(page.contributionAmount()).toBe(0)
   })
 
+  // Big sellers go past Z: the alphabet starts again, doubled. The 26
+  // first rows come from a predeposit to keep the story short; the 27th is
+  // added by hand, as on a walk-in deposit, and gets AA on its label and in
+  // its barcode.
+  it('letters the 27th article AA, after Z', async () => {
+    await givenPredeposit(
+      {},
+      Array.from({ length: 26 }, () => ({})),
+    )
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+    expect(page.articleCodes().slice(-2)).toEqual(['1001 Y', '1001 Z'])
+
+    await page.addArticle()
+    await page.fillArticle(26, validArticle)
+    expect(page.articleCodes().slice(-2)).toEqual(['1001 Z', '1001 AA'])
+    expect(page.articleCount()).toBe(27)
+    expect(page.contributionAmount()).toBe(6)
+
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+
+    const saved = await local.articles()
+    expect(saved).toHaveLength(27)
+    const aa = saved.find((a) => a.identificationLetter === 'AA')
+    expect(aa).toMatchObject({ code: `${YEAR} 1001AA`, brand: 'Rossignol' })
+    expect(saved.find((a) => a.identificationLetter === 'Z')).toMatchObject({
+      code: `${YEAR} 1001Z`,
+    })
+  })
+
   // Rows that came from a predeposit are never removed outright: the seller
   // declared them, so the deposit keeps a trace of what was refused.
   it('saves a struck-through predeposit article as DELETED', async () => {
@@ -466,6 +599,92 @@ describe('Screen: article rows', () => {
       [`${YEAR} 1001B`, 'DELETED'],
     ])
     expect((await local.deposits())[0]).toMatchObject({ contributionAmount: 2 })
+  })
+})
+
+// Only the "Valider et enregistrer le dépôt" button saves. A browser
+// submits a form when Enter is pressed in one of its fields; here that
+// would save a deposit half-checked, so Enter does nothing. The form is
+// complete and printed, so a submit would go through.
+describe('Screen: Enter in a field does not save', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  it('saves nothing when Enter is pressed in the seller name or in an article field', async () => {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+
+    await page.pressEnterInSeller('Nom')
+    await page.pressEnterInArticle(0, 'model')
+    await page.pressEnterInArticle(0, 'price')
+
+    expect(page.errors()).toEqual([])
+    expect(page.seller().lastName).toBe('Bernard')
+    expect(page.articleCodes()).toEqual(['1001 A'])
+    expect(await local.deposits()).toEqual([])
+    expect(await local.outbox()).toEqual([])
+
+    // The button still saves it, once.
+    await page.save()
+    await page.savedToast(1001)
+    expect(await local.deposits()).toHaveLength(1)
+  })
+})
+
+// Current behaviour, pinned until it is decided, not because it is right.
+// A predeposit lettered A then C (no B row in the local base):
+// the rows show the predeposit letters, the barcodes follow the row
+// positions (A, B), and an article added by hand takes the letter of the
+// next position, C, which the second row already shows.
+describe('Screen: a predeposit whose letters skip one (current behaviour)', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+    await givenPredeposit({}, [
+      {},
+      {
+        category: 'Chaussures',
+        brand: 'Nordica',
+        identificationLetter: 'C',
+        articleIndex: 2,
+      },
+    ])
+  })
+
+  it('shows "1001 C" on the second row and gives "1001 C" again to the article added by hand', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 C'])
+
+    await page.addArticle()
+    await page.fillArticle(2, validArticle)
+    expect(page.articleCodes()).toEqual(['1001 A', '1001 C', '1001 C'])
+
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+
+    const saved = (await local.articles()).sort((a, b) =>
+      a.code.localeCompare(b.code),
+    )
+    expect(saved.map((a) => [a.brand, a.identificationLetter, a.code])).toEqual(
+      [
+        ['Salomon', 'A', `${YEAR} 1001A`],
+        ['Nordica', 'C', `${YEAR} 1001B`],
+        ['Rossignol', 'C', `${YEAR} 1001C`],
+      ],
+    )
   })
 })
 
