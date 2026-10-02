@@ -345,4 +345,26 @@ describe('Screen: sell to a buyer already known', () => {
 
     await waitFor(() => expect(page.selectedBuyer()).toBeNull())
   })
+
+  // The volunteer often starts typing the name, then recognises the buyer
+  // and picks her in the list. What was typed before is overwritten by the
+  // contact: the sale must still go to Camille, not to a copy of her.
+  it('sells to the contact picked after the buyer was partly typed by hand', async () => {
+    const page = await salesAddPage()
+    await page.scan(code)
+    await page.fillBuyer({ lastName: 'Dur' })
+
+    await page.pickBuyer('Durand Camille')
+
+    expect(page.buyer().lastName).toBe('Durand')
+    expect(page.selectedBuyer()).toBe('Durand Camille')
+
+    await page.pay({ cash: 80 })
+    await page.save()
+    await page.savedToast(2001)
+
+    const [sale] = await local.sales()
+    expect(sale.buyerId).toBe(camilleId)
+    expect(await local.contacts()).toHaveLength(1)
+  })
 })

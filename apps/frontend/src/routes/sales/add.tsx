@@ -311,21 +311,19 @@ function ContactSearchForm() {
 }
 
 function BuyerInformationForm() {
-  const { setValue, watch, getFieldState } = useFormContext<SaleFormType>()
-  const buyer = watch('buyer')
-  useEffect(() => {
-    const state = getFieldState('buyer')
-    if (state.isDirty) {
-      setValue('buyer.contactId', null)
-    }
-  }, [
-    buyer.lastName,
-    buyer.firstName,
-    buyer.phoneNumber,
-    buyer.city,
-    setValue,
-    getFieldState,
-  ])
+  const { setValue } = useFormContext<SaleFormType>()
+  // Retoucher l'acheteur à la main, c'est ne plus vendre au contact choisi
+  // dans la liste : on le délie. Seule une saisie dans un champ le délie, pas
+  // le remplissage par la liste lui-même - sinon un nom commencé à la main
+  // puis choisi dans la liste créait un second contact à l'enregistrement.
+  const unlinkContact = useCallback(
+    (onChange: (...event: Array<unknown>) => void) =>
+      (...event: Array<unknown>) => {
+        onChange(...event)
+        setValue('buyer.contactId', null)
+      },
+    [setValue],
+  )
 
   return (
     <div className="flex flex-col gap-3">
@@ -335,7 +333,12 @@ function BuyerInformationForm() {
           <Controller
             name="buyer.lastName"
             render={({ field, fieldState }) => (
-              <TextField invalid={fieldState.invalid} {...field} label="Nom" />
+              <TextField
+                invalid={fieldState.invalid}
+                {...field}
+                onChange={unlinkContact(field.onChange)}
+                label="Nom"
+              />
             )}
           />
         </div>
@@ -347,6 +350,7 @@ function BuyerInformationForm() {
               <TextField
                 invalid={fieldState.invalid}
                 {...field}
+                onChange={unlinkContact(field.onChange)}
                 label="Prénom"
               />
             )}
@@ -361,6 +365,7 @@ function BuyerInformationForm() {
                 invalid={fieldState.invalid}
                 errorMessage={fieldState.error?.message}
                 {...field}
+                onChange={unlinkContact(field.onChange)}
                 label="Téléphone"
               />
             )}
@@ -373,6 +378,7 @@ function BuyerInformationForm() {
               <DataListField
                 invalid={fieldState.invalid}
                 {...field}
+                onChange={unlinkContact(field.onChange)}
                 items={cities}
                 label="Ville"
               />
