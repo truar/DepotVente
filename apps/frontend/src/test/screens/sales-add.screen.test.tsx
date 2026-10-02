@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { Section } from '@/test/pages/sales-control.page.ts'
 import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
+import { salesControlPage } from '@/test/pages/sales-control.page.ts'
+import { salesListingPage } from '@/test/pages/sales-listing.page.ts'
 import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import {
   openScreen,
@@ -393,5 +396,184 @@ describe('Screen: sell to a buyer already known', () => {
     // …and no second Camille was made: the next sale offers her once.
     const next = await salesAddPage()
     expect(await next.offeredBuyers('Durand')).toEqual(['Durand Camille'])
+  })
+})
+
+// An article can be marked sold without any sale attached to it (a sale
+// lost on the way, a status corrected by hand). It is sold all the same: the
+// till must not sell it a second time.
+describe('Screen: an article sold without a sale', () => {
+  it('is refused with the "already sold" alert (VEN-ADD-12)', async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { status: 'SOLD', saleId: null },
+    ])
+    const code = articles[0].code
+
+    const page = await salesAddPage()
+    await page.scan(code)
+
+    const alert = await page.alert()
+    expect(alert.title).toBe('Article déjà vendu')
+    expect(alert.message).toBe(`L'article ${code} a déjà été vendu.`)
+    await alert.dismiss()
+    expect(page.scannedCodes()).toEqual([])
+    expect(page.total()).toBe(0)
+  })
+})
+
+// The buyer changes their mind at the till and leaves one article on the
+// counter: the volunteer takes it out of the sale, and the count and the
+// amount to pay follow.
+describe('Screen: taking a scanned article back out of the sale', () => {
+  it('removes the line and recomputes the count and the total (VEN-ADD-13)', async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { price: 120 },
+      { price: 80 },
+      { price: 30 },
+    ])
+    const page = await salesAddPage()
+    for (const article of articles) await page.scan(article.code)
+    expect(page.articleCount()).toBe(3)
+    expect(page.total()).toBe(230)
+
+    await page.removeScanned(1)
+
+    expect(page.scannedCodes()).toEqual([articles[0].code, articles[2].code])
+    expect(page.articleCount()).toBe(2)
+    expect(page.total()).toBe(150)
+  })
+})
+
+describe('Screen: how the buyer pays', () => {
+  let code: string
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [{ price: 100 }])
+    code = articles[0].code
+  })
+
+  // The volunteer types 120 € in cash for a 100 € article (the cash handed
+  // over rather than the price): the till refuses, the change is not a
+  // payment, and no sale is recorded.
+  it('refuses a payment above the total, and saves nothing (VEN-ADD-24)', async () => {
+    const page = await salesAddPage()
+    await page.scan(code)
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 60, card: 30, check: 20, deferred: 10 })
+    expect(page.totalPayment()).toBe(120)
+
+    await page.save()
+
+    expect(page.errors()).toEqual([
+      'Merci de vérifier que le montant total est couvert par les 4 modes de règlements.',
+    ])
+    // Still the same sale on screen, with its article
+    expect(page.saleIndex()).toBe(2001)
+    expect(page.scannedCodes()).toEqual([code])
+    // And no sale among the sales of the day
+    const listing = await salesListingPage()
+    expect(listing.salesCount()).toBe(0)
+    expect(listing.saleIndexes()).toEqual([])
+  })
+
+  // A buyer pays part in cash, part by card, part by cheque, and the club
+  // agrees to collect the rest later. Each part must be found in its own
+  // section of the till count at the end of the day.
+  it('records each of the four payment modes on its own (VEN-ADD-25)', async () => {
+    const page = await salesAddPage()
+    await page.scan(code)
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 20, card: 30, check: 40, deferred: 10 })
+    expect(page.totalPayment()).toBe(100)
+
+    await page.save()
+    await page.savedToast(2001)
+
+    const control = await salesControlPage()
+    const paidBy = async (section: Section) => {
+      await control.open(section)
+      await waitFor(() => expect(control.rows()).toHaveLength(1))
+      const [row] = control.rows()
+      // Sale number, then what the sale is worth, then what this mode took
+      return [row[0], row[4], row[5]]
+    }
+    expect(await paidBy('cashSales')).toEqual(['2001', '100,00 €', '20,00 €'])
+    expect(await paidBy('card')).toEqual(['2001', '100,00 €', '30,00 €'])
+    expect(await paidBy('check')).toEqual(['2001', '100,00 €', '40,00 €'])
+    expect(await paidBy('deferred')).toEqual(['2001', '100,00 €', '10,00 €'])
+  })
+
+  // The volunteer types an amount and, out of habit, presses Enter to move
+  // on. The sale must not be saved behind their back: only the button saves.
+  it('does not save the sale when Enter is pressed in another field (VEN-ADD-37)', async () => {
+    const page = await salesAddPage()
+    await page.scan(code)
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 100 })
+
+    await page.pressEnterIn('Montant espèces')
+    await page.pressEnterIn('Nom')
+
+    await page.expectNotSaved(2001)
+    expect(page.saleIndex()).toBe(2001)
+    expect(page.scannedCodes()).toEqual([code])
+    expect(page.buyer().lastName).toBe('Petit')
+
+    // The button still saves it
+    await page.save()
+    await page.savedToast(2001)
+  })
+})
+
+// Prices with cents: 10,10 € and 20,20 €, paid 30,30 € in cash. The till
+// adds the prices in floating point, so the sum is not exactly 30,30.
+describe('Screen: prices with cents', () => {
+  it('shows a total of 30.299999999999997 and refuses an exact payment of 30,30 €', async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { price: 10.1 },
+      { price: 20.2 },
+    ])
+    const page = await salesAddPage()
+    await page.scan(articles[0].code)
+    await page.scan(articles[1].code)
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 30.3 })
+
+    // Current behaviour, pinned until it is decided: the total is shown
+    // with the floating-point error, and the exact payment is refused.
+    expect(page.totalText()).toBe('Montant total : 30.299999999999997€')
+    expect(page.totalPayment()).toBe(30.3)
+    await page.save()
+    expect(page.errors()).toEqual([
+      'Merci de vérifier que le montant total est couvert par les 4 modes de règlements.',
+    ])
+    await page.expectNotSaved(2001)
+  })
+
+  it('accepts the same 30,30 € when it is split as 10,10 € cash and 20,20 € card', async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { price: 10.1 },
+      { price: 20.2 },
+    ])
+    const page = await salesAddPage()
+    await page.scan(articles[0].code)
+    await page.scan(articles[1].code)
+    await page.fillBuyer(buyer)
+
+    // Current behaviour, pinned until it is decided: the same sum, split so
+    // that it happens to carry the same rounding error, is accepted.
+    await page.pay({ cash: 10.1, card: 20.2 })
+    await page.save()
+    await page.savedToast(2001)
   })
 })

@@ -288,3 +288,88 @@ describe('Screen: the till count when the refund was made elsewhere', () => {
     expect(page.total()).toBe('150,00 €')
   })
 })
+
+// A buyer brings back boots paid by card and is credited 50 € on their card
+// at this very till. That money goes out through this till's card terminal:
+// the card section of its count must show it, as money out.
+describe('Screen: a card refund handed over by this till', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { sale } = await givenSale({
+      saleIndex: 2002,
+      cashAmount: 0,
+      cardAmount: 150,
+      totalRefundAmount: 50,
+      buyer: { lastName: 'Roche', firstName: 'Marc', city: 'Rumilly' },
+    })
+    await givenRefund(sale, { incrementStart: 2000, cardAmount: 50 })
+  })
+
+  it('shows as a negative line under « Cartes bancaires » (VEN-CAISSE-04)', async () => {
+    const page = await salesControlPage()
+    await page.open('card')
+
+    await waitFor(() => expect(page.rows()).toHaveLength(2))
+    // The sale, then the refund on the same sale number
+    expect(page.rows().map((cells) => [cells[0], cells[5]])).toEqual([
+      ['2002', '150,00 €'],
+      ['2002', '-50,00 €'],
+    ])
+    expect(page.total()).toBe('100,00 €')
+  })
+})
+
+// The volunteer counts the drawer and validates, then finds a forgotten
+// 10 € note and counts again. There is one drawer, so one count: the second
+// one replaces the first, here and on the other computers.
+describe('Screen: counting the till a second time', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenTheSalesOfTill2000()
+  })
+
+  it('updates the saved count instead of adding another one (VEN-CAISSE-19)', async () => {
+    const first = await salesControlPage()
+    await first.open('drawer')
+    await waitFor(() => expect(first.theoretical()).toBe(170))
+    await first.count(50, 3)
+    await first.comment('Premier comptage')
+    await first.print()
+    await first.save()
+    await first.savedToast(2000)
+
+    const second = await salesControlPage()
+    await second.open('drawer')
+    await waitFor(() => expect(second.commentText()).toBe('Premier comptage'))
+    expect(second.countOf(50)).toBe(3)
+    await second.count(10, 1)
+    await second.comment('Recompté, un billet de 10 oublié')
+    await second.print()
+    await second.save()
+    await second.savedToast(2000)
+
+    // Reopened, the screen shows the second count
+    const reopened = await salesControlPage()
+    await reopened.open('drawer')
+    await waitFor(() =>
+      expect(reopened.commentText()).toBe('Recompté, un billet de 10 oublié'),
+    )
+    expect(reopened.countOf(50)).toBe(3)
+    expect(reopened.countOf(10)).toBe(1)
+    // 160 € in the drawer, less the 80 € float
+    expect(reopened.real()).toBe(80)
+
+    // The other computers receive one control: created, then updated
+    const sent = (await local.outbox()).map((op) => ({
+      collection: op.collection,
+      operation: op.operation,
+      recordId: op.recordId,
+    }))
+    expect(sent.map((op) => [op.collection, op.operation])).toEqual([
+      ['cashRegisterControls', 'create'],
+      ['cashRegisterControls', 'update'],
+    ])
+    expect(sent[1].recordId).toBe(sent[0].recordId)
+  })
+})

@@ -46,6 +46,15 @@ export async function salesAddPage() {
       if (!button) throw new Error(`No scanned article ${index}`)
       await u.click(button)
     },
+    // "Nombre d'articles : 2", or 0 when nothing is scanned.
+    articleCount(): number {
+      const line = screen.queryByText(/Nombre d'articles/)
+      return line ? Number(line.textContent.replace(/\D/g, '')) : 0
+    },
+    // "Montant total : 200€" as the volunteer reads it.
+    totalText(): string {
+      return screen.getByText(/Montant total/).textContent.trim()
+    },
     // "Montant total : 200€", or 0 when nothing is scanned.
     total(): number {
       const line = screen.queryByText(/Montant total/)
@@ -188,6 +197,12 @@ export async function salesAddPage() {
       )
     },
 
+    // The volunteer, still in a field (not the scan field), presses Enter.
+    async pressEnterIn(label: string) {
+      await u.click(screen.getByLabelText(label))
+      await u.keyboard('{Enter}')
+    },
+
     // ---- save ------------------------------------------------------------
     async save() {
       await u.click(
@@ -196,6 +211,16 @@ export async function salesAddPage() {
     },
     savedToast(saleIndex: number) {
       return screen.findByText(`Vente ${saleIndex} enregistrée`)
+    },
+    // A save is asynchronous: give it time to land before saying it did not.
+    async expectNotSaved(saleIndex: number) {
+      await expect(
+        screen.findByText(
+          `Vente ${saleIndex} enregistrée`,
+          {},
+          { timeout: 500 },
+        ),
+      ).rejects.toThrow()
     },
   }
   return page
