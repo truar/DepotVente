@@ -6,8 +6,13 @@
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach, beforeEach } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { db } from '@/db.ts'
+import { server } from '@/test/server.ts'
+
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 beforeEach(async () => {
   await db.transaction('rw', db.tables, async () => {
