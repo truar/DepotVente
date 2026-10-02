@@ -1,3 +1,4 @@
+import { v4 } from 'uuid'
 import { db } from '@/db.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
@@ -70,6 +71,39 @@ export function useEditDepot() {
             })
             .filter((article) => !!article),
         )
+
+        // Un article ajouté sur cet écran (oublié au dépôt) est créé,
+        // réceptionné comme au dépôt, fiche pro comprise : il est sous les
+        // yeux du bénévole.
+        if (data.id) {
+          const depositId = data.id
+          await articleDb.batchUpsert(
+            data.articles
+              .filter((articleForm) => !articleForm.id)
+              .map((articleForm) => ({
+                id: v4(),
+                depositId,
+                code: articleForm.articleCode,
+                saleId: null,
+                status: 'RECEPTION_OK' as const,
+                price: articleForm.price,
+                discipline: articleForm.discipline,
+                brand: articleForm.brand,
+                category: articleForm.type,
+                size: articleForm.size ?? '',
+                color: articleForm.color,
+                model: articleForm.model ?? '',
+                serialNumber: null,
+                year: articleForm.year,
+                depositIndex: data.depotIndex,
+                articleIndex: articleForm.articleIndex,
+                identificationLetter: articleForm.identificationLetter,
+                createdAt: currentDate,
+                updatedAt: currentDate,
+                deletedAt: null,
+              })),
+          )
+        }
       },
     )
   }

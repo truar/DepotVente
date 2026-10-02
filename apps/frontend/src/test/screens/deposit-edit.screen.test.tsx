@@ -9,6 +9,15 @@ const byLetter = (articles: Array<Article>) =>
     a.identificationLetter.localeCompare(b.identificationLetter),
   )
 
+const boots = {
+  category: 'Chaussures',
+  brand: 'Nordica',
+  discipline: 'Alpin',
+  color: 'Noir',
+  size: '27.5',
+  price: '80',
+}
+
 const statuses = async () =>
   byLetter(await local.articles()).map((article) => [
     article.identificationLetter,
@@ -155,11 +164,10 @@ describe('Screen: correct a registered deposit', () => {
     ])
   })
 
-  // Current behaviour, pinned until it is decided: a line added here with
-  // « Ajouter un nouvel article » shows on the fiche and counts in the
-  // contribution, but saving drops it: no article in the base, nothing for
-  // the server.
-  it('drops on save an article added on this screen', async () => {
+  // An article forgotten at the deposit desk can be added to the fiche
+  // afterwards: it takes the next letter, is saved received like the
+  // others, counts in the contribution, and is sent to the server.
+  it('saves an article added on this screen, received and counted in the contribution', async () => {
     const { deposit } = await givenDeposit(
       {},
       Array.from({ length: 10 }, () => ({})),
@@ -168,14 +176,7 @@ describe('Screen: correct a registered deposit', () => {
     expect(page.contributionAmount()).toBe(2)
 
     await page.addArticle()
-    await page.fillArticle(10, {
-      category: 'Chaussures',
-      brand: 'Nordica',
-      discipline: 'Alpin',
-      color: 'Noir',
-      size: '27.5',
-      price: '80',
-    })
+    await page.fillArticle(10, boots)
     expect(page.articleCodes().at(-1)).toBe('12 K')
     expect(page.articleCount()).toBe(11)
     expect(page.contributionAmount()).toBe(4)
@@ -184,16 +185,44 @@ describe('Screen: correct a registered deposit', () => {
     await page.savedToast(12)
 
     const articles = await local.articles()
-    expect(articles).toHaveLength(10)
-    expect(articles.some((a) => a.code === `${YEAR} 12K`)).toBe(false)
+    expect(articles).toHaveLength(11)
+    expect(articles.find((a) => a.identificationLetter === 'K')).toMatchObject({
+      depositId: deposit.id,
+      depositIndex: 12,
+      code: `${YEAR} 12K`,
+      status: 'RECEPTION_OK',
+      saleId: null,
+      category: 'Chaussures',
+      brand: 'Nordica',
+      price: 80,
+    })
     const outbox = await local.outbox()
     expect(
       outbox
         .filter((op) => op.collection === 'articles')
         .map((op) => op.operation),
-    ).toEqual(Array.from({ length: 10 }, () => 'update'))
-    // The contribution saved counts the line that was not.
+    ).toEqual([...Array.from({ length: 10 }, () => 'update'), 'create'])
     const [saved] = await local.deposits()
     expect(saved.contributionAmount).toBe(4)
+  })
+
+  // On a professional's fiche too: the article is added at the desk, in
+  // front of the volunteer, so it is received there and then.
+  it('saves an article added to a professional fiche as received', async () => {
+    const { deposit } = await givenDeposit(
+      { type: 'PRO', contributionStatus: 'PRO', contributionAmount: 0 },
+      [{ status: 'RECEPTION_PENDING' }],
+    )
+    const page = await depositEditPage(deposit.id)
+
+    await page.addArticle()
+    await page.fillArticle(1, boots)
+    await page.save()
+    await page.savedToast(12)
+
+    expect(await statuses()).toEqual([
+      ['A', 'RECEPTION_PENDING'],
+      ['B', 'RECEPTION_OK'],
+    ])
   })
 })
