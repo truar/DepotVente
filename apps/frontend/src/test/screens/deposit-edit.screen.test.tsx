@@ -160,8 +160,12 @@ describe('Screen: correct a registered deposit', () => {
 
     // At the reception desk, A and C are still waiting to be scanned.
     const reception = await proReceptionOf('Allo')
-    expect(reception.scannedCount()).toBe(1)
-    expect(reception.totalCount()).toBe(3)
+    // The counts load after the professional is picked.
+    await waitFor(() =>
+      expect([reception.scannedCount(), reception.totalCount()]).toEqual([
+        1, 3,
+      ]),
+    )
     await reception.showPending()
     await waitFor(() =>
       expect([...reception.listedCodes()].sort()).toEqual([
@@ -236,8 +240,12 @@ describe('Screen: correct a registered deposit', () => {
 
     // At the reception desk, B counts as scanned; only A is still awaited.
     const reception = await proReceptionOf('Allo')
-    expect(reception.scannedCount()).toBe(1)
-    expect(reception.totalCount()).toBe(2)
+    // The counts load after the professional is picked.
+    await waitFor(() =>
+      expect([reception.scannedCount(), reception.totalCount()]).toEqual([
+        1, 2,
+      ]),
+    )
     await reception.showPending()
     await waitFor(() =>
       expect(reception.listedCodes()).toEqual([code(12, 'A')]),
