@@ -47,8 +47,11 @@ export function useEditDepot() {
             .map((articleForm) => {
               if (!articleForm.id) return
               let status = articleForm.status
+              // Un article non touché garde son statut : un article pro en
+              // RECEPTION_PENDING ne doit pas être réceptionné par l'édition.
               if (status !== 'SOLD' && status !== 'RETURNED') {
-                status = articleForm.isDeleted ? 'DELETED' : 'RECEPTION_OK'
+                if (articleForm.isDeleted) status = 'DELETED'
+                else if (status === 'DELETED') status = 'RECEPTION_OK'
               }
               return {
                 key: articleForm.id,
