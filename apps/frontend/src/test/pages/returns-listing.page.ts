@@ -31,6 +31,33 @@ export async function returnsListingPage() {
         .getAllByRole('cell')
         .map((cell) => cell.textContent.replace(/\s+/g, ' ').trim())
     },
+    // "Doit cotisation ?": "Oui" (with its « Marquer soldé » button),
+    // "Soldé" or "Non".
+    mustPayContribution(depositIndex: number) {
+      return page.rowText(depositIndex)[1].replace('Marquer soldé', '').trim()
+    },
+    canMarkSettled(depositIndex: number) {
+      return (
+        within(page.row(depositIndex)).queryByRole('button', {
+          name: 'Marquer soldé',
+        }) !== null
+      )
+    },
+    async markSettled(depositIndex: number) {
+      await u.click(
+        within(page.row(depositIndex)).getByRole('button', {
+          name: 'Marquer soldé',
+        }),
+      )
+    },
+    toast: (text: string) => screen.findByText(text),
+    async select(depositIndex: number) {
+      await u.click(
+        within(page.row(depositIndex)).getByRole('checkbox', {
+          name: 'Sélectionner une ligne',
+        }),
+      )
+    },
     returnStatus(depositIndex: number) {
       return page.rowText(depositIndex)[5]
     },

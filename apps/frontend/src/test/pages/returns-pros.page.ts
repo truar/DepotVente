@@ -45,6 +45,22 @@ export async function returnsProsPage() {
       await u.type(input, `${code}{Enter}`)
     },
     isScanOpen: () => screen.queryByLabelText('Scanner un article') !== null,
+    // What is left in the scan field after a scan.
+    scanInput: () =>
+      screen.getByLabelText<HTMLInputElement>('Scanner un article').value,
+
+    // ---- what the volunteer is told ------------------------------------
+    // A refused scan stops the volunteer with an alert to acknowledge.
+    async alert() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        message: within(box).getByRole('paragraph').textContent.trim(),
+        dismiss: () => u.click(within(box).getByRole('button', { name: 'OK' })),
+      }
+    },
+    isAlertOpen: () => screen.queryByRole('alertdialog') !== null,
+    // An accepted scan is confirmed by a toast.
+    toast: (text: string) => screen.findByText(text),
 
     returnedCount: () => countBeside("Nombre d'articles scannés"),
     toReturnCount: () => countBeside("Nombre d'articles à retourner"),
