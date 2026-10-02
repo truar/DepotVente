@@ -123,9 +123,14 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
                 render={({ field }) => (
                   <Field>
                     <FieldContent>
-                      <Label>N° du poste</Label>
+                      <Label htmlFor="workstation">N° du poste</Label>
                       <InputGroup>
-                        <InputGroupInput {...field} type="text" readOnly />
+                        <InputGroupInput
+                          {...field}
+                          id="workstation"
+                          type="text"
+                          readOnly
+                        />
                       </InputGroup>
                     </FieldContent>
                   </Field>
@@ -139,10 +144,13 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldContent>
-                      <Label>Édition chèque signé par</Label>
+                      <Label htmlFor="signatory">
+                        Édition chèque signé par
+                      </Label>
                       <InputGroup>
                         <InputGroupInput
                           {...field}
+                          id="signatory"
                           type="text"
                           aria-invalid={fieldState.invalid}
                         />
@@ -162,10 +170,11 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldContent>
-                      <Label>N° de chèque</Label>
+                      <Label htmlFor="checkId">N° de chèque</Label>
                       <InputGroup>
                         <InputGroupInput
                           {...field}
+                          id="checkId"
                           type="text"
                           aria-invalid={fieldState.invalid}
                         />

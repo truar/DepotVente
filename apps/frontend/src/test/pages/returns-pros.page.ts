@@ -9,13 +9,9 @@ export async function returnsProsPage() {
     name: 'Retourner les articles des pros',
   })
 
-  // The counts are read-only inputs next to a plain text label, not a
-  // <label>: walk from the text to the input beside it.
-  const countBeside = (label: string): number => {
-    const input = screen.getByText(label).parentElement?.querySelector('input')
-    if (!input) throw new Error(`No count next to "${label}"`)
-    return Number(input.value)
-  }
+  // The counts are read-only fields, read by their label.
+  const countBeside = (label: string): number =>
+    Number(screen.getByLabelText<HTMLInputElement>(label).value)
 
   const page = {
     user: u,
@@ -44,12 +40,11 @@ export async function returnsProsPage() {
     // ---- scanning ------------------------------------------------------
     // A barcode scanner types the code and presses Enter.
     async scan(code: string) {
-      const input = document.querySelector<HTMLInputElement>('#articleCode')
-      if (!input) throw new Error('No scan input on the screen')
+      const input = screen.getByLabelText('Scanner un article')
       await u.clear(input)
       await u.type(input, `${code}{Enter}`)
     },
-    isScanOpen: () => document.querySelector('#articleCode') !== null,
+    isScanOpen: () => screen.queryByLabelText('Scanner un article') !== null,
 
     returnedCount: () => countBeside("Nombre d'articles scannés"),
     toReturnCount: () => countBeside("Nombre d'articles à retourner"),

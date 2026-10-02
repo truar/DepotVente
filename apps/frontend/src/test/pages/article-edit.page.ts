@@ -7,16 +7,6 @@ export async function articleEditPage() {
   const { user: u, router } = await openScreen('/deposits/articles')
   await screen.findByRole('heading', { name: 'Modifier un article' })
 
-  // Some fields have a <label> tied to their input, the price does not:
-  // walk from the label text to the input beside it.
-  const fieldBeside = (label: string): HTMLInputElement => {
-    const input = screen
-      .getByText(label, { selector: 'label' })
-      .parentElement?.querySelector('input')
-    if (!input) throw new Error(`No field next to "${label}"`)
-    return input
-  }
-
   const page = {
     user: u,
     pathname: () => router.state.location.pathname,
@@ -34,7 +24,7 @@ export async function articleEditPage() {
 
     // ---- correcting it -----------------------------------------------------
     async setPrice(price: string) {
-      const input = fieldBeside('Prix')
+      const input = screen.getByLabelText('Prix')
       await u.clear(input)
       await u.type(input, price)
     },
@@ -48,7 +38,7 @@ export async function articleEditPage() {
       await u.clear(input)
       if (text) await u.type(input, text)
     },
-    price: () => fieldBeside('Prix').value,
+    price: () => screen.getByLabelText<HTMLInputElement>('Prix').value,
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

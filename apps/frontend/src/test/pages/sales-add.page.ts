@@ -79,11 +79,7 @@ export async function salesAddPage() {
       await type('Prénom', buyer.firstName)
       await type('Téléphone', buyer.phoneNumber)
       if (buyer.city) {
-        const city = document.querySelector<HTMLInputElement>(
-          'input[name="buyer.city"]',
-        )
-        if (!city) throw new Error('No city input on the screen')
-        await u.type(city, buyer.city)
+        await u.type(screen.getByLabelText('Ville'), buyer.city)
       }
     },
     buyer() {
@@ -95,13 +91,8 @@ export async function salesAddPage() {
         phoneNumber: value('Téléphone'),
       }
     },
-    // Datalist field: its label is not bound to the input.
     buyerCity() {
-      const city = document.querySelector<HTMLInputElement>(
-        'input[name="buyer.city"]',
-      )
-      if (!city) throw new Error('No city input on the screen')
-      return city.value
+      return screen.getByLabelText<HTMLInputElement>('Ville').value
     },
     hasButton: (name: string) =>
       screen.queryByRole('button', { name }) !== null,

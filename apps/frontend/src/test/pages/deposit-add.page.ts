@@ -103,12 +103,7 @@ export async function depositAddPage(user?: User) {
       await type('Prénom', seller.firstName)
       await type('Téléphone', seller.phoneNumber)
       if (seller.city) {
-        // Datalist field: its label is not bound to the input.
-        const city = document.querySelector<HTMLInputElement>(
-          'input[name="deposit.city"]',
-        )
-        if (!city) throw new Error('No city input on the screen')
-        await u.type(city, seller.city)
+        await u.type(screen.getByLabelText('Ville'), seller.city)
       }
     },
 
@@ -257,11 +252,7 @@ export async function depositAddPage(user?: User) {
       return page.statusSelect().textContent.trim()
     },
     statusSelect() {
-      const trigger = document.querySelector<HTMLElement>(
-        '[data-slot="select-trigger"]',
-      )
-      if (!trigger) throw new Error('No status select on the screen')
-      return trigger
+      return screen.getByRole('combobox', { name: 'Statut de la cotisation' })
     },
     // The summary is handed to the browser's print dialog through an iframe;
     // the form only saves once that has happened.

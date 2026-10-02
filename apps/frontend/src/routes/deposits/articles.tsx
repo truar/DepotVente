@@ -435,6 +435,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                   <InputGroup>
                     <InputGroupInput
                       {...field}
+                      id="price"
                       aria-invalid={fieldState.invalid}
                       type="text"
                     />

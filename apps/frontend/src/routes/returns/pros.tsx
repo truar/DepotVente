@@ -209,7 +209,9 @@ function ReturnArticleInput(props: { depositId: string }) {
 
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-      <div className="col-span-2 text-right">Scanner un article</div>
+      <label htmlFor="articleCode" className="col-span-2 text-right">
+        Scanner un article
+      </label>
       <div>
         <Input
           type="text"
@@ -238,9 +240,11 @@ function ReturnedArticleCount(props: { depositId: string }) {
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-      <div className="col-span-2 text-right">Nombre d'articles scannés</div>
+      <label htmlFor="returnedCount" className="col-span-2 text-right">
+        Nombre d'articles scannés
+      </label>
       <div>
-        <Input type="text" readOnly value={count} />
+        <Input id="returnedCount" type="text" readOnly value={count} />
       </div>
     </div>
   )
@@ -254,9 +258,11 @@ function TotalArticleReceivedUnsoldCount(props: { depositId: string }) {
   )
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
-      <div className="col-span-2 text-right">Nombre d'articles à retourner</div>
+      <label htmlFor="toReturnCount" className="col-span-2 text-right">
+        Nombre d'articles à retourner
+      </label>
       <div>
-        <Input type="text" readOnly value={count} />
+        <Input id="toReturnCount" type="text" readOnly value={count} />
       </div>
     </div>
   )

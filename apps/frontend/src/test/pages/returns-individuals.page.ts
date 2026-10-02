@@ -46,19 +46,12 @@ export async function returnsIndividualsPage() {
     },
 
     // ---- the cheque --------------------------------------------------------
-    // "Édition chèque signé par" and "N° de chèque": labels not bound to their
-    // input, so walk from the text to the input beside it.
     async fillCheque(cheque: { signatory: string; checkId: string }) {
-      const inputBeside = (label: string) => {
-        const input = screen
-          .getByText(label)
-          .closest('[data-slot="field-content"]')
-          ?.querySelector('input')
-        if (!input) throw new Error(`No input next to "${label}"`)
-        return input
-      }
-      await u.type(inputBeside('Édition chèque signé par'), cheque.signatory)
-      const checkId = inputBeside('N° de chèque')
+      await u.type(
+        screen.getByLabelText('Édition chèque signé par'),
+        cheque.signatory,
+      )
+      const checkId = screen.getByLabelText('N° de chèque')
       await u.clear(checkId)
       await u.type(checkId, cheque.checkId)
     },

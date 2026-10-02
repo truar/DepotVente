@@ -395,6 +395,7 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
                 >
                   <SelectTrigger
                     className="w-full"
+                    aria-label="Statut de la cotisation"
                     aria-invalid={fieldState.invalid}
                   >
                     <SelectValue placeholder="Statut" />

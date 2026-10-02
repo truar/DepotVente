@@ -44,6 +44,7 @@ export function DataListField(props: CityInputProps) {
             value={value}
             disabled={disabled}
             name={name}
+            id={name}
             list={`${name}-list`}
             aria-invalid={invalid}
             type="text"
