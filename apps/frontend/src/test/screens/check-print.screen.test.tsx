@@ -166,22 +166,20 @@ describe('Screen: « Impression des chèques » once offsets are validated', () 
     expect(again.offset('Marge gauche (mm)')).toBe(3)
   })
 
-  it('re-renders without end once offsets are validated', async () => {
+  it('stays usable once offsets are validated, and when opened again', async () => {
     const first = await checkPrintPage()
     await first.setOffset('Marge gauche (mm)', 3)
-    expect(endlessRenders()).toBe(0)
-
     await first.validate()
 
-    // Current behaviour, pinned until it is decided: the hook hands the
-    // screen a new offsets object on every render, and the screen copies it
-    // into its own state whenever the form is not being edited; that
-    // re-renders, which hands a new object... React reports the loop. It
-    // starts after « Valider », and again each time the screen is opened
-    // with offsets stored on the computer.
-    await waitFor(() => expect(endlessRenders()).toBeGreaterThan(0))
-    consoleError.mockClear()
-    await checkPrintPage()
-    await waitFor(() => expect(endlessRenders()).toBeGreaterThan(0))
+    await waitFor(() => expect(first.offset('Marge gauche (mm)')).toBe(3))
+    await first.setOffset('Largeur du nom (mm)', 42)
+    expect(first.offset('Largeur du nom (mm)')).toBe(42)
+
+    const again = await checkPrintPage()
+    await again.setOffset('Largeur du nom (mm)', 43)
+
+    expect(again.offset('Marge gauche (mm)')).toBe(3)
+    expect(again.offset('Largeur du nom (mm)')).toBe(43)
+    expect(endlessRenders()).toBe(0)
   })
 })

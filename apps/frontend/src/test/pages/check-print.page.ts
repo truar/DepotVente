@@ -7,7 +7,6 @@
 // the coloured guides behind the fields).
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { expect } from 'vitest'
-import { configure, getConfig } from '@testing-library/react'
 import { printedBlobs } from '@/test/setup.ts'
 import { printedDocuments } from '@/test/printed.ts'
 import { openScreen, screen, waitFor } from '@/test/screen.tsx'
@@ -28,19 +27,8 @@ export async function checkPrintPage() {
       await u.clear(field)
       await u.type(field, String(value))
     },
-    // Current behaviour, pinned until it is decided: once validated, the
-    // screen re-renders without end (see check-print.screen.test.tsx).
-    // Under the testing library's act() that endless loop never yields and
-    // the click never returns; a browser has no act() and goes on. The click
-    // is therefore dispatched the browser's way, outside act().
     async validate() {
-      const { eventWrapper } = getConfig()
-      configure({ eventWrapper: (dispatch) => dispatch() })
-      try {
-        await u.click(screen.getByRole('button', { name: 'Valider' }))
-      } finally {
-        configure({ eventWrapper })
-      }
+      await u.click(screen.getByRole('button', { name: 'Valider' }))
     },
     async printTest() {
       const before = printedDocuments()
