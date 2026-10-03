@@ -531,12 +531,15 @@ describe('Screen: how the buyer pays', () => {
   })
 })
 
-// Prices with cents: 10,10 € and 20,20 €, paid 30,30 € in cash. The till
-// adds the prices in floating point, so the sum is not exactly 30,30.
+// Prices are in euros and cents: the total and the payments are added up
+// to the cent, so 10,10 € + 20,20 € is 30,30 €, not 30,299999999999997 €.
 describe('Screen: prices with cents', () => {
-  it('shows a total of 30.299999999999997 and refuses an exact payment of 30,30 €', async () => {
+  beforeEach(async () => {
     signedInAs()
     await givenWorkstation(2000)
+  })
+
+  async function twoArticlesAt1010And2020() {
     const { articles } = await givenDeposit({}, [
       { price: 10.1 },
       { price: 20.2 },
@@ -545,13 +548,28 @@ describe('Screen: prices with cents', () => {
     await page.scan(articles[0].code)
     await page.scan(articles[1].code)
     await page.fillBuyer(buyer)
-    await page.pay({ cash: 30.3 })
+    return page
+  }
 
-    // Current behaviour, pinned until it is decided: the total is shown
-    // with the floating-point error, and the exact payment is refused.
-    expect(page.totalText()).toBe('Montant total : 30.299999999999997€')
+  it('shows a total of 30,30 € and accepts an exact cash payment of 30,30 €', async () => {
+    const page = await twoArticlesAt1010And2020()
+    expect(page.totalText()).toBe('Montant total : 30.3€')
+
+    await page.pay({ cash: 30.3 })
     expect(page.totalPayment()).toBe(30.3)
     await page.save()
+    await page.savedToast(2001)
+
+    const listing = await salesListingPage()
+    expect(listing.saleIndexes()).toEqual(['2001'])
+  })
+
+  it('refuses a payment one cent short of 30,30 €, and saves nothing', async () => {
+    const page = await twoArticlesAt1010And2020()
+
+    await page.pay({ cash: 30.29 })
+    await page.save()
+
     expect(page.errors()).toEqual([
       'Merci de vérifier que le montant total est couvert par les 4 modes de règlements.',
     ])
@@ -559,20 +577,10 @@ describe('Screen: prices with cents', () => {
   })
 
   it('accepts the same 30,30 € when it is split as 10,10 € cash and 20,20 € card', async () => {
-    signedInAs()
-    await givenWorkstation(2000)
-    const { articles } = await givenDeposit({}, [
-      { price: 10.1 },
-      { price: 20.2 },
-    ])
-    const page = await salesAddPage()
-    await page.scan(articles[0].code)
-    await page.scan(articles[1].code)
-    await page.fillBuyer(buyer)
+    const page = await twoArticlesAt1010And2020()
 
-    // Current behaviour, pinned until it is decided: the same sum, split so
-    // that it happens to carry the same rounding error, is accepted.
     await page.pay({ cash: 10.1, card: 20.2 })
+    expect(page.totalPayment()).toBe(30.3)
     await page.save()
     await page.savedToast(2001)
   })

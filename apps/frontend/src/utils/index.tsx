@@ -210,3 +210,14 @@ export function numberToFrenchWords(input: number | string): string {
   const centimes = centsPart >= 2 ? 'centimes' : 'centime'
   return `${integerWords} ${euros} et ${centsWords} ${centimes}`
 }
+
+// Les montants sont des euros au centime près : on les additionne en
+// centimes entiers, car 10.1 + 20.2 vaut 30.299999999999997 en virgule
+// flottante. toCents arrondit au centime le plus proche.
+export function toCents(amount: number): number {
+  return Math.round(amount * 100)
+}
+
+export function fromCents(cents: number): number {
+  return cents / 100
+}

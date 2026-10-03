@@ -51,7 +51,13 @@ import { Euro, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { showErrorAlert } from '@/stores/errorAlertStore'
 import { useCreateSale } from '@/hooks/useCreateSale.ts'
-import { getYear, normalizeArticleCode, shortArticleCode } from '@/utils'
+import {
+  fromCents,
+  getYear,
+  normalizeArticleCode,
+  shortArticleCode,
+  toCents,
+} from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
@@ -149,12 +155,16 @@ function SalesForm(props: SalesFormProps) {
   }, [saleIndex])
 
   const checkPaymentTotal = (data: SaleFormType) => {
+    // Comparaison en centimes entiers : exacte, sans erreur d'arrondi.
     const totalPrice =
-      data.articles?.reduce((acc, cur) => acc + toNumber(cur.price), 0) ?? 0
-    const cashAmount = toNumber(data.cashAmount)
-    const cardAmount = toNumber(data.cardAmount)
-    const checkAmount = toNumber(data.checkAmount)
-    const deferredAmount = toNumber(data.deferredAmount)
+      data.articles?.reduce(
+        (acc, cur) => acc + toCents(toNumber(cur.price)),
+        0,
+      ) ?? 0
+    const cashAmount = toCents(toNumber(data.cashAmount))
+    const cardAmount = toCents(toNumber(data.cardAmount))
+    const checkAmount = toCents(toNumber(data.checkAmount))
+    const deferredAmount = toCents(toNumber(data.deferredAmount))
     if (totalPrice !== cashAmount + cardAmount + checkAmount + deferredAmount) {
       setError('root.totalPrice', {
         type: 'value',
@@ -521,10 +531,9 @@ function ScannedArticles() {
 
   const articles = watch('articles')
   if (!articles || articles.length === 0) return null
-  const total = articles.reduce((acc, cur) => {
-    acc += cur.price
-    return acc
-  }, 0)
+  const total = fromCents(
+    articles.reduce((acc, cur) => acc + toCents(cur.price), 0),
+  )
   return (
     <>
       <Table>
@@ -591,13 +600,18 @@ function PaymentForm() {
   const cardAmount = watch('cardAmount')
   const checkAmount = watch('checkAmount')
   const deferredAmount = watch('deferredAmount')
-  const totalPayment =
-    toNumber(cashAmount) +
-    toNumber(cardAmount) +
-    toNumber(checkAmount) +
-    toNumber(deferredAmount)
+  // Sommes et différences en centimes entiers, pour afficher 30.3 et non
+  // 30.299999999999997.
+  const totalPayment = fromCents(
+    toCents(toNumber(cashAmount)) +
+      toCents(toNumber(cardAmount)) +
+      toCents(toNumber(checkAmount)) +
+      toCents(toNumber(deferredAmount)),
+  )
   const cashReceivedNumber = parseFloat(cashReceived)
-  let cashReturned = Math.max(0, cashReceivedNumber - toNumber(cashAmount))
+  let cashReturned = fromCents(
+    Math.max(0, toCents(cashReceivedNumber) - toCents(toNumber(cashAmount))),
+  )
   if (Number.isNaN(cashReturned)) {
     cashReturned = 0
   }
