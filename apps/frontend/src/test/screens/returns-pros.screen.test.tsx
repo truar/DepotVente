@@ -82,7 +82,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     expect(page.isScanOpen()).toBe(true)
   })
 
-  // RET-PRO-07: the volunteer scans a pair of skis PERRILLAT takes back. The
+  // The volunteer scans a pair of skis PERRILLAT takes back. The
   // toast confirms it, the pair moves from « En attente de scan » to « Déjà
   // scannés », and the field is ready for the next scan.
   it('confirms a scan, moves the article to the scanned list and empties the field', async () => {
@@ -100,7 +100,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[0]]))
   })
 
-  // RET-PRO-10, RET-PRO-11: a code that is not an article, or an article of
+  // A code that is not an article, or an article of
   // ALLOSKI scanned while PERRILLAT is open, is refused with an alert; the
   // field is emptied and nothing is returned.
   it.each([
@@ -129,7 +129,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     expect(page.listedCodes()).toEqual([])
   })
 
-  // RET-PRO-12: the same pair goes through the scanner twice. The second
+  // The same pair goes through the scanner twice. The second
   // scan is refused, the pair is counted once.
   it('refuses an article already scanned out', async () => {
     const page = await returnsProsPage()
@@ -150,7 +150,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     expect(page.listedCodes()).toEqual([perrillatCodes[0]])
   })
 
-  // RET-PRO-13: BERTRAND (fiche 5) has an article that is not on the shelf
+  // BERTRAND (fiche 5) has an article that is not on the shelf
   // to be handed back: sold to a buyer, struck off the fiche, or never
   // scanned in at the reception desk. The volunteer scans it anyway.
   // Current behaviour, pinned until it is decided: the scan is accepted like
@@ -186,7 +186,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     await waitFor(() => expect(page.listedCodes()).toEqual([unsoldCode]))
   })
 
-  // RET-PRO-13, sold: on the fiche, the pair sold to a buyer now reads
+  // Sold: on the fiche, the pair sold to a buyer now reads
   // « Rendu » instead of « Vendu ».
   // Current behaviour, pinned until it is decided: scanning a sold article
   // out overwrites its « Vendu ».
@@ -214,7 +214,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     expect(fiche.articleBadge(0)).toBe('Rendu')
   })
 
-  // RET-PRO-16: the other computers learn that each pair was handed back.
+  // The other computers learn that each pair was handed back.
   it('sends each return to the other computers', async () => {
     const page = await returnsProsPage()
     await page.pickPro('Perrillat')

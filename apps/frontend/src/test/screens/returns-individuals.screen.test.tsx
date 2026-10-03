@@ -81,7 +81,7 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon'])
 
     // The cheque is listed for the evening review: Durand's fiche, cheque
-    // n°1042 signed by Paul, for what she was owed.
+    // n°1042 signed by Paul, for what was owed.
     const checks = await returnsChecksPage()
     await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
     // [Numéro du chèque, Signature]
@@ -296,7 +296,8 @@ describe('Screen: write the cheque of a fiche', () => {
   })
 
   // The cheque printed was Camille Durand's: once the volunteer switches to
-  // Jean Bon's fiche, his own cheque must be printed before validating.
+  // Jean Bon's fiche, that fiche's own cheque must be printed before
+  // validating.
   it('asks for a new print after switching to another fiche', async () => {
     const page = await returnsIndividualsPage()
     await page.pickDeposit('Durand')

@@ -10,7 +10,7 @@ describe('Screen: the return listing', () => {
   beforeEach(async () => {
     signedInAs()
     await givenWorkstation(1000)
-    // A private seller who sold 200 € and still owes his 2 € contribution
+    // A private seller who sold 200 € and still owes the 2 € contribution
     await givenDeposit(
       {
         depositIndex: 12,
@@ -64,7 +64,7 @@ describe('Screen: the return listing', () => {
     )
   })
 
-  // RET-LIST-21: DURAND (fiche 12) still owes his 2 € contribution and hands
+  // DURAND (fiche 12) still owes the 2 € contribution and hands
   // them over at the return desk of till 1000. The volunteer marks it
   // settled; that evening, the admin counting this till's returns cash
   // expects those 2 €.
@@ -88,8 +88,8 @@ describe('Screen: the return listing', () => {
     await waitFor(() => expect(control.theoretical()).toBe(2))
   })
 
-  // RET-LIST-24: MARTIN (fiche 15) sold nothing and owes her 2 €
-  // contribution. The volunteer computes her return, then she pays: the
+  // MARTIN (fiche 15) sold nothing and owes the 2 €
+  // contribution. The volunteer computes the return, then MARTIN pays: the
   // other computers receive both, in that order.
   it('sends the computation and the settlement to the other computers', async () => {
     const { deposit } = await givenDeposit(

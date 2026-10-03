@@ -292,9 +292,9 @@ describe('Screen: the invoice', () => {
   })
 })
 
-// Camille Durand left skis this morning; in the afternoon she buys boots.
-// She is already a contact: the volunteer finds her in the list instead of
-// typing her again.
+// Camille Durand left skis this morning, and comes back in the afternoon
+// to buy boots. Already a contact, Camille is found in the list instead of
+// being typed again.
 describe('Screen: sell to a buyer already known', () => {
   let code: string
 
@@ -342,7 +342,7 @@ describe('Screen: sell to a buyer already known', () => {
     await screen.findByRole('heading', { name: 'Gérer les ventes' })
     await waitFor(() => expect(saleRow(2001)).toContain('Durand Camille'))
 
-    // …and no second Camille was made: the next sale offers her once.
+    // …and no second Camille was made: the next sale offers Camille once.
     const next = await salesAddPage()
     expect(await next.offeredBuyers('Durand')).toEqual(['Durand Camille'])
   })
@@ -372,8 +372,8 @@ describe('Screen: sell to a buyer already known', () => {
   })
 
   // The volunteer often starts typing the name, then recognises the buyer
-  // and picks her in the list. What was typed before is overwritten by the
-  // contact: the sale must still go to Camille, not to a copy of her.
+  // and picks Camille in the list. What was typed before is overwritten by
+  // the contact: the sale must still go to Camille, not to a copy.
   it('sells to the contact picked after the buyer was partly typed by hand', async () => {
     const page = await salesAddPage()
     await page.scan(code)
@@ -393,7 +393,7 @@ describe('Screen: sell to a buyer already known', () => {
     await screen.findByRole('heading', { name: 'Gérer les ventes' })
     await waitFor(() => expect(saleRow(2001)).toContain('Durand Camille'))
 
-    // …and no second Camille was made: the next sale offers her once.
+    // …and no second Camille was made: the next sale offers Camille once.
     const next = await salesAddPage()
     expect(await next.offeredBuyers('Durand')).toEqual(['Durand Camille'])
   })
@@ -403,7 +403,7 @@ describe('Screen: sell to a buyer already known', () => {
 // lost on the way, a status corrected by hand). It is sold all the same: the
 // till must not sell it a second time.
 describe('Screen: an article sold without a sale', () => {
-  it('is refused with the "already sold" alert (VEN-ADD-12)', async () => {
+  it('is refused with the "already sold" alert', async () => {
     signedInAs()
     await givenWorkstation(2000)
     const { articles } = await givenDeposit({}, [
@@ -427,7 +427,7 @@ describe('Screen: an article sold without a sale', () => {
 // counter: the volunteer takes it out of the sale, and the count and the
 // amount to pay follow.
 describe('Screen: taking a scanned article back out of the sale', () => {
-  it('removes the line and recomputes the count and the total (VEN-ADD-13)', async () => {
+  it('removes the line and recomputes the count and the total', async () => {
     signedInAs()
     await givenWorkstation(2000)
     const { articles } = await givenDeposit({}, [
@@ -461,7 +461,7 @@ describe('Screen: how the buyer pays', () => {
   // The volunteer types 120 € in cash for a 100 € article (the cash handed
   // over rather than the price): the till refuses, the change is not a
   // payment, and no sale is recorded.
-  it('refuses a payment above the total, and saves nothing (VEN-ADD-24)', async () => {
+  it('refuses a payment above the total, and saves nothing', async () => {
     const page = await salesAddPage()
     await page.scan(code)
     await page.fillBuyer(buyer)
@@ -485,7 +485,7 @@ describe('Screen: how the buyer pays', () => {
   // A buyer pays part in cash, part by card, part by cheque, and the club
   // agrees to collect the rest later. Each part must be found in its own
   // section of the till count at the end of the day.
-  it('records each of the four payment modes on its own (VEN-ADD-25)', async () => {
+  it('records each of the four payment modes on its own', async () => {
     const page = await salesAddPage()
     await page.scan(code)
     await page.fillBuyer(buyer)
@@ -511,7 +511,7 @@ describe('Screen: how the buyer pays', () => {
 
   // The volunteer types an amount and, out of habit, presses Enter to move
   // on. The sale must not be saved behind their back: only the button saves.
-  it('does not save the sale when Enter is pressed in another field (VEN-ADD-37)', async () => {
+  it('does not save the sale when Enter is pressed in another field', async () => {
     const page = await salesAddPage()
     await page.scan(code)
     await page.fillBuyer(buyer)

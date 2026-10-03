@@ -306,7 +306,7 @@ describe('Screen: a card refund handed over by this till', () => {
     await givenRefund(sale, { incrementStart: 2000, cardAmount: 50 })
   })
 
-  it('shows as a negative line under « Cartes bancaires » (VEN-CAISSE-04)', async () => {
+  it('shows as a negative line under « Cartes bancaires »', async () => {
     const page = await salesControlPage()
     await page.open('card')
 
@@ -329,7 +329,7 @@ describe('Screen: counting the till a second time', () => {
     await givenTheSalesOfTill2000()
   })
 
-  it('updates the saved count instead of adding another one (VEN-CAISSE-19)', async () => {
+  it('updates the saved count instead of adding another one', async () => {
     const first = await salesControlPage()
     await first.open('drawer')
     await waitFor(() => expect(first.theoretical()).toBe(170))
