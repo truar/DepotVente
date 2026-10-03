@@ -14,6 +14,8 @@ import { openScreen, screen, waitFor } from '@/test/screen.tsx'
 export async function checkPrintPage() {
   const { user: u, router } = await openScreen('/settings/check-print')
   await screen.findByRole('heading', { name: 'Impression des chèques' })
+  // The fields appear once the offsets stored on this computer are read.
+  await screen.findByLabelText('Marge gauche (mm)')
 
   const page = {
     user: u,
@@ -26,6 +28,26 @@ export async function checkPrintPage() {
       const field = screen.getByLabelText(label)
       await u.clear(field)
       await u.type(field, String(value))
+    },
+    // Records every value written into the field from now on, even one
+    // that is replaced before anything could read it: catches a value that
+    // only flashes on screen.
+    recordOffset(label: string) {
+      const field = screen.getByLabelText<HTMLInputElement>(label)
+      const native = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )!
+      const shown: Array<number> = []
+      Object.defineProperty(field, 'value', {
+        configurable: true,
+        get: () => native.get!.call(field) as string,
+        set: (value: string) => {
+          native.set!.call(field, value)
+          shown.push(Number(value))
+        },
+      })
+      return shown
     },
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

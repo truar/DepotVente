@@ -166,6 +166,19 @@ describe('Screen: « Impression des chèques » once offsets are validated', () 
     expect(again.offset('Marge gauche (mm)')).toBe(3)
   })
 
+  // Right after « Valider », the field keeps the validated value: it does
+  // not flash back to the shipped default while the save is under way.
+  it('keeps showing the validated value right after « Valider »', async () => {
+    const settings = await checkPrintPage()
+    await settings.setOffset('Marge gauche (mm)', 3)
+    const shown = settings.recordOffset('Marge gauche (mm)')
+    await settings.validate()
+
+    expect(settings.offset('Marge gauche (mm)')).toBe(3)
+    await waitFor(() => expect(settings.offset('Marge gauche (mm)')).toBe(3))
+    expect(shown.filter((value) => value !== 3)).toEqual([])
+  })
+
   it('stays usable once offsets are validated, and when opened again', async () => {
     const first = await checkPrintPage()
     await first.setOffset('Marge gauche (mm)', 3)
