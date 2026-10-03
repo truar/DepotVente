@@ -532,7 +532,8 @@ describe('Screen: how the buyer pays', () => {
 })
 
 // Prices are in euros and cents: the total and the payments are added up
-// to the cent, so 10,10 € + 20,20 € is 30,30 €, not 30,299999999999997 €.
+// to the cent, so 10,10 € + 20,20 € is 30,30 €, not 30,299999999999997 €,
+// and every amount reads the French way.
 describe('Screen: prices with cents', () => {
   beforeEach(async () => {
     signedInAs()
@@ -553,10 +554,11 @@ describe('Screen: prices with cents', () => {
 
   it('shows a total of 30,30 € and accepts an exact cash payment of 30,30 €', async () => {
     const page = await twoArticlesAt1010And2020()
-    expect(page.totalText()).toBe('Montant total : 30.3€')
+    expect(page.scannedPrices()).toEqual(['10,10 €', '20,20 €'])
+    expect(page.totalText()).toBe('Montant total : 30,30 €')
 
     await page.pay({ cash: 30.3 })
-    expect(page.totalPayment()).toBe(30.3)
+    expect(page.totalPaymentText()).toBe('Total règlement : 30,30 €')
     await page.save()
     await page.savedToast(2001)
 

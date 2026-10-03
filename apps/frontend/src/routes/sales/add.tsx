@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { FormattedNumber } from 'react-intl'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -561,7 +562,13 @@ function ScannedArticles() {
               <TableCell>{article.model}</TableCell>
               <TableCell>{article.color}</TableCell>
               <TableCell>{article.size}</TableCell>
-              <TableCell className="text-right">{article.price}€</TableCell>
+              <TableCell className="text-right">
+                <FormattedNumber
+                  value={article.price}
+                  style="currency"
+                  currency="EUR"
+                />
+              </TableCell>
               <TableCell className="text-center">
                 <button
                   type="button"
@@ -579,7 +586,10 @@ function ScannedArticles() {
       <div className="flex flex-row justify-end">
         <div className="flex flex-row gap-5 items-baseline font-bold">
           <div>Nombre d'articles : {articles.length}</div>
-          <div>Montant total : {total}€</div>
+          <div>
+            Montant total :{' '}
+            <FormattedNumber value={total} style="currency" currency="EUR" />
+          </div>
         </div>
       </div>
     </>
@@ -756,7 +766,10 @@ function PaymentForm() {
           </FieldContent>
         </Field>
       </div>
-      <div className="font-bold">Total règlement : {totalPayment}€</div>
+      <div className="font-bold">
+        Total règlement :{' '}
+        <FormattedNumber value={totalPayment} style="currency" currency="EUR" />
+      </div>
     </div>
   )
 }

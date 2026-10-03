@@ -2,6 +2,14 @@
 import { expect } from 'vitest'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
+// An amount as the screen writes it, in French: « 1 234,50 € » -> 1234.5.
+const euros = (text: string) =>
+  Number(text.replace(/[^\d,-]/g, '').replace(',', '.'))
+
+// Spaces as the screen writes them (Intl puts narrow no-break spaces
+// around the € and between thousands) read as plain spaces.
+const plain = (text: string) => text.replace(/\s+/g, ' ').trim()
+
 export async function salesAddPage() {
   const { user: u, router } = await openScreen('/sales/add')
   await screen.findByRole('heading', { name: 'Faire une vente' })
@@ -53,12 +61,20 @@ export async function salesAddPage() {
     },
     // "Montant total : 200€" as the volunteer reads it.
     totalText(): string {
-      return screen.getByText(/Montant total/).textContent.trim()
+      return plain(screen.getByText(/Montant total/).textContent)
     },
-    // "Montant total : 200€", or 0 when nothing is scanned.
+    // "Montant total : 200,00 €", or 0 when nothing is scanned.
     total(): number {
       const line = screen.queryByText(/Montant total/)
-      return line ? Number(line.textContent.replace(/[^\d.]/g, '')) : 0
+      return line ? euros(line.textContent) : 0
+    },
+    // The price column of the scanned rows, as shown: "10,10 €".
+    scannedPrices(): Array<string> {
+      return screen
+        .queryAllByRole('row')
+        .map((row) => within(row).queryAllByRole('cell'))
+        .filter((cells) => cells.length > 1)
+        .map((cells) => plain(cells[cells.length - 2].textContent))
     },
 
     // ---- the blocking alert a refused scan raises ------------------------
@@ -164,9 +180,10 @@ export async function salesAddPage() {
     },
     // "Total règlement : 200€"
     totalPayment(): number {
-      return Number(
-        screen.getByText(/Total règlement/).textContent.replace(/[^\d.]/g, ''),
-      )
+      return euros(screen.getByText(/Total règlement/).textContent)
+    },
+    totalPaymentText(): string {
+      return plain(screen.getByText(/Total règlement/).textContent)
     },
     // The error lines above the form (not the ones under a field): the
     // list of field messages, and the payment paragraph.
