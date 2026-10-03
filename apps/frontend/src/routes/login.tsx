@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { ApiError } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +16,21 @@ import {
 export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
+
+// Le message du serveur (« Invalid credentials ») ou du navigateur
+// (« Failed to fetch ») est en anglais : on choisit le nôtre d'après l'erreur.
+// fetch rejette avec un TypeError quand la requête n'aboutit pas (câble
+// débranché, serveur arrêté), quel que soit le navigateur.
+function loginErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return 'Email ou mot de passe incorrect'
+    return `Connexion impossible (erreur ${err.status})`
+  }
+  if (err instanceof TypeError) {
+    return 'Serveur injoignable, vérifiez la connexion du poste'
+  }
+  return 'Erreur de connexion'
+}
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -40,7 +56,7 @@ function LoginPage() {
       await login(email, password)
       navigate({ to: '/' })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion')
+      setError(loginErrorMessage(err))
     } finally {
       setIsLoading(false)
     }

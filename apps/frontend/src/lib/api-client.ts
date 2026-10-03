@@ -6,6 +6,18 @@ import { clientHeaders } from '@/services/client-identity.ts'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
+// Réponse HTTP en erreur : garde le statut, pour que l'écran choisisse son
+// message (le texte du serveur est en anglais).
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>
 }
@@ -59,7 +71,10 @@ class ApiClient {
       const error = await response.json().catch(() => ({
         message: response.statusText,
       }))
-      throw new Error(error.message || error.error || 'Une erreur est survenue')
+      throw new ApiError(
+        error.message || error.error || 'Une erreur est survenue',
+        response.status,
+      )
     }
 
     // Gérer les réponses vides (204 No Content)

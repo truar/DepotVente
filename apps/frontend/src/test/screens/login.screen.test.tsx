@@ -150,9 +150,11 @@ describe('Screen: signing in', () => {
 
     await page.signIn({ email: paul.email, password: 'wrong' })
 
-    // Current behaviour, pinned until it is decided: the server's English
-    // message is shown as it came, « Invalid credentials ».
-    expect(await screen.findByText('Invalid credentials')).toBeVisible()
+    // Told in French, not with the server's own « Invalid credentials ».
+    expect(
+      await screen.findByText('Email ou mot de passe incorrect'),
+    ).toBeVisible()
+    expect(screen.queryByText('Invalid credentials')).toBeNull()
     expect(page.pathname()).toBe('/login')
     expect(received.map(({ path }) => path)).toEqual(['/api/signin'])
     expect(storedSession()).toEqual({
@@ -169,12 +171,44 @@ describe('Screen: signing in', () => {
 
     await page.signIn({ email: paul.email, password: paul.password })
 
-    // Current behaviour, pinned until it is decided: the runtime's own
-    // English message is shown as it came. Here (Node's fetch) it reads
-    // « fetch failed »; Chrome and Edge say « Failed to fetch », Firefox
-    // « NetworkError when attempting to fetch resource. ».
-    expect(await screen.findByText('fetch failed')).toBeVisible()
+    // Told in French, whatever the browser's own wording (« fetch failed »
+    // in Node, « Failed to fetch » in Chrome, « NetworkError ... » in
+    // Firefox).
+    expect(
+      await screen.findByText(
+        'Serveur injoignable, vérifiez la connexion du poste',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByText('fetch failed')).toBeNull()
     expect(page.pathname()).toBe('/login')
+  })
+
+  // The server answers, but with an error that is not about the credentials
+  // (crashed, misconfigured proxy...): the status is shown, to be read out to
+  // whoever looks after the server.
+  it('shows the status when the server answers with another error', async () => {
+    server.use(
+      http.post('/api/signin', () =>
+        HttpResponse.json(
+          { message: 'Internal server error', statusCode: 500 },
+          { status: 500 },
+        ),
+      ),
+    )
+    const page = await loginPage()
+
+    await page.signIn({ email: paul.email, password: paul.password })
+
+    expect(
+      await screen.findByText('Connexion impossible (erreur 500)'),
+    ).toBeVisible()
+    expect(screen.queryByText('Internal server error')).toBeNull()
+    expect(page.pathname()).toBe('/login')
+    expect(storedSession()).toEqual({
+      token: null,
+      isAuthenticated: false,
+      user: null,
+    })
   })
 })
 
