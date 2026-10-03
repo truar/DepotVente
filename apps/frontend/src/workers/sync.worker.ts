@@ -25,12 +25,20 @@ self.onmessage = async (event) => {
       // Start the background interval for Delta Sync
       if (syncInterval) clearInterval(syncInterval)
       syncInterval = setInterval(async () => {
-        await syncService.deltaSync()
+        try {
+          await syncService.deltaSync()
+        } catch {
+          // Déjà journalisé par le service ; le tick suivant réessaiera.
+        }
       }, DELTA_SYNC_INTERVAL)
 
       // Run once immediately
-      await syncService.softInitialSync()
-      await syncService.deltaSync()
+      try {
+        await syncService.softInitialSync()
+        await syncService.deltaSync()
+      } catch {
+        // Déjà journalisé par le service ; le prochain poll réessaiera.
+      }
       break
     case 'STOP_SYNC':
       if (syncInterval) {
@@ -42,12 +50,12 @@ self.onmessage = async (event) => {
       await syncService.processOutbox()
       break
     case 'RESET_LOCAL':
-      try {
-        await syncService.resetLocal()
-        self.postMessage({ type: 'SYNC_COMPLETE' })
-      } catch (error) {
-        self.postMessage({ type: 'SYNC_ERROR', error: error })
-      }
+      // resetLocal ne lève pas : il dit si la base a été remplacée ou, sinon,
+      // pourquoi (la base locale est alors intacte).
+      self.postMessage({
+        type: 'RESET_LOCAL_DONE',
+        result: await syncService.resetLocal(),
+      })
       break
   }
 }

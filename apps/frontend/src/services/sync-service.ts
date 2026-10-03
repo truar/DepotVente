@@ -18,6 +18,12 @@ type ServerError = {
   serverEpoch?: string
 }
 
+// Issue de « Recharger depuis le serveur ». `unreachable` : erreur réseau
+// ou 5xx, le serveur répondra peut-être plus tard.
+export type ResetResult =
+  | { ok: true }
+  | { ok: false; unreachable: boolean; message: string }
+
 // What happened to one outbox operation:
 //   applied  - the server took it, removed from the outbox
 //   rejected - the server refused it for good, parked for a human
@@ -55,11 +61,21 @@ class SyncService {
   private isSyncing = false
   private syncInProgress = false
   private token: string | null = null
+  // startSync a été appelé : la synchro automatique tourne.
+  private started = false
 
   setToken(token: string | null) {
     this.token = token
+    if (!token) return
     // Writes made while logged out are waiting for this.
-    if (token) void this.processOutbox()
+    void this.processOutbox()
+    // Sans session, le démarrage n'a rien demandé au serveur : le
+    // chargement initial part maintenant (si ce poste ne l'a jamais eu).
+    if (this.started) {
+      this.softInitialSync().catch(() => {
+        // Déjà journalisé par initialSync ; le prochain poll réessaiera.
+      })
+    }
   }
 
   private getToken() {
@@ -70,6 +86,7 @@ class SyncService {
    * Start listening to outbox changes and sync automatically
    */
   startSync() {
+    this.started = true
     // Use Dexie's liveQuery to react to outbox changes
     liveQuery(() =>
       db.outbox
@@ -218,6 +235,61 @@ class SyncService {
   // Pull
   // ---------------------------------------------------------------------
 
+  /**
+   * Télécharge la base complète du serveur sans toucher à la base locale.
+   * Erreur réseau et 5xx reviennent `unreachable: true` (le serveur
+   * répondra peut-être plus tard) ; tout autre refus `unreachable: false`.
+   */
+  private async fetchFullBase(): Promise<
+    | { ok: true; data: any }
+    | { ok: false; unreachable: boolean; message: string }
+  > {
+    let response: Response
+    try {
+      response = await this.request('/sync/initial')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, unreachable: true, message }
+    }
+    if (!response.ok) {
+      const error = await this.readError(response)
+      return {
+        ok: false,
+        unreachable: response.status >= 500,
+        message: `Sync failed: ${error.message ?? response.statusText} (HTTP ${response.status})`,
+      }
+    }
+    return { ok: true, data: await response.json() }
+  }
+
+  // Remplace chaque table de données par celles du serveur (à appeler dans
+  // une transaction).
+  private async replaceDataTables(data: any) {
+    await db.deposits.clear()
+    await db.deposits.bulkPut(data.deposits)
+
+    await db.articles.clear()
+    await db.articles.bulkPut(data.articles)
+
+    await db.contacts.clear()
+    await db.contacts.bulkPut(data.contacts)
+
+    await db.sales.clear()
+    await db.sales.bulkPut(data.sales)
+
+    await db.refunds.clear()
+    await db.refunds.bulkPut(data.refunds ?? [])
+
+    await db.predeposits.clear()
+    await db.predeposits.bulkPut(data.predeposits)
+
+    await db.predepositArticles.clear()
+    await db.predepositArticles.bulkPut(data.predepositArticles)
+
+    await db.cashRegisterControls.clear()
+    await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
+  }
+
   // Initial full sync
   async initialSync() {
     if (this.syncInProgress) {
@@ -228,43 +300,14 @@ class SyncService {
     this.syncInProgress = true
     console.log(' Starting initial sync...')
     try {
-      const response = await this.request('/sync/initial')
-
-      if (!response.ok) {
-        const error = await this.readError(response)
-        throw new Error(
-          `Sync failed: ${error.message ?? response.statusText} (HTTP ${response.status})`,
-        )
-      }
-
-      const data = await response.json()
+      const fetched = await this.fetchFullBase()
+      if (!fetched.ok) throw new Error(fetched.message)
+      const data = fetched.data
 
       // Bulk update IndexedDB
-      await db.transaction('rw', DATA_TABLES, async () => {
-        await db.deposits.clear()
-        await db.deposits.bulkPut(data.deposits)
-
-        await db.articles.clear()
-        await db.articles.bulkPut(data.articles)
-
-        await db.contacts.clear()
-        await db.contacts.bulkPut(data.contacts)
-
-        await db.sales.clear()
-        await db.sales.bulkPut(data.sales)
-
-        await db.refunds.clear()
-        await db.refunds.bulkPut(data.refunds ?? [])
-
-        await db.predeposits.clear()
-        await db.predeposits.bulkPut(data.predeposits)
-
-        await db.predepositArticles.clear()
-        await db.predepositArticles.bulkPut(data.predepositArticles)
-
-        await db.cashRegisterControls.clear()
-        await db.cashRegisterControls.bulkPut(data.cashRegisterControls)
-      })
+      await db.transaction('rw', DATA_TABLES, () =>
+        this.replaceDataTables(data),
+      )
 
       if (typeof data.datasetEpoch === 'string') {
         await this.adoptEpoch(data.datasetEpoch)
@@ -281,30 +324,60 @@ class SyncService {
   }
 
   /**
-   * Forget everything this computer knows about the dataset (records,
-   * unsent writes, sync cursor, epoch) and pull a fresh copy. The answer to
-   * an EPOCH_MISMATCH. Workstation settings (cash register number, device
-   * id) are kept.
+   * Oublie tout ce que ce poste sait du jeu de données (enregistrements,
+   * écritures non envoyées, curseur de synchro, epoch) et le remplace par la
+   * base du serveur. La réponse à un EPOCH_MISMATCH. Les réglages du poste
+   * (numéro de caisse, identifiant) sont conservés.
+   *
+   * La base du serveur est d'abord téléchargée : tant qu'on ne l'a pas,
+   * rien n'est effacé localement. Une fois en main, l'effacement et le
+   * remplacement se font dans une seule transaction.
    */
-  async resetLocal() {
-    const dropped = await db.outbox.count()
-    await db.transaction(
-      'rw',
-      [...DATA_TABLES, db.outbox, db.syncMetadata],
-      async () => {
-        for (const table of DATA_TABLES) await table.clear()
-        await db.outbox.clear()
-        await db.syncMetadata.clear()
-      },
-    )
-    console.warn(
-      `Local base reset, ${dropped} unsent operation(s) dropped; pulling from server`,
-    )
-    await this.initialSync()
+  async resetLocal(): Promise<ResetResult> {
+    if (this.syncInProgress) {
+      return { ok: false, unreachable: false, message: 'Sync in progress' }
+    }
+    this.syncInProgress = true
+    try {
+      const fetched = await this.fetchFullBase()
+      if (!fetched.ok) {
+        console.error('❌ Local base reset aborted, nothing cleared:', fetched)
+        return fetched
+      }
+      const data = fetched.data
+      const dropped = await db.outbox.count()
+      await db.transaction(
+        'rw',
+        [...DATA_TABLES, db.outbox, db.syncMetadata],
+        async () => {
+          await this.replaceDataTables(data)
+          await db.outbox.clear()
+          await db.syncMetadata.clear()
+          if (typeof data.datasetEpoch === 'string') {
+            await this.setMetadata('datasetEpoch', data.datasetEpoch)
+          }
+          await this.setMetadata('lastSync', data.syncedAt)
+        },
+      )
+      console.warn(
+        `Local base replaced by the server's, ${dropped} unsent operation(s) dropped`,
+      )
+      return { ok: true }
+    } catch (error) {
+      console.error('❌ Local base reset failed:', error)
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, unreachable: false, message }
+    } finally {
+      this.syncInProgress = false
+    }
   }
 
   // Initial full sync
   async softInitialSync() {
+    if (!this.getToken()) {
+      console.warn('Initial sync skipped: not authenticated')
+      return
+    }
     const lastSync = await this.getMetadata('lastSync')
     if (lastSync) {
       console.log(
@@ -319,6 +392,11 @@ class SyncService {
 
   // Delta sync (fetch changes since last sync)
   async deltaSync() {
+    // Sans session, aucun appel au serveur (il refuserait en 401).
+    if (!this.getToken()) {
+      console.warn('Delta sync skipped: not authenticated')
+      return
+    }
     if (await this.hasEpochMismatch()) {
       console.warn('Delta sync skipped: local base must be reset first')
       return

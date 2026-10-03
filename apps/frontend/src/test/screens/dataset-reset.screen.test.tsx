@@ -223,39 +223,87 @@ describe('Screen: the server database was reset', () => {
     expect(settings.noRefusedOperation()).toBe(true)
   })
 
-  // The server goes down right when the operator reloads.
-  it('leaves the computer with an empty base when the server is unreachable during the reload', async () => {
-    const { backend, computer } = await aComputerInSync()
-    theServerIsReset(backend)
-    await computer.poll()
-    const { user } = await openScreen('/deposits/listing')
-    await datasetResetDialog.shown()
-    backend.goesOffline()
+  // SYNC-17 — The server cannot be reached right when the operator
+  // reloads (network down, or the server answering 5xx): nothing on this
+  // computer is touched, the dialog stays and says why, and the same
+  // button reloads once the server answers again.
+  it.each([
+    [
+      'the network is down',
+      (backend: FakeServer) => backend.goesOffline(),
+      (backend: FakeServer) => backend.comesBackOnline(),
+    ],
+    [
+      'the server answers 500',
+      (backend: FakeServer) =>
+        backend.answerInitialWith({
+          status: 500,
+          code: 'INTERNAL_ERROR',
+          message: 'Erreur interne du serveur.',
+        }),
+      (backend: FakeServer) => backend.answerInitialWith(null),
+    ],
+  ])(
+    'keeps the local base and the dialog when %s during the reload',
+    async (_, breakServer, repairServer) => {
+      const { backend, computer } = await aComputerInSync()
+      theServerIsReset(backend)
+      await computer.poll()
+      await app.createDeposit(aDepositForm({ depotIndex: 13 }))
+      const { user } = await openScreen('/deposits/listing')
+      await datasetResetDialog.shown()
+      const before = backend.received.length
+      breakServer(backend)
 
-    await datasetResetDialog.reload(user)
+      await datasetResetDialog.reload(user)
 
-    // Current behaviour, pinned until it is decided: the local base is
-    // wiped before the server is asked; when it cannot be reached, the
-    // dialog closes anyway (the mismatch went with the wipe) and the
-    // computer is left with nothing: no deposit, no sync, no epoch, and no
-    // message — the worker's SYNC_ERROR is only logged.
-    await waitFor(() => expect(datasetResetDialog.isShown()).toBe(false))
-    expect(screen.queryByRole('alertdialog')).toBeNull()
-    expect(
-      screen
-        .getAllByRole('row')
-        .filter((row) => row.querySelectorAll('td').length > 2),
-    ).toEqual([])
-    const settings = await settingsPage()
-    expect(settings.lastSync()).toBe('Non synchonisé')
-    expect(settings.datasetEpoch()).toBe('—')
-    expect(settings.currentWorkstation()).toBe(1000)
+      await waitFor(() =>
+        expect(datasetResetDialog.failure()).toBe(
+          "Serveur injoignable : la base de ce poste n'a pas été touchée. Réessayez quand le serveur répond.",
+        ),
+      )
+      expect(datasetResetDialog.isShown()).toBe(true)
+      expect(datasetResetDialog.detectedOn()).toBe(
+        DETECTED.toLocaleString('fr-FR'),
+      )
+      expect(datasetResetDialog.button()).toHaveTextContent(
+        'Recharger depuis le serveur',
+      )
+      expect(datasetResetDialog.button()).toBeEnabled()
+      // The unsent writes are still here…
+      expect(datasetResetDialog.lostOperationsWarning()).toBe(
+        "3 opérations saisies sur ce poste n'ont pas pu être transmises et seront perdues.",
+      )
+      // … and so are the deposits, behind the dialog.
+      const rows = screen
+        .getAllByRole('row', { hidden: true })
+        .filter((row) => row.querySelectorAll('td').length > 2)
+      expect(rows).toHaveLength(2)
+      // The sync state of the old base is untouched.
+      const settings = await settingsPage({ behindDialog: true })
+      await waitFor(() => expect(settings.waitingCount()).toBe(3))
+      expect(settings.datasetEpoch()).toBe('epoch-2026')
+      expect(settings.lastSync()).toBe(
+        `Dernière synchronisation = ${DETECTED.toLocaleString()}`,
+      )
+      await datasetResetDialog.shown()
+      // Only the reload asked the server anything; the sync stays paused.
+      await computer.poll()
+      await settle()
+      expect(backend.received.slice(before).map((r) => r.path)).toEqual([
+        '/api/sync/initial',
+      ])
 
-    // The next poll, the server back, falls back to a full load.
-    backend.comesBackOnline()
-    await computer.poll()
-    const listing = await depositsListingPage()
-    await listing.waitForDeposits(1)
-    expect(listing.depositNumbers()).toEqual([30])
-  })
+      repairServer(backend)
+      await datasetResetDialog.reload(user)
+
+      await waitFor(() => expect(datasetResetDialog.isShown()).toBe(false))
+      const listing = await depositsListingPage()
+      await listing.waitForDeposits(1)
+      expect(listing.depositNumbers()).toEqual([30])
+      const reloaded = await settingsPage()
+      expect(reloaded.datasetEpoch()).toBe('epoch-2027')
+      expect(reloaded.waitingCount()).toBe(0)
+    },
+  )
 })

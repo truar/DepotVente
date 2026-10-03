@@ -9,17 +9,19 @@
 import { expect } from 'vitest'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
-// The white card holding a section title and what belongs to it.
-function card(title: string): HTMLElement {
-  const heading = screen.getByRole('heading', { name: title })
+// The white card holding a section title and what belongs to it. `hidden`
+// also finds it behind a modal dialog (which hides the rest of the page
+// from assistive technologies).
+function card(title: string, hidden = false): HTMLElement {
+  const heading = screen.getByRole('heading', { name: title, hidden })
   const box = heading.closest<HTMLElement>('.shadow')
   if (!box) throw new Error(`No card around "${title}"`)
   return box
 }
 
 // The value printed next to a label of the "Identité du poste" list.
-function identityValue(label: string): string {
-  const term = within(card('Identité du poste')).getByText(label)
+function identityValue(label: string, hidden = false): string {
+  const term = within(card('Identité du poste', hidden)).getByText(label)
   return term.nextElementSibling?.textContent.trim() ?? ''
 }
 
@@ -31,15 +33,20 @@ export type RefusedOperation = {
   error: string | null
 }
 
-export async function settingsPage() {
+// `behindDialog`: the screen is covered by a blocking dialog (the dataset
+// reset one); the sync and identity readers still read what lies behind it.
+export async function settingsPage({
+  behindDialog = false,
+}: { behindDialog?: boolean } = {}) {
+  const hidden = behindDialog
   const { user: u, router } = await openScreen('/settings')
-  await screen.findByRole('heading', { name: 'Paramètres' })
+  await screen.findByRole('heading', { name: 'Paramètres', hidden })
   // The screen reads the local base through live queries, which show their
   // defaults (0 waiting, '—') until loaded. The device id exists once this
   // computer has talked to the server, as in every story here: once it is
   // shown, the screen has loaded.
   await waitFor(() =>
-    expect(identityValue('Identifiant du poste')).not.toBe('—'),
+    expect(identityValue('Identifiant du poste', hidden)).not.toBe('—'),
   )
 
   const page = {
@@ -49,17 +56,18 @@ export async function settingsPage() {
     // ---- Synchronisation -------------------------------------------------
     // "Dernière synchronisation = <date>", or "Non synchonisé".
     lastSync(): string {
-      return within(card('Synchronisation'))
+      return within(card('Synchronisation', hidden))
         .getByText(/Dernière synchronisation|Non synchonisé/)
         .textContent.replace(/\s+/g, ' ')
         .trim()
     },
 
     // ---- Identité du poste -----------------------------------------------
-    deviceId: () => identityValue('Identifiant du poste'),
-    appVersion: () => identityValue("Version de l'application"),
-    datasetEpoch: () => identityValue('Epoch de la base serveur'),
-    waitingCount: () => Number(identityValue("Opérations en attente d'envoi")),
+    deviceId: () => identityValue('Identifiant du poste', hidden),
+    appVersion: () => identityValue("Version de l'application", hidden),
+    datasetEpoch: () => identityValue('Epoch de la base serveur', hidden),
+    waitingCount: () =>
+      Number(identityValue("Opérations en attente d'envoi", hidden)),
 
     // ---- Outbox — opérations refusées ------------------------------------
     refusedOperations(): Array<RefusedOperation> {

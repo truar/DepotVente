@@ -30,6 +30,12 @@ export const datasetResetDialog = {
       )?.textContent ?? null
     )
   },
+  // Why the last « Recharger depuis le serveur » did not go through, or
+  // null when there is nothing to report.
+  failure(): string | null {
+    const box = screen.getByRole('alertdialog', { name: TITLE })
+    return within(box).queryByRole('alert')?.textContent ?? null
+  },
   // The only button: « Recharger depuis le serveur », « Rechargement… »
   // while it runs.
   button(): HTMLButtonElement {

@@ -124,6 +124,11 @@ export function givenServer({
       code: string
       message: string
     },
+    answerInitial: null as null | {
+      status: number
+      code: string
+      message: string
+    },
     // While set, /sync/initial answers only once it resolves.
     initialHeld: null as Promise<void> | null,
   }
@@ -220,6 +225,10 @@ export function givenServer({
       }
       const refused = guard(request, { epochRequired: false })
       if (refused) return refused
+      if (state.answerInitial) {
+        const { status, ...error } = state.answerInitial
+        return HttpResponse.json(error, { status })
+      }
       const everything = rowsSince(0)
       const body: Record<string, unknown> = {
         syncedAt: Date.now(),
@@ -321,6 +330,12 @@ export function givenServer({
       error: { status: number; code: string; message: string } | null,
     ) {
       state.answerDelta = error
+    },
+    // /sync/initial answers this error (null: the full base again).
+    answerInitialWith(
+      error: { status: number; code: string; message: string } | null,
+    ) {
+      state.answerInitial = error
     },
     // The network between this computer and the server is down (cable,
     // Wi-Fi, server off): every request fails before reaching it.
@@ -475,8 +490,8 @@ class InProcessSyncWorker {
         break
       case 'START_SYNC':
         service.startSync()
-        // The worker does not catch here: a failed first sync only reaches
-        // its console. The stand-in keeps it out of the test runner's way.
+        // A failed first sync is logged by the service and left to the
+        // next poll, as in the worker.
         try {
           await service.softInitialSync()
           await service.deltaSync()
@@ -488,12 +503,10 @@ class InProcessSyncWorker {
         await service.processOutbox()
         break
       case 'RESET_LOCAL':
-        try {
-          await service.resetLocal()
-          this.reply({ type: 'SYNC_COMPLETE' })
-        } catch (error) {
-          this.reply({ type: 'SYNC_ERROR', error })
-        }
+        this.reply({
+          type: 'RESET_LOCAL_DONE',
+          result: await service.resetLocal(),
+        })
         break
     }
   }
@@ -548,7 +561,8 @@ export async function bootComputer({
   return {
     // One tick of the worker's 20 s polling interval.
     poll: () => service.deltaSync(),
-    // What the worker posted back to the page (SYNC_COMPLETE, SYNC_ERROR).
+    // What the worker posted back to the page (SYNC_COMPLETE, SYNC_ERROR,
+    // RESET_LOCAL_DONE).
     replies: () => started?.replies ?? [],
   }
 }

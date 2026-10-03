@@ -1,7 +1,10 @@
+import type { ResetResult } from '@/services/sync-service.ts'
 import SyncWorker from '@/workers/sync.worker?worker'
 
 class SyncManager {
   private worker: Worker | null = null
+  // Rechargements demandés au worker, en attente de sa réponse.
+  private pendingResets: Array<(result: ResetResult) => void> = []
 
   init() {
     if (this.worker) return
@@ -17,6 +20,10 @@ class SyncManager {
 
     this.worker.onmessage = (event) => {
       console.log('Worker message:', event.data)
+      if (event.data?.type === 'RESET_LOCAL_DONE') {
+        const result = event.data.result as ResetResult
+        for (const resolve of this.pendingResets.splice(0)) resolve(result)
+      }
     }
   }
 
@@ -32,9 +39,22 @@ class SyncManager {
     this.worker?.postMessage({ type: 'DELTA_SYNC' })
   }
 
-  // Wipe the local copy (unsent writes included) and pull the server's.
-  resetLocal() {
-    this.worker?.postMessage({ type: 'RESET_LOCAL' })
+  // Remplace la copie locale (écritures non envoyées comprises) par celle du
+  // serveur. Si le serveur ne la fournit pas, la copie locale reste intacte
+  // et le résultat dit pourquoi.
+  resetLocal(): Promise<ResetResult> {
+    const worker = this.worker
+    if (!worker) {
+      return Promise.resolve({
+        ok: false,
+        unreachable: false,
+        message: 'Synchronisation non démarrée',
+      })
+    }
+    return new Promise((resolve) => {
+      this.pendingResets.push(resolve)
+      worker.postMessage({ type: 'RESET_LOCAL' })
+    })
   }
 }
 

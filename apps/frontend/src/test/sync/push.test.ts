@@ -308,28 +308,14 @@ describe('Sync: pushing local writes to the server', () => {
     signedOut()
 
     const computer = await bootComputer()
-    // Current behaviour, pinned until it is decided: a poll on a computer
-    // that never synced falls back to the full sync and lets its failure
-    // escape: in the worker, every 20 s tick ends in an unhandled
-    // rejection while the server refuses it.
-    await expect(computer.poll()).rejects.toThrow(
-      'Sync failed: Unauthorized (HTTP 401)',
-    )
+    // A poll (the worker's 20 s tick) finds nobody logged in: it does
+    // nothing, and does not fail.
+    await expect(computer.poll()).resolves.toBeUndefined()
     await settle(5)
 
-    expect(backend.pushes()).toEqual([])
-    // Current behaviour, pinned until it is decided: logged out, the
-    // computer still asks for the full base (no token, refused 401) at
-    // start and at every poll; only the pushes wait for a token.
-    expect(
-      backend.received.map((request) => [
-        request.path,
-        request.headers.authorization,
-      ]),
-    ).toEqual([
-      ['/api/sync/initial', null],
-      ['/api/sync/initial', null],
-    ])
+    // Logged out, the computer does not talk to the server at all: no full
+    // load, no delta, no push.
+    expect(backend.received).toEqual([])
 
     const { user } = await openScreen('/login')
     await user.type(screen.getByLabelText('Email'), 'admin@test')
@@ -349,6 +335,18 @@ describe('Sync: pushing local writes to the server', () => {
           (request) => request.headers.authorization === 'Bearer fresh-token',
         ),
     ).toBe(true)
+    // The login also starts the full load this computer never had.
+    await waitFor(() =>
+      expect(
+        backend
+          .requestsTo('/api/sync/initial')
+          .map((request) => request.headers.authorization),
+      ).toEqual(['Bearer fresh-token']),
+    )
+    const page = await settingsPage()
+    await waitFor(() => expect(page.datasetEpoch()).toBe('epoch-2026'))
+    expect(page.lastSync()).not.toBe('Non synchonisé')
+    expect(page.waitingCount()).toBe(0)
   })
 
   // SYNC-22 — The server is unreachable when the volunteer closes the
