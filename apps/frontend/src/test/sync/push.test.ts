@@ -108,9 +108,9 @@ describe('Sync: pushing local writes to the server', () => {
     await bootComputer()
     await untilPushAttempts(backend, 6)
 
-    // Current behaviour, pinned until it is decided: the first retry comes
-    // after 2 s, not 1 s — the delay is computed from the attempt count
-    // already incremented (1 s × 2^failures).
+    // The first retry comes after 2 s, not 1 s: the delay is computed from
+    // the attempt count already incremented (1 s × 2^failures). Kept as is,
+    // decided on 2026-10-03.
     expect(delaysBetweenPushes(backend)).toEqual([2000, 4000, 8000, 0, 0])
     expect(backend.pushedRecords().map(([collection]) => collection)).toEqual([
       'contacts',
@@ -253,8 +253,7 @@ describe('Sync: pushing local writes to the server', () => {
     await untilPushAttempts(backend, 12)
 
     // Retried within 30 s, the seller only: the queue stays in order.
-    // Current behaviour, pinned until it is decided: the cadence is not a
-    // steady 30 s. The outbox watcher re-runs the queue whenever the
+    // Kept as is, decided on 2026-10-03: the cadence is not a steady 30 s. The outbox watcher re-runs the queue whenever the
     // operation turns « failed », and an operation with no counted attempt
     // only waits the 1 s backoff: depending on which runs first, attempts
     // come 1 s or 30 s apart (sequences seen: 30-30-30-1-1-29-1-30 s…,
@@ -266,9 +265,9 @@ describe('Sync: pushing local writes to the server', () => {
         .pushedRecords()
         .every(([collection]) => collection === 'contacts'),
     ).toBe(true)
-    // Current behaviour, pinned until it is decided: no attempt is ever
-    // counted, so after 12 refusals it is still not parked: it stays
-    // waiting, and keeps knocking, until someone logs in.
+    // Kept as is, decided on 2026-10-03: no attempt is ever counted, so
+    // after 12 refusals it is still not parked: it stays waiting, and keeps
+    // knocking, until someone logs in.
     const seller = await db.outbox
       .where('collection')
       .equals('contacts')
