@@ -1,3 +1,4 @@
+import { FormattedNumber } from 'react-intl'
 import {
   Controller,
   FormProvider,
@@ -374,7 +375,14 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
       </div>
       <div className="flex flex-row gap-5 items-baseline font-bold">
         <div>Nombre d'articles : {countArticles}</div>
-        <div>Montant droit de dépôt : {contributionAmount}€</div>
+        <div>
+          Montant droit de dépôt :{' '}
+          <FormattedNumber
+            value={contributionAmount}
+            style="currency"
+            currency="EUR"
+          />
+        </div>
         <div>
           <Controller
             name="deposit.contributionStatus"

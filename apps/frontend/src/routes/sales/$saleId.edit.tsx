@@ -3,6 +3,7 @@ import {
   Link,
   useNavigate,
 } from '@tanstack/react-router'
+import { FormattedNumber } from 'react-intl'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import {
@@ -17,7 +18,7 @@ import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
-import { getYear, shortArticleCode } from '@/utils'
+import { fromCents, getYear, shortArticleCode, toCents } from '@/utils'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -46,6 +47,7 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 import { useEditSale } from '@/hooks/useEditSale.ts'
+import { useFormatAmount } from '@/hooks/useFormatAmount.ts'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -456,10 +458,13 @@ function ArticleForm() {
       </div>
     )
   }
-  const total = articles.reduce((acc, cur) => {
-    acc += cur.isDeleted ? 0 : cur.price
-    return acc
-  }, 0)
+  // Somme en centimes entiers, pour afficher 30,30 et non 30.299999999999997.
+  const total = fromCents(
+    articles.reduce(
+      (acc, cur) => acc + (cur.isDeleted ? 0 : toCents(cur.price)),
+      0,
+    ),
+  )
   return (
     <>
       <Table aria-label="Articles de la vente">
@@ -492,7 +497,13 @@ function ArticleForm() {
               <TableCell>{article.model}</TableCell>
               <TableCell>{article.color}</TableCell>
               <TableCell>{article.size}</TableCell>
-              <TableCell className="text-right">{article.price}€</TableCell>
+              <TableCell className="text-right">
+                <FormattedNumber
+                  value={article.price}
+                  style="currency"
+                  currency="EUR"
+                />
+              </TableCell>
               <TableCell className="text-center">
                 {article.isDeleted ? (
                   <button
@@ -524,7 +535,10 @@ function ArticleForm() {
             Nombre d'articles :{' '}
             {articles.filter((a) => !a.isDeleted).length}
           </div>
-          <div>Montant total : {total}€</div>
+          <div>
+            Montant total :{' '}
+            <FormattedNumber value={total} style="currency" currency="EUR" />
+          </div>
         </div>
       </div>
     </>
@@ -641,18 +655,21 @@ function RefundForm({
   incrementStart: number
 }) {
   const { control, watch } = useFormContext<EditSaleFormType>()
+  const formatAmount = useFormatAmount()
   const { fields } = useFieldArray({ control, name: 'refunds' })
   const articles = watch('articles')
   const refunds = watch('refunds')
-  const newRefundDelta = (articles ?? []).reduce((acc, cur) => {
-    acc += cur.isDeleted ? cur.price : 0
-    return acc
-  }, 0)
+  // Sommes en centimes entiers, comme le total des articles.
+  const newRefundDelta = (articles ?? []).reduce(
+    (acc, cur) => acc + (cur.isDeleted ? toCents(cur.price) : 0),
+    0,
+  )
   // Ce que la vente doit à l'acheteur en tout : ce qui lui a déjà été rendu
   // lors des passages précédents, plus les articles repris ici.
-  const totalRefund = previousTotalRefund + newRefundDelta
+  const totalRefund = toCents(previousTotalRefund) + newRefundDelta
   const entered = enteredRefunds({ refunds })
-  const remaining = totalRefund - (entered.card + entered.cash)
+  const remaining =
+    totalRefund - (toCents(entered.card) + toCents(entered.cash))
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-2xl font-bold">Remboursement</h3>
@@ -665,7 +682,7 @@ function RefundForm({
                 id="refundTotal"
                 type="text"
                 readOnly
-                value={totalRefund}
+                value={formatAmount(fromCents(totalRefund))}
               />
               <InputGroupAddon align="inline-end">
                 <Euro />
@@ -681,7 +698,7 @@ function RefundForm({
                 id="refundRemaining"
                 type="text"
                 readOnly
-                value={remaining}
+                value={formatAmount(fromCents(remaining))}
               />
               <InputGroupAddon align="inline-end">
                 <Euro />

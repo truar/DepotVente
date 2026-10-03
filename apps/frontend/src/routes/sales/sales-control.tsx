@@ -28,7 +28,7 @@ import {
 } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
-import { getYear } from '@/utils'
+import { fromCents, getYear, toCents } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   Accordion,
@@ -1062,7 +1062,14 @@ function RealAmountInput() {
   return (
     <Controller
       name="cashPayment.realAmount"
-      render={({ field }) => <MonetaryField {...field} label="Montant réel" />}
+      render={({ field }) => (
+        // Calculé depuis le comptage et le fonds de caisse : jamais saisi.
+        <MonetaryField
+          name={field.name}
+          label="Montant réel"
+          displayValue={field.value}
+        />
+      )}
     />
   )
 }
@@ -1090,18 +1097,27 @@ function TheoreticalAmount() {
     [workstation],
   )
   useEffect(() => {
+    // En centimes entiers : 10,10 € + 20,20 € font 30,30 €, pas
+    // 30.299999999999997.
     const cashIn =
-      sales?.reduce((acc, sale) => acc + (sale.cashAmount ?? 0), 0) ?? 0
+      sales?.reduce((acc, sale) => acc + toCents(sale.cashAmount ?? 0), 0) ?? 0
     const cashOut =
-      cashRefunds?.reduce((acc, refund) => acc + refund.cashAmount, 0) ?? 0
-    setValue('cashPayment.theoreticalAmount', cashIn - cashOut)
+      cashRefunds?.reduce(
+        (acc, refund) => acc + toCents(refund.cashAmount),
+        0,
+      ) ?? 0
+    setValue('cashPayment.theoreticalAmount', fromCents(cashIn - cashOut))
   }, [sales, cashRefunds, setValue])
 
   return (
     <Controller
       name="cashPayment.theoreticalAmount"
       render={({ field }) => (
-        <MonetaryField {...field} label="Montant théorique" readOnly />
+        <MonetaryField
+          name={field.name}
+          label="Montant théorique"
+          displayValue={field.value}
+        />
       )}
     />
   )
@@ -1116,12 +1132,5 @@ function DifferenceInput() {
   ])
   const difference = roundToCent(realAmount - theoreticalAmount)
 
-  return (
-    <MonetaryField
-      value={difference}
-      label="Différence"
-      onChange={() => {}}
-      readOnly={true}
-    />
-  )
+  return <MonetaryField displayValue={difference} label="Différence" />
 }

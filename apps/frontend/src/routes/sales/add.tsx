@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { FormattedNumber } from 'react-intl'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { useFormatAmount } from '@/hooks/useFormatAmount.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useSalesDb } from '@/hooks/useSalesDb.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
@@ -602,6 +603,7 @@ function PaymentForm() {
     formState: { errors, isSubmitSuccessful },
   } = useFormContext<SaleFormType>()
   const totalPriceError = errors.root?.totalPrice?.message
+  const formatAmount = useFormatAmount()
   const [cashReceived, setCashReceived] = useState<string>('')
   useEffect(() => {
     if (isSubmitSuccessful) setCashReceived('')
@@ -749,13 +751,13 @@ function PaymentForm() {
         </Field>
         <Field className="italic">
           <FieldContent>
-            <Label>Monnaie rendue</Label>
+            <Label htmlFor="cashReturned">Monnaie rendue</Label>
             <InputGroup>
               <InputGroupInput
-                id="cashReceived"
+                id="cashReturned"
                 className="italic"
                 type="text"
-                value={cashReturned}
+                value={formatAmount(cashReturned)}
                 readOnly
                 autoComplete="off"
               />

@@ -176,8 +176,8 @@ describe('Screen: the till count at the end of the sale', () => {
     await page.count(0.5, 1)
     await page.count(0.01, 3)
 
-    expect(page.realText()).toBe('176.53')
-    expect(page.differenceText()).toBe('6.53')
+    expect(page.realText()).toBe('176,53')
+    expect(page.differenceText()).toBe('6,53')
 
     await page.comment('Pièces comptées')
     await page.print()
@@ -198,8 +198,8 @@ describe('Screen: the till count at the end of the sale', () => {
     await again.open('drawer')
     await waitFor(() => expect(again.commentText()).toBe('Pièces comptées'))
     await waitFor(() => expect(again.theoretical()).toBe(170))
-    expect(again.realText()).toBe('176.53')
-    expect(again.differenceText()).toBe('6.53')
+    expect(again.realText()).toBe('176,53')
+    expect(again.differenceText()).toBe('6,53')
   })
 
   it('prints every payment method on one report', async () => {
@@ -410,5 +410,44 @@ describe('Screen: counting the till a second time', () => {
       ['cashRegisterControls', 'update'],
     ])
     expect(sent[1].recordId).toBe(sent[0].recordId)
+  })
+})
+
+// Two cash sales with cents on till 2000: 10,10 € and 20,20 €. Added up in
+// floating point they make 30.299999999999997; the volunteer reads 30,30.
+describe('Screen: the till count with amounts in cents', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    await givenSale({ saleIndex: 2001, cashAmount: 10.1 })
+    await givenSale({ saleIndex: 2002, cashAmount: 20.2 })
+  })
+
+  it('shows the theoretical amount and the difference to the cent, the French way', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+
+    await waitFor(() => expect(page.theoretical()).toBe(30.3))
+    expect(page.theoreticalText()).toBe('30,30')
+
+    await page.setFloat(0)
+    await page.count(20, 1)
+    await page.count(10, 1)
+    expect(page.differenceText()).toBe('-0,30')
+  })
+
+  // « Montant réel » is what the drawer holds minus the float: the volunteer
+  // counts the denominations, never types it.
+  it('computes the real amount from the count, and does not let it be typed', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+    await page.setFloat(0)
+    await page.count(20, 1)
+    await page.count(0.5, 1)
+    expect(page.realText()).toBe('20,50')
+
+    await page.typeReal('999')
+    expect(page.realText()).toBe('20,50')
+    expect(page.real()).toBe(20.5)
   })
 })

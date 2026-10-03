@@ -6,6 +6,7 @@
 // story does the expecting.
 import { expect } from 'vitest'
 import type { User } from '@/test/screen.tsx'
+import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
@@ -196,12 +197,12 @@ export async function depositAddPage(user?: User) {
         screen.getByText(/Nombre d'articles/).textContent.replace(/\D/g, ''),
       )
     },
+    // "Montant droit de dépôt : 2,00 €"
     contributionAmount(): number {
-      return Number(
-        screen
-          .getByText(/Montant droit de dépôt/)
-          .textContent.replace(/[^\d.]/g, ''),
-      )
+      return euros(screen.getByText(/Montant droit de dépôt/).textContent)
+    },
+    contributionAmountText(): string {
+      return plain(screen.getByText(/Montant droit de dépôt/).textContent)
     },
     // The red lines above the form, if any.
     errors(): Array<string> {

@@ -4,6 +4,7 @@
 // with depositCashCountPage to check that the two counts of one till stay
 // apart. Denominations are addressed by their value: 50, 2, 0.1...
 import { expect } from 'vitest'
+import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, waitFor } from '@/test/screen.tsx'
 
 export const DENOMINATIONS = [
@@ -58,18 +59,29 @@ async function cashCountPage(route: string, title: string) {
       await u.type(input, String(n))
     },
     countOf: (value: Denomination) => amount(field(denominationLabel(value))),
-    async setFloat(euros: number) {
+    async setFloat(floatAmount: number) {
       const input = field('Fonds de caisse')
       await u.clear(input)
-      await u.type(input, String(euros))
+      await u.type(input, String(floatAmount))
     },
     float: () => amount(field('Fonds de caisse')),
-    real: () => amount(field('Montant réel')),
-    // The text as shown, for what the volunteer actually reads.
-    realText: () => field('Montant réel').value,
-    theoretical: () => amount(field('Montant théorique')),
-    difference: () => amount(differenceField()),
-    differenceText: () => differenceField().value,
+    // The computed amounts are shown the French way, « -19,47 »: read
+    // back as numbers, or as the text the volunteer reads.
+    real: () => euros(field('Montant réel').value),
+    realText: () => plain(field('Montant réel').value),
+    // The volunteer tries to type an amount of their own over the count.
+    async typeReal(text: string) {
+      const input = field('Montant réel')
+      // Over what is shown, as a select-all then typing would.
+      await u.type(input, text, {
+        initialSelectionStart: 0,
+        initialSelectionEnd: input.value.length,
+      })
+    },
+    theoretical: () => euros(field('Montant théorique').value),
+    theoreticalText: () => plain(field('Montant théorique').value),
+    difference: () => euros(differenceField().value),
+    differenceText: () => plain(differenceField().value),
 
     // ---- comment, print, save -------------------------------------------
     async comment(text: string) {

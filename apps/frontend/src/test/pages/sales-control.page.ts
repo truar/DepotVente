@@ -72,16 +72,13 @@ export async function salesControlPage() {
     countOf: drawer.countOf,
     float: drawer.float,
     real: drawer.real,
+    typeReal: drawer.typeReal,
     // The text as shown, for what the volunteer actually reads.
     realText: drawer.realText,
     theoretical: drawer.theoretical,
+    theoreticalText: drawer.theoreticalText,
     difference: drawer.difference,
-    // « Différence » has no input bound to its label: the input beside it.
-    differenceText: () =>
-      screen
-        .getByText('Différence')
-        .closest('[data-slot="field"]')
-        ?.querySelector('input')?.value,
+    differenceText: drawer.differenceText,
 
     // ---- comment, print, save (always visible) --------------------------
     comment: drawer.comment,

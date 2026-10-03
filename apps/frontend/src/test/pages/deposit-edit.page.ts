@@ -5,6 +5,7 @@
 // Actions do things; readers return what the volunteer sees, and the story
 // does the expecting. The article rows share their markup with the deposit
 // form of /deposits/add (see deposit-add.page.ts).
+import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, within } from '@/test/screen.tsx'
 
 export async function depositEditPage(depositId: string) {
@@ -133,12 +134,12 @@ export async function depositEditPage(depositId: string) {
         screen.getByText(/Nombre d'articles/).textContent.replace(/\D/g, ''),
       )
     },
+    // "Montant droit de dépôt : 2,00 €"
     contributionAmount(): number {
-      return Number(
-        screen
-          .getByText(/Montant droit de dépôt/)
-          .textContent.replace(/[^\d.]/g, ''),
-      )
+      return euros(screen.getByText(/Montant droit de dépôt/).textContent)
+    },
+    contributionAmountText(): string {
+      return plain(screen.getByText(/Montant droit de dépôt/).textContent)
     },
 
     // ---- save ------------------------------------------------------------

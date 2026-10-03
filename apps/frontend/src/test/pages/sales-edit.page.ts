@@ -1,6 +1,7 @@
 // Page object for the "Modifier la vente" screen (/sales/$saleId/edit): the
 // screen a volunteer opens when a buyer brings an article back and is given
 // money for it.
+import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, within } from '@/test/screen.tsx'
 
 type RefundEntry = { card?: number; cash?: number; comment?: string }
@@ -39,22 +40,33 @@ export async function salesEditPage(saleId: string) {
         within(row).getByRole('button', { name: "Retirer l'article" }),
       )
     },
-    // "Montant total : 80€", under the article table.
+    // The price column, as shown: "120,00 €".
+    articlePrices(): Array<string> {
+      return rowsOf('Articles de la vente').map((row) => {
+        const shown = within(row).getAllByRole('cell')
+        return plain(shown[shown.length - 2].textContent)
+      })
+    },
+    // "Montant total : 80,00 €", under the article table.
     articlesTotal(): number {
-      return Number(
-        screen.getByText(/Montant total/).textContent.replace(/[^\d.]/g, ''),
-      )
+      return euros(screen.getByText(/Montant total/).textContent)
+    },
+    articlesTotalText(): string {
+      return plain(screen.getByText(/Montant total/).textContent)
     },
 
     // ---- the refunds -----------------------------------------------------
     // What the sale owes the buyer in all, this visit included, and what is
     // left to hand over once the lines are filled.
     amountToRefund(): number {
-      return Number(field('Montant à rembourser').value)
+      return euros(field('Montant à rembourser').value)
     },
     remainingToRefund(): number {
-      return Number(field('Reste à rembourser').value)
+      return euros(field('Reste à rembourser').value)
     },
+    // The same two boxes, as the volunteer reads them: "120,00".
+    amountToRefundText: () => plain(field('Montant à rembourser').value),
+    remainingToRefundText: () => plain(field('Reste à rembourser').value),
     // One line per refund: those of the previous visits, on their own till,
     // then the empty line of the till in front of the volunteer.
     refunds(): Array<{

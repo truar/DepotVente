@@ -28,9 +28,12 @@ export async function cashRegisterControlPage(
     setFloat: drawer.setFloat,
     float: drawer.float,
     real: drawer.real,
+    typeReal: drawer.typeReal,
     realText: drawer.realText,
     theoretical: drawer.theoretical,
+    theoreticalText: drawer.theoreticalText,
     difference: drawer.difference,
+    differenceText: drawer.differenceText,
 
     // ---- comment, print, save -------------------------------------------
     comment: drawer.comment,

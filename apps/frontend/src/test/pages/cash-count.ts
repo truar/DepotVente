@@ -2,6 +2,7 @@
 // and sales): fourteen denomination fields, the float, and the three
 // amounts read from them.
 import type { User } from '@/test/screen.tsx'
+import { euros, plain } from '@/test/amounts.ts'
 import { screen } from '@/test/screen.tsx'
 
 const DENOMINATIONS = [
@@ -34,17 +35,29 @@ export function cashCount(u: User) {
       await u.type(field, String(n))
     },
     countOf: (value: Denomination) => amount(denominationLabel(value)),
-    async setFloat(euros: number) {
+    async setFloat(floatAmount: number) {
       const field = input('Fonds de caisse')
       await u.clear(field)
-      await u.type(field, String(euros))
+      await u.type(field, String(floatAmount))
     },
     float: () => amount('Fonds de caisse'),
-    real: () => amount('Montant réel'),
-    // The text as shown, for what the volunteer actually reads.
-    realText: () => input('Montant réel').value,
-    theoretical: () => amount('Montant théorique'),
-    difference: () => amount('Différence'),
+    // The computed amounts are shown the French way, « -19,47 »: read
+    // back as numbers, or as the text the volunteer reads.
+    real: () => euros(input('Montant réel').value),
+    realText: () => plain(input('Montant réel').value),
+    // The volunteer tries to type an amount of their own over the count.
+    async typeReal(text: string) {
+      const field = input('Montant réel')
+      // Over what is shown, as a select-all then typing would.
+      await u.type(field, text, {
+        initialSelectionStart: 0,
+        initialSelectionEnd: field.value.length,
+      })
+    },
+    theoretical: () => euros(input('Montant théorique').value),
+    theoreticalText: () => plain(input('Montant théorique').value),
+    difference: () => euros(input('Différence').value),
+    differenceText: () => plain(input('Différence').value),
     async comment(text: string) {
       const field = screen.getByLabelText('Commentaire')
       await u.clear(field)

@@ -240,3 +240,50 @@ describe('Screen: an article brought back and the money handed over', () => {
     expect(saved).toMatchObject({ cashAmount: 80, totalRefundAmount: 120 })
   })
 })
+
+// A sale of two articles priced with cents: 10,10 € and 20,20 €, paid 30,30 €
+// cash. Every amount reads the French way and adds up to the cent.
+describe('Screen: amounts with cents on a sale brought back', () => {
+  let sale: Sale
+  let first: string
+  let second: string
+
+  beforeEach(async () => {
+    signedInAs()
+    const { articles } = await givenDeposit({}, [
+      { price: 10.1 },
+      { price: 20.2, category: 'Chaussures', brand: 'Nordica' },
+    ])
+    ;({ sale } = await givenSale({ saleIndex: 2001, cashAmount: 30.3 }))
+    await db.articles.bulkUpdate(
+      articles.map((article) => ({
+        key: article.id,
+        changes: { saleId: sale.id, status: 'SOLD' as const },
+      })),
+    )
+    first = `${YEAR} 12A`
+    second = `${YEAR} 12B`
+  })
+
+  it('shows the prices and the total in euros, the French way', async () => {
+    await givenWorkstation(2000)
+    const page = await salesEditPage(sale.id)
+
+    expect(page.articlePrices()).toEqual(['10,10 €', '20,20 €'])
+    expect(page.articlesTotalText()).toBe('Montant total : 30,30 €')
+  })
+
+  it('shows what is owed and what is left to hand over to the cent', async () => {
+    await givenWorkstation(2000)
+    const page = await salesEditPage(sale.id)
+
+    await page.returnArticle(first)
+    await page.returnArticle(second)
+    expect(page.articlesTotalText()).toBe('Montant total : 0,00 €')
+    expect(page.amountToRefundText()).toBe('30,30')
+    expect(page.remainingToRefundText()).toBe('30,30')
+
+    await page.refund({ cash: 10.1 })
+    expect(page.remainingToRefundText()).toBe('20,20')
+  })
+})

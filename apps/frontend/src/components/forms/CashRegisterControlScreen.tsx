@@ -311,7 +311,14 @@ function RealAmountInput() {
   return (
     <Controller
       name="realAmount"
-      render={({ field }) => <MonetaryField {...field} label="Montant réel" />}
+      render={({ field }) => (
+        // Calculé depuis le comptage et le fonds de caisse : jamais saisi.
+        <MonetaryField
+          name={field.name}
+          label="Montant réel"
+          displayValue={field.value}
+        />
+      )}
     />
   )
 }
@@ -322,14 +329,18 @@ function TheoreticalAmount(props: { theoreticalAmount: number }) {
   const { theoreticalAmount } = props
   const { setValue } = useFormContext<CashRegisterControlFormType>()
   useEffect(() => {
-    setValue('theoreticalAmount', theoreticalAmount)
+    setValue('theoreticalAmount', roundToCent(theoreticalAmount))
   }, [theoreticalAmount, setValue])
 
   return (
     <Controller
       name="theoreticalAmount"
       render={({ field }) => (
-        <MonetaryField {...field} label="Montant théorique" readOnly />
+        <MonetaryField
+          name={field.name}
+          label="Montant théorique"
+          displayValue={field.value}
+        />
       )}
     />
   )
@@ -344,12 +355,5 @@ function DifferenceInput() {
   ])
   const difference = roundToCent(realAmount - theoreticalAmount)
 
-  return (
-    <MonetaryField
-      value={difference}
-      label="Différence"
-      onChange={() => {}}
-      readOnly={true}
-    />
-  )
+  return <MonetaryField displayValue={difference} label="Différence" />
 }

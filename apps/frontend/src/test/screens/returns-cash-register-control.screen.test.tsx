@@ -163,6 +163,7 @@ describe('Screen: return cash register control, counting the drawer', () => {
   it('counts the drawer minus the float, and the difference follows', async () => {
     const page = await returnsCashCountPage()
     await waitFor(() => expect(page.theoretical()).toBe(6))
+    expect(page.theoreticalText()).toBe('6,00')
 
     await page.count(50, 1)
     await page.count(20, 1)
@@ -173,8 +174,8 @@ describe('Screen: return cash register control, counting the drawer', () => {
 
     await page.count(0.5, 1)
     await page.count(0.01, 3)
-    expect(page.realText()).toBe('6.53')
-    expect(page.differenceText()).toBe('0.53')
+    expect(page.realText()).toBe('6,53')
+    expect(page.differenceText()).toBe('0,53')
 
     await page.close([], 'Pièces comptées', 1000)
     // What the other computers and the evening reports receive is to the
@@ -185,12 +186,26 @@ describe('Screen: return cash register control, counting the drawer', () => {
     // Reopened, the count reads as it was saved
     const again = await returnsCashCountPage()
     await again.loaded()
-    expect(again.realText()).toBe('6.53')
-    expect(again.differenceText()).toBe('0.53')
+    expect(again.realText()).toBe('6,53')
+    expect(again.differenceText()).toBe('0,53')
 
     await again.setFloat(100)
-    expect(again.realText()).toBe('-13.47')
-    expect(again.differenceText()).toBe('-19.47')
+    expect(again.realText()).toBe('-13,47')
+    expect(again.differenceText()).toBe('-19,47')
+  })
+
+  // « Montant réel » is what the drawer holds minus the float: the volunteer
+  // counts the denominations, never types it.
+  it('computes the real amount from the count, and does not let it be typed', async () => {
+    const page = await returnsCashCountPage()
+    await page.setFloat(0)
+    await page.count(20, 1)
+    await page.count(0.5, 1)
+    expect(page.realText()).toBe('20,50')
+
+    await page.typeReal('999')
+    expect(page.realText()).toBe('20,50')
+    expect(page.real()).toBe(20.5)
   })
 
   // The admin closes the till: the count is printed, saved, and the screen

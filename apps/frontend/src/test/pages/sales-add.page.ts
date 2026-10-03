@@ -1,14 +1,7 @@
 // Page object for the "Faire une vente" screen (/sales/add).
 import { expect } from 'vitest'
+import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
-
-// An amount as the screen writes it, in French: « 1 234,50 € » -> 1234.5.
-const euros = (text: string) =>
-  Number(text.replace(/[^\d,-]/g, '').replace(',', '.'))
-
-// Spaces as the screen writes them (Intl puts narrow no-break spaces
-// around the € and between thousands) read as plain spaces.
-const plain = (text: string) => text.replace(/\s+/g, ' ').trim()
 
 export async function salesAddPage() {
   const { user: u, router } = await openScreen('/sales/add')
@@ -177,6 +170,18 @@ export async function salesAddPage() {
       await set('Montant CB', amounts.card)
       await set('Montant chèque', amounts.check)
       await set('Montant différé', amounts.deferred)
+    },
+    // « Espèces reçues »: what the buyer hands over, to work out the change.
+    async receiveCash(amount: number) {
+      const input = screen.getByLabelText('Espèces reçues')
+      await u.clear(input)
+      await u.type(input, String(amount))
+    },
+    // « Monnaie rendue », as shown: "4,70".
+    changeText(): string {
+      return plain(
+        screen.getByLabelText<HTMLInputElement>('Monnaie rendue').value,
+      )
     },
     // "Total règlement : 200€"
     totalPayment(): number {

@@ -1,4 +1,5 @@
 import { type ColumnDef } from '@tanstack/react-table'
+import { FormattedNumber } from 'react-intl'
 import { type Article } from '@/db.ts'
 import { categories } from '@/types/categories.ts'
 import { compareIdentificationLetters } from '@/utils'
@@ -53,6 +54,12 @@ export const articleColumns: ColumnDef<Article>[] = [
   {
     accessorKey: 'price',
     header: 'Prix',
-    cell: ({ getValue }) => `${getValue<number>()}€`,
+    cell: ({ getValue }) => (
+      <FormattedNumber
+        value={getValue<number>()}
+        style="currency"
+        currency="EUR"
+      />
+    ),
   },
 ]

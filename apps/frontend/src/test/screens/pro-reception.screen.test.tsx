@@ -71,6 +71,13 @@ describe('Screen: receiving a professional’s articles', () => {
     expect(page.listedCodes()).toEqual([])
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toHaveLength(4))
+    // Prices read in euros, the French way.
+    expect(page.listedPrices()).toEqual({
+      [code(3, 'A')]: '200,00 €',
+      [code(3, 'B')]: '150,00 €',
+      [code(3, 'C')]: '80,00 €',
+      [code(3, 'D')]: '60,00 €',
+    })
   })
 
   it('receives a scanned article, moves the count, and lists it under its category', async () => {

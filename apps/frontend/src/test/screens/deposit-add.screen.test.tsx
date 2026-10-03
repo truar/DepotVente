@@ -226,6 +226,9 @@ describe('Screen: register a walk-in deposit typed by hand', () => {
     expect(page.articleCodes()).toEqual(['1001 A', '1001 B'])
     expect(page.articleCount()).toBe(2)
     expect(page.contributionAmount()).toBe(2)
+    expect(page.contributionAmountText()).toBe(
+      'Montant droit de dépôt : 2,00 €',
+    )
 
     await page.chooseStatus('Payé')
     await page.printSummary()

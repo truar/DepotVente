@@ -140,8 +140,25 @@ describe('Screen: deposit cash register control', () => {
     await page.count(0.1, 3)
     await page.count(0.2, 1)
 
-    expect(page.realText()).toBe('0.5')
+    expect(page.realText()).toBe('0,50')
     expect(page.difference()).toBe(-5.5)
+    // The computed amounts read the French way, to the cent.
+    expect(page.theoreticalText()).toBe('6,00')
+    expect(page.differenceText()).toBe('-5,50')
+  })
+
+  // « Montant réel » is what the drawer holds minus the float: the volunteer
+  // counts the denominations, never types it.
+  it('computes the real amount from the count, and does not let it be typed', async () => {
+    const page = await cashRegisterControlPage()
+    await page.setFloat(0)
+    await page.count(20, 1)
+    await page.count(0.5, 1)
+    expect(page.realText()).toBe('20,50')
+
+    await page.typeReal('999')
+    expect(page.realText()).toBe('20,50')
+    expect(page.real()).toBe(20.5)
   })
 
   it('prints the count, the float, and the three amounts', async () => {

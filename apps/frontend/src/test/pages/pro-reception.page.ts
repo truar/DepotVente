@@ -121,6 +121,11 @@ export async function proReceptionPage() {
     },
     listedCodes: () => page.rows().map((cells) => cells[0]),
     listedCategories: () => page.rows().map((cells) => cells[2]),
+    // The price, last column, as shown: { 'code': '200,00 €' }.
+    listedPrices: (): Record<string, string> =>
+      Object.fromEntries(
+        page.rows().map((cells) => [cells[0], cells[cells.length - 1]]),
+      ),
     async listShows(codes: Array<string>) {
       await waitFor(() => expect(page.listedCodes()).toEqual(codes))
     },

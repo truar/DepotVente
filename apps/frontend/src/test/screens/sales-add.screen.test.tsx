@@ -566,6 +566,16 @@ describe('Screen: prices with cents', () => {
     expect(listing.saleIndexes()).toEqual(['2001'])
   })
 
+  // The buyer hands over 35 € for 30,30 €: the change reads the French way,
+  // to the cent.
+  it('shows the change to give back as 4,70', async () => {
+    const page = await twoArticlesAt1010And2020()
+
+    await page.pay({ cash: 30.3 })
+    await page.receiveCash(35)
+    expect(page.changeText()).toBe('4,70')
+  })
+
   it('refuses a payment one cent short of 30,30 €, and saves nothing', async () => {
     const page = await twoArticlesAt1010And2020()
 
