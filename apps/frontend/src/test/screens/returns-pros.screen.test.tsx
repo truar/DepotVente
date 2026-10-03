@@ -152,15 +152,29 @@ describe('Screen: return the unsold articles to a professional', () => {
 
   // BERTRAND (fiche 5) has an article that is not on the shelf
   // to be handed back: sold to a buyer, struck off the fiche, or never
-  // scanned in at the reception desk. The volunteer scans it anyway.
-  // Current behaviour, pinned until it is decided: the scan is accepted like
-  // any unsold article (toast, counted and listed as scanned out), whatever
-  // the status it had.
-  it.each<[string, Partial<Article>]>([
-    ['sold', { status: 'SOLD', saleId: 'a-sale' }],
-    ['struck off the fiche', { status: 'DELETED' }],
-    ['never received', { status: 'RECEPTION_PENDING' }],
-  ])('accepts the scan of an article %s', async (_label, article) => {
+  // scanned in at the reception desk. The volunteer scans it anyway: the
+  // scan is refused with an alert telling them to call an administrator,
+  // the field is emptied and nothing is handed back.
+  it.each<[string, Partial<Article>, (c: string) => string]>([
+    [
+      'sold',
+      { status: 'SOLD', saleId: 'a-sale' },
+      (c) =>
+        `L'article ${c} est marqué comme vendu, contactez un administrateur`,
+    ],
+    [
+      'struck off the fiche',
+      { status: 'DELETED' },
+      (c) =>
+        `L'article ${c} est marqué comme supprimé, contactez un administrateur`,
+    ],
+    [
+      'never received',
+      { status: 'RECEPTION_PENDING' },
+      (c) =>
+        `L'article ${c} n'a pas été réceptionné, contactez un administrateur`,
+    ],
+  ])('refuses the scan of an article %s', async (_label, article, message) => {
     const bertrand = await givenDeposit(
       {
         depositIndex: 5,
@@ -177,20 +191,21 @@ describe('Screen: return the unsold articles to a professional', () => {
 
     await page.scan(code)
 
-    await page.toast(`Retour de l'article ${code} effectué`)
-    expect(page.isAlertOpen()).toBe(false)
-    await waitFor(() => expect(page.returnedCount()).toBe(1))
+    const alert = await page.alert()
+    expect(alert.title).toBe('Erreur')
+    expect(alert.message).toBe(message(code))
+    await alert.dismiss()
+    expect(page.scanInput()).toBe('')
+    expect(page.returnedCount()).toBe(0)
     expect(page.toReturnCount()).toBe(1)
-    await waitFor(() => expect(page.listedCodes()).toEqual([code]))
+    expect(page.listedCodes()).toEqual([])
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toEqual([unsoldCode]))
   })
 
-  // Sold: on the fiche, the pair sold to a buyer now reads
-  // « Rendu » instead of « Vendu ».
-  // Current behaviour, pinned until it is decided: scanning a sold article
-  // out overwrites its « Vendu ».
-  it('shows a sold article as handed back once scanned out', async () => {
+  // Sold: the pair BERTRAND sold to a buyer is scanned by mistake. The scan
+  // is refused, and on the fiche the pair still reads « Vendu ».
+  it('keeps a sold article sold when its scan is refused', async () => {
     const bertrand = await givenDeposit(
       {
         depositIndex: 5,
@@ -206,12 +221,11 @@ describe('Screen: return the unsold articles to a professional', () => {
     await page.pickPro('Bertrand')
 
     await page.scan(bertrand.articles[0].code)
-    await page.toast(
-      `Retour de l'article ${bertrand.articles[0].code} effectué`,
-    )
+    const alert = await page.alert()
+    await alert.dismiss()
 
     const fiche = await depositEditPage(bertrand.deposit.id)
-    expect(fiche.articleBadge(0)).toBe('Rendu')
+    expect(fiche.articleBadge(0)).toBe('Vendu')
   })
 
   // The other computers learn that each pair was handed back.

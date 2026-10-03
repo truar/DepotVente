@@ -54,6 +54,7 @@ export async function returnsProsPage() {
     async alert() {
       const box = await screen.findByRole('alertdialog')
       return {
+        title: within(box).getByRole('heading').textContent.trim(),
         message: within(box).getByRole('paragraph').textContent.trim(),
         dismiss: () => u.click(within(box).getByRole('button', { name: 'OK' })),
       }

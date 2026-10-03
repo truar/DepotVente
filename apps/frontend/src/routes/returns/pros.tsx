@@ -200,6 +200,19 @@ function ReturnArticleInput(props: { depositId: string }) {
       setArticleCode('')
       return
     }
+    // Seul un article en rayon (réceptionné, ni vendu ni supprimé) est rendu.
+    const notOnShelf = {
+      SOLD: 'est marqué comme vendu',
+      DELETED: 'est marqué comme supprimé',
+      RECEPTION_PENDING: "n'a pas été réceptionné",
+    } as const
+    if (article.status !== 'RECEPTION_OK') {
+      showErrorAlert(
+        `L'article ${articleCode} ${notOnShelf[article.status]}, contactez un administrateur`,
+      )
+      setArticleCode('')
+      return
+    }
 
     await articlesDb.markArticleAsReturned(article.id)
     toast.success(`Retour de l'article ${articleCode} effectué`)
