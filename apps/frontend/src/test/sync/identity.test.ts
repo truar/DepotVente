@@ -70,15 +70,10 @@ describe('Sync: identity and dataset epoch on every request', () => {
       'epoch-2026',
       'epoch-2026',
     ])
-    // Current behaviour, pinned until it is decided: on the very first
-    // launch the start of the sync (full base) and the login token (queue
-    // kick, asking the epoch) both ask for the device id before it exists,
-    // and each creates one. The first request carries an id that is then
-    // forgotten; every later one carries the id Paramètres shows.
+    // Every request, the very first included, carries the one device id
+    // Paramètres shows.
     const deviceIds = sync.map((request) => request.headers.deviceId)
-    expect(deviceIds[0]).toMatch(/^[0-9a-f-]{36}$/)
-    expect(deviceIds[0]).not.toBe(page.deviceId())
-    expect(deviceIds.slice(1).every((id) => id === page.deviceId())).toBe(true)
+    expect(deviceIds.every((id) => id === page.deviceId())).toBe(true)
   })
 
   // A computer synced by an older build (cursor, no epoch): it asks the
