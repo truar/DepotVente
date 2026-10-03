@@ -3,12 +3,12 @@ import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
-import { type Contact, type StoredDate, db, toIsoString } from '@/db.ts'
+import { type Contact, db, toIsoString } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useMemo } from 'react'
-import { FormattedNumber, useIntl } from 'react-intl'
+import { FormattedDate, FormattedNumber, useIntl } from 'react-intl'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   CheckListingPdf,
@@ -38,22 +38,6 @@ function RouteComponent() {
   )
 }
 
-// « 2026-09-12T14:58:00.000Z » -> « 2026-09-12 14:58:00 ».
-//
-// La valeur lue est soit une chaîne ISO (enregistrement venu de la synchro),
-// soit un objet Date (retour saisi sur ce poste) - voir StoredDate. L'ancien
-// code castait en `string` et appelait `.split`, ce qui jetait un TypeError sur
-// la seconde forme et, faute d'error boundary, emportait toute la page.
-//
-// On formate depuis l'ISO et non en heure locale : c'est déjà ce qu'affichait
-// la page pour les enregistrements synchronisés, et convertir ferait changer
-// l'heure affichée d'un même retour au premier delta qui l'écrase.
-function formatCollectedAt(value: StoredDate | undefined): string {
-  const [date, time] = toIsoString(value)?.split('T') ?? []
-  if (!date) return ''
-  return `${date} ${time?.split('.')[0] ?? ''}`.trim()
-}
-
 function ChecksDataTable() {
   const deposits = useLiveQuery(() =>
     db.deposits.where({ type: 'PARTICULIER' }).sortBy('depositIndex'),
@@ -81,7 +65,10 @@ function ChecksDataTable() {
             collectWorkstationId: deposit.collectWorkstationId,
             checkId: deposit.checkId,
             signatory: deposit.signatory,
-            collectedAt: formatCollectedAt(deposit.collectedAt),
+            // Date brute (ISO), formatée seulement à l'affichage : la valeur
+            // lue est soit une chaîne ISO (synchro), soit une Date (retour
+            // saisi sur ce poste) - voir StoredDate.
+            collectedAt: toIsoString(deposit.collectedAt),
           }
         })
         .filter(
@@ -156,6 +143,19 @@ export const columns: ColumnDef<CheckTableType>[] = [
   {
     accessorKey: 'collectedAt',
     header: 'Heure retour',
+    // Heure de Rumilly, quel que soit le fuseau du poste :
+    // « 2026-09-12T14:58:00.000Z » -> « 12/09/2026 16:58:00 ».
+    cell: ({ row }) => {
+      const collectedAt = row.original.collectedAt
+      return collectedAt ? (
+        <FormattedDate
+          value={collectedAt}
+          dateStyle="short"
+          timeStyle="medium"
+          timeZone="Europe/Paris"
+        />
+      ) : null
+    },
   },
   {
     id: 'amount',

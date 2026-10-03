@@ -1,5 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
-import { FormattedNumber, IntlProvider } from 'react-intl'
+import { FormattedDate, FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 
@@ -212,7 +212,17 @@ export const CheckListingPdf = (props: CheckListingProps) => {
                       <Text>{check.checkId}</Text>
                     </View>
                     <View style={styles.tableCol}>
-                      <Text>{check.collectedAt}</Text>
+                      <Text>
+                        {/* Heure de Rumilly : « 12/09/2026 16:58:00 ». */}
+                        {check.collectedAt ? (
+                          <FormattedDate
+                            value={check.collectedAt}
+                            dateStyle="short"
+                            timeStyle="medium"
+                            timeZone="Europe/Paris"
+                          />
+                        ) : null}
+                      </Text>
                     </View>
                     <View style={styles.tableCol}>
                       <Text>{check.signatory}</Text>

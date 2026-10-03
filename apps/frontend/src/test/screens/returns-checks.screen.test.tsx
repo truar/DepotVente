@@ -42,11 +42,12 @@ describe('Screen: the cheque listing', () => {
     const page = await returnsChecksPage()
 
     expect(page.seller(12)).toBe('Durand Camille')
-    expect(page.collectedAt(12)).toBe('2026-09-12 14:58:00')
+    // Paris time (UTC+2 in September), French format.
+    expect(page.collectedAt(12)).toBe('12/09/2026 16:58:00')
 
     // The row that used to crash the page.
     expect(page.seller(13)).toBe('Bon Jean')
-    expect(page.collectedAt(13)).toBe('2026-09-12 15:04:00')
+    expect(page.collectedAt(13)).toBe('12/09/2026 17:04:00')
 
     // Both cheques counted, so neither row was silently dropped either.
     expect(page.summary().count).toBe('2')

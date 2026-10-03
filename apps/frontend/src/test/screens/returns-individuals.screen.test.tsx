@@ -337,15 +337,14 @@ describe('Screen: write the cheque of a fiche', () => {
     await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
     // [Identifiant, Déposant, Poste retour, Numéro du chèque, Signature,
     //  Heure retour, Montant du chèque]
-    // Current behaviour, pinned until it is decided: « Heure retour » is
-    // the UTC time (14:58), not the time on the wall in Rumilly (16:58).
+    // « Heure retour » is the time on the wall in Rumilly (16:58), not UTC.
     expect(checks.rowText(12)).toEqual([
       '12',
       'Durand Camille',
       '1000',
       '1042',
       'Paul',
-      '2026-10-02 14:58:00',
+      '02/10/2026 16:58:00',
       '178,00 €',
     ])
   })
