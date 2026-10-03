@@ -155,9 +155,14 @@ export default defineConfig({
   test: {
     include: ['src/test/**/*.test.{ts,tsx}'],
     // Hooks render through React, so the DOM has to exist.
-    environment: './src/test/jsdom-environment.ts',
+    environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     // Keep the machine usable while the suite runs: at most 30% of the cores.
     maxWorkers: '30%',
+    // Vitest's console interception lets the event loop turn on each
+    // console.log: inside a Dexie transaction (the outbox logs every write),
+    // fake-indexeddb then commits it early (PrematureCommitError). A browser
+    // console.log is synchronous; write straight to the terminal as it does.
+    disableConsoleIntercept: true,
   },
 })
