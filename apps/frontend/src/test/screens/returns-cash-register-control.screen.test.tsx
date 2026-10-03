@@ -158,7 +158,8 @@ describe('Screen: return cash register control, counting the drawer', () => {
   })
 
   // What was taken in is what is counted minus the float; the difference
-  // is what was taken in minus what should have been.
+  // is what was taken in minus what should have been. Both are amounts of
+  // money: shown and saved to the cent, coins included.
   it('counts the drawer minus the float, and the difference follows', async () => {
     const page = await returnsCashCountPage()
     await waitFor(() => expect(page.theoretical()).toBe(6))
@@ -172,16 +173,24 @@ describe('Screen: return cash register control, counting the drawer', () => {
 
     await page.count(0.5, 1)
     await page.count(0.01, 3)
-    // Current behaviour, pinned until it is decided: the coins are added in
-    // floating point and the volunteer reads the raw sum, not 6.53.
-    expect(page.realText()).toBe('6.530000000000001')
-    expect(page.differenceText()).toBe('0.5300000000000011')
+    expect(page.realText()).toBe('6.53')
+    expect(page.differenceText()).toBe('0.53')
 
-    await page.count(0.5, 0)
-    await page.count(0.01, 0)
-    await page.setFloat(100)
-    expect(page.real()).toBe(-14)
-    expect(page.difference()).toBe(-20)
+    await page.close([], 'Pièces comptées', 1000)
+    // What the other computers and the evening reports receive is to the
+    // cent too: the real amount and the difference.
+    const [sent] = await local.outbox()
+    expect(sent.data).toMatchObject({ realCashAmount: 6.53, difference: 0.53 })
+
+    // Reopened, the count reads as it was saved
+    const again = await returnsCashCountPage()
+    await again.loaded()
+    expect(again.realText()).toBe('6.53')
+    expect(again.differenceText()).toBe('0.53')
+
+    await again.setFloat(100)
+    expect(again.realText()).toBe('-13.47')
+    expect(again.differenceText()).toBe('-19.47')
   })
 
   // The admin closes the till: the count is printed, saved, and the screen

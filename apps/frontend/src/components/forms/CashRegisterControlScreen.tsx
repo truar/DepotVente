@@ -291,13 +291,19 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   )
 }
 
+// Les pièces s'additionnent en virgule flottante (un comptage de 6,53 €
+// donnait 6.530000000000001) : les montants affichés et enregistrés sont
+// arrondis au centime.
+const roundToCent = (amount: number) => Math.round(amount * 100) / 100
+
 function RealAmountInput() {
   const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
   const amounts = watch('amounts', [])
   const initialAmount = watch('initialAmount', 0)
-  const realAmount =
+  const realAmount = roundToCent(
     amounts.reduce((acc, cur) => acc + cur.amount * cur.value, 0) -
-    initialAmount
+      initialAmount,
+  )
   useEffect(() => {
     setValue('realAmount', realAmount)
   }, [realAmount, setValue])
@@ -336,7 +342,7 @@ function DifferenceInput() {
     'realAmount',
     'theoreticalAmount',
   ])
-  const difference = realAmount - theoreticalAmount
+  const difference = roundToCent(realAmount - theoreticalAmount)
 
   return (
     <MonetaryField

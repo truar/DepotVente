@@ -2,6 +2,7 @@ import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
 import type { CashRegisterControlFormType } from '@/types/SaveDepositCashRegisterControlForm.ts'
 import { v4 } from 'uuid'
 import type { CashRegisterControl } from '@/db.ts'
+import { fromCents, toCents } from '@/utils'
 
 const getAmount = (
   amounts: CashRegisterControlFormType['amounts'],
@@ -18,7 +19,10 @@ const toCashRegisterControl = (
   initialAmount: data.initialAmount,
   theoreticalCashAmount: data.theoreticalAmount,
   realCashAmount: data.realAmount,
-  difference: data.realAmount - data.theoreticalAmount,
+  // Au centime : 6.53 - 6 donnerait 0.5300000000000002 en virgule flottante.
+  difference: fromCents(
+    toCents(data.realAmount) - toCents(data.theoreticalAmount),
+  ),
   totalAmount: data.realAmount,
   cash200: getAmount(data.amounts, 200),
   cash100: getAmount(data.amounts, 100),

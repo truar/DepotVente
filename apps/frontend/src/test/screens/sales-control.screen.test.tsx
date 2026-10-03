@@ -163,6 +163,45 @@ describe('Screen: the till count at the end of the sale', () => {
     ).toEqual([['cashRegisterControls', 'create']])
   })
 
+  // Coins included, what was taken in and the difference are amounts of
+  // money: shown and saved to the cent.
+  it('counts the coins to the cent, as shown and as saved', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+    await waitFor(() => expect(page.theoretical()).toBe(170))
+    await page.count(50, 4)
+    await page.count(20, 2)
+    await page.count(5, 2)
+    await page.count(2, 3)
+    await page.count(0.5, 1)
+    await page.count(0.01, 3)
+
+    expect(page.realText()).toBe('176.53')
+    expect(page.differenceText()).toBe('6.53')
+
+    await page.comment('Pièces comptées')
+    await page.print()
+    await page.save()
+    await page.savedToast(2000)
+    // What the other computers and the evening reports receive is to the
+    // cent too: the real amount and the difference.
+    const sent = (await local.outbox()).find(
+      (op) => op.collection === 'cashRegisterControls',
+    )
+    expect(sent?.data).toMatchObject({
+      realCashAmount: 176.53,
+      difference: 6.53,
+    })
+
+    // Reopened, the count reads as it was saved
+    const again = await salesControlPage()
+    await again.open('drawer')
+    await waitFor(() => expect(again.commentText()).toBe('Pièces comptées'))
+    await waitFor(() => expect(again.theoretical()).toBe(170))
+    expect(again.realText()).toBe('176.53')
+    expect(again.differenceText()).toBe('6.53')
+  })
+
   it('prints every payment method on one report', async () => {
     const page = await salesControlPage()
     await page.open('drawer')
