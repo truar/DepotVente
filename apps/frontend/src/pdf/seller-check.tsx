@@ -80,6 +80,24 @@ type PdfData = {
 
 const mm = (v: number) => `${v}mm`
 
+// Montant en chiffres au format français, deux décimales, sans le signe € :
+// « 178,00 », « 76,95 ». Sans séparateur de milliers : l'espace fine
+// insécable de fr-FR n'existe pas dans la police Helvetica du PDF.
+const formatCheckAmount = (amount: number) =>
+  amount.toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+  })
+
+// Date au format jj/mm/aaaa quelle que soit la langue de l'ordinateur.
+const formatCheckDate = (date: Date) =>
+  date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
 // Physical check dimensions. The check is fed long-side-vertical, anchored
 // to the top of A4 portrait (210 × 297 mm) and centred horizontally, so it
 // occupies 80 mm horizontally and 175 mm vertically starting at the page top.
@@ -151,7 +169,7 @@ export const SellerCheckPdf = (props: SellerCheckPdfProps) => {
                   fontSize: o.amountFontSize,
                 }}
               >
-                {data.amount}
+                {formatCheckAmount(data.amount)}
               </Text>
               <View
                 style={{
@@ -164,7 +182,7 @@ export const SellerCheckPdf = (props: SellerCheckPdfProps) => {
                   {data.city}
                 </Text>
                 <Text style={{ backgroundColor: guide, width: mm(o.dateCityWidth) }}>
-                  {data.date.toLocaleDateString()}
+                  {formatCheckDate(data.date)}
                 </Text>
               </View>
             </View>

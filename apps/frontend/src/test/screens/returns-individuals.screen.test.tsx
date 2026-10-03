@@ -265,14 +265,10 @@ describe('Screen: write the cheque of a fiche', () => {
     expect(cheque).toContain('cent soixante-dix-huit euros')
     expect(cheque).toContain('Camille Durand')
     expect(cheque).toContain('Rumilly')
-    // Current behaviour, pinned until it is decided: the date follows the
-    // computer's own date format (no locale given): "10/2/2026" on a
-    // computer set to English, "02/10/2026" on one set to French.
-    expect(cheque).toContain(today.toLocaleDateString())
-    // Current behaviour, pinned until it is decided: the amount in figures
-    // is printed raw, "178" rather than "178,00".
+    // The date is French, dd/mm/yyyy, whatever the computer's own locale,
+    // and the figure box holds the amount with two decimals, no € sign.
     expect(cheque).toBe(
-      `cent soixante-dix-huit euros Camille Durand 178 Rumilly ${today.toLocaleDateString()}`,
+      'cent soixante-dix-huit euros Camille Durand 178,00 Rumilly 02/10/2026',
     )
   })
 
@@ -289,10 +285,9 @@ describe('Screen: write the cheque of a fiche', () => {
       'soixante-seize euros et quatre-vingt-quinze centimes',
     )
     expect(cheque).toContain('Jean Bon')
-    // Current behaviour, pinned until it is decided: the amount in figures
-    // is printed raw, with a decimal point: "76.95", not "76,95".
-    expect(cheque).toContain(' 76.95 ')
-    expect(cheque).not.toContain('76,95')
+    // The figures use a decimal comma: "76,95", not "76.95".
+    expect(cheque).toContain(' 76,95 ')
+    expect(cheque).not.toContain('76.95')
   })
 
   // The cheque printed was Camille Durand's: once the volunteer switches to

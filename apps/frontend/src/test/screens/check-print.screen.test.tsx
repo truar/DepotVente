@@ -26,14 +26,14 @@ vi.mock('@react-pdf/renderer', async (importOriginal) => ({
 const defaultLayout = [
   { text: 'cent soixante-dix-huit euros', x: 123.2, y: 269.4 },
   { text: 'Camille Durand', x: 111.8, y: 293.4 },
-  { text: '178', x: 113.6, y: 165.4 },
+  { text: '178,00', x: 113.6, y: 165.4 },
   { text: 'Rumilly', x: 105, y: 167.4 },
 ]
 
-// The date is left out: it is today's, in the computer's own format.
+// The date is left out: it is today's, printed dd/mm/yyyy.
 function positions(layout: PrintedLayout) {
   return layout.texts
-    .filter(({ text }) => text !== new Date().toLocaleDateString())
+    .filter(({ text }) => !/^\d{2}\/\d{2}\/\d{4}$/.test(text))
     .map(({ text, x, y }) => ({ text, x, y }))
 }
 
