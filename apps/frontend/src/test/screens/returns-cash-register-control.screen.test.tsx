@@ -138,20 +138,20 @@ describe('Screen: return cash register control, counting the drawer', () => {
     const page = await returnsCashCountPage()
 
     expect(page.denominationLabels()).toEqual([
-      '200',
-      '100',
-      '50',
-      '20',
-      '10',
-      '5',
-      '2',
-      '1',
-      '0.50',
-      '0.20',
-      '0.10',
-      '0.05',
-      '0.02',
-      '0.01',
+      '200 €',
+      '100 €',
+      '50 €',
+      '20 €',
+      '10 €',
+      '5 €',
+      '2 €',
+      '1 €',
+      '0,50 €',
+      '0,20 €',
+      '0,10 €',
+      '0,05 €',
+      '0,02 €',
+      '0,01 €',
     ])
     expect(page.float()).toBe(80)
     expect(page.real()).toBe(-80)
@@ -192,6 +192,35 @@ describe('Screen: return cash register control, counting the drawer', () => {
     await again.setFloat(100)
     expect(again.realText()).toBe('-13,47')
     expect(again.differenceText()).toBe('-19,47')
+  })
+
+  // While counting, the volunteer sees what each pile is worth, what the
+  // notes and the coins add up to, what the drawer holds in all, and
+  // whether the till is right, short or over.
+  it('shows what each pile is worth, the totals, and whether the till is right', async () => {
+    const page = await returnsCashCountPage()
+    await waitFor(() => expect(page.theoretical()).toBe(6))
+
+    await page.count(50, 1)
+    await page.count(20, 1)
+    await page.count(5, 2)
+    await page.count(2, 3)
+    expect(page.subtotalOf(5)).toBe('= 10,00 €')
+    expect(page.subtotalOf(2)).toBe('= 6,00 €')
+    expect(page.subtotalOf(100)).toBe('= 0,00 €')
+    expect(page.notesTotal()).toBe('80,00 €')
+    expect(page.coinsTotal()).toBe('6,00 €')
+    expect(page.realExplanation()).toBe(
+      'Total compté 86,00 € moins le fonds de caisse',
+    )
+    expect(page.verdict()).toBe('Juste')
+
+    await page.count(0.5, 1)
+    expect(page.coinsTotal()).toBe('6,50 €')
+    expect(page.verdict()).toBe('Excédent')
+
+    await page.setFloat(100)
+    expect(page.verdict()).toBe('Manque')
   })
 
   // « Montant réel » is what the drawer holds minus the float: the volunteer

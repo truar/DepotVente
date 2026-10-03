@@ -11,7 +11,6 @@ import {
   Controller,
   FormProvider,
   type UseFormSetValue,
-  useFieldArray,
   useForm,
   useFormContext,
   useWatch,
@@ -50,14 +49,13 @@ import {
   SaleCashRegisterControlPdf,
   type SaleCashRegisterControlProps,
 } from '@/pdf/sale-cash-register-control-pdf.tsx'
-import { TextField } from '@/components/custom/input/TextField.tsx'
-import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 import { Textarea } from '@/components/ui/textarea.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
 import { CashRegisterControlFormSchema } from '@/types/SaveDepositCashRegisterControlForm.ts'
 import { toast } from 'sonner'
 import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
+import { CashCount } from '@/components/forms/CashCount.tsx'
 
 export const Route = createFileRoute('/sales/sales-control')({
   beforeLoad: requireAuthAndWorkstation,
@@ -980,40 +978,11 @@ function RefundPaymentDetails() {
 }
 
 function CashRegisterControlForm() {
-  const { fields } = useFieldArray<CashRegisterControlFormType, 'cashPayment.amounts'>({
-    name: 'cashPayment.amounts',
-  })
   return (
-    <div className="flex flex-2 gap-6 flex-col">
-      <div className="flex flex-row justify-between gap-6">
-        <div className="grid grid-cols-6 gap-2">
-          {fields.map((field, index) => (
-            <Controller
-              key={field.id}
-              name={`cashPayment.amounts.${index}.amount`}
-              render={({ field: controllerField, fieldState }) => (
-                <TextField
-                  invalid={fieldState.invalid}
-                  {...controllerField}
-                  label={field.value < 1 ? field.value.toFixed(2) : `${field.value}`}
-                />
-              )}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Controller
-            name="cashPayment.initialAmount"
-            render={({ field }) => (
-              <MonetaryField {...field} label="Fonds de caisse" />
-            )}
-          />
-          <RealAmountInput />
-          <TheoreticalAmount />
-          <DifferenceInput />
-        </div>
-      </div>
-    </div>
+    <>
+      <CashCount prefix="cashPayment" />
+      <TheoreticalAmount />
+    </>
   )
 }
 
@@ -1039,38 +1008,6 @@ function CommentField() {
         )}
       />
     </div>
-  )
-}
-
-// Les pièces s'additionnent en virgule flottante (un comptage de 176,53 €
-// donnait 176.52999999999997) : les montants affichés et enregistrés sont
-// arrondis au centime.
-const roundToCent = (amount: number) => Math.round(amount * 100) / 100
-
-function RealAmountInput() {
-  const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
-  const amounts = watch('cashPayment.amounts', [])
-  const initialAmount = watch('cashPayment.initialAmount', 0)
-  const realAmount = roundToCent(
-    amounts.reduce((acc, cur) => acc + cur.amount * cur.value, 0) -
-      initialAmount,
-  )
-  useEffect(() => {
-    setValue('cashPayment.realAmount', realAmount)
-  }, [realAmount, setValue])
-
-  return (
-    <Controller
-      name="cashPayment.realAmount"
-      render={({ field }) => (
-        // Calculé depuis le comptage et le fonds de caisse : jamais saisi.
-        <MonetaryField
-          name={field.name}
-          label="Montant réel"
-          displayValue={field.value}
-        />
-      )}
-    />
   )
 }
 
@@ -1109,28 +1046,5 @@ function TheoreticalAmount() {
     setValue('cashPayment.theoreticalAmount', fromCents(cashIn - cashOut))
   }, [sales, cashRefunds, setValue])
 
-  return (
-    <Controller
-      name="cashPayment.theoreticalAmount"
-      render={({ field }) => (
-        <MonetaryField
-          name={field.name}
-          label="Montant théorique"
-          displayValue={field.value}
-        />
-      )}
-    />
-  )
-}
-
-function DifferenceInput() {
-  const { watch } = useFormContext<CashRegisterControlFormType>()
-
-  const [realAmount, theoreticalAmount] = watch([
-    'cashPayment.realAmount',
-    'cashPayment.theoreticalAmount',
-  ])
-  const difference = roundToCent(realAmount - theoreticalAmount)
-
-  return <MonetaryField displayValue={difference} label="Différence" />
+  return null
 }

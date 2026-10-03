@@ -436,6 +436,21 @@ describe('Screen: the till count with amounts in cents', () => {
     expect(page.differenceText()).toBe('-0,30')
   })
 
+  // The same count as on the deposit and return tills: totals as counted,
+  // and the till found short by 30 cents.
+  it('shows the totals as counted and finds the till short', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+    await waitFor(() => expect(page.theoretical()).toBe(30.3))
+
+    await page.setFloat(0)
+    await page.count(20, 1)
+    await page.count(10, 1)
+    expect(page.notesTotal()).toBe('30,00 €')
+    expect(page.coinsTotal()).toBe('0,00 €')
+    expect(page.verdict()).toBe('Manque')
+  })
+
   // « Montant réel » is what the drawer holds minus the float: the volunteer
   // counts the denominations, never types it.
   it('computes the real amount from the count, and does not let it be typed', async () => {

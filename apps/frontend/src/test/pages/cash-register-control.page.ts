@@ -23,21 +23,9 @@ export async function cashRegisterControlPage(
     pathname: () => router.state.location.pathname,
 
     // ---- the drawer ----------------------------------------------------
-    count: drawer.count,
-    countOf: drawer.countOf,
-    setFloat: drawer.setFloat,
-    float: drawer.float,
-    real: drawer.real,
-    typeReal: drawer.typeReal,
-    realText: drawer.realText,
-    theoretical: drawer.theoretical,
-    theoreticalText: drawer.theoreticalText,
-    difference: drawer.difference,
-    differenceText: drawer.differenceText,
+    ...drawer,
 
     // ---- comment, print, save -------------------------------------------
-    comment: drawer.comment,
-    commentText: drawer.commentText,
     errors(): Array<string> {
       return screen
         .queryAllByText(/obligatoire|^Merci/)

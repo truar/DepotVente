@@ -3,7 +3,6 @@ import { Page } from '@/components/Page.tsx'
 import {
   Controller,
   FormProvider,
-  useFieldArray,
   useForm,
   useFormContext,
 } from 'react-hook-form'
@@ -13,14 +12,13 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { type CashRegisterControl, type Workstation } from '@/db.ts'
 import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
-import { getYear } from '@/utils'
+import { fromCents, getYear, toCents } from '@/utils'
+import { CashCount } from '@/components/forms/CashCount.tsx'
 import {
   DepositCashRegisterControlPdf,
   type DepositCashRegisterControlProps,
 } from '@/pdf/deposit-cash-register-control-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { TextField } from '@/components/custom/input/TextField.tsx'
-import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
 import { Textarea } from '@/components/ui/textarea.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -141,7 +139,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       comment: '',
     },
   })
-  const { control, getValues, handleSubmit, reset, trigger } = methods
+  const { getValues, handleSubmit, reset, trigger } = methods
   const [hasPrinted, setHasPrinted] = useState(false)
   const [printError, setPrintError] = useState(false)
   const navigate = useNavigate()
@@ -174,11 +172,6 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       })
     }
   }, [cashRegisterControl, reset])
-
-  const { fields } = useFieldArray({
-    control,
-    name: 'amounts',
-  })
 
   const print = async () => {
     const isValid = await trigger()
@@ -215,39 +208,9 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   return (
     <FormProvider {...methods}>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-          <div className="flex flex-row justify-between gap-6">
-            <div className="grid grid-cols-6 gap-2">
-              {fields.map((field, index) => (
-                <Controller
-                  key={field.id}
-                  name={`amounts.${index}.amount`}
-                  render={({ field: controlledField, fieldState }) => (
-                    <TextField
-                      invalid={fieldState.invalid}
-                      {...controlledField}
-                      label={
-                        field.value < 1
-                          ? field.value.toFixed(2)
-                          : `${field.value}`
-                      }
-                    />
-                  )}
-                />
-              ))}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Controller
-                name="initialAmount"
-                render={({ field }) => (
-                  <MonetaryField {...field} label="Fonds de caisse" />
-                )}
-              />
-              <RealAmountInput />
-              <TheoreticalAmount theoreticalAmount={theoreticalAmount} />
-              <DifferenceInput />
-            </div>
-          </div>
+        <div className="flex flex-col gap-3.5 bg-white rounded-2xl p-4 shadow-lg border border-gray-100">
+          <CashCount />
+          <TheoreticalAmount theoreticalAmount={theoreticalAmount} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="comment">Commentaire</Label>
             <Controller
@@ -291,69 +254,13 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   )
 }
 
-// Les pièces s'additionnent en virgule flottante (un comptage de 6,53 €
-// donnait 6.530000000000001) : les montants affichés et enregistrés sont
-// arrondis au centime.
-const roundToCent = (amount: number) => Math.round(amount * 100) / 100
-
-function RealAmountInput() {
-  const { watch, setValue } = useFormContext<CashRegisterControlFormType>()
-  const amounts = watch('amounts', [])
-  const initialAmount = watch('initialAmount', 0)
-  const realAmount = roundToCent(
-    amounts.reduce((acc, cur) => acc + cur.amount * cur.value, 0) -
-      initialAmount,
-  )
-  useEffect(() => {
-    setValue('realAmount', realAmount)
-  }, [realAmount, setValue])
-
-  return (
-    <Controller
-      name="realAmount"
-      render={({ field }) => (
-        // Calculé depuis le comptage et le fonds de caisse : jamais saisi.
-        <MonetaryField
-          name={field.name}
-          label="Montant réel"
-          displayValue={field.value}
-        />
-      )}
-    />
-  )
-}
-
 // Le théorique est toujours recalculé, y compris à la réouverture d'un
 // contrôle déjà enregistré : il écrase la valeur remise par reset().
 function TheoreticalAmount(props: { theoreticalAmount: number }) {
   const { theoreticalAmount } = props
   const { setValue } = useFormContext<CashRegisterControlFormType>()
   useEffect(() => {
-    setValue('theoreticalAmount', roundToCent(theoreticalAmount))
+    setValue('theoreticalAmount', fromCents(toCents(theoreticalAmount)))
   }, [theoreticalAmount, setValue])
-
-  return (
-    <Controller
-      name="theoreticalAmount"
-      render={({ field }) => (
-        <MonetaryField
-          name={field.name}
-          label="Montant théorique"
-          displayValue={field.value}
-        />
-      )}
-    />
-  )
-}
-
-function DifferenceInput() {
-  const { watch } = useFormContext<CashRegisterControlFormType>()
-
-  const [realAmount, theoreticalAmount] = watch([
-    'realAmount',
-    'theoreticalAmount',
-  ])
-  const difference = roundToCent(realAmount - theoreticalAmount)
-
-  return <MonetaryField displayValue={difference} label="Différence" />
+  return null
 }
