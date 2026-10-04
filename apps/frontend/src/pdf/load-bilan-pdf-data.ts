@@ -1,15 +1,23 @@
 import type { BilanPdfData } from './bilan-pdf'
 import type {Deposit, Sale} from '@/db';
 import {   db } from '@/db'
-import { getYear, isClubBuyer } from '@/utils'
+import { fromCents, getYear, isClubBuyer, toCents } from '@/utils'
+
+// Les montants s'additionnent en centimes entiers : 10,10 € + 20,20 € font
+// 30,30 €, pas 30.299999999999997, et un bilan juste affiche 0,00 €, jamais
+// « -0,00 € ».
+const add = (...amounts: Array<number>) =>
+  fromCents(amounts.reduce((a, amount) => a + toCents(amount), 0))
+const sumOf = <T>(items: Array<T>, amount: (item: T) => number) =>
+  add(...items.map(amount))
 
 function computeSaleTotal(sale: Sale): number {
-  return (
-    (sale.cardAmount ?? 0) +
-    (sale.cashAmount ?? 0) +
-    (sale.checkAmount ?? 0) +
-    (sale.deferredAmount ?? 0) -
-    sale.totalRefundAmount
+  return add(
+    sale.cardAmount ?? 0,
+    sale.cashAmount ?? 0,
+    sale.checkAmount ?? 0,
+    sale.deferredAmount ?? 0,
+    -sale.totalRefundAmount,
   )
 }
 
@@ -129,7 +137,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const confirmedPredeposits = predeposits.filter((p) => p.depositId != null)
   const predepositsCount = confirmedPredeposits.length
   const articlesCount = depositArticles.length
-  const depositTotalAmount = depositArticles.reduce((a, x) => a + x.price, 0)
+  const depositTotalAmount = sumOf(depositArticles, (x) => x.price)
 
   // Achats CMR: what the club bought back to make up for a theft.
   const cmrContactIds = new Set(
@@ -137,10 +145,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   )
   const cmrPurchaseSales = sales.filter((s) => cmrContactIds.has(s.buyerId))
   const cmrPurchaseSaleIds = new Set(cmrPurchaseSales.map((s) => s.id))
-  const cmrPurchases = cmrPurchaseSales.reduce(
-    (a, s) => a + computeSaleTotal(s),
-    0,
-  )
+  const cmrPurchases = sumOf(cmrPurchaseSales, computeSaleTotal)
 
   // ===== Ventes =====
   // Neither the club nor a buyer refunded in full (who took nothing home)
@@ -148,15 +153,12 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const basketSales = sales.filter(
     (s) =>
       !cmrPurchaseSaleIds.has(s.id) &&
-      Math.round(computeSaleTotal(s) * 100) > 0,
+      computeSaleTotal(s) > 0,
   )
   const buyersCount = new Set(basketSales.map((s) => s.buyerId)).size
   const soldArticlesCount = soldArticles.length
-  const salesTotalAmount = sales.reduce((a, s) => a + computeSaleTotal(s), 0)
-  const basketAmount = basketSales.reduce(
-    (a, s) => a + computeSaleTotal(s),
-    0,
-  )
+  const salesTotalAmount = sumOf(sales, computeSaleTotal)
+  const basketAmount = sumOf(basketSales, computeSaleTotal)
   const averageBasketAmount = safeDiv(basketAmount, buyersCount)
   const basketArticlesCount = soldArticles.filter(
     (a) => a.saleId == null || !cmrPurchaseSaleIds.has(a.saleId),
@@ -166,39 +168,45 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const depositValueRatio = safeDiv(salesTotalAmount, depositTotalAmount)
 
   // ===== Cotisations et droits =====
-  const paidContributionsPaye = deposits
-    .filter((d) => d.contributionStatus === 'PAYE')
-    .reduce((a, d) => a + d.contributionAmount, 0)
+  const paidContributionsPaye = sumOf(
+    deposits.filter((d) => d.contributionStatus === 'PAYE'),
+    (d) => d.contributionAmount,
+  )
   // Cotisations réglées le soir au bureau des retours : elles ont bien été
   // payées, elles changent simplement de ligne (et de caisse), donc la recette
   // théorique reste inchangée quand un dépôt passe de A_PAYER à SOLDE.
   const settledDeposits = deposits.filter((d) => d.contributionStatus === 'SOLDE')
-  const paidContributionsSolde = settledDeposits.reduce(
-    (a, d) => a + d.contributionAmount,
-    0,
+  const paidContributionsSolde = sumOf(
+    settledDeposits,
+    (d) => d.contributionAmount,
   )
   const unattributedSettled = settledDeposits.filter(
     (d) => d.contributionCollectWorkstationId == null,
   )
-  const unattributedSettledAmount = unattributedSettled.reduce(
-    (a, d) => a + d.contributionAmount,
-    0,
+  const unattributedSettledAmount = sumOf(
+    unattributedSettled,
+    (d) => d.contributionAmount,
   )
-  const deductedContributions = deposits
-    .filter((d) => d.contributionStatus === 'DEDUITE')
-    .reduce((a, d) => a + (d.dueContributionAmount ?? 0), 0)
-  const paidContributions =
-    paidContributionsPaye + paidContributionsSolde + deductedContributions
-  const unpaidContributions = deposits
-    .filter((d) => d.contributionStatus === 'A_PAYER')
-    .reduce((a, d) => a + d.contributionAmount, 0)
-  const cmrRights = deposits.reduce((a, d) => a + (d.clubAmount ?? 0), 0)
+  const deductedContributions = sumOf(
+    deposits.filter((d) => d.contributionStatus === 'DEDUITE'),
+    (d) => d.dueContributionAmount ?? 0,
+  )
+  const paidContributions = add(
+    paidContributionsPaye,
+    paidContributionsSolde,
+    deductedContributions,
+  )
+  const unpaidContributions = sumOf(
+    deposits.filter((d) => d.contributionStatus === 'A_PAYER'),
+    (d) => d.contributionAmount,
+  )
+  const cmrRights = sumOf(deposits, (d) => d.clubAmount ?? 0)
 
   // La recette théorique : les droits et les cotisations payées. Les
   // cotisations non payées ne sont affichées qu'à titre indicatif : elles
   // n'entrent ni dans cette recette ni dans le solde. Les achats CMR sont une
   // perte pour la bourse : ils sortent des deux recettes.
-  const theoreticalRevenue = cmrRights + paidContributions - cmrPurchases
+  const theoreticalRevenue = add(cmrRights, paidContributions, -cmrPurchases)
 
   // ===== Détail des encaissements =====
   // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
@@ -208,16 +216,16 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   //  - espèces = les espèces réellement comptées aux caisses de VENTE, pas le
   //              sale.cashAmount théorique (réconciliation théorique / réel).
   const saleRegisters = cashRegisterControls.filter((c) => c.type === 'SALE')
-  const grossCards = sales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
-  const refundedCards = refunds.reduce((a, r) => a + r.cardAmount, 0)
-  const totalCards = grossCards - refundedCards
-  const totalCash = saleRegisters.reduce((a, c) => a + c.realCashAmount, 0)
-  const totalChecks = sales.reduce((a, s) => a + (s.checkAmount ?? 0), 0)
-  const totalDeferred = sales.reduce((a, s) => a + (s.deferredAmount ?? 0), 0)
+  const grossCards = sumOf(sales, (s) => s.cardAmount ?? 0)
+  const refundedCards = sumOf(refunds, (r) => r.cardAmount)
+  const totalCards = add(grossCards, -refundedCards)
+  const totalCash = sumOf(saleRegisters, (c) => c.realCashAmount)
+  const totalChecks = sumOf(sales, (s) => s.checkAmount ?? 0)
+  const totalDeferred = sumOf(sales, (s) => s.deferredAmount ?? 0)
   // Ce qui est réellement entré : cartes, espèces comptées, chèques. Le
   // différé, réglé avant la fin, n'est encore ni en caisse ni sur un relevé :
   // il entre directement dans la recette bourse ci-dessous.
-  const totalPayments = totalCards + totalCash + totalChecks
+  const totalPayments = add(totalCards, totalCash, totalChecks)
 
   // Cotisations encaissées = real cash counted in the deposit registers and in
   // the return registers (the cotisations settled in the evening).
@@ -230,16 +238,18 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const returnRegisters = cashRegisterControls.filter(
     (c) => c.type === 'RETURN',
   )
-  const depositRegisterRealCash = depositRegisters.reduce(
-    (a, c) => a + c.realCashAmount,
-    0,
+  const depositRegisterRealCash = sumOf(
+    depositRegisters,
+    (c) => c.realCashAmount,
   )
-  const returnRegisterRealCash = returnRegisters.reduce(
-    (a, c) => a + c.realCashAmount,
-    0,
+  const returnRegisterRealCash = sumOf(
+    returnRegisters,
+    (c) => c.realCashAmount,
   )
-  const collectedContributions =
-    depositRegisterRealCash + returnRegisterRealCash
+  const collectedContributions = add(
+    depositRegisterRealCash,
+    returnRegisterRealCash,
+  )
 
   // Les pros sont réputés réglés d'office : il n'existe pas d'étape de
   // règlement pro dans l'application (l'écran /returns/pros ne fait que
@@ -247,50 +257,49 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // le décaisse donc dès que le calcul du retour l'a établi, sans attendre un
   // collectedAt qu'aucun écran ne pose.
   const proDeposits = deposits.filter((d) => d.type === 'PRO')
-  const proPayments = proDeposits.reduce(
-    (a, d) => a + Math.max(0, d.sellerAmount ?? 0),
-    0,
+  const proPayments = sumOf(proDeposits, (d) =>
+    Math.max(0, d.sellerAmount ?? 0),
   )
   // Les particuliers, eux, ne sont décaissés qu'une fois venus chercher leur
   // chèque (collectedAt posé par /returns/individuals).
   const isCollected = (d: Deposit) => d.collectedAt != null
-  const individualPayments = deposits
-    .filter((d) => d.type === 'PARTICULIER' && isCollected(d))
-    .reduce((a, d) => a + Math.max(0, d.sellerAmount ?? 0), 0)
-  const totalDisbursed = proPayments + individualPayments
-  const unmadeIndividualChecks = deposits
-    .filter(
+  const individualPayments = sumOf(
+    deposits.filter((d) => d.type === 'PARTICULIER' && isCollected(d)),
+    (d) => Math.max(0, d.sellerAmount ?? 0),
+  )
+  const totalDisbursed = add(proPayments, individualPayments)
+  const unmadeIndividualChecks = sumOf(
+    deposits.filter(
       (d) =>
         d.type === 'PARTICULIER' &&
         d.checkId == null &&
         (d.sellerAmount ?? 0) > 0,
-    )
-    .reduce((a, d) => a + (d.sellerAmount ?? 0), 0)
+    ),
+    (d) => d.sellerAmount ?? 0,
+  )
 
   // Les chèques particuliers non faits sont dus aux vendeurs : l'argent est
   // encore en caisse mais il n'appartient pas à la bourse, donc il sort de la
   // recette réelle au même titre que ce qui a déjà été décaissé. Sans cela la
   // recette gonfle de tout ce qui reste à régler aux particuliers.
-  const actualRevenue =
-    totalPayments +
-    totalDeferred +
-    collectedContributions -
-    totalDisbursed -
-    unmadeIndividualChecks -
-    cmrPurchases
+  const actualRevenue = add(
+    totalPayments,
+    totalDeferred,
+    collectedContributions,
+    -totalDisbursed,
+    -unmadeIndividualChecks,
+    -cmrPurchases,
+  )
 
   // Différence de caisses = les écarts constatés aux contrôles. Les contrôles
   // de caisse de retour sont comptés comme les autres : leurs espèces entrent
   // dans la recette réelle ci-dessus, donc leur écart explique bien un manque
   // ou un excédent réel. Le solde ci-dessous ne garde que ce qu'il reste à
   // expliquer.
-  const controlsDiff = cashRegisterControls.reduce(
-    (a, c) => a + c.difference,
-    0,
-  )
+  const controlsDiff = sumOf(cashRegisterControls, (c) => c.difference)
   const cashRegisterDiff = controlsDiff
-  const theoreticalVsActualDiff = actualRevenue - theoreticalRevenue
-  const diffBalance = theoreticalVsActualDiff - cashRegisterDiff
+  const theoreticalVsActualDiff = add(actualRevenue, -theoreticalRevenue)
+  const diffBalance = add(theoreticalVsActualDiff, -cashRegisterDiff)
 
   const data: BilanPdfData = {
     year: getYear(),

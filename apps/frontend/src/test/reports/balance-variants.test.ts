@@ -224,4 +224,44 @@ describe('Report: the balance, variant by variant', () => {
       'Recette bourse': '66,00 €',
     })
   })
+
+  // Amounts are added up to the cent: a bourse that closes right shows
+  // 0,00 €, never « -0,00 € » left by a floating-point residue.
+  it('V9: prices with cents close at exactly zero', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.fiches.bon.articles = [20.2, 10.1]
+      bourse.sales.push({
+        saleIndex: 5003,
+        till: 5000,
+        buyer: 'Moreau Denis',
+        articles: [
+          ['bon', 'A'],
+          ['bon', 'B'],
+        ],
+        pay: { cash: 30.3 },
+      })
+      bourse.counts.find((count) => count.till === 5000)!.real = 170.3
+      bourse.cheques.push('bon')
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      'Montant du dépôt': '860,30 €',
+      "Nombre d'acheteurs": '4',
+      'Panier moyen (€)': '137,58 €',
+      'Panier moyen (articles)': '1,75',
+      "Nombre d'articles vendus": '7',
+      '% des articles en dépôt': '77,78 %',
+      'Montant total des ventes': '550,30 €',
+      '% de la valeur du dépôt': '63,97 %',
+      'Droits CMR': '65,03 €',
+      'Recette bourse théorique': '69,03 €',
+      'Total paiements': '550,30 €',
+      // As counted: 170,30 at till 5000, 30 at till 6000.
+      'Total espèces': '200,30 €',
+      'Montant total décaissé': '483,27 €',
+      'Règlements particuliers': '313,27 €',
+      'Recette bourse': '69,03 €',
+    })
+  })
 })
