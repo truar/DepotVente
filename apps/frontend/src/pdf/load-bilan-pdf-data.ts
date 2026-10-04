@@ -214,7 +214,10 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const totalCash = saleRegisters.reduce((a, c) => a + c.realCashAmount, 0)
   const totalChecks = sales.reduce((a, s) => a + (s.checkAmount ?? 0), 0)
   const totalDeferred = sales.reduce((a, s) => a + (s.deferredAmount ?? 0), 0)
-  const totalPayments = totalCards + totalCash + totalChecks + totalDeferred
+  // Ce qui est réellement entré : cartes, espèces comptées, chèques. Le
+  // différé, réglé avant la fin, n'est encore ni en caisse ni sur un relevé :
+  // il entre directement dans la recette bourse ci-dessous.
+  const totalPayments = totalCards + totalCash + totalChecks
 
   // Cotisations encaissées = real cash counted in the deposit registers and in
   // the return registers (the cotisations settled in the evening).
@@ -270,24 +273,22 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // recette gonfle de tout ce qui reste à régler aux particuliers.
   const actualRevenue =
     totalPayments +
+    totalDeferred +
     collectedContributions -
     totalDisbursed -
     unmadeIndividualChecks -
     cmrPurchases
 
-  // Différence de caisses = les écarts constatés aux contrôles, + le différé.
-  // Les contrôles de caisse de retour sont comptés comme les autres : leurs
-  // espèces entrent dans la recette réelle ci-dessus, donc leur écart explique
-  // bien un manque ou un excédent réel.
-  // Le contrôle de caisse ne voit pas le différé (son théorique ne compte que
-  // les espèces), alors que "Total paiements" le compte comme encaissé : c'est
-  // donc un écart connu de plus, à mettre au même endroit que les écarts de
-  // comptage pour que le solde ci-dessous ne garde que l'inexpliqué.
+  // Différence de caisses = les écarts constatés aux contrôles. Les contrôles
+  // de caisse de retour sont comptés comme les autres : leurs espèces entrent
+  // dans la recette réelle ci-dessus, donc leur écart explique bien un manque
+  // ou un excédent réel. Le solde ci-dessous ne garde que ce qu'il reste à
+  // expliquer.
   const controlsDiff = cashRegisterControls.reduce(
     (a, c) => a + c.difference,
     0,
   )
-  const cashRegisterDiff = controlsDiff + totalDeferred
+  const cashRegisterDiff = controlsDiff
   const theoreticalVsActualDiff = actualRevenue - theoreticalRevenue
   const diffBalance = theoreticalVsActualDiff - cashRegisterDiff
 
@@ -467,8 +468,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Total paiements',
           value: eur(totalPayments),
-          source: 'cartes + espèces + chèques + différé',
-          formula: `${eur(totalCards)} + ${eur(totalCash)} + ${eur(totalChecks)} + ${eur(totalDeferred)}`,
+          source: 'cartes + espèces + chèques (sans le différé)',
+          formula: `${eur(totalCards)} + ${eur(totalCash)} + ${eur(totalChecks)}`,
         },
         {
           label: 'Total cartes',
@@ -528,8 +529,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Recette bourse',
           value: eur(actualRevenue),
           source:
-            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
-          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
+            'total paiements + différé + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
+          formula: `${eur(totalPayments)} + ${eur(totalDeferred)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
         },
         {
           label: 'Différence recette théorique et réelle',
@@ -541,8 +542,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Différence de caisses',
           value: eur(cashRegisterDiff),
           source:
-            'Σ cashRegisterControl.difference (dépôt + vente + retour) + total différé',
-          formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses : ${num(depositRegisters.length)} dépôt, ${num(saleRegisters.length)} vente, ${num(returnRegisters.length)} retour) + ${eur(totalDeferred)} (différé, invisible au contrôle de caisse)`,
+            'Σ cashRegisterControl.difference (dépôt + vente + retour)',
+          formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses : ${num(depositRegisters.length)} dépôt, ${num(saleRegisters.length)} vente, ${num(returnRegisters.length)} retour)`,
         },
         {
           label: 'Solde différence',

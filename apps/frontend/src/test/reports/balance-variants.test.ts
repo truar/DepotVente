@@ -206,4 +206,22 @@ describe('Report: the balance, variant by variant', () => {
       'Cotisations non payées': '2,00 €',
     })
   })
+
+  // Bruno pays later: the money is settled before the end. It belongs to the
+  // takings, but it is not in a till or on a card statement yet.
+  it('V4: a deferred payment counts in the takings, not in what was collected', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.sales[1].pay = { deferred: 150 }
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      'Total cartes': '0,00 €',
+      'Total différé': '150,00 €',
+      // Cards, cash and cheques only.
+      'Total paiements': '370,00 €',
+      // 370 + 150 + 2 − 456.
+      'Recette bourse': '66,00 €',
+    })
+  })
 })
