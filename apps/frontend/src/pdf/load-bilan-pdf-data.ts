@@ -132,10 +132,19 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const depositTotalAmount = depositArticles.reduce((a, x) => a + x.price, 0)
 
   // ===== Ventes =====
-  const buyersCount = new Set(sales.map((s) => s.buyerId)).size
+  // A buyer refunded in full took nothing home: not a buyer, and not in the
+  // average basket.
+  const basketSales = sales.filter(
+    (s) => Math.round(computeSaleTotal(s) * 100) > 0,
+  )
+  const buyersCount = new Set(basketSales.map((s) => s.buyerId)).size
   const soldArticlesCount = soldArticles.length
   const salesTotalAmount = sales.reduce((a, s) => a + computeSaleTotal(s), 0)
-  const averageBasketAmount = safeDiv(salesTotalAmount, buyersCount)
+  const basketAmount = basketSales.reduce(
+    (a, s) => a + computeSaleTotal(s),
+    0,
+  )
+  const averageBasketAmount = safeDiv(basketAmount, buyersCount)
   const averageBasketArticles = safeDiv(soldArticlesCount, buyersCount)
   const soldArticlesRatio = safeDiv(soldArticlesCount, articlesCount)
   const depositValueRatio = safeDiv(salesTotalAmount, depositTotalAmount)
@@ -360,14 +369,15 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: "Nombre d'acheteurs",
           value: num(buyersCount),
-          source: 'buyerId distincts sur sales',
-          formula: `${num(buyersCount)} buyerId distincts / ${num(sales.length)} ventes`,
+          source:
+            'buyerId distincts sur sales, hors ventes entièrement remboursées',
+          formula: `${num(buyersCount)} buyerId distincts / ${num(basketSales.length)} ventes`,
         },
         {
           label: 'Panier moyen (€)',
           value: eur(averageBasketAmount),
-          source: 'total ventes ÷ nb acheteurs',
-          formula: `${eur(salesTotalAmount)} ÷ ${num(buyersCount)}`,
+          source: 'ventes des acheteurs ÷ nb acheteurs',
+          formula: `${eur(basketAmount)} ÷ ${num(buyersCount)}`,
         },
         {
           label: 'Panier moyen (articles)',

@@ -134,4 +134,34 @@ describe('Report: the balance, variant by variant', () => {
       '% de la valeur du dépôt': '92,86 %',
     })
   })
+
+  it('V2a: a buyer who brings the article back is no longer a buyer', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      // Bruno brings the snowboard back to till 6000 before the returns are
+      // worked out, and gets his 150 € back on the card.
+      bourse.refunds = [
+        { saleIndex: 5002, till: 6000, card: 150, articles: [['martin', 'A']] },
+      ]
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      // Bruno, refunded in full, is no longer a buyer.
+      "Nombre d'acheteurs": '2',
+      'Panier moyen (€)': '185,00 €',
+      'Panier moyen (articles)': '2',
+      "Nombre d'articles vendus": '4',
+      '% des articles en dépôt': '44,44 %',
+      'Montant total des ventes': '370,00 €',
+      '% de la valeur du dépôt': '43,02 %',
+      // Martin: 30 € sold, 3 € of rights, 27 − 2 = 25 € for him.
+      'Droits CMR': '47,00 €',
+      'Recette bourse théorique': '51,00 €',
+      'Total cartes': '0,00 €',
+      'Total paiements': '370,00 €',
+      'Règlements particuliers': '151,00 €',
+      'Montant total décaissé': '321,00 €',
+      'Recette bourse': '51,00 €',
+    })
+  })
 })
