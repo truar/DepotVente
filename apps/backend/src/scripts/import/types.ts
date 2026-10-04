@@ -4,5 +4,5 @@ export const types: Record<string, string> = {
   '3': 'Rando Alpine',
   '4': 'Rando Pédestre',
   '5': 'Snowboard',
-  '6': 'Telemark',
+  '6': 'Télémark',
 }

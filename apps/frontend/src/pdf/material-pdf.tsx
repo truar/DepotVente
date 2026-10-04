@@ -24,7 +24,7 @@ const DISCIPLINE_PHRASE: Record<string, string> = {
   Fond: 'ski fond',
   'Rando Alpine': 'rando alpine',
   'Rando Pédestre': 'rando pédestre',
-  Telemark: 'télémark',
+  Télémark: 'télémark',
 }
 
 /** "Nombre chaussures surf", "Nombre articles ski fond", … */

@@ -16,6 +16,6 @@ export const materiels: Record<string, string> = {
   '16': 'Boots',
   '17': 'Lunettes',
   '18': 'Gants',
-  '19': 'Polaire',
+  '19': 'Vêtement',
   '20': 'Zrefusé',
 }

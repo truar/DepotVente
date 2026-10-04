@@ -15,7 +15,6 @@ export const categories = [
   'Boots',
   'Lunettes',
   'Gants',
-  'Polaire',
 ]
 
 export const categoriesItems = categories.map((category) => ({

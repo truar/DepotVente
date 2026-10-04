@@ -4,7 +4,7 @@ export const disciplines = [
   'Rando Alpine',
   'Rando Pédestre',
   'Snowboard',
-  'Telemark',
+  'Télémark',
 ]
 
 export const disciplineItems = disciplines.map((discipline) => ({
