@@ -191,4 +191,19 @@ describe('Report: the balance, variant by variant', () => {
       'Recette bourse': '-197,00 €',
     })
   })
+
+  // What is still owed is shown for information only: it is not in the
+  // takings the bourse is due, so nothing is left to explain.
+  it('V1a: a contribution still to pay at the close is shown, out of the takings', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      // Bon sells nothing: there is no cheque to take it from.
+      bourse.fiches.bon.contribution = 'A_PAYER'
+      bourse.fiches.bon.contributionAmount = 2
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      'Cotisations non payées': '2,00 €',
+    })
+  })
 })
