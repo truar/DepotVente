@@ -187,7 +187,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
   },
   {
     id: 'mustPayContribution',
-    header: 'Doit cotisation ?',
+    header: 'Doit cotisation\u00a0?',
     accessorFn: (row) =>
       row.contributionStatus === 'A_PAYER'
         ? 'Oui'

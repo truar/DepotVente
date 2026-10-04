@@ -51,7 +51,7 @@ export function RouteComponent() {
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
               Gérer les ventes
             </h2>
-            <p className="text-xl text-gray-600">Que souhaitez-vous faire ?</p>
+            <p className="text-xl text-gray-600">Que souhaitez-vous faire{'\u00a0'}?</p>
           </div>
 
           {/* Cards Grid */}

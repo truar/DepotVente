@@ -70,7 +70,7 @@ describe('Screen: return the unsold articles to a professional', () => {
     await page.pickPro('Allo')
     let question = await page.question()
     expect(question.title).toBe(
-      'Etes vous sur de vouloir changer de professionnel ?',
+      'Etes vous sur de vouloir changer de professionnel\u00a0?',
     )
     await question.decline()
     expect(page.selectedPro()).toBe('4 - Jean Perrillat')

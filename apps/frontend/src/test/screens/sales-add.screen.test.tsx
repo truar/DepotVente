@@ -369,7 +369,9 @@ describe('Screen: sell to a buyer already known', () => {
 
     await page.pickBuyer('Bon Jean')
     let question = await page.question()
-    expect(question.title).toBe('Etes vous sur de vouloir changer d’acheteur ?')
+    expect(question.title).toBe(
+      'Etes vous sur de vouloir changer d’acheteur\u00a0?',
+    )
     await question.decline()
     expect(page.buyer().lastName).toBe('Durand')
     expect(page.selectedBuyer()).toBe('Durand Camille')

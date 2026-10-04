@@ -22,6 +22,8 @@ export async function mainMenu(user: User, pathname: () => string) {
   const page = {
     user,
     pathname,
+    // The question above the desks, as written (spaces included).
+    prompt: () => screen.getByText(/^Que souhaitez-vous faire/).textContent,
     card: (desk: Desk) =>
       screen.getByRole('button', { name: new RegExp(`^${desk}`) }),
     // The amber box, title and text, or null when it is not shown.

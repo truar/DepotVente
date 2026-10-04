@@ -209,7 +209,7 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
           {depositId && <DepositData depositId={depositId} />}
           <ConfirmationDialog
             {...confirmation}
-            title="Etes vous sur de vouloir changer de fiche ?"
+            title={'Etes vous sur de vouloir changer de fiche\u00a0?'}
             description="Les données non enregistrées seront perdues."
           />
         </div>

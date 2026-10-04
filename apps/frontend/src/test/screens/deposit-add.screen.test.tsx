@@ -171,7 +171,7 @@ describe('Screen: register a deposit from a predeposit', () => {
     await page.pickPredeposit('Durand Sophie')
     let dialog = await page.dialog()
     expect(dialog.title).toBe(
-      'Etes vous sur de vouloir changer de fiche de pré-dépot ?',
+      'Etes vous sur de vouloir changer de fiche de pré-dépot\u00a0?',
     )
     await dialog.decline()
     expect(page.seller().lastName).toBe('Martin')
@@ -741,7 +741,7 @@ describe('Screen: leaving a half-typed deposit', () => {
 
     await page.cancel()
     let dialog = await page.dialog()
-    expect(dialog.title).toBe('Etes vous sur de vouloir annuler ?')
+    expect(dialog.title).toBe('Etes vous sur de vouloir annuler\u00a0?')
     await dialog.decline()
     expect(page.seller().lastName).toBe('Martin')
     expect(page.selectedPredeposit()).toBe('Martin Lucie')
@@ -766,7 +766,9 @@ describe('Screen: leaving a half-typed deposit', () => {
 
     await page.backToMenu()
     let dialog = await page.dialog()
-    expect(dialog.title).toBe('Etes vous sur de vouloir quitter cette page ?')
+    expect(dialog.title).toBe(
+      'Etes vous sur de vouloir quitter cette page\u00a0?',
+    )
     await dialog.decline()
     expect(page.pathname()).toBe('/deposits/add')
     expect(page.seller().lastName).toBe('Bernard')

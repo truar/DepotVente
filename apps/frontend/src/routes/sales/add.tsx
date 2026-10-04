@@ -117,7 +117,7 @@ function RouteComponent() {
       <ConfirmationDialog
         open={backOpen}
         onOpenChange={setBackOpen}
-        title="Etes vous sur de vouloir quitter cette page ?"
+        title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les données non enregistrées seront perdues."
         onConfirm={() => navigate({ to: '..' })}
       />
@@ -250,7 +250,7 @@ function SalesForm(props: SalesFormProps) {
                     Annuler
                   </Button>
                 }
-                title="Etes vous sur de vouloir annuler ?"
+                title={'Etes vous sur de vouloir annuler\u00a0?'}
                 description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
                 onConfirm={() => {
                   reset()
@@ -329,7 +329,7 @@ function ContactSearchForm() {
       />
       <ConfirmationDialog
         {...confirmation}
-        title="Etes vous sur de vouloir changer d’acheteur ?"
+        title={'Etes vous sur de vouloir changer d’acheteur\u00a0?'}
         description="Le bloc Acheteur sera rempli avec le contact choisi."
       />
     </div>

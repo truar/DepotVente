@@ -52,7 +52,9 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     // and stays on the open one.
     await page.pickDeposit('Bon')
     let question = await page.question()
-    expect(question.title).toBe('Etes vous sur de vouloir changer de fiche ?')
+    expect(question.title).toBe(
+      'Etes vous sur de vouloir changer de fiche\u00a0?',
+    )
     await question.decline()
     expect(page.selectedDeposit()).toBe('12 - Camille Durand')
     expect(page.depositRow()?.[0]).toBe('12')

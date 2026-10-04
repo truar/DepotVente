@@ -88,7 +88,7 @@ export function CashRegisterControlScreen(
       <ConfirmationDialog
         open={backOpen}
         onOpenChange={setBackOpen}
-        title="Etes vous sur de vouloir quitter cette page ?"
+        title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les données non enregistrées seront perdues."
         onConfirm={() => navigate({ to: '..' })}
       />
@@ -242,7 +242,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
                   Annuler
                 </CustomButton>
               }
-              title="Etes vous sur de vouloir annuler ?"
+              title={'Etes vous sur de vouloir annuler\u00a0?'}
               description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
               onConfirm={onCancel}
             />

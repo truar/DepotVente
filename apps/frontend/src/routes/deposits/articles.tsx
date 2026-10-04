@@ -84,7 +84,7 @@ function RouteComponent() {
       <ConfirmationDialog
         open={backOpen}
         onOpenChange={setBackOpen}
-        title="Etes vous sur de vouloir quitter cette page ?"
+        title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les modifications non enregistrées seront perdues."
         onConfirm={() => navigate({ to: '..' })}
       />
@@ -112,7 +112,7 @@ function ArticleEditPage() {
       </div>
       <ConfirmationDialog
         {...confirmation}
-        title="Etes vous sur de vouloir changer d’article ?"
+        title={'Etes vous sur de vouloir changer d’article\u00a0?'}
         description="Les modifications non enregistrées seront perdues."
       />
     </div>
@@ -507,7 +507,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
               Annuler
             </CustomButton>
           }
-          title="Etes vous sur de vouloir annuler ?"
+          title={'Etes vous sur de vouloir annuler\u00a0?'}
           description="Cette action va annuler les modifications. Les données non enregistrées seront perdues."
           onConfirm={() => navigate({ to: '..' })}
         />

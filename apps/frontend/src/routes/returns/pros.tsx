@@ -53,7 +53,7 @@ export function RouteComponent() {
       </div>
       <ConfirmationDialog
         {...confirmation}
-        title="Etes vous sur de vouloir changer de professionnel ?"
+        title={'Etes vous sur de vouloir changer de professionnel\u00a0?'}
         description="Les articles déjà scannés restent enregistrés."
       />
     </Page>

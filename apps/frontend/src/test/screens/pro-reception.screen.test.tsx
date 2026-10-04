@@ -90,7 +90,7 @@ describe('Screen: receiving a professional’s articles', () => {
     await page.pickPro('Perrillat')
     let question = await page.question()
     expect(question.title).toBe(
-      'Etes vous sur de vouloir changer de professionnel ?',
+      'Etes vous sur de vouloir changer de professionnel\u00a0?',
     )
     await question.decline()
     expect(page.totalCount()).toBe(4)

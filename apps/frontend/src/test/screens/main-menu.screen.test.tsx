@@ -23,6 +23,14 @@ describe('Screen: the main menu', () => {
     for (const desk of desks) expect(menu.card(desk)).toBeDisabled()
   })
 
+  // French typography: the question mark is kept on the line of its last
+  // word by a no-break space, here as in every question the app asks.
+  it('asks what to do with a no-break space before the question mark', async () => {
+    const menu = await mainMenuPage()
+
+    expect(menu.prompt()).toBe('Que souhaitez-vous faire\u00a0?')
+  })
+
   // Clicking a closed desk leads nowhere.
   it('stays on the menu when a closed desk is clicked', async () => {
     const menu = await mainMenuPage()

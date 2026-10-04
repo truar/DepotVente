@@ -56,7 +56,7 @@ export function RouteComponent() {
       <ConfirmationDialog
         open={backOpen}
         onOpenChange={setBackOpen}
-        title="Etes vous sur de vouloir quitter cette page ?"
+        title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les données non enregistrées seront perdues."
         onConfirm={() => navigate({ to: '..' })}
       />
@@ -129,7 +129,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
         onOpenChange={(open) => {
           if (!open) setRequestedPredepositId(null)
         }}
-        title="Etes vous sur de vouloir changer de fiche de pré-dépot ?"
+        title={'Etes vous sur de vouloir changer de fiche de pré-dépot\u00a0?'}
         description="Les données non enregistrées seront perdues."
         onConfirm={() => void loadPredeposit(requestedPredepositId ?? '')}
       />

@@ -73,7 +73,9 @@ describe('Screen: correcting an article', () => {
 
     await page.searchAnother(boots.code)
     let question = await page.question()
-    expect(question.title).toBe('Etes vous sur de vouloir changer d’article ?')
+    expect(question.title).toBe(
+      'Etes vous sur de vouloir changer d’article\u00a0?',
+    )
     await question.decline()
     expect(page.price()).toBe('110')
 

@@ -61,7 +61,9 @@ export function RouteComponent() {
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
               Générer les bilans
             </h2>
-            <p className="text-xl text-gray-600">Quel bilan éditer ?</p>
+            <p className="text-xl text-gray-600">
+              Quel bilan éditer{'\u00a0'}?
+            </p>
           </div>
 
           {/* Cards Grid */}
