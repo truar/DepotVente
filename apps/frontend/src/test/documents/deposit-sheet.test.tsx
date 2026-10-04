@@ -62,13 +62,13 @@ describe('The deposit sheet', () => {
     expect(privateSeller).toContain(
       'Matériel à récupérer samedi soir entre 18h30 et 20h30',
     )
-    expect(privateSeller).toContain('Information:')
+    expect(privateSeller).toContain('Information :')
   })
 
   // A shop does not come back on Saturday evening with the sellers, and the
   // announcements are addressed to members.
   it('says neither to a professional', () => {
     expect(professional).not.toMatch(/Matériel à récupérer/)
-    expect(professional).not.toContain('Information:')
+    expect(professional).not.toContain('Information :')
   })
 })

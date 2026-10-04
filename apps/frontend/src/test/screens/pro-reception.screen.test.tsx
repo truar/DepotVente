@@ -239,8 +239,8 @@ describe('Screen: receiving a professional’s articles', () => {
     // A professional collects nothing on Saturday evening, and the club's
     // announcements are not addressed to a shop.
     expect(sheet).not.toMatch(/Matériel à récupérer/)
-    expect(sheet).not.toContain('Information:')
-    expect(sheet).not.toContain('Assembléé générale')
+    expect(sheet).not.toContain('Information :')
+    expect(sheet).not.toContain('Assemblée générale')
     expect(sheet).not.toContain('carte-neige')
   })
 

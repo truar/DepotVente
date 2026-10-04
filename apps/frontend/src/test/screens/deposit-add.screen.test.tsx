@@ -66,8 +66,8 @@ describe('Screen: register a deposit from a predeposit', () => {
     expect(sheet.match(/Fiche N° 1001/g)).toHaveLength(2)
     // The seller takes this one home, so it carries the club announcements.
     // The professionals' pending list does not.
-    expect(sheet).toContain('Information:')
-    expect(sheet).toContain('Assembléé générale')
+    expect(sheet).toContain('Information :')
+    expect(sheet).toContain('Assemblée générale')
 
     await page.save()
     await page.savedToast(1001)

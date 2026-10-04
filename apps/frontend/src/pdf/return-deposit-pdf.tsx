@@ -269,14 +269,14 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
           </View>
           <View style={styles.globalInformation}>
             <View style={styles.information}>
-              <Text>Information:</Text>
+              <Text>Information :</Text>
               <Text>
-                Assembléé générale le vendredi 14 novembre 2025 à 20h au Centre
+                Assemblée générale le vendredi 13 novembre 2026 à 20h au Centre
                 de loisirs du Bouchet
               </Text>
               <Text>
-                1ère permanence pour la vente des licences carte-neige: vendredi
-                28 novembre 2025 à 19h au gymnase de l'Albanais
+                1re permanence pour la vente des licences Carte Neige : vendredi
+                27 novembre 2026 à 19h au gymnase de l'Albanais
               </Text>
             </View>
           </View>
