@@ -34,6 +34,18 @@ export async function returnsProsPage() {
     proCombobox: () => screen.getAllByRole('combobox')[0],
     hasButton: (name: string) =>
       screen.queryByRole('button', { name }) !== null,
+    // Picking another one while one is open asks first.
+    async question() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
+    isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
     // The professional the combobox shows, e.g. "4 - Jean Perrillat".
     selectedPro: () => page.proCombobox().textContent.trim(),
 

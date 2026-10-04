@@ -59,13 +59,26 @@ describe('Screen: return the unsold articles to a professional', () => {
     await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[1]]))
   })
 
-  it('switches to another professional picked in the list', async () => {
+  it('asks before switching to another professional picked in the list', async () => {
     const page = await returnsProsPage()
 
     await page.pickPro('Perrillat')
     expect(page.toReturnCount()).toBe(2)
 
+    // Another professional is picked by mistake: the volunteer is asked,
+    // says no, and stays on the open one.
     await page.pickPro('Allo')
+    let question = await page.question()
+    expect(question.title).toBe(
+      'Etes vous sur de vouloir changer de professionnel ?',
+    )
+    await question.decline()
+    expect(page.selectedPro()).toBe('4 - Jean Perrillat')
+    expect(page.toReturnCount()).toBe(2)
+
+    await page.pickPro('Allo')
+    question = await page.question()
+    await question.confirm()
     expect(page.selectedPro()).toBe('3 - Ski Allo')
     await waitFor(() => expect(page.toReturnCount()).toBe(1))
   })
@@ -78,6 +91,7 @@ describe('Screen: return the unsold articles to a professional', () => {
 
     await page.pickPro('Perrillat')
 
+    expect(page.isQuestionOpen()).toBe(false)
     expect(page.selectedPro()).toBe('4 - Jean Perrillat')
     expect(page.isScanOpen()).toBe(true)
   })

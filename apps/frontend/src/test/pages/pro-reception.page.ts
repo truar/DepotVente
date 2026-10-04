@@ -22,7 +22,7 @@ export async function proReceptionPage() {
     // The volunteer types a fragment of the professional's name or its
     // deposit number, then picks the single match.
     async pickPro(search: string) {
-      await u.click(screen.getByText(/Rechercher un professionnel/))
+      await u.click(page.proCombobox())
       const popover = await screen.findByRole('dialog')
       await u.type(within(popover).getByRole('combobox'), search)
       await u.click(
@@ -30,8 +30,23 @@ export async function proReceptionPage() {
       )
       await screen.findByText("Nombre d'articles scannés")
     },
+    // The search above the form; the article table below has its own
+    // column filters, which are comboboxes too.
+    proCombobox: () => screen.getAllByRole('combobox')[0],
     hasButton: (name: string) =>
       screen.queryByRole('button', { name }) !== null,
+    // Picking another one while one is open asks first.
+    async question() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
+    isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
 
     // ---- scanning ------------------------------------------------------
     // A barcode scanner types the code and presses Enter.

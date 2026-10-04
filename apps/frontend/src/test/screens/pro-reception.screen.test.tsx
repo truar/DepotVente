@@ -80,6 +80,38 @@ describe('Screen: receiving a professional’s articles', () => {
     })
   })
 
+  it('asks before switching to another professional picked in the list', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+    await waitFor(() => expect(page.totalCount()).toBe(4))
+
+    // Another professional is picked by mistake: the volunteer is asked,
+    // says no, and stays on the open one.
+    await page.pickPro('Perrillat')
+    let question = await page.question()
+    expect(question.title).toBe(
+      'Etes vous sur de vouloir changer de professionnel ?',
+    )
+    await question.decline()
+    expect(page.totalCount()).toBe(4)
+
+    await page.pickPro('Perrillat')
+    question = await page.question()
+    await question.confirm()
+    await waitFor(() => expect(page.totalCount()).toBe(1))
+  })
+
+  it('keeps the professional open, without asking, when picked again', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+    await waitFor(() => expect(page.totalCount()).toBe(4))
+
+    await page.pickPro('Allo')
+
+    expect(page.isQuestionOpen()).toBe(false)
+    expect(page.totalCount()).toBe(4)
+  })
+
   it('receives a scanned article, moves the count, and lists it under its category', async () => {
     const page = await proReceptionPage()
     await page.pickPro('Allo')

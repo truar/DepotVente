@@ -14,6 +14,8 @@ import { FieldError } from '@/components/ui/field.tsx'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 import { FormattedNumber } from 'react-intl'
 import {
   Table,
@@ -77,6 +79,14 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
   const [printedDepositId, setPrintedDepositId] = useState<string | null>(null)
 
   const depositId = watch('depositId')
+  const openDeposit = useCallback(
+    (id: string) => setValue('depositId', id),
+    [setValue],
+  )
+  const { request, confirmation } = useAskBeforeSwitching(
+    depositId ?? null,
+    openDeposit,
+  )
   const isCheckPrinted = !!depositId && printedDepositId === depositId
 
   const printCheck = useCallback(async () => {
@@ -193,10 +203,15 @@ function IndividualReturnPage(props: IndividualReturnPageProps) {
           <div className="flex flex-row gap-5">
             <DepositSearchForm
               value={depositId ?? null}
-              onSelect={(id) => setValue('depositId', id)}
+              onSelect={request}
             />
           </div>
           {depositId && <DepositData depositId={depositId} />}
+          <ConfirmationDialog
+            {...confirmation}
+            title="Etes vous sur de vouloir changer de fiche ?"
+            description="Les données non enregistrées seront perdues."
+          />
         </div>
         <div>
           <ReturnedDepositSummary />
@@ -280,22 +295,13 @@ function DepositSearchForm(props: DepositSearchFormProps) {
     )
   }, [toBeTreated, contacts])
 
-  // Choisir une fiche dans la liste l'ouvre aussitôt ; la rechoisir ne fait
-  // rien.
-  const handleSelect = useCallback(
-    (depositId: string) => {
-      if (depositId) onSelect(depositId)
-    },
-    [onSelect],
-  )
-
   return (
     <div className="w-[500px]">
       <Combobox
         emptyLabel="Aucune fiche dépôt"
         items={items}
         value={value}
-        onSelect={handleSelect}
+        onSelect={onSelect}
         placeholder="Rechercher une fiche"
       />
     </div>

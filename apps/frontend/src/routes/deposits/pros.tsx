@@ -5,6 +5,8 @@ import { Page } from '@/components/Page.tsx'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Combobox } from '@/components/Combobox.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
 import {
   type KeyboardEvent,
@@ -37,15 +39,24 @@ export const Route = createFileRoute('/deposits/pros')({
 
 export function RouteComponent() {
   const [depositId, setDepositId] = useState<string | null>(null)
+  const { request, confirmation } = useAskBeforeSwitching(
+    depositId,
+    setDepositId,
+  )
   return (
     <Page
       navigation={<Link to="..">Retour au menu</Link>}
       title="Réceptionner les articles des pros"
     >
       <div className="flex flex-col gap-5">
-        <ProSearchForm value={depositId} onSelect={setDepositId} />
+        <ProSearchForm value={depositId} onSelect={request} />
         {depositId && <ProArticlesForm depositId={depositId} />}
       </div>
+      <ConfirmationDialog
+        {...confirmation}
+        title="Etes vous sur de vouloir changer de professionnel ?"
+        description="Les articles déjà scannés restent enregistrés."
+      />
     </Page>
   )
 }
@@ -89,22 +100,13 @@ function ProSearchForm(props: ProSearchFormProps) {
     )
   }, [deposits, contacts])
 
-  // Choisir un pro dans la liste l'ouvre aussitôt ; le rechoisir ne fait
-  // rien.
-  const handleSelect = useCallback(
-    (depositId: string) => {
-      if (depositId) onSelect(depositId)
-    },
-    [onSelect],
-  )
-
   return (
     <div className="w-[500px]">
       <Combobox
         emptyLabel="Aucun dépôt professionnel"
         items={items}
         value={value}
-        onSelect={handleSelect}
+        onSelect={onSelect}
         placeholder="Rechercher un professionnel"
       />
     </div>

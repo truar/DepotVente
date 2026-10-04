@@ -43,11 +43,23 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     ])
   })
 
-  it('switches to another fiche picked in the list', async () => {
+  it('asks before switching to another fiche picked in the list', async () => {
     const page = await returnsIndividualsPage()
 
     await page.pickDeposit('Durand')
+
+    // Another fiche is picked by mistake: the volunteer is asked, says no,
+    // and stays on the open one.
     await page.pickDeposit('Bon')
+    let question = await page.question()
+    expect(question.title).toBe('Etes vous sur de vouloir changer de fiche ?')
+    await question.decline()
+    expect(page.selectedDeposit()).toBe('12 - Camille Durand')
+    expect(page.depositRow()?.[0]).toBe('12')
+
+    await page.pickDeposit('Bon')
+    question = await page.question()
+    await question.confirm()
 
     expect(page.selectedDeposit()).toBe('13 - Jean Bon')
     await waitFor(() => expect(page.depositRow()?.[0]).toBe('13'))
@@ -62,6 +74,7 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
 
     await page.pickDeposit('Durand')
 
+    expect(page.isQuestionOpen()).toBe(false)
     expect(page.selectedDeposit()).toBe('12 - Camille Durand')
     expect(page.depositRow()?.[0]).toBe('12')
   })
@@ -301,6 +314,7 @@ describe('Screen: write the cheque of a fiche', () => {
     expect(page.nextChequeButton()).toBeEnabled()
 
     await page.pickDeposit('Bon')
+    await (await page.question()).confirm()
 
     await waitFor(() => expect(page.depositRow()?.[0]).toBe('13'))
     expect(page.printReminderShown()).toBe(true)
@@ -311,6 +325,7 @@ describe('Screen: write the cheque of a fiche', () => {
     // Durand's fiche, whose cheque was the last printed, lets it be
     // validated again without a new print.
     await page.pickDeposit('Durand')
+    await (await page.question()).confirm()
     await waitFor(() => expect(page.depositRow()?.[0]).toBe('12'))
     expect(page.printReminderShown()).toBe(false)
     expect(page.nextChequeButton()).toBeEnabled()
