@@ -4,7 +4,9 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { printedBlobs } from '@/test/setup.ts'
+import { expect } from 'vitest'
+import { previewedBlobs, printedBlobs } from '@/test/setup.ts'
+import { waitFor } from '@/test/screen.tsx'
 
 // No Web Worker in jsdom: pdfjs falls back to importing the worker module
 // in-process, and needs to be told where it is.
@@ -22,6 +24,18 @@ export function printedDocuments(): number {
 export async function lastPrintedText(): Promise<string> {
   const blob = printedBlobs.at(-1)
   if (!blob) throw new Error('Nothing has been printed')
+  return pdfText(blob)
+}
+
+// Text of the PDF a report screen shows beside its audit, once rendered.
+export async function previewedText(): Promise<string> {
+  await waitFor(() => expect(previewedBlobs.length).toBeGreaterThan(0), {
+    timeout: 15_000,
+  })
+  return pdfText(previewedBlobs.at(-1)!)
+}
+
+async function pdfText(blob: Blob): Promise<string> {
   const data = new Uint8Array(await readBlob(blob))
   // Text only: no glyphs are drawn, so the font files pdfjs would fetch
   // for rendering are not needed; keep its warnings about them quiet.

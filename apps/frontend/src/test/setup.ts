@@ -6,7 +6,8 @@
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
+import type * as ReactPdf from '@react-pdf/renderer'
 import { db } from '@/db.ts'
 import { server } from '@/test/server.ts'
 
@@ -27,6 +28,7 @@ afterEach(() => {
   cleanup()
   document.querySelectorAll('iframe').forEach((iframe) => iframe.remove())
   printedBlobs.length = 0
+  previewedBlobs.length = 0
 })
 
 // ---------------------------------------------------------------------------
@@ -56,6 +58,26 @@ URL.createObjectURL = (blob: Blob | MediaSource) => {
   return `blob:jsdom/${printedBlobs.length}`
 }
 URL.revokeObjectURL = () => {}
+
+// The report screens show their PDF in react-pdf's PDFViewer, which only
+// exists in a browser. Stand in for it: render the same document to a PDF
+// blob and keep it, so a story can read the preview back (see printed.ts).
+export const previewedBlobs: Array<Blob> = []
+vi.mock('@react-pdf/renderer', async (importOriginal) => {
+  const actual = await importOriginal<typeof ReactPdf>()
+  const { createElement, useEffect } = await import('react')
+  function PDFViewer(props: { children: Parameters<typeof actual.pdf>[0] }) {
+    const { children } = props
+    useEffect(() => {
+      void actual
+        .pdf(children)
+        .toBlob()
+        .then((blob) => previewedBlobs.push(blob))
+    }, [children])
+    return createElement('div', { 'aria-label': 'Aperçu du PDF' })
+  }
+  return { ...actual, PDFViewer }
+})
 window.matchMedia = (query: string) =>
   ({
     matches: false,
