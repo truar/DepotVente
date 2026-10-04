@@ -90,7 +90,23 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     db.cashRegisterControls.toArray(),
   ])
 
-  const deposits = allDeposits.filter((d) => d.deletedAt == null)
+  // "Articles en dépôt" = what was on sale: every article that is not
+  // deleted (sold ones included), except a pro's articles never received —
+  // they never reached the shop.
+  const depositArticles = allArticles.filter(
+    (a) =>
+      a.deletedAt == null &&
+      a.status !== 'DELETED' &&
+      a.status !== 'RECEPTION_PENDING',
+  )
+  // A fiche without any article on sale (a pro whose articles never came)
+  // is not a fiche of the bourse.
+  const depositIdsWithArticles = new Set(
+    depositArticles.map((a) => a.depositId),
+  )
+  const deposits = allDeposits.filter(
+    (d) => d.deletedAt == null && depositIdsWithArticles.has(d.id),
+  )
   const sales = allSales.filter(
     (s) => s.deletedAt == null && isReportedSaleRegister(s.incrementStart),
   )
@@ -105,10 +121,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     (c) =>
       c.deletedAt == null &&
       (c.type !== 'SALE' || isReportedSaleRegister(c.cashRegisterId)),
-  )
-  // "Articles en dépôt" = every article that is not deleted (sold ones included).
-  const depositArticles = allArticles.filter(
-    (a) => a.deletedAt == null && a.status !== 'DELETED',
   )
   const soldArticles = depositArticles.filter((a) => a.status === 'SOLD')
 
@@ -312,7 +324,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Nombre de fiches',
           value: num(fichesCount),
-          source: 'deposits (non supprimés)',
+          source:
+            'deposits (non supprimés, avec au moins un article en dépôt)',
           formula: `${num(fichesCount)} fiches de dépôt`,
         },
         {
@@ -324,7 +337,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: "Nombre d'articles en dépôt",
           value: num(articlesCount),
-          source: 'articles (status ≠ DELETED)',
+          source: 'articles (hors supprimés et articles pros non réceptionnés)',
           formula: `${num(articlesCount)} articles`,
         },
         {

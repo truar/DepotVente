@@ -96,4 +96,42 @@ describe('Report: the balance, variant by variant', () => {
       '% de la valeur du dépôt': '61,18 %',
     })
   })
+
+  // Articles that never reached the shop were never on sale: neither they
+  // nor a fiche left without any article count.
+  it('V12: a pro fiche never received leaves the balance as it was', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.fiches.glisse = {
+        seller: 'Glisse Pro',
+        type: 'PRO',
+        depositIndex: 4,
+        till: 1,
+        contribution: 'PRO',
+        contributionAmount: 0,
+        articles: [
+          { price: 200, status: 'RECEPTION_PENDING' },
+          { price: 200, status: 'RECEPTION_PENDING' },
+        ],
+      }
+    })
+
+    expect(await balanceLines()).toEqual(referenceBalance)
+  })
+
+  it('V13: a pro article never received leaves the deposit', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.fiches.sport.articles[1] = {
+        price: 300,
+        status: 'RECEPTION_PENDING',
+      }
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      "Nombre d'articles en dépôt": '8',
+      'Montant du dépôt': '560,00 €',
+      '% des articles en dépôt': '62,50 %',
+      '% de la valeur du dépôt': '92,86 %',
+    })
+  })
 })
