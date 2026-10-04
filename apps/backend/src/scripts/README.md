@@ -123,6 +123,51 @@ Le code encodé est exactement le `code` de l'article (`2026 2A`, espace
 comprise), celui que cherche `articlesDb.findByCode` — c'est le même Code 128
 que les étiquettes Dymo.
 
+### 4. `import/import-predeposits-form.ts` - Importer les pré-dépôts du Google Form
+
+Importe l'export CSV des réponses au formulaire « Pré-enregistrement bourse au
+ski », à lancer **une seule fois, le matin de la bourse**. Les pré-dépôts sont
+créés sans dépôt associé ; les postes les reçoivent à leur prochain poll.
+
+```bash
+# 1. Simulation : rien n'est écrit, affiche les fiches, les doublons et ce qui bloque
+pnpm --filter backend script:import-predeposits "tmp/Réponses.csv"
+
+# 2. Arbitrer les doublons signalés, puis importer
+pnpm --filter backend script:import-predeposits "tmp/Réponses.csv" --merge 57,58 --skip 61 --apply
+```
+
+Le chemin est relatif au dossier depuis lequel on lance `pnpm`.
+
+**Options :**
+- `--apply` - Écrit en base (une transaction : tout ou rien). Sans lui, simulation.
+- `--merge a,b` - Fusionne ces réponses en une seule fiche : articles à la suite, coordonnées de la réponse la plus récente.
+- `--keep a,b` - Garde ces réponses comme fiches distinctes.
+- `--skip a` - Ignore ces réponses.
+
+Les numéros sont ceux de la simulation (« réponse n » = rang dans le CSV, en-tête
+exclu). Deux réponses qui partagent un téléphone, un email ou un nom + prénom
+sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée.
+
+**Mapping :**
+
+| Formulaire | Pré-dépôt |
+|---|---|
+| Nom / Prénom | `NOM` en majuscules / `Prénom` capitalisé |
+| Portable | chiffres seuls (`06.31.14.41.54` → `0631144154`) |
+| Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`), sinon en majuscules |
+| Type de matériel | `Batons` → `Bâtons`, `Vêtements de ski` → `Vêtement`, le reste tel quel |
+| Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste tel quel |
+| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`), sinon gardée |
+| Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée |
+| Descriptif / Taille / Prix | modèle / taille / prix, tels quels |
+
+Les fiches sont numérotées par ordre alphabétique (nom puis prénom) à la suite
+du plus grand numéro de pré-dépôt en base ; les articles prennent les lettres
+A, B, C… dans l'ordre du formulaire. Un type de matériel ou une discipline
+inconnus, un prix illisible ou un téléphone déjà présent en base bloquent
+`--apply` : ce dernier cas empêche un second passage du script.
+
 ## 🗄️ Réinitialiser & importer la base
 
 Les commandes Prisma vivent dans le package `database` (pas `backend`).
