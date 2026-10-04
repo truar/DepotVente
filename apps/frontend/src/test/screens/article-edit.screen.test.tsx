@@ -62,6 +62,43 @@ describe('Screen: correcting an article', () => {
     })
   })
 
+  // Another code searched while an article is open: the volunteer is asked
+  // first; saying no keeps the article, and what was typed on it.
+  it('asks before opening another article searched while one is open', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }, { price: 80 }])
+    const [skis, boots] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+    await page.setPrice('110')
+
+    await page.searchAnother(boots.code)
+    let question = await page.question()
+    expect(question.title).toBe('Etes vous sur de vouloir changer d’article ?')
+    await question.decline()
+    expect(page.price()).toBe('110')
+
+    await page.searchAnother(boots.code)
+    question = await page.question()
+    await question.confirm()
+    await waitFor(() => expect(page.price()).toBe('80'))
+  })
+
+  // Searching the open article again, or after a code that matched
+  // nothing, opens it without a question.
+  it('does not ask when no other article is open', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.searchAnother('2026 999Z')
+    await page.search(skis.code, '12 A')
+    expect(page.isQuestionOpen()).toBe(false)
+
+    await page.searchAnother(skis.code)
+
+    expect(page.isQuestionOpen()).toBe(false)
+    expect(page.price()).toBe('120')
+  })
+
   // A serial number typed on the wrong article is wiped out: searched again,
   // the article shows none, and the server is sent no serial number at all
   // rather than an empty one.

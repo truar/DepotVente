@@ -84,6 +84,18 @@ export async function salesAddPage() {
     },
 
     // ---- buyer -------------------------------------------------------
+    // Picking another contact while one is the buyer asks first.
+    async question() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
+    isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
     async fillBuyer(buyer: {
       lastName?: string
       firstName?: string

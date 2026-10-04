@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 import { toast } from 'sonner'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
@@ -93,12 +94,27 @@ function RouteComponent() {
 
 function ArticleEditPage() {
   const [code, setCode] = useState<string>('')
+  // Un code qui ne correspond à aucun article n'ouvre rien : chercher un
+  // autre code ensuite ne demande pas de confirmation.
+  const openArticle = useLiveQuery(
+    () => (code ? db.articles.where({ code }).first() : undefined),
+    [code],
+  )
+  const { request, confirmation } = useAskBeforeSwitching(
+    openArticle ? code : null,
+    setCode,
+  )
   return (
     <div className="flex flex-col gap-5">
-      <ArticleSearchInput onClick={setCode} />
+      <ArticleSearchInput onClick={request} />
       <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
         <ArticleEditComponent articleCode={code} onSubmit={() => setCode('')} />
       </div>
+      <ConfirmationDialog
+        {...confirmation}
+        title="Etes vous sur de vouloir changer d’article ?"
+        description="Les modifications non enregistrées seront perdues."
+      />
     </div>
   )
 }
@@ -113,6 +129,9 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
   const checkKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
+        // Sans cela, la même frappe valide aussi le bouton qui prend le focus
+        // dans la confirmation qui vient de s'ouvrir (« Non »).
+        e.preventDefault()
         submit()
       }
     },

@@ -355,8 +355,30 @@ describe('Screen: sell to a buyer already known', () => {
 
     await page.pickBuyer('Durand Camille')
 
+    expect(page.isQuestionOpen()).toBe(false)
     expect(page.buyer().lastName).toBe('Durand')
     expect(page.selectedBuyer()).toBe('Durand Camille')
+  })
+
+  // Another contact is picked while Camille is the buyer: the volunteer is
+  // asked first; saying no keeps Camille.
+  it('asks before switching to another contact picked in the list', async () => {
+    await givenDeposit({ seller: { lastName: 'Bon', firstName: 'Jean' } })
+    const page = await salesAddPage()
+    await page.pickBuyer('Durand Camille')
+
+    await page.pickBuyer('Bon Jean')
+    let question = await page.question()
+    expect(question.title).toBe('Etes vous sur de vouloir changer d’acheteur ?')
+    await question.decline()
+    expect(page.buyer().lastName).toBe('Durand')
+    expect(page.selectedBuyer()).toBe('Durand Camille')
+
+    await page.pickBuyer('Bon Jean')
+    question = await page.question()
+    await question.confirm()
+    await waitFor(() => expect(page.buyer().lastName).toBe('Bon'))
+    expect(page.selectedBuyer()).toBe('Bon Jean')
   })
 
   // The list shows the contact the buyer block was filled from; once the
@@ -381,6 +403,8 @@ describe('Screen: sell to a buyer already known', () => {
 
     await page.pickBuyer('Durand Camille')
 
+    // A name being typed is not a buyer yet: nothing to confirm.
+    expect(page.isQuestionOpen()).toBe(false)
     expect(page.buyer().lastName).toBe('Durand')
     expect(page.selectedBuyer()).toBe('Durand Camille')
 

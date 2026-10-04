@@ -65,6 +65,7 @@ import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: requireAuthAndWorkstation,
@@ -294,10 +295,11 @@ function ContactSearchForm() {
   // dès que l'acheteur est retouché à la main ou que la vente est réinitialisée.
   const contactId = watch('buyer.contactId') ?? null
   // Choisir un contact dans la liste remplit aussitôt le bloc Acheteur ; le
-  // rechoisir ne fait rien.
+  // rechoisir ne fait rien. Si l'acheteur vient déjà de la liste, on demande
+  // avant de le remplacer ; un nom en cours de saisie n'est pas encore un
+  // acheteur, il est remplacé sans question.
   const prefillBuyerInformation = useCallback(
     async (id: string) => {
-      if (!id) return
       const contact = await contactsDb.findById(id)
       if (!contact) return
       setValue('buyer.contactId', contact.id)
@@ -309,14 +311,26 @@ function ContactSearchForm() {
     },
     [setValue, contactsDb, articleCodeRef],
   )
+  const { request, confirmation } = useAskBeforeSwitching(
+    contactId,
+    useCallback(
+      (id: string) => void prefillBuyerInformation(id),
+      [prefillBuyerInformation],
+    ),
+  )
 
   return (
     <div className="w-[500px]">
       <Combobox
         items={contactItems}
         value={contactId}
-        onSelect={(id) => void prefillBuyerInformation(id)}
+        onSelect={request}
         placeholder="Rechercher un nom"
+      />
+      <ConfirmationDialog
+        {...confirmation}
+        title="Etes vous sur de vouloir changer d’acheteur ?"
+        description="Le bloc Acheteur sera rempli avec le contact choisi."
       />
     </div>
   )

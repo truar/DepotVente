@@ -604,7 +604,7 @@ describe('Screen: article rows', () => {
     const articles = await articleEditPage()
     await articles.search(`${YEAR} 1001Z`, '1001 Z')
     expect(articles.price()).toBe('150')
-    await articles.search(`${YEAR} 1001AA`, '1001 AA')
+    await articles.openAnother(`${YEAR} 1001AA`, '1001 AA')
     expect(articles.price()).toBe('120')
   })
 
@@ -717,9 +717,9 @@ describe('Screen: a predeposit whose letters skip one', () => {
     // of the predeposit, D the one typed by hand, at its price.
     const articles = await articleEditPage()
     await articles.search(`${YEAR} 1001A`, '1001 A')
-    await articles.search(`${YEAR} 1001C`, '1001 C')
+    await articles.openAnother(`${YEAR} 1001C`, '1001 C')
     expect(articles.price()).toBe('150')
-    await articles.search(`${YEAR} 1001D`, '1001 D')
+    await articles.openAnother(`${YEAR} 1001D`, '1001 D')
     expect(articles.price()).toBe('120')
 
     const listing = await depositsListingPage()

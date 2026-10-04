@@ -1,7 +1,7 @@
 // Page object for "Modifier un article" (/deposits/articles): the desk
 // where a volunteer looks an article up by its code and corrects it — a
 // wrong price on the label, a missing serial number, a description.
-import { openScreen, screen } from '@/test/screen.tsx'
+import { openScreen, screen, within } from '@/test/screen.tsx'
 
 export async function articleEditPage() {
   const { user: u, router } = await openScreen('/deposits/articles')
@@ -21,6 +21,32 @@ export async function articleEditPage() {
       )
       await screen.findByDisplayValue(shortCode)
     },
+    // Searching while an article is open: the form stays on that article
+    // until the volunteer answers the question.
+    async searchAnother(code: string) {
+      await u.type(
+        screen.getByPlaceholderText('Ex: 2026 1001A'),
+        `${code}{Enter}`,
+      )
+    },
+    // Opens another article while one is open, answering yes to the
+    // question.
+    async openAnother(code: string, shortCode: string) {
+      await page.searchAnother(code)
+      await (await page.question()).confirm()
+      await screen.findByDisplayValue(shortCode)
+    },
+    async question() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
+    isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
 
     // ---- correcting it -----------------------------------------------------
     async setPrice(price: string) {
