@@ -74,6 +74,9 @@ export function useComputeReturnMutation() {
   async function mutate(depositId: string) {
     const deposit = await depositsDb.get(depositId)
     if (!deposit) return
+    // Une fois le chèque du vendeur fait, ce qu'il porte est définitif : le
+    // calcul ne touche plus à la fiche.
+    if (deposit.checkId != null) return
     const articles = await articlesDb.findByDepositId(depositId)
 
     const soldArticles = articles.filter((article) => !!article.saleId)

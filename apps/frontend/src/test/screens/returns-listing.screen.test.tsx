@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { cashRegisterControlPage } from '@/test/pages/cash-register-control.page.ts'
+import { returnsIndividualsPage } from '@/test/pages/returns-individuals.page.ts'
 import { returnsListingPage } from '@/test/pages/returns-listing.page.ts'
+import { db } from '@/db.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // The evening: the club runs the calculation over every deposit at once,
@@ -34,6 +36,44 @@ describe('Screen: the return listing', () => {
       },
       [{ price: 200, saleId: 'a-sale', status: 'SOLD' }],
     )
+  })
+
+  // Once the seller's cheque is written, what it says is final: the
+  // calculation leaves the fiche alone, whatever changes afterwards. The
+  // other fiches are computed as usual.
+  it('leaves a fiche alone once its cheque is written', async () => {
+    const listing = await returnsListingPage()
+    await waitFor(() => expect(listing.counters().toCompute).toBe(2))
+    await listing.selectAll()
+    await listing.computeSelected()
+    await waitFor(() => expect(listing.soldAmount(12)).toBe('200,00 €'))
+
+    const cheques = await returnsIndividualsPage()
+    await cheques.pickDeposit('Durand')
+    await cheques.fillCheque({ signatory: 'Camille Durand', checkId: '1042' })
+    await cheques.printCheque()
+    await cheques.nextCheque()
+    await waitFor(() => expect(cheques.depositRow()).toBeNull())
+
+    // Later, one of Durand's articles and the pro's come off their sale.
+    for (const article of await local.articles()) {
+      if (article.price === 80) continue
+      await db.articles.update(article.id, {
+        saleId: null,
+        status: 'RECEPTION_OK',
+      })
+    }
+
+    const again = await returnsListingPage()
+    await waitFor(() => expect(again.soldAmount(12)).toBe('200,00 €'))
+    await again.selectAll()
+    await again.computeSelected()
+
+    // The pro, without a cheque, is computed again: nothing sold any more.
+    await waitFor(() => expect(again.soldAmount(3)).toBe(''))
+    expect(again.soldAmount(12)).toBe('200,00 €')
+    const durand = (await local.deposits()).find((d) => d.depositIndex === 12)
+    expect(durand?.sellerAmount).toBe(178)
   })
 
   it('computes every selected deposit and shows what each seller is owed', async () => {
