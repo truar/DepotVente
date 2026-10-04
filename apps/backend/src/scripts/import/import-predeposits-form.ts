@@ -58,10 +58,11 @@ const ARTICLE_HEADERS = [
 ]
 
 // Libellés du formulaire → valeurs de l'application (types/categories.ts et
-// types/disciplines.ts). Une valeur absente des deux est une erreur : le
-// formulaire a changé et le mapping doit être revu.
+// types/disciplines.ts), pour ceux qui diffèrent autrement que par les accents
+// ou la casse : « Batons » ou « Telemark » retrouvent « Bâtons » et
+// « Télémark » tout seuls. Une valeur introuvable est une erreur : le
+// formulaire ou les listes ont changé et le mapping doit être revu.
 const CATEGORY_MAP: Record<string, string> = {
-  Batons: 'Bâtons',
   'Vêtements de ski': 'Vêtement',
 }
 const DISCIPLINE_MAP: Record<string, string> = {
@@ -190,6 +191,8 @@ function cityKey(value: string): string {
 
 const citiesByKey = new Map(cities.map((city) => [cityKey(city), city]))
 const brandsByKey = new Map(brands.map((brand) => [key(brand), brand]))
+const categoriesByKey = new Map(categories.map((category) => [key(category), category]))
+const disciplinesByKey = new Map(disciplines.map((discipline) => [key(discipline), discipline]))
 const colorsByKey = new Map(colors.map((color) => [key(color), color]))
 
 function normalizeCity(value: string): { city: string; matched: boolean } {
@@ -349,10 +352,10 @@ function readResponse(row: string[], number: number, report: Report): Response {
     if (![rawCategory, rawBrand, rawDiscipline, rawModel, rawColor, rawSize, rawPrice].some(Boolean)) continue
     const where = `${who}, article ${identificationLetter(articles.length)}`
 
-    const category = CATEGORY_MAP[rawCategory] ?? rawCategory
+    const category = categoriesByKey.get(key(CATEGORY_MAP[rawCategory] ?? rawCategory)) ?? rawCategory
     if (!categories.includes(category)) report.errors.push(`${where} : type de matériel inconnu « ${rawCategory} »`)
 
-    const discipline = DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline
+    const discipline = disciplinesByKey.get(key(DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline)) ?? rawDiscipline
     if (!disciplines.includes(discipline)) report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »`)
 
     const { brand, matched: brandMatched } = normalizeBrand(rawBrand)

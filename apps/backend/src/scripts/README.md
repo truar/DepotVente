@@ -156,8 +156,8 @@ sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée.
 | Nom / Prénom | `NOM` en majuscules / `Prénom` capitalisé |
 | Portable | chiffres seuls (`06.31.14.41.54` → `0631144154`) |
 | Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`), sinon en majuscules |
-| Type de matériel | `Batons` → `Bâtons`, `Vêtements de ski` → `Vêtement`, le reste tel quel |
-| Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste tel quel |
+| Type de matériel | `Vêtements de ski` → `Vêtement`, le reste ramené à `types/categories.ts` sans casse ni accent (`Batons` → `Bâtons`) |
+| Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste ramené à `types/disciplines.ts` sans casse ni accent (`Telemark` → `Télémark`) |
 | Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`), sinon gardée |
 | Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée |
 | Descriptif / Taille / Prix | modèle / taille / prix, tels quels |
