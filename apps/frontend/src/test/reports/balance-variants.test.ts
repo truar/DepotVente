@@ -164,4 +164,31 @@ describe('Report: the balance, variant by variant', () => {
       'Recette bourse': '51,00 €',
     })
   })
+
+  // The club buys Chloé's basket to make up for a theft: the sellers get
+  // their full price, the bourse takes no rights on it and bears the cost.
+  it('V5: what the club buys back costs the bourse, without rights', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.sales[2].buyer = 'CMR Club'
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      // The club is not a buyer: Alice and Bruno, 290 € and 3 articles.
+      "Nombre d'acheteurs": '2',
+      'Panier moyen (€)': '145,00 €',
+      'Panier moyen (articles)': '1,5',
+      // Durand 14, Martin 15 (none on the 30 € helmet), Sport Pro 0.
+      'Droits CMR': '29,00 €',
+      'Achats CMR': '230,00 €',
+      // 29 + 4 − 230.
+      'Recette bourse théorique': '-197,00 €',
+      // Sport Pro 200, Martin 180 − 15 − 2.
+      'Montant total décaissé': '489,00 €',
+      'Règlements pros': '200,00 €',
+      'Règlements particuliers': '289,00 €',
+      // 520 + 2 − 489 − 230.
+      'Recette bourse': '-197,00 €',
+    })
+  })
 })

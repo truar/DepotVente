@@ -1,4 +1,6 @@
-import { type Deposit } from '@/db'
+import type { Article, Deposit } from '@/db'
+import { db } from '@/db'
+import { isClubBuyer } from '@/utils'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 
@@ -41,6 +43,31 @@ function computeContribution(
   return { dueContributionAmount: 0, contributionStatus }
 }
 
+// The ids of the articles whose sale went to the club (« CMR »).
+async function boughtByTheClub(
+  soldArticles: Array<Article>,
+): Promise<Set<string>> {
+  const saleIds = [
+    ...new Set(soldArticles.map((article) => article.saleId as string)),
+  ]
+  const sales = await db.sales.bulkGet(saleIds)
+  const buyers = await db.contacts.bulkGet(
+    sales.map((sale) => sale?.buyerId ?? ''),
+  )
+  const clubSaleIds = new Set(
+    sales
+      .filter(
+        (sale, index) => sale && buyers[index] && isClubBuyer(buyers[index]),
+      )
+      .map((sale) => sale!.id),
+  )
+  return new Set(
+    soldArticles
+      .filter((article) => clubSaleIds.has(article.saleId as string))
+      .map((article) => article.id),
+  )
+}
+
 export function useComputeReturnMutation() {
   const depositsDb = useDepositsDb()
   const articlesDb = useArticlesDb()
@@ -49,10 +76,18 @@ export function useComputeReturnMutation() {
     if (!deposit) return
     const articles = await articlesDb.findByDepositId(depositId)
 
-    const totalSale = articles
-      .filter((article) => !!article.saleId)
+    const soldArticles = articles.filter((article) => !!article.saleId)
+    const totalSale = soldArticles.reduce(
+      (acc, article) => acc + article.price,
+      0,
+    )
+    // Ce que le club rachète pour dédommager un vol est payé au vendeur sans
+    // droits pour la bourse.
+    const boughtByClub = await boughtByTheClub(soldArticles)
+    const rightsBase = soldArticles
+      .filter((article) => !boughtByClub.has(article.id))
       .reduce((acc, article) => acc + article.price, 0)
-    const dueAmount = computeDueAmount(totalSale, deposit.type)
+    const dueAmount = computeDueAmount(rightsBase, deposit.type)
     const sellerAmount = totalSale - dueAmount
     const contributionAmount = deposit.contributionAmount
     const { dueContributionAmount, contributionStatus } = computeContribution(

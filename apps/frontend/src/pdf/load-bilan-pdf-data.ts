@@ -1,7 +1,7 @@
 import type { BilanPdfData } from './bilan-pdf'
 import type {Deposit, Sale} from '@/db';
 import {   db } from '@/db'
-import { getYear } from '@/utils'
+import { getYear, isClubBuyer } from '@/utils'
 
 function computeSaleTotal(sale: Sale): number {
   return (
@@ -131,11 +131,24 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const articlesCount = depositArticles.length
   const depositTotalAmount = depositArticles.reduce((a, x) => a + x.price, 0)
 
+  // Achats CMR: what the club bought back to make up for a theft.
+  const cmrContactIds = new Set(
+    allContacts.filter((c) => isClubBuyer(c)).map((c) => c.id),
+  )
+  const cmrPurchaseSales = sales.filter((s) => cmrContactIds.has(s.buyerId))
+  const cmrPurchaseSaleIds = new Set(cmrPurchaseSales.map((s) => s.id))
+  const cmrPurchases = cmrPurchaseSales.reduce(
+    (a, s) => a + computeSaleTotal(s),
+    0,
+  )
+
   // ===== Ventes =====
-  // A buyer refunded in full took nothing home: not a buyer, and not in the
-  // average basket.
+  // Neither the club nor a buyer refunded in full (who took nothing home)
+  // is a buyer of the bourse, nor counts in the average basket.
   const basketSales = sales.filter(
-    (s) => Math.round(computeSaleTotal(s) * 100) > 0,
+    (s) =>
+      !cmrPurchaseSaleIds.has(s.id) &&
+      Math.round(computeSaleTotal(s) * 100) > 0,
   )
   const buyersCount = new Set(basketSales.map((s) => s.buyerId)).size
   const soldArticlesCount = soldArticles.length
@@ -145,7 +158,10 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     0,
   )
   const averageBasketAmount = safeDiv(basketAmount, buyersCount)
-  const averageBasketArticles = safeDiv(soldArticlesCount, buyersCount)
+  const basketArticlesCount = soldArticles.filter(
+    (a) => a.saleId == null || !cmrPurchaseSaleIds.has(a.saleId),
+  ).length
+  const averageBasketArticles = safeDiv(basketArticlesCount, buyersCount)
   const soldArticlesRatio = safeDiv(soldArticlesCount, articlesCount)
   const depositValueRatio = safeDiv(salesTotalAmount, depositTotalAmount)
 
@@ -178,23 +194,13 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     .reduce((a, d) => a + d.contributionAmount, 0)
   const cmrRights = deposits.reduce((a, d) => a + (d.clubAmount ?? 0), 0)
 
-  // Achats CMR: sales whose buyer's last name is "CMR".
-  const cmrContactIds = new Set(
-    allContacts
-      .filter((c) => c.lastName.trim().toUpperCase() === 'CMR')
-      .map((c) => c.id),
-  )
-  const cmrPurchaseSales = sales.filter((s) => cmrContactIds.has(s.buyerId))
-  const cmrPurchases = cmrPurchaseSales.reduce(
-    (a, s) => a + computeSaleTotal(s),
-    0,
-  )
-
   // La recette théorique est ce qui est dû à la bourse : les cotisations non
   // payées y sont ajoutées (et non retranchées). Côté recette réelle elles
   // n'entrent pas du tout, donc l'écart entre les deux est le non encaissé.
+  // Les achats CMR sont une perte pour la bourse : ils sortent des deux
+  // recettes.
   const theoreticalRevenue =
-    cmrRights + paidContributions + unpaidContributions
+    cmrRights + paidContributions + unpaidContributions - cmrPurchases
 
   // ===== Détail des encaissements =====
   // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
@@ -265,8 +271,11 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // recette réelle au même titre que ce qui a déjà été décaissé. Sans cela la
   // recette gonfle de tout ce qui reste à régler aux particuliers.
   const actualRevenue =
-    totalPayments + collectedContributions - totalDisbursed -
-    unmadeIndividualChecks
+    totalPayments +
+    collectedContributions -
+    totalDisbursed -
+    unmadeIndividualChecks -
+    cmrPurchases
 
   // Différence de caisses = les écarts constatés aux contrôles, + le différé.
   // Les contrôles de caisse de retour sont comptés comme les autres : leurs
@@ -382,8 +391,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Panier moyen (articles)',
           value: num(averageBasketArticles),
-          source: 'articles vendus ÷ nb acheteurs',
-          formula: `${num(soldArticlesCount)} ÷ ${num(buyersCount)}`,
+          source: 'articles vendus (hors achats CMR) ÷ nb acheteurs',
+          formula: `${num(basketArticlesCount)} ÷ ${num(buyersCount)}`,
         },
         {
           label: "Nombre d'articles vendus",
@@ -442,15 +451,15 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Achats CMR',
           value: eur(cmrPurchases),
-          source: 'ventes dont acheteur = « CMR »',
+          source: 'ventes dont acheteur = « CMR », sans droits CMR',
           formula: `Σ total sur ${num(cmrPurchaseSales.length)} vente(s) « CMR »`,
         },
         {
           label: 'Recette bourse théorique',
           value: eur(theoreticalRevenue),
           source:
-            'droits CMR + cotisations payées (PAYE + SOLDE + DEDUITE) + non payées',
-          formula: `${eur(cmrRights)} + ${eur(paidContributions)} + ${eur(unpaidContributions)}`,
+            'droits CMR + cotisations payées (PAYE + SOLDE + DEDUITE) + non payées − achats CMR',
+          formula: `${eur(cmrRights)} + ${eur(paidContributions)} + ${eur(unpaidContributions)} − ${eur(cmrPurchases)}`,
         },
       ],
     },
@@ -521,8 +530,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Recette bourse',
           value: eur(actualRevenue),
           source:
-            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits',
-          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)}`,
+            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
+          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
         },
         {
           label: 'Différence recette théorique et réelle',

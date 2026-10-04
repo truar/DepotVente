@@ -214,6 +214,13 @@ export function numberToFrenchWords(input: number | string): string {
 // Les montants sont des euros au centime près : on les additionne en
 // centimes entiers, car 10.1 + 20.2 vaut 30.299999999999997 en virgule
 // flottante. toCents arrondit au centime le plus proche.
+// Le club lui-même achète sous le nom « CMR », pour dédommager un vendeur
+// dont l'article a été volé : ce n'est pas un acheteur de la bourse, et la
+// bourse ne prend pas de droits sur ces achats.
+export function isClubBuyer(contact: { lastName: string }): boolean {
+  return contact.lastName.trim().toUpperCase() === 'CMR'
+}
+
 export function toCents(amount: number): number {
   return Math.round(amount * 100)
 }
