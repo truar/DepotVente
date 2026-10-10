@@ -103,11 +103,54 @@ find_backup_volume() {
   return 1
 }
 
-lan_ip() {
-  local ip
-  for iface in en0 en1 en2 en3; do
-    ip="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
-    [ -n "$ip" ] && { echo "$ip"; return 0; }
+# --- network ----------------------------------------------------------------
+#
+# The address the client PCs reach the server on: it is the one written in
+# their hosts file by the USB kit, and the one reserved for this Mac on the
+# venue router. Change it here, and only here, if the venue network changes.
+SERVER_IP="${SERVER_IP:-192.168.2.8}"
+
+# Every connection with an IPv4 address, one "en6 192.168.2.8" line each, in
+# macOS's own service order (System Settings -> Network), which is the order
+# that decides which connection the Mac uses first. A list of fixed names will
+# not do: a USB-C or Thunderbolt Ethernet adapter is numbered anywhere from en4
+# to en11, and on a laptop en0 is the Wi-Fi.
+lan_addresses() {
+  local dev ip seen=" "
+  for dev in $(networksetup -listnetworkserviceorder 2>/dev/null \
+                 | sed -n 's/.*Device: \(en[0-9]*\)).*/\1/p') \
+             $(ifconfig -l 2>/dev/null | tr ' ' '\n' | grep '^en'); do
+    case "$seen" in *" $dev "*) continue ;; esac
+    seen="$seen$dev "
+    ip="$(ipconfig getifaddr "$dev" 2>/dev/null)" || continue
+    [ -n "$ip" ] && echo "$dev $ip"
   done
-  return 1
+  return 0
+}
+
+# The connection to use, as "en6 192.168.2.8": the one that carries SERVER_IP
+# when there is one, so a Wi-Fi left on cannot win over the Ethernet cable,
+# otherwise the first in service order. Fails when the Mac is on no network.
+lan_primary() {
+  local all line
+  all="$(lan_addresses)"
+  [ -n "$all" ] || return 1
+  line="$(printf '%s\n' "$all" | awk -v ip="$SERVER_IP" '$2 == ip { print; exit }')"
+  printf '%s\n' "${line:-$(printf '%s\n' "$all" | head -1)}"
+}
+
+lan_ip() {
+  local line
+  line="$(lan_primary)" || return 1
+  echo "${line#* }"
+}
+
+# "en6 (USB 10/100/1000 LAN)", "en0 (Wi-Fi)"... so the operator can tell which
+# cable or connection a line is about. Just "en6" if macOS does not name it.
+conn_label() {
+  local port
+  port="$(networksetup -listallhardwareports 2>/dev/null | awk -v dev="$1" '
+    /^Hardware Port: / { port = substr($0, 16) }
+    $0 == "Device: " dev { print port; exit }')"
+  printf '%s%s\n' "$1" "${port:+ ($port)}"
 }

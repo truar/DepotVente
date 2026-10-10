@@ -22,16 +22,13 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# shellcheck source=/dev/null
+. "$(dirname "$0")/_lib.sh"
 
-HOSTNAME_LAN="bourseauski.local"
 CERT_DIR="certs"
 ADDR_FILE="$CERT_DIR/known-addresses"
 FORCE=no
 EXTRA_ADDRS=""
-
-say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
-ok()  { printf '  \033[32m✓\033[0m %s\n' "$*"; }
-bad() { printf '  \033[31m✗\033[0m %s\n' "$*"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -57,13 +54,16 @@ ok "root CA present: $CAROOT/rootCA.pem"
 
 # --- 2. find this machine's address on the venue network --------------------
 say "Detecting LAN address"
-IP=""
-IFACE=""
-for iface in en0 en1 en2 en3; do
-  IP="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
-  [ -n "$IP" ] && { IFACE="$iface"; ok "$iface -> $IP"; break; }
-done
-[ -n "$IP" ] || { bad "no LAN address found - is the Mac on the venue network?"; exit 1; }
+PRIMARY="$(lan_primary || true)"
+[ -n "$PRIMARY" ] || { bad "no network connection found - is the Ethernet cable plugged in?"; exit 1; }
+IFACE="${PRIMARY%% *}"
+IP="${PRIMARY#* }"
+ok "$(conn_label "$IFACE") -> $IP"
+if [ "$IP" != "$SERVER_IP" ]; then
+  warn "the client PCs are set up for $SERVER_IP, not $IP"
+  info "Expected away from the venue. On site, fix the router's reservation for"
+  info "this Mac rather than the hosts file of every PC."
+fi
 
 MDNS="$(scutil --get LocalHostName 2>/dev/null || true).local"
 [ "$MDNS" = ".local" ] && MDNS=""
@@ -79,11 +79,13 @@ say "Addresses to cover"
 mkdir -p "$CERT_DIR"
 touch "$ADDR_FILE"
 
+# SERVER_IP, the address the client PCs use, is always covered, so a
+# certificate prepared at home already works at the venue.
 # Remember this address and anything passed with --add, so the certificate
 # accumulates every network the server has been prepared for instead of trading
 # one for the other. Moving between the home network and the venue router then
 # needs no re-issue at all - and no new trust on the 9 client PCs.
-for a in $IP $EXTRA_ADDRS; do
+for a in $IP $SERVER_IP $EXTRA_ADDRS; do
   grep -qxF "$a" "$ADDR_FILE" 2>/dev/null || echo "$a" >> "$ADDR_FILE"
 done
 

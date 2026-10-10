@@ -70,6 +70,24 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://localhost/ap
 [ "$code" = 200 ] && ok "The app answers on https://localhost" \
                   || problem "The app did not answer (code ${code:-none})"
 
+say "Network"
+# What matters is that SERVER_IP, the address in every client PC's hosts file,
+# is on one of this Mac's connections - whichever one, Ethernet or Wi-Fi.
+ADDRS="$(lan_addresses)"
+SERVER_DEV="$(printf '%s\n' "$ADDRS" | awk -v ip="$SERVER_IP" '$2 == ip { print $1; exit }')"
+if [ -n "$SERVER_DEV" ]; then
+  ok "$SERVER_IP is on $(conn_label "$SERVER_DEV") - the address the client PCs use"
+elif [ -z "$ADDRS" ]; then
+  problem "This Mac is on no network - the client PCs cannot reach it"
+  info "Is the Ethernet cable plugged in, and the router switched on?"
+else
+  problem "No connection has $SERVER_IP, the address the client PCs use"
+  info "Check the Ethernet cable, and the router's reservation for this Mac."
+fi
+while read -r dev ip; do
+  [ -n "$dev" ] && [ "$dev" != "$SERVER_DEV" ] && info "Also connected: $ip on $(conn_label "$dev")"
+done <<< "$ADDRS"
+
 say "Certificate"
 if [ -f certs/cert.pem ]; then
   END="$(openssl x509 -in certs/cert.pem -noout -enddate 2>/dev/null | cut -d= -f2)"
@@ -80,20 +98,15 @@ if [ -f certs/cert.pem ]; then
     info "Fix: ./scripts/prepare-server.sh"
   fi
 
-  # The most likely day-of failure: DHCP moved the Mac and the cert no longer
-  # covers its address, so every client hosts entry points somewhere untrusted.
-  IP="$(lan_ip || echo '')"
-  if [ -n "$IP" ]; then
-    # The entry must end at the address, or 192.168.2.8 would look covered by
-    # a certificate that only carries 192.168.2.80.
-    if openssl x509 -in certs/cert.pem -noout -text 2>/dev/null | grep -qE "IP Address:${IP//./\\.}(,|$)"; then
-      ok "Covers this Mac's current address ($IP)"
-    else
-      problem "This Mac's address is now $IP, which the certificate does not cover"
-      info "The address changed. Fix: ./scripts/prepare-server.sh"
-      info "(one certificate can carry several networks - it keeps the old ones)"
-      info "then update the hosts file on the client PCs."
-    fi
+  # The client PCs reach the server as SERVER_IP, so that is the address the
+  # certificate has to carry, whatever this Mac's other connections are. The
+  # entry must end at the address, or 192.168.2.8 would look covered by a
+  # certificate that only carries 192.168.2.80.
+  if openssl x509 -in certs/cert.pem -noout -text 2>/dev/null | grep -qE "IP Address:${SERVER_IP//./\\.}(,|$)"; then
+    ok "Covers $SERVER_IP, the address the client PCs use"
+  else
+    problem "The certificate does not cover $SERVER_IP, the address the client PCs use"
+    info "Fix: ./scripts/prepare-server.sh"
   fi
 
   DISK="$(openssl x509 -in certs/cert.pem -noout -fingerprint -sha256 2>/dev/null | cut -d= -f2)"
