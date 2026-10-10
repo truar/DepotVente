@@ -208,8 +208,9 @@ describe('Report: the balance, variant by variant', () => {
       // 4 paid + 2 unpaid + 62 rights − 0 bought by the club.
       'Recette bourse théorique': '68,00 €',
       'Différence recette théorique et réelle': '-2,00 €',
-      'Cotisations non payées (différence)': '2,00 €',
-      // −2 − 0 + 0 + 2.
+      // What the takings lack, as a negative amount.
+      'Cotisations non payées (différence)': '-2,00 €',
+      // −2 − (0 + 0 − 2).
       'Solde différence': '0,00 €',
     })
   })
@@ -230,8 +231,9 @@ describe('Report: the balance, variant by variant', () => {
       // 370 + 2 − 456.
       'Recette bourse': '-84,00 €',
       'Différence recette théorique et réelle': '-150,00 €',
-      'Paiements différés': '150,00 €',
-      // −150 − 0 + 150.
+      // What the takings lack, as a negative amount.
+      'Paiements différés': '-150,00 €',
+      // −150 − (0 − 150 + 0).
       'Solde différence': '0,00 €',
     })
   })

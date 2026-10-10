@@ -161,8 +161,7 @@ export type BilanPdfData = {
     /** Espèces réellement comptées aux caisses de vente */
     totalCash: number
     totalChecks: number
-    totalDeferred: number
-    /** Total des paiements (cartes + espèces + chèques + différé) */
+    /** Total des paiements (cartes + espèces + chèques, sans le différé) */
     totalPayments: number
     /** Règlements pros */
     proPayments: number
@@ -176,9 +175,13 @@ export type BilanPdfData = {
     actualRevenue: number
     /** Différence recette théorique et réelle */
     theoreticalVsActualDiff: number
-    /** Différence de caisses */
+    /** Différence de caisses (négative quand une caisse est courte) */
     cashRegisterDiff: number
-    /** Solde différence */
+    /** Paiements différés, en négatif : ce qui manque à la recette bourse */
+    deferredGap: number
+    /** Cotisations non payées, en négatif : ce qui manque à la recette bourse */
+    unpaidGap: number
+    /** Solde différence : l'écart que les lignes ci-dessus n'expliquent pas */
     diffBalance: number
   }
 }
@@ -350,10 +353,10 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
               <Amount value={collection.cashRegisterDiff} />
             </Line>
             <Line label="Paiements différés" indent compact>
-              <Amount value={collection.totalDeferred} />
+              <Amount value={collection.deferredGap} />
             </Line>
             <Line label="Cotisations non payées" indent compact>
-              <Amount value={rights.unpaidContributions} />
+              <Amount value={collection.unpaidGap} />
             </Line>
             <Line label="Solde différence" indent compact>
               <Amount value={collection.diffBalance} />

@@ -121,7 +121,7 @@ describe('Report: the bourse balance', () => {
       totalCards: 60,
       totalCash: 230,
       totalChecks: 0,
-      totalDeferred: 0,
+      deferredGap: 0,
       totalPayments: 290,
     })
     expect(data.sales.totalAmount).toBe(290)

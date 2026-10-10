@@ -295,21 +295,25 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     -cmrPurchases,
   )
 
-  // Différence de caisses = les écarts constatés aux contrôles. Les contrôles
-  // de caisse de retour sont comptés comme les autres : leurs espèces entrent
-  // dans la recette réelle ci-dessus, donc leur écart explique bien un manque
-  // ou un excédent réel. Les paiements différés et les cotisations non payées,
-  // dus à la bourse mais pas encore encaissés, expliquent le reste de l'écart.
-  // Le solde ne garde que ce qu'il reste à expliquer : 0 quand tout est
-  // expliqué.
+  // Chaque ligne de différence dit ce qui manque à la recette bourse par
+  // rapport à la théorique : négative quand il manque de l'argent.
+  // Différence de caisses = les écarts constatés aux contrôles (une caisse
+  // comptée courte est négative). Les contrôles de caisse de retour sont
+  // comptés comme les autres : leurs espèces entrent dans la recette réelle
+  // ci-dessus, donc leur écart explique bien un manque ou un excédent réel.
+  // Les paiements différés et les cotisations non payées, dus à la bourse mais
+  // pas encore encaissés, y manquent : ils figurent en négatif. Le solde est
+  // ce que ces lignes n'expliquent pas : 0 quand tout est expliqué.
   const controlsDiff = sumOf(cashRegisterControls, (c) => c.difference)
   const cashRegisterDiff = controlsDiff
+  const deferredGap = add(-totalDeferred)
+  const unpaidGap = add(-unpaidContributions)
   const theoreticalVsActualDiff = add(actualRevenue, -theoreticalRevenue)
   const diffBalance = add(
     theoreticalVsActualDiff,
     -cashRegisterDiff,
-    totalDeferred,
-    unpaidContributions,
+    -deferredGap,
+    -unpaidGap,
   )
 
   const data: BilanPdfData = {
@@ -341,7 +345,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       totalCards,
       totalCash,
       totalChecks,
-      totalDeferred,
       totalPayments,
       proPayments,
       individualPayments,
@@ -350,6 +353,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       actualRevenue,
       theoreticalVsActualDiff,
       cashRegisterDiff,
+      deferredGap,
+      unpaidGap,
       diffBalance,
     },
   }
@@ -561,25 +566,26 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         },
         {
           label: 'Paiements différés',
-          value: eur(totalDeferred),
-          source: 'Σ sale.deferredAmount — dus, pas encore encaissés',
-          formula: `Σ deferredAmount sur ${num(sales.length)} ventes`,
+          value: eur(deferredGap),
+          source:
+            '− Σ sale.deferredAmount : dus, pas encore encaissés, ils manquent à la recette bourse',
+          formula: `− Σ deferredAmount sur ${num(sales.length)} ventes`,
         },
         {
-          // Same amount as « Cotisations non payées » above; named apart so
-          // the audit keeps one row per label.
+          // « Cotisations non payées » above, as what the takings lack; named
+          // apart so the audit keeps one row per label.
           label: 'Cotisations non payées (différence)',
-          value: eur(unpaidContributions),
+          value: eur(unpaidGap),
           source:
-            'contributionAmount (A_PAYER) — dues, dans la recette théorique, jamais encaissées',
-          formula: `Σ contributionAmount des dépôts A_PAYER`,
+            '− contributionAmount (A_PAYER) : dues, dans la recette théorique, jamais encaissées',
+          formula: `− Σ contributionAmount des dépôts A_PAYER`,
         },
         {
           label: 'Solde différence',
           value: eur(diffBalance),
           source:
-            'diff recette − différence de caisses + paiements différés + cotisations non payées',
-          formula: `${eur(theoreticalVsActualDiff)} − ${eur(cashRegisterDiff)} + ${eur(totalDeferred)} + ${eur(unpaidContributions)}`,
+            'diff recette − (différence de caisses + paiements différés + cotisations non payées)',
+          formula: `${eur(theoreticalVsActualDiff)} − (${eur(cashRegisterDiff)} + ${eur(deferredGap)} + ${eur(unpaidGap)})`,
         },
       ],
     },
