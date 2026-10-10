@@ -147,7 +147,7 @@ Two paths, both worth doing:
 - **Walk-in**: type the seller and the articles by hand.
 
 Watch: the deposit number follows the register, the contribution is 2 € per
-started block of ten articles, and **the sheet must be printed before saving** —
+started block of five articles, and **the sheet must be printed before saving** —
 the screen refuses otherwise.
 
 ### c. Till — _Faire une vente_

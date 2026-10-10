@@ -184,13 +184,13 @@ describe('Screen: correct a registered deposit', () => {
       Array.from({ length: 10 }, () => ({})),
     )
     const page = await depositEditPage(deposit.id)
-    expect(page.contributionAmount()).toBe(2)
+    expect(page.contributionAmount()).toBe(4)
 
     await page.addArticle()
     await page.fillArticle(10, boots)
     expect(page.articleCodes().at(-1)).toBe('12 K')
     expect(page.articleCount()).toBe(11)
-    expect(page.contributionAmount()).toBe(4)
+    expect(page.contributionAmount()).toBe(6)
 
     await page.save()
     await page.savedToast(12)
@@ -216,7 +216,7 @@ describe('Screen: correct a registered deposit', () => {
     expect(reopened.isArticleDeleted(10)).toBe(false)
     expect(reopened.articleBadge(10)).toBeNull()
     expect(reopened.articleCount()).toBe(11)
-    expect(reopened.contributionAmount()).toBe(4)
+    expect(reopened.contributionAmount()).toBe(6)
   })
 
   // On a professional's fiche too: the article is added at the desk, in

@@ -160,7 +160,7 @@ describe('Deposit created from a predeposit of 27 articles', () => {
       ['Z', '12 Z', `${YEAR} 12Z`],
       ['AA', '12 AA', `${YEAR} 12AA`],
     ])
-    expect(form.contributionAmount).toBe(6)
+    expect(form.contributionAmount).toBe(12)
     const saved = await local.articles()
     expect(saved).toHaveLength(27)
     expect(saved.find((a) => a.identificationLetter === 'AA')).toMatchObject({

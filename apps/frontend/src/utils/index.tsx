@@ -80,8 +80,9 @@ export function getYear() {
   return new Date().getFullYear()
 }
 
+// 2 € par tranche de 5 articles commencée : 1 à 5 articles 2 €, 6 à 10 4 €…
 export function computeContributionAmount(articleCount: number) {
-  return (Math.floor((articleCount - 1) / 10) + 1) * 2
+  return (Math.floor((articleCount - 1) / 5) + 1) * 2
 }
 
 export function numberToFrenchWords(input: number | string): string {

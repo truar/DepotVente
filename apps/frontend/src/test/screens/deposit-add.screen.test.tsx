@@ -321,7 +321,7 @@ describe('Screen: the deposit sheet must be printed before saving', () => {
   })
 })
 
-// The contribution is 2 € per started block of ten articles, and follows
+// The contribution is 2 € per started block of five articles, and follows
 // the count as rows are removed or brought back. Deleted rows do not
 // count.
 describe('Screen: the contribution follows the number of articles', () => {
@@ -334,23 +334,45 @@ describe('Screen: the contribution follows the number of articles', () => {
     )
   })
 
-  it('charges 4 € for eleven articles, 2 € once one is removed, 4 € again when it is restored', async () => {
+  it('charges 6 € for eleven articles, 4 € once one is removed, 6 € again when it is restored', async () => {
     const page = await depositAddPage()
     await page.loadPredeposit('Martin Lucie')
 
     expect(page.articleCount()).toBe(11)
-    expect(page.contributionAmount()).toBe(4)
+    expect(page.contributionAmount()).toBe(6)
 
     // Articles from a predeposit are soft-deleted: the row stays, greyed
     // out, and keeps its letter.
     await page.removeArticle(10)
     expect(page.articleCount()).toBe(10)
-    expect(page.contributionAmount()).toBe(2)
+    expect(page.contributionAmount()).toBe(4)
     expect(page.articleCodes()).toHaveLength(11)
 
     await page.restoreArticle(10)
     expect(page.articleCount()).toBe(11)
+    expect(page.contributionAmount()).toBe(6)
+  })
+
+  // Five articles fill the first block; the sixth starts the second.
+  it('charges 2 € up to five articles, and 4 € from the sixth', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+
+    for (const index of [10, 9, 8, 7, 6]) await page.removeArticle(index)
+    expect(page.articleCount()).toBe(6)
     expect(page.contributionAmount()).toBe(4)
+
+    await page.removeArticle(5)
+    expect(page.articleCount()).toBe(5)
+    expect(page.contributionAmount()).toBe(2)
+
+    for (const index of [4, 3, 2, 1]) await page.removeArticle(index)
+    expect(page.articleCount()).toBe(1)
+    expect(page.contributionAmount()).toBe(2)
+
+    await page.restoreArticle(5)
+    expect(page.articleCount()).toBe(2)
+    expect(page.contributionAmount()).toBe(2)
   })
 
   // Professionals and the sellers the club exempts pay nothing, however
@@ -359,7 +381,7 @@ describe('Screen: the contribution follows the number of articles', () => {
   it('charges nothing for "Gratuit" even as articles are added, and charges again once back to "Payé"', async () => {
     const page = await depositAddPage()
     await page.loadPredeposit('Martin Lucie')
-    expect(page.contributionAmount()).toBe(4)
+    expect(page.contributionAmount()).toBe(6)
 
     await page.chooseStatus('Gratuit')
     expect(page.contributionAmount()).toBe(0)
@@ -369,7 +391,7 @@ describe('Screen: the contribution follows the number of articles', () => {
     expect(page.contributionAmount()).toBe(0)
 
     await page.chooseStatus('Payé')
-    expect(page.contributionAmount()).toBe(4)
+    expect(page.contributionAmount()).toBe(6)
   })
 
   // Saved as the screen showed it: a "Pro" deposit owes nothing.
@@ -384,7 +406,7 @@ describe('Screen: the contribution follows the number of articles', () => {
     expect(page.contributionAmount()).toBe(0)
 
     await page.chooseStatus('A payer')
-    expect(page.contributionAmount()).toBe(4)
+    expect(page.contributionAmount()).toBe(6)
 
     await page.chooseStatus('Pro')
     await page.addArticle()
@@ -587,7 +609,7 @@ describe('Screen: article rows', () => {
     await page.fillArticle(26, validArticle)
     expect(page.articleCodes().slice(-2)).toEqual(['1001 Z', '1001 AA'])
     expect(page.articleCount()).toBe(27)
-    expect(page.contributionAmount()).toBe(6)
+    expect(page.contributionAmount()).toBe(12)
 
     await page.chooseStatus('Payé')
     await page.printSummary()
