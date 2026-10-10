@@ -9,6 +9,8 @@ const deskScreens = [
   '/deposits/add',
   '/deposits/articles',
   '/deposits/cash-register-control',
+  '/deposits/cash-register-controls',
+  '/deposits/cash-register-controls/1000',
   '/deposits/listing',
   '/deposits/predeposits',
   '/deposits/pros',
@@ -17,6 +19,8 @@ const deskScreens = [
   '/sales/add',
   '/sales/listing',
   '/sales/sales-control',
+  '/sales/cash-register-controls',
+  '/sales/cash-register-controls/1000',
   '/sales/3f1c0d0e-0000-4000-8000-000000000000/edit',
   '/returns',
   '/returns/checks',
@@ -24,12 +28,14 @@ const deskScreens = [
   '/returns/listing',
   '/returns/pros',
   '/returns/cash-register-control',
+  '/returns/cash-register-controls',
+  '/returns/cash-register-controls/1000',
 ]
 
 describe('Screen: the desks on a computer without a till number', () => {
-  // An administrator, so that the one admin-only screen of the list
-  // (/returns/cash-register-control) is turned away for the till number and
-  // nothing else.
+  // An administrator, so that the admin-only screens of the list
+  // (/returns/cash-register-control, the lists of counts) are turned away for
+  // the till number and nothing else.
   beforeEach(() => {
     signedInAs('ADMIN')
   })

@@ -9,8 +9,7 @@ import {
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { type CashRegisterControl, type Workstation } from '@/db.ts'
-import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { type CashRegisterControl } from '@/db.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { fromCents, getYear, toCents } from '@/utils'
 import { CashCount } from '@/components/forms/CashCount.tsx'
@@ -36,31 +35,39 @@ import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
  * espèces) et ne diffèrent que par le montant théorique attendu, calculé par
  * l'écran appelant : les cotisations PAYE de ses propres dépôts côté dépôt,
  * les cotisations SOLDE qu'elle a encaissées côté retour.
+ *
+ * La caisse comptée est celle du poste pour le caissier, celle choisie dans
+ * la liste des contrôles pour l'administrateur.
  */
 export type CashRegisterControlScreenProps = {
   type: CashRegisterControl['type']
+  cashRegisterId: number
   pageTitle: string
   pdfTitle: string
   theoreticalAmount: number
+  backLabel?: string
 }
 
 export function CashRegisterControlScreen(
   props: CashRegisterControlScreenProps,
 ) {
-  const { type, pageTitle, pdfTitle, theoreticalAmount } = props
-  const [workstation] = useWorkstation()
+  const {
+    type,
+    cashRegisterId,
+    pageTitle,
+    pdfTitle,
+    theoreticalAmount,
+    backLabel = 'Retour au menu',
+  } = props
   const navigate = useNavigate()
   const [backOpen, setBackOpen] = useState(false)
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   const cashRegisterControl = useLiveQuery(
     () =>
-      cashRegisterControlsDb.findByCashRegisterIdAndType(
-        workstation.incrementStart,
-        type,
-      ),
-    [workstation.incrementStart, type],
+      cashRegisterControlsDb.findByCashRegisterIdAndType(cashRegisterId, type),
+    [cashRegisterId, type],
   )
-  if (!workstation || !workstation.incrementStart) return null
+  if (!cashRegisterId) return null
   return (
     <>
       <Page
@@ -72,13 +79,16 @@ export function CashRegisterControlScreen(
               setBackOpen(true)
             }}
           >
-            Retour au menu
+            {backLabel}
           </Link>
         }
         title={pageTitle}
       >
+        {/* Un formulaire par caisse : rien du comptage d'une autre caisse ne
+            reste affiché quand on passe de l'une à l'autre. */}
         <CashRegisterControlForm
-          workstation={workstation}
+          key={cashRegisterId}
+          cashRegisterId={cashRegisterId}
           type={type}
           pdfTitle={pdfTitle}
           theoreticalAmount={theoreticalAmount}
@@ -97,7 +107,7 @@ export function CashRegisterControlScreen(
 }
 
 type CashRegisterControlFormProps = {
-  workstation: Workstation
+  cashRegisterId: number
   type: CashRegisterControl['type']
   pdfTitle: string
   theoreticalAmount: number
@@ -106,7 +116,7 @@ type CashRegisterControlFormProps = {
 
 function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   const {
-    workstation,
+    cashRegisterId,
     type,
     pdfTitle,
     theoreticalAmount,
@@ -116,7 +126,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
   const methods = useForm<CashRegisterControlFormType>({
     resolver: typedZodResolver(CashRegisterControlFormSchema),
     defaultValues: {
-      cashRegisterId: workstation.incrementStart,
+      cashRegisterId,
       realAmount: 0,
       theoreticalAmount: 0,
       amounts: [

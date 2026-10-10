@@ -7,6 +7,7 @@ import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import {
   ChevronLeft,
   ClipboardList,
+  ListChecks,
   ReceiptEuro,
   ShoppingBasket,
 } from 'lucide-react'
@@ -71,13 +72,24 @@ export function RouteComponent() {
               variant="blue"
             />
             {user.role === 'ADMIN' && (
-              <ClickableCard
-                onClick={() => navigate({ to: '/sales/listing' })}
-                icon={<ClipboardList className="w-8 h-8 text-blue-600" />}
-                title="Ventes"
-                description="Gérer les ventes"
-                variant="blue"
-              />
+              <>
+                <ClickableCard
+                  onClick={() => navigate({ to: '/sales/listing' })}
+                  icon={<ClipboardList className="w-8 h-8 text-blue-600" />}
+                  title="Ventes"
+                  description="Gérer les ventes"
+                  variant="blue"
+                />
+                <ClickableCard
+                  onClick={() =>
+                    navigate({ to: '/sales/cash-register-controls' })
+                  }
+                  icon={<ListChecks className="w-8 h-8 text-blue-600" />}
+                  title="Contrôles caisses"
+                  description="Toutes les caisses"
+                  variant="blue"
+                />
+              </>
             )}
           </div>
         </div>

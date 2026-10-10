@@ -15,9 +15,14 @@ export const SECTIONS = {
 } as const
 export type Section = keyof typeof SECTIONS
 
-export async function salesControlPage() {
-  const { user: u, router } = await openScreen('/sales/sales-control')
-  await screen.findByRole('heading', { name: 'Contrôler la caisse' })
+// Opened by the cashier on their own till, or by an administrator on any
+// till from the list of counts (/sales/cash-register-controls/3000).
+export async function salesControlPage(
+  route = '/sales/sales-control',
+  title = 'Contrôler la caisse',
+) {
+  const { user: u, router } = await openScreen(route)
+  await screen.findByRole('heading', { name: title })
   const drawer = cashCount(u)
 
   const page = {

@@ -184,7 +184,8 @@ export type CashRegisterControl = {
   cash001: number
   comment?: string | null
   createdAt: Date
-  updatedAt: Date
+  // Affiché dans la liste des contrôles : voir StoredDate.
+  updatedAt: StoredDate
   deletedAt: Date | null
 }
 
@@ -219,10 +220,11 @@ export type WorkstationMetadata = {
 //   - une chaîne ISO quand il arrive par la synchro : sync-service fait un
 //     `bulkPut` du JSON brut du serveur, sans réhydrater les dates.
 //
-// Le type le dit pour `collectedAt`, seul champ date réellement lu et formaté
-// par un écran. Les autres (`createdAt`, `updatedAt`, `returnedCalculationDate`)
-// ont la même dualité mais ne sont aujourd'hui que testés contre null : si l'un
-// d'eux se met à être formaté, il doit passer par `toIsoString` lui aussi.
+// Le type le dit pour `collectedAt` et pour le `updatedAt` des contrôles de
+// caisse, seuls champs date réellement lus et formatés par un écran. Les autres
+// (`createdAt`, `updatedAt`, `returnedCalculationDate`) ont la même dualité
+// mais ne sont aujourd'hui que testés contre null : si l'un d'eux se met à être
+// formaté, il doit passer par `toIsoString` lui aussi.
 export type StoredDate = Date | string
 
 export function toIsoString(

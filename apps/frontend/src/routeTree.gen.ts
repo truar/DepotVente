@@ -45,7 +45,13 @@ import { Route as DepositsListingRouteImport } from './routes/deposits/listing'
 import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
 import { Route as DepositsArticlesRouteImport } from './routes/deposits/articles'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
+import { Route as SalesCashRegisterControlsIndexRouteImport } from './routes/sales/cash-register-controls/index'
+import { Route as ReturnsCashRegisterControlsIndexRouteImport } from './routes/returns/cash-register-controls/index'
+import { Route as DepositsCashRegisterControlsIndexRouteImport } from './routes/deposits/cash-register-controls/index'
+import { Route as SalesCashRegisterControlsCashRegisterIdRouteImport } from './routes/sales/cash-register-controls/$cashRegisterId'
 import { Route as SalesSaleIdEditRouteImport } from './routes/sales/$saleId.edit'
+import { Route as ReturnsCashRegisterControlsCashRegisterIdRouteImport } from './routes/returns/cash-register-controls/$cashRegisterId'
+import { Route as DepositsCashRegisterControlsCashRegisterIdRouteImport } from './routes/deposits/cash-register-controls/$cashRegisterId'
 import { Route as DepositsDepositIdEditRouteImport } from './routes/deposits/$depositId.edit'
 
 const LoginRoute = LoginRouteImport.update({
@@ -235,11 +241,47 @@ const DepositsAddRoute = DepositsAddRouteImport.update({
   path: '/deposits/add',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesCashRegisterControlsIndexRoute =
+  SalesCashRegisterControlsIndexRouteImport.update({
+    id: '/sales/cash-register-controls/',
+    path: '/sales/cash-register-controls/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ReturnsCashRegisterControlsIndexRoute =
+  ReturnsCashRegisterControlsIndexRouteImport.update({
+    id: '/returns/cash-register-controls/',
+    path: '/returns/cash-register-controls/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DepositsCashRegisterControlsIndexRoute =
+  DepositsCashRegisterControlsIndexRouteImport.update({
+    id: '/deposits/cash-register-controls/',
+    path: '/deposits/cash-register-controls/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SalesCashRegisterControlsCashRegisterIdRoute =
+  SalesCashRegisterControlsCashRegisterIdRouteImport.update({
+    id: '/sales/cash-register-controls/$cashRegisterId',
+    path: '/sales/cash-register-controls/$cashRegisterId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SalesSaleIdEditRoute = SalesSaleIdEditRouteImport.update({
   id: '/sales/$saleId/edit',
   path: '/sales/$saleId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReturnsCashRegisterControlsCashRegisterIdRoute =
+  ReturnsCashRegisterControlsCashRegisterIdRouteImport.update({
+    id: '/returns/cash-register-controls/$cashRegisterId',
+    path: '/returns/cash-register-controls/$cashRegisterId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DepositsCashRegisterControlsCashRegisterIdRoute =
+  DepositsCashRegisterControlsCashRegisterIdRouteImport.update({
+    id: '/deposits/cash-register-controls/$cashRegisterId',
+    path: '/deposits/cash-register-controls/$cashRegisterId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DepositsDepositIdEditRoute = DepositsDepositIdEditRouteImport.update({
   id: '/deposits/$depositId/edit',
   path: '/deposits/$depositId/edit',
@@ -284,7 +326,13 @@ export interface FileRoutesByFullPath {
   '/sales': typeof SalesIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
+  '/deposits/cash-register-controls/$cashRegisterId': typeof DepositsCashRegisterControlsCashRegisterIdRoute
+  '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
+  '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/cash-register-controls': typeof DepositsCashRegisterControlsIndexRoute
+  '/returns/cash-register-controls': typeof ReturnsCashRegisterControlsIndexRoute
+  '/sales/cash-register-controls': typeof SalesCashRegisterControlsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -324,7 +372,13 @@ export interface FileRoutesByTo {
   '/sales': typeof SalesIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
+  '/deposits/cash-register-controls/$cashRegisterId': typeof DepositsCashRegisterControlsCashRegisterIdRoute
+  '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
+  '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/cash-register-controls': typeof DepositsCashRegisterControlsIndexRoute
+  '/returns/cash-register-controls': typeof ReturnsCashRegisterControlsIndexRoute
+  '/sales/cash-register-controls': typeof SalesCashRegisterControlsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -365,7 +419,13 @@ export interface FileRoutesById {
   '/sales/': typeof SalesIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/deposits/$depositId/edit': typeof DepositsDepositIdEditRoute
+  '/deposits/cash-register-controls/$cashRegisterId': typeof DepositsCashRegisterControlsCashRegisterIdRoute
+  '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
+  '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/cash-register-controls/': typeof DepositsCashRegisterControlsIndexRoute
+  '/returns/cash-register-controls/': typeof ReturnsCashRegisterControlsIndexRoute
+  '/sales/cash-register-controls/': typeof SalesCashRegisterControlsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -407,7 +467,13 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/deposits/$depositId/edit'
+    | '/deposits/cash-register-controls/$cashRegisterId'
+    | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
+    | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/cash-register-controls'
+    | '/returns/cash-register-controls'
+    | '/sales/cash-register-controls'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -447,7 +513,13 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/deposits/$depositId/edit'
+    | '/deposits/cash-register-controls/$cashRegisterId'
+    | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
+    | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/cash-register-controls'
+    | '/returns/cash-register-controls'
+    | '/sales/cash-register-controls'
   id:
     | '__root__'
     | '/'
@@ -487,7 +559,13 @@ export interface FileRouteTypes {
     | '/sales/'
     | '/settings/'
     | '/deposits/$depositId/edit'
+    | '/deposits/cash-register-controls/$cashRegisterId'
+    | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
+    | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/cash-register-controls/'
+    | '/returns/cash-register-controls/'
+    | '/sales/cash-register-controls/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -528,7 +606,13 @@ export interface RootRouteChildren {
   SalesIndexRoute: typeof SalesIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   DepositsDepositIdEditRoute: typeof DepositsDepositIdEditRoute
+  DepositsCashRegisterControlsCashRegisterIdRoute: typeof DepositsCashRegisterControlsCashRegisterIdRoute
+  ReturnsCashRegisterControlsCashRegisterIdRoute: typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   SalesSaleIdEditRoute: typeof SalesSaleIdEditRoute
+  SalesCashRegisterControlsCashRegisterIdRoute: typeof SalesCashRegisterControlsCashRegisterIdRoute
+  DepositsCashRegisterControlsIndexRoute: typeof DepositsCashRegisterControlsIndexRoute
+  ReturnsCashRegisterControlsIndexRoute: typeof ReturnsCashRegisterControlsIndexRoute
+  SalesCashRegisterControlsIndexRoute: typeof SalesCashRegisterControlsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -785,11 +869,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsAddRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales/cash-register-controls/': {
+      id: '/sales/cash-register-controls/'
+      path: '/sales/cash-register-controls'
+      fullPath: '/sales/cash-register-controls'
+      preLoaderRoute: typeof SalesCashRegisterControlsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns/cash-register-controls/': {
+      id: '/returns/cash-register-controls/'
+      path: '/returns/cash-register-controls'
+      fullPath: '/returns/cash-register-controls'
+      preLoaderRoute: typeof ReturnsCashRegisterControlsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deposits/cash-register-controls/': {
+      id: '/deposits/cash-register-controls/'
+      path: '/deposits/cash-register-controls'
+      fullPath: '/deposits/cash-register-controls'
+      preLoaderRoute: typeof DepositsCashRegisterControlsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales/cash-register-controls/$cashRegisterId': {
+      id: '/sales/cash-register-controls/$cashRegisterId'
+      path: '/sales/cash-register-controls/$cashRegisterId'
+      fullPath: '/sales/cash-register-controls/$cashRegisterId'
+      preLoaderRoute: typeof SalesCashRegisterControlsCashRegisterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sales/$saleId/edit': {
       id: '/sales/$saleId/edit'
       path: '/sales/$saleId/edit'
       fullPath: '/sales/$saleId/edit'
       preLoaderRoute: typeof SalesSaleIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns/cash-register-controls/$cashRegisterId': {
+      id: '/returns/cash-register-controls/$cashRegisterId'
+      path: '/returns/cash-register-controls/$cashRegisterId'
+      fullPath: '/returns/cash-register-controls/$cashRegisterId'
+      preLoaderRoute: typeof ReturnsCashRegisterControlsCashRegisterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deposits/cash-register-controls/$cashRegisterId': {
+      id: '/deposits/cash-register-controls/$cashRegisterId'
+      path: '/deposits/cash-register-controls/$cashRegisterId'
+      fullPath: '/deposits/cash-register-controls/$cashRegisterId'
+      preLoaderRoute: typeof DepositsCashRegisterControlsCashRegisterIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deposits/$depositId/edit': {
@@ -843,7 +969,17 @@ const rootRouteChildren: RootRouteChildren = {
   SalesIndexRoute: SalesIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   DepositsDepositIdEditRoute: DepositsDepositIdEditRoute,
+  DepositsCashRegisterControlsCashRegisterIdRoute:
+    DepositsCashRegisterControlsCashRegisterIdRoute,
+  ReturnsCashRegisterControlsCashRegisterIdRoute:
+    ReturnsCashRegisterControlsCashRegisterIdRoute,
   SalesSaleIdEditRoute: SalesSaleIdEditRoute,
+  SalesCashRegisterControlsCashRegisterIdRoute:
+    SalesCashRegisterControlsCashRegisterIdRoute,
+  DepositsCashRegisterControlsIndexRoute:
+    DepositsCashRegisterControlsIndexRoute,
+  ReturnsCashRegisterControlsIndexRoute: ReturnsCashRegisterControlsIndexRoute,
+  SalesCashRegisterControlsIndexRoute: SalesCashRegisterControlsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

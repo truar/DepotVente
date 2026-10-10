@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   FileBox,
   FileCog,
+  ListChecks,
   ReceiptEuro,
   SearchCheck,
   SquarePen,
@@ -101,6 +102,15 @@ export function RouteComponent() {
                   icon={<SquarePen className="w-8 h-8 text-blue-600" />}
                   title="Article"
                   description="Modifier un article"
+                  variant="blue"
+                />
+                <ClickableCard
+                  onClick={() =>
+                    navigate({ to: '/deposits/cash-register-controls' })
+                  }
+                  icon={<ListChecks className="w-8 h-8 text-blue-600" />}
+                  title="Contrôles caisses"
+                  description="Toutes les caisses"
                   variant="blue"
                 />
               </>

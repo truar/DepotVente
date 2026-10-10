@@ -4,7 +4,13 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
-import { ChevronLeft, FileBox, ReceiptEuro, ShoppingBasket } from 'lucide-react'
+import {
+  ChevronLeft,
+  FileBox,
+  ListChecks,
+  ReceiptEuro,
+  ShoppingBasket,
+} from 'lucide-react'
 import PublicLayout from '@/components/PublicLayout'
 import { useAuthStore } from '@/stores/authStore.ts'
 import { Button } from '@/components/ui/button.tsx'
@@ -90,6 +96,17 @@ export function RouteComponent() {
                 icon={<FileBox className="w-8 h-8 text-blue-600" />}
                 title="Chèques"
                 description="Voir les chèques retours"
+                variant="blue"
+              />
+            )}
+            {user.role === 'ADMIN' && (
+              <ClickableCard
+                onClick={() =>
+                  navigate({ to: '/returns/cash-register-controls' })
+                }
+                icon={<ListChecks className="w-8 h-8 text-blue-600" />}
+                title="Contrôles caisses"
+                description="Toutes les caisses"
                 variant="blue"
               />
             )}
