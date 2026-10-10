@@ -283,7 +283,7 @@ export const app = {
     await mutate(form)
   },
 
-  // What the return listing's "Lancer le calcul des retours" does for one
+  // What the return listing's "Calculer tous les retours" does for one
   // deposit: read its sold articles, work out the club's share, the
   // contribution still due and what is left for the seller.
   async computeReturn(depositId: string) {

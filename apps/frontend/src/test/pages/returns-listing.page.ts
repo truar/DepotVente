@@ -83,8 +83,23 @@ export async function returnsListingPage() {
     },
     async computeSelected() {
       await u.click(
-        screen.getByRole('button', { name: 'Lancer le calcul des retours' }),
+        screen.getByRole('button', { name: 'Calculer la sélection' }),
       )
+    },
+    // "Calculer tous les retours" asks first, naming how many fiches it
+    // is about to compute.
+    async computeAll() {
+      await u.click(
+        screen.getByRole('button', { name: 'Calculer tous les retours' }),
+      )
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
     },
   }
   return page

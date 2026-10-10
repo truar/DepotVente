@@ -228,8 +228,8 @@ export async function computeTheReturns() {
   await givenWorkstation(7000)
   const page = await returnsListingPage()
   await waitFor(() => expect(page.counters().toCompute).toBe(4))
-  await page.selectAll()
-  await page.computeSelected()
+  const question = await page.computeAll()
+  await question.confirm()
   await waitFor(() => expect(page.counters().toCompute).toBe(0))
 }
 

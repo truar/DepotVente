@@ -76,6 +76,58 @@ describe('Screen: the return listing', () => {
     expect(durand?.sellerAmount).toBe(178)
   })
 
+  // The listing shows ten fiches a page and « Tous sélectionner » only ticks
+  // those: the evening's button computes every fiche in the base at once,
+  // except the one whose cheque is already written.
+  it('computes every fiche at once, beyond the page on screen', async () => {
+    for (let depositIndex = 20; depositIndex < 30; depositIndex++) {
+      await givenDeposit(
+        { depositIndex, seller: { lastName: `Vendeur ${depositIndex}` } },
+        [{ price: 10, saleId: 'a-sale', status: 'SOLD' }],
+      )
+    }
+    await givenDeposit(
+      {
+        depositIndex: 40,
+        signatory: 'Léa Petit',
+        checkId: '1042',
+        seller: { lastName: 'Petit', firstName: 'Léa' },
+      },
+      [{ price: 50, saleId: 'a-sale', status: 'SOLD' }],
+    )
+    const page = await returnsListingPage()
+    await waitFor(() =>
+      expect(page.counters()).toEqual({
+        toCompute: 12,
+        ready: 0,
+        processed: 1,
+      }),
+    )
+
+    const question = await page.computeAll()
+    expect(question.title).toBe('Calculer les retours des 12 fiches ?')
+    await question.confirm()
+
+    await page.toast('12 fiches calculées')
+    expect(page.counters()).toEqual({ toCompute: 0, ready: 12, processed: 1 })
+    const deposits = await local.deposits()
+    expect(deposits.find((d) => d.depositIndex === 29)?.sellerAmount).toBe(9)
+    expect(
+      deposits.find((d) => d.depositIndex === 40)?.returnedCalculationDate,
+    ).toBeUndefined()
+  })
+
+  it('computes nothing when the question is declined', async () => {
+    const page = await returnsListingPage()
+    await waitFor(() => expect(page.counters().toCompute).toBe(2))
+
+    const question = await page.computeAll()
+    await question.decline()
+
+    expect(page.counters()).toEqual({ toCompute: 2, ready: 0, processed: 0 })
+    expect(await local.outbox()).toEqual([])
+  })
+
   it('computes every selected deposit and shows what each seller is owed', async () => {
     const page = await returnsListingPage()
     await waitFor(() => expect(page.counters().toCompute).toBe(2))

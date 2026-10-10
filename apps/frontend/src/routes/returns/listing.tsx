@@ -12,7 +12,7 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { CheckIcon, EyeIcon, RefreshCwIcon } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ReturnDepositPdf,
   type ReturnDepositPdfProps,
@@ -27,6 +27,8 @@ import {
   DepositsMissingContributionPdf,
   type DepositsMissingContributionProps,
 } from '@/pdf/deposits-missing-contributions-pdf.tsx'
+import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
+import { Spinner } from '@/components/ui/spinner.tsx'
 
 export const Route = createFileRoute('/returns/listing')({
   beforeLoad: requireAuthAndWorkstation,
@@ -327,13 +329,63 @@ function DepositDataTableHeaderAction({
 
   return (
     <div className="flex flex-row gap-3">
+      <ComputeAllReturnsButton />
       <CustomButton onClick={computeReturns}>
-        Lancer le calcul des retours
+        Calculer la sélection
       </CustomButton>
       <CustomButton onClick={printReturn}>
         Imprimer les fiches retour
       </CustomButton>
     </div>
+  )
+}
+
+// « Tous sélectionner » ne coche que la page affichée : ce bouton calcule
+// toutes les fiches de la base, sans passer par la sélection.
+function ComputeAllReturnsButton() {
+  const mutation = useComputeReturnMutation()
+  const [computing, setComputing] = useState(false)
+  // Une fiche dont le chèque est fait n'est plus recalculée (voir
+  // useComputeReturnMutation) : elle n'est pas comptée.
+  const toCompute = useLiveQuery(() =>
+    db.deposits.filter((deposit) => deposit.checkId == null).count(),
+  )
+
+  const computeAll = async () => {
+    setComputing(true)
+    try {
+      const deposits = await db.deposits
+        .orderBy('depositIndex')
+        .filter((deposit) => deposit.checkId == null)
+        .toArray()
+      for (const deposit of deposits) {
+        await mutation.mutate(deposit.id)
+      }
+      toast.success(
+        deposits.length > 1
+          ? `${deposits.length} fiches calculées`
+          : `${deposits.length} fiche calculée`,
+      )
+    } finally {
+      setComputing(false)
+    }
+  }
+
+  return (
+    <ConfirmationDialog
+      trigger={
+        <Button disabled={computing || !toCompute}>
+          {computing ? <Spinner /> : 'Calculer tous les retours'}
+        </Button>
+      }
+      title={
+        toCompute === 1
+          ? 'Calculer le retour de la fiche\u00a0?'
+          : `Calculer les retours des ${toCompute ?? 0} fiches\u00a0?`
+      }
+      description="Les fiches dont le chèque est déjà fait ne sont pas modifiées."
+      onConfirm={() => void computeAll()}
+    />
   )
 }
 

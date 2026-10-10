@@ -161,7 +161,7 @@ code already sold, and an article that was never received.
 
 ### d. Evening close
 
-- _Gérer les fiches retours_: select everything, _Lancer le calcul des retours_.
+- _Gérer les fiches retours_: _Calculer tous les retours_.
   The club keeps 10 % for a private seller, 15 % for a professional, and an
   unpaid contribution comes out of the seller's share. Running it twice changes
   nothing.
