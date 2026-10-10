@@ -665,7 +665,8 @@ outright — there is no flag, policy, or click-through to re-enable it.
 
 **Use Firefox ESR 115** on these PCs. It is the last Firefox branch that
 runs on Windows 7 and still exposes the prefs needed to allow legacy
-TLS.
+TLS. The same steps apply to any other site a Win7 PC must reach that
+only speaks TLS 1.0/1.1.
 
 ### Setup steps (per Win7 client)
 
@@ -674,11 +675,33 @@ TLS.
    [mozilla.org/firefox/all/#product-desktop-esr](https://www.mozilla.org/firefox/all/#product-desktop-esr)
    (pick a 115.x build — later ESR branches dropped Win7 support).
 
-2. **Allow deprecated TLS versions.**
-   In the address bar go to `about:config` → accept the warning →
-   set:
+2. **Allow deprecated TLS versions**, one of two ways.
+
+   *By hand, in the browser.* In the address bar go to `about:config`
+   → accept the warning → set:
    - `security.tls.version.enable-deprecated` → **true**
-   - `security.tls.version.min` → **1**  *(1 = TLS 1.0)*
+   - `security.tls.version.min` → **1**  *(1 = TLS 1.0, 2 = TLS 1.1)*
+
+   *By file, quicker when preparing several PCs.* Create
+   `C:\Program Files\Mozilla Firefox\distribution\policies.json`
+   (`Program Files (x86)` for a 32-bit Firefox on a 64-bit Windows;
+   create the `distribution` folder if it is missing) containing:
+
+   ```json
+   {
+     "policies": {
+       "SSLVersionMin": "tls1"
+     }
+   }
+   ```
+
+   Restart Firefox: `about:policies` must list `SSLVersionMin` as
+   active.
+
+   Either way TLS 1.2 and 1.3 stay enabled, and the setting applies to
+   every site opened in that Firefox, which is fine on a till that only
+   sees the venue LAN. Nothing older than TLS 1.0 (SSL 3.0) can be
+   reached by any current browser.
 
 3. **Verify.** With DYMO Label running, open
    `https://localhost:41951/DYMO/DLS/Printing/Check` in Firefox. You
