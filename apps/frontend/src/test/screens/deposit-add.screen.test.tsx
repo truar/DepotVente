@@ -595,8 +595,10 @@ describe('Screen: article rows', () => {
   // Big sellers go past Z: the alphabet starts again, doubled. The 26
   // first rows come from a predeposit to keep the story short; the 27th is
   // added by hand, as on a walk-in deposit, and gets AA on its label and in
-  // its barcode.
-  it('letters the 27th article AA, after Z', async () => {
+  // its barcode. 27 rows are the heaviest page of the suite: about 2 s on a
+  // recent machine, 12 to 16 s on an older Intel one, where saving and
+  // clearing the fiche alone takes some 5 s.
+  it('letters the 27th article AA, after Z', { timeout: 30_000 }, async () => {
     await givenPredeposit(
       {},
       Array.from({ length: 26 }, () => ({})),
@@ -614,11 +616,11 @@ describe('Screen: article rows', () => {
     await page.chooseStatus('Payé')
     await page.printSummary()
     await page.save()
-    await page.savedToast(1001)
+    await page.savedToast(1001, 15_000)
 
     // The deposit holds the 27 articles...
     const listing = await depositsListingPage()
-    await listing.waitForDeposits(1)
+    await listing.waitForDeposits(1, 15_000)
     expect(listing.deposit(1001).articleCount).toBe(27)
 
     // ...and the barcode on each label finds its article: Z is the last

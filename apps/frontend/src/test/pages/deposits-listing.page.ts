@@ -59,13 +59,16 @@ export async function depositsListingPage() {
     },
     // The list fills from the local base, and each row counts its articles
     // on its own: wait until the deposits are there and counted.
-    async waitForDeposits(count: number) {
-      await waitFor(() => {
-        expect(page.rows()).toHaveLength(count)
-        for (const row of page.rows()) {
-          expect(within(row).getAllByRole('cell')[4].textContent).not.toBe('')
-        }
-      })
+    async waitForDeposits(count: number, timeout?: number) {
+      await waitFor(
+        () => {
+          expect(page.rows()).toHaveLength(count)
+          for (const row of page.rows()) {
+            expect(within(row).getAllByRole('cell')[4].textContent).not.toBe('')
+          }
+        },
+        { timeout },
+      )
     },
   }
   return page

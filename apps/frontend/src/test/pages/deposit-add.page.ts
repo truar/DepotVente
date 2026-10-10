@@ -293,8 +293,14 @@ export async function depositAddPage(user?: User) {
         screen.getByRole('button', { name: 'Valider et enregistrer le dépôt' }),
       )
     },
-    async savedToast(depositIndex: number) {
-      return screen.findByText(`Dépôt ${depositIndex} enregistré`)
+    // A long fiche takes a while to save and clear under jsdom: the caller
+    // can wait longer than the default.
+    async savedToast(depositIndex: number, timeout?: number) {
+      return screen.findByText(
+        `Dépôt ${depositIndex} enregistré`,
+        {},
+        { timeout },
+      )
     },
   }
   return page
