@@ -85,8 +85,9 @@ describe('Sync: pushing local writes to the server', () => {
       collection: 'contacts',
       data: { lastName: 'Durand', firstName: 'Camille' },
     })
+    // The server has them; the outbox empties once each answer is back.
     const page = await settingsPage()
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
     expect(page.noRefusedOperation()).toBe(true)
   })
 
@@ -161,7 +162,7 @@ describe('Sync: pushing local writes to the server', () => {
     realClock()
     const page = await settingsPage()
     await waitFor(() => expect(page.refusedOperations()).toHaveLength(1))
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
     expect(page.refusedOperations()).toEqual([
       {
         what: `create · contacts · ${backend.pushes()[0].recordId}`,
@@ -212,7 +213,7 @@ describe('Sync: pushing local writes to the server', () => {
     await settle(5)
     const recordIds = backend.pushes().map((push) => push.recordId)
     const page = await settingsPage()
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
     // Current behaviour, pinned until it is decided: the list is sorted by
     // timestamp only, so operations written in the same transaction (same
     // millisecond) come in no particular order, not in write order.
@@ -272,12 +273,14 @@ describe('Sync: pushing local writes to the server', () => {
       .where('collection')
       .equals('contacts')
       .first()
+    // Read between two attempts it is « failed », during one « syncing »:
+    // either way it is still waiting, never parked as refused.
     expect(seller).toMatchObject({
-      status: 'failed',
       retryCount: 0,
       error: 'Non authentifié',
       httpStatus: 401,
     })
+    expect(seller?.status).not.toBe('rejected')
 
     const beforeLogin = backend.pushes().length
     await useAuthStore.getState().login('admin@test', 'secret')
@@ -295,8 +298,9 @@ describe('Sync: pushing local writes to the server', () => {
       ),
     ).toBe(true)
     realClock()
+    // The server has them; the outbox empties once each answer is back.
     const page = await settingsPage()
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
     expect(page.noRefusedOperation()).toBe(true)
   })
 
@@ -346,7 +350,7 @@ describe('Sync: pushing local writes to the server', () => {
     const page = await settingsPage()
     await waitFor(() => expect(page.datasetEpoch()).toBe('epoch-2026'))
     expect(page.lastSync()).not.toBe('Non synchonisé')
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
   })
 
   // SYNC-22 — The server is unreachable when the volunteer closes the

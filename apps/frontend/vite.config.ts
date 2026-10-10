@@ -169,6 +169,10 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // Keep the machine usable while the suite runs: at most 30% of the cores.
     maxWorkers: '30%',
+    // Screen stories type a whole form through jsdom: the longest take ~2 s
+    // on an idle machine, and twice that or more once it is busy (a VM, a
+    // simulator, another suite). The 5 s default failed them at random.
+    testTimeout: 15_000,
     // Vitest's console interception lets the event loop turn on each
     // console.log: inside a Dexie transaction (the outbox logs every write),
     // fake-indexeddb then commits it early (PrematureCommitError). A browser

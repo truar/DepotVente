@@ -5,11 +5,16 @@
 // unchanged. Every test starts from an empty base.
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
 import type * as ReactPdf from '@react-pdf/renderer'
 import { db } from '@/db.ts'
 import { server } from '@/test/server.ts'
+
+// What a screen shows comes from the local base through live queries, a few
+// milliseconds after a write on an idle machine. On a busy one the 1 s
+// default of waitFor and findBy* ran out before the screen caught up.
+configure({ asyncUtilTimeout: 5_000 })
 
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(() => server.resetHandlers())
