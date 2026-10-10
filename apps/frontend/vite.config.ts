@@ -128,6 +128,16 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    // Some cash registers are Windows 7 PCs, stuck on Chrome/Edge 109.
+    // Tailwind v4 writes every colour as oklch(), which only Chrome 111+
+    // understands: on 109 `background-color: var(--background)` is invalid and
+    // falls back to transparent. Lightning CSS, run on the final CSS with these
+    // targets, emits an sRGB fallback for each colour and keeps the modern
+    // value behind @supports, so recent browsers render exactly as before.
+    cssTarget: ['chrome109', 'edge109'],
+    cssMinify: 'lightningcss',
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: true,
