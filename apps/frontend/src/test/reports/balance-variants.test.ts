@@ -66,7 +66,7 @@ describe('Report: the balance, variant by variant', () => {
       'Cotisations encaissées': '3,00 €',
       'Recette bourse': '62,00 €',
       'Différence recette théorique et réelle': '-4,00 €',
-      'Différence de caisses': '-4,00 €',
+      'Différence de caisses': '-4,00 € (manque)',
     })
   })
 

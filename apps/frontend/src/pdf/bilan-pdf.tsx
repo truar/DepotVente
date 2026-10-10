@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfPageNumberFooter } from '@/pdf/page-number-footer.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
-import { pdfDec, pdfEur, pdfPct } from '@/pdf/format.ts'
+import { cashVerdict, pdfDec, pdfEur, pdfPct } from '@/pdf/format.ts'
 
 const styles = StyleSheet.create({
   page: {
@@ -351,6 +351,7 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
             </Line>
             <Line label="Différence de caisses" indent compact>
               <Amount value={collection.cashRegisterDiff} />
+              {` (${cashVerdict(collection.cashRegisterDiff)})`}
             </Line>
             <Line label="Paiements différés" indent compact>
               <Amount value={collection.deferredGap} />

@@ -40,7 +40,7 @@ export const referenceBalance: Record<string, string> = {
   // 520 + 2 − 456.
   'Recette bourse': '66,00 €',
   'Différence recette théorique et réelle': '0,00 €',
-  'Différence de caisses': '0,00 €',
+  'Différence de caisses': '0,00 € (juste)',
   'Paiements différés': '0,00 €',
   'Cotisations non payées (différence)': '0,00 €',
   'Solde différence': '0,00 €',

@@ -31,3 +31,10 @@ export const pdfEur = (n: number) => normalizeSpaces(eurFmt.format(n))
 export const pdfPct = (n: number) => normalizeSpaces(pctFmt.format(n))
 /** Plain decimal, 2 decimals: "2,95". */
 export const pdfDec = (n: number) => normalizeSpaces(decFmt.format(n))
+
+/**
+ * How a cash difference reads, the way the till count says it: counted minus
+ * expected, so below zero money is missing, above zero there is too much.
+ */
+export const cashVerdict = (difference: number) =>
+  difference === 0 ? 'juste' : difference < 0 ? 'manque' : 'excédent'

@@ -2,6 +2,7 @@ import type { BilanPdfData } from './bilan-pdf'
 import type {Deposit, Sale} from '@/db';
 import {   db } from '@/db'
 import { fromCents, getYear, isClubBuyer, toCents } from '@/utils'
+import { cashVerdict } from '@/pdf/format.ts'
 
 // Les montants s'additionnent en centimes entiers : 10,10 € + 20,20 € font
 // 30,30 €, pas 30.299999999999997, et un bilan juste affiche 0,00 €, jamais
@@ -559,7 +560,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         },
         {
           label: 'Différence de caisses',
-          value: eur(cashRegisterDiff),
+          value: `${eur(cashRegisterDiff)} (${cashVerdict(cashRegisterDiff)})`,
           source:
             'Σ cashRegisterControl.difference (dépôt + vente + retour)',
           formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses : ${num(depositRegisters.length)} dépôt, ${num(saleRegisters.length)} vente, ${num(returnRegisters.length)} retour)`,

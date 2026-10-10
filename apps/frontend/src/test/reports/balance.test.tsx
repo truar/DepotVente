@@ -40,6 +40,8 @@ describe('Report: the balance of the reference bourse', () => {
         /Différence de caisses.*Paiements différés.*Cotisations non payées.*Solde différence/s,
       )
       expect(pdf).not.toContain('Total différé')
+      // The tills' difference says which way it reads, as the count does.
+      expect(pdf).toMatch(/Différence de caisses :\s*0,00 € \(juste\)/)
     },
     DAY,
   )
