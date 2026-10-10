@@ -192,9 +192,10 @@ describe('Report: the balance, variant by variant', () => {
     })
   })
 
-  // What is still owed is shown for information only: it is not in the
-  // takings the bourse is due, so nothing is left to explain.
-  it('V1a: a contribution still to pay at the close is shown, out of the takings', async () => {
+  // What is still owed is due to the bourse, so it is in the theoretical
+  // takings; it never reached a till, so it stays in the gap with the
+  // takings, down to the balance.
+  it('V1a: a contribution still to pay at the close is due to the bourse, but never collected', async () => {
     await givenTheReferenceBourseWhere((bourse) => {
       // Bon sells nothing: there is no cheque to take it from.
       bourse.fiches.bon.contribution = 'A_PAYER'
@@ -204,6 +205,10 @@ describe('Report: the balance, variant by variant', () => {
     expect(await balanceLines()).toEqual({
       ...referenceBalance,
       'Cotisations non payées': '2,00 €',
+      // 4 paid + 2 unpaid + 62 rights − 0 bought by the club.
+      'Recette bourse théorique': '68,00 €',
+      'Différence recette théorique et réelle': '-2,00 €',
+      'Solde différence': '-2,00 €',
     })
   })
 

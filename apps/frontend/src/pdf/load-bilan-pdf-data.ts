@@ -202,11 +202,16 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   )
   const cmrRights = sumOf(deposits, (d) => d.clubAmount ?? 0)
 
-  // La recette théorique : les droits et les cotisations payées. Les
-  // cotisations non payées ne sont affichées qu'à titre indicatif : elles
-  // n'entrent ni dans cette recette ni dans le solde. Les achats CMR sont une
-  // perte pour la bourse : ils sortent des deux recettes.
-  const theoreticalRevenue = add(cmrRights, paidContributions, -cmrPurchases)
+  // La recette théorique : ce qui est dû à la bourse, soit les droits et
+  // toutes les cotisations, payées ou non. Une cotisation restée impayée n'est
+  // pas en caisse : elle reste dans l'écart avec la recette bourse. Les achats
+  // CMR sont une perte pour la bourse : ils sortent des deux recettes.
+  const theoreticalRevenue = add(
+    cmrRights,
+    paidContributions,
+    unpaidContributions,
+    -cmrPurchases,
+  )
 
   // ===== Détail des encaissements =====
   // Mêmes définitions que le récap. ventes, pour que les deux rapports affichent
@@ -448,7 +453,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Cotisations non payées',
           value: eur(unpaidContributions),
           source: 'contributionAmount (A_PAYER)',
-          formula: `Σ contributionAmount des dépôts A_PAYER, pour information (hors recette) — une cotisation soldée le soir passe en SOLDE et sort de cette ligne`,
+          formula: `Σ contributionAmount des dépôts A_PAYER, comptée dans la recette théorique — une cotisation soldée le soir passe en SOLDE et sort de cette ligne`,
         },
         {
           label: 'Droits CMR',
@@ -466,8 +471,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Recette bourse théorique',
           value: eur(theoreticalRevenue),
           source:
-            'droits CMR + cotisations payées (PAYE + SOLDE + DEDUITE) − achats CMR',
-          formula: `${eur(cmrRights)} + ${eur(paidContributions)} − ${eur(cmrPurchases)}`,
+            'cotisations payées (PAYE + SOLDE + DEDUITE) + cotisations non payées (A_PAYER) + droits CMR − achats CMR',
+          formula: `${eur(paidContributions)} + ${eur(unpaidContributions)} + ${eur(cmrRights)} − ${eur(cmrPurchases)}`,
         },
       ],
     },
