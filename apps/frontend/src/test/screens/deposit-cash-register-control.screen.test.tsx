@@ -47,13 +47,35 @@ describe('Screen: deposit cash register control', () => {
 
     // The deposits come from a live query; the amount follows shortly.
     await waitFor(() => expect(page.theoretical()).toBe(6))
-    expect(page.float()).toBe(80)
-    expect(page.real()).toBe(-80)
+  })
+
+  // The float is the controller's to give: the field opens empty, and the
+  // report neither prints nor saves until it is typed. 0 is an answer.
+  it('leaves the float to the person counting, and needs it before printing or saving', async () => {
+    const page = await cashRegisterControlPage()
+    expect(page.floatText()).toBe('')
+
+    await page.count(50, 1)
+    await page.comment('RAS')
+    await page.printRefused()
+    expect(page.errors()).toEqual(['Le fonds de caisse est obligatoire'])
+    await page.save()
+    expect(page.errors()).toEqual(['Le fonds de caisse est obligatoire'])
+    expect(await local.cashRegisterControls()).toEqual([])
+
+    await page.setFloat(0)
+    await page.print()
+    expect(await lastPrintedText()).toContain('Fond de caisse 0,00 €')
+    await page.save()
+    await page.savedToast(1000)
+    const [control] = await local.cashRegisterControls()
+    expect(control).toMatchObject({ initialAmount: 0, realCashAmount: 50 })
   })
 
   it('counts the drawer minus the float, and the difference follows', async () => {
     const page = await cashRegisterControlPage()
 
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(5, 2)
@@ -68,6 +90,7 @@ describe('Screen: deposit cash register control', () => {
 
   it('records a short drawer as such, with every denomination, then returns to the menu', async () => {
     const page = await cashRegisterControlPage()
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(10, 1)
@@ -109,6 +132,7 @@ describe('Screen: deposit cash register control', () => {
 
   it('needs a comment and a printed report before it saves', async () => {
     const page = await cashRegisterControlPage()
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(10, 1)
@@ -163,6 +187,7 @@ describe('Screen: deposit cash register control', () => {
 
   it('prints the count, the float, and the three amounts', async () => {
     const page = await cashRegisterControlPage()
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(10, 1)

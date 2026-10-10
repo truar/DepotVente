@@ -531,7 +531,6 @@ function SalesControlPage(props: SalesControlPageProps) {
       cashSales: [],
       cashPayment: {
         cashRegisterId: workstation.incrementStart,
-        initialAmount: 80,
         realAmount: 0,
         theoreticalAmount: 0,
         amounts: [
@@ -555,9 +554,11 @@ function SalesControlPage(props: SalesControlPageProps) {
     },
   })
 
-  const { getValues, setValue, handleSubmit, reset, trigger } = methods
+  const { getFieldState, getValues, setValue, handleSubmit, reset, trigger } =
+    methods
   const [hasPrinted, setHasPrinted] = useState(false)
   const [printError, setPrintError] = useState(false)
+  const [openSection, setOpenSection] = useState('')
   const navigate = useNavigate()
 
   useCardPaymentData({ setValue })
@@ -567,9 +568,20 @@ function SalesControlPage(props: SalesControlPageProps) {
   useRefundPaymentData({ setValue })
   useCashPaymentData({ setValue, cashRegisterControl })
 
+  // Le fonds de caisse se tape dans la section des espèces, fermée par
+  // défaut : s'il manque, on l'ouvre pour montrer le champ et son message.
+  const showMissingFloat = () => {
+    if (getFieldState('cashPayment.initialAmount').invalid) {
+      setOpenSection('cash-register-control')
+    }
+  }
+
   const print = async () => {
     const isValid = await trigger()
-    if (!isValid) return
+    if (!isValid) {
+      showMissingFloat()
+      return
+    }
     const formData = getValues()
     const year = getYear()
     const data: SaleCashRegisterControlProps['data'] = {
@@ -608,16 +620,19 @@ function SalesControlPage(props: SalesControlPageProps) {
     await navigate({ to: '..' })
   }
 
-  const onError = (error: any) => console.log(error)
-
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <FormProvider {...methods}>
         <form
           className="flex flex-col gap-4"
-          onSubmit={handleSubmit(onSubmit, onError)}
+          onSubmit={handleSubmit(onSubmit, showMissingFloat)}
         >
-          <Accordion type="single" collapsible defaultValue="item-1">
+          <Accordion
+            type="single"
+            collapsible
+            value={openSection}
+            onValueChange={setOpenSection}
+          >
             <AccordionItem value="card-payments">
               <AccordionTrigger>Cartes bancaires</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4 text-balance">

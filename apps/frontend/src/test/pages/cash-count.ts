@@ -58,6 +58,8 @@ export function cashCount(u: User) {
       await u.type(field, String(floatAmount))
     },
     float: () => amount('Fonds de caisse'),
+    // Empty until the person counting types it: never filled in for them.
+    floatText: () => input('Fonds de caisse').value,
     // The computed amounts are shown the French way, « -19,47 »: read
     // back as numbers, or as the text the volunteer reads.
     real: () => euros(input('Montant réel').value),

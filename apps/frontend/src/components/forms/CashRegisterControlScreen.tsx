@@ -117,7 +117,6 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
     resolver: typedZodResolver(CashRegisterControlFormSchema),
     defaultValues: {
       cashRegisterId: workstation.incrementStart,
-      initialAmount: 80,
       realAmount: 0,
       theoreticalAmount: 0,
       amounts: [

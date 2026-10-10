@@ -34,6 +34,10 @@ export async function salesControlPage() {
         ).toHaveAttribute('aria-expanded', 'true'),
       )
     },
+    isOpen: (section: Section) =>
+      screen
+        .getByRole('button', { name: SECTIONS[section] })
+        .getAttribute('aria-expanded') === 'true',
     // Rows of the open section's table, amounts normalised
     // ("200,00 €" with a narrow no-break space).
     rows(): Array<Array<string>> {
@@ -81,6 +85,13 @@ export async function salesControlPage() {
           expect(document.querySelectorAll('iframe').length).toBe(before + 1),
         { timeout: 15_000 },
       )
+    },
+    // Imprimer refused: the form shows why, nothing goes to the printer.
+    async printRefused() {
+      const before = document.querySelectorAll('iframe').length
+      await u.click(screen.getByRole('button', { name: 'Imprimer' }))
+      await waitFor(() => expect(page.errors()).not.toEqual([]))
+      expect(document.querySelectorAll('iframe').length).toBe(before)
     },
     async save() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

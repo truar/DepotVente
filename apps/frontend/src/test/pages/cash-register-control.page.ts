@@ -40,6 +40,13 @@ export async function cashRegisterControlPage(
         { timeout: 15_000 },
       )
     },
+    // Imprimer refused: the form shows why, nothing goes to the printer.
+    async printRefused() {
+      const before = document.querySelectorAll('iframe').length
+      await u.click(screen.getByRole('button', { name: 'Imprimer' }))
+      await waitFor(() => expect(page.errors()).not.toEqual([]))
+      expect(document.querySelectorAll('iframe').length).toBe(before)
+    },
     async save() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))
     },

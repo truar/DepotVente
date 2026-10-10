@@ -51,7 +51,34 @@ describe('Screen: the till count at the end of the sale', () => {
 
     // 200 € taken in cash, 30 € refunded; the other till's 500 € is not here
     await waitFor(() => expect(page.theoretical()).toBe(170))
-    expect(page.float()).toBe(80)
+    // The float is the controller's to type: never filled in for them.
+    expect(page.floatText()).toBe('')
+  })
+
+  // The float is typed in the drawer section, closed until opened. Printing
+  // or saving without it opens the section to show what is missing.
+  it('needs the float before printing or saving, and opens the drawer to ask for it', async () => {
+    const page = await salesControlPage()
+    await page.comment('RAS')
+    expect(page.isOpen('drawer')).toBe(false)
+
+    await page.printRefused()
+    expect(page.isOpen('drawer')).toBe(true)
+    expect(page.errors()).toEqual(['Le fonds de caisse est obligatoire'])
+
+    await page.open('card')
+    await page.save()
+    await waitFor(() => expect(page.isOpen('drawer')).toBe(true))
+    expect(page.errors()).toEqual(['Le fonds de caisse est obligatoire'])
+    expect(await local.cashRegisterControls()).toEqual([])
+
+    await page.setFloat(80)
+    await page.count(50, 5)
+    await page.print()
+    await page.save()
+    await page.savedToast(2000)
+    const [control] = await local.cashRegisterControls()
+    expect(control).toMatchObject({ initialAmount: 80, realCashAmount: 170 })
   })
 
   it('lists the card payments of this till with their buyer', async () => {
@@ -127,6 +154,7 @@ describe('Screen: the till count at the end of the sale', () => {
     const page = await salesControlPage()
     await page.open('drawer')
     await waitFor(() => expect(page.theoretical()).toBe(170))
+    await page.setFloat(80)
     await page.count(50, 5)
     expect(page.real()).toBe(170)
     expect(page.difference()).toBe(0)
@@ -169,6 +197,7 @@ describe('Screen: the till count at the end of the sale', () => {
     const page = await salesControlPage()
     await page.open('drawer')
     await waitFor(() => expect(page.theoretical()).toBe(170))
+    await page.setFloat(80)
     await page.count(50, 4)
     await page.count(20, 2)
     await page.count(5, 2)
@@ -206,6 +235,7 @@ describe('Screen: the till count at the end of the sale', () => {
     const page = await salesControlPage()
     await page.open('drawer')
     await waitFor(() => expect(page.theoretical()).toBe(170))
+    await page.setFloat(80)
     await page.count(50, 5)
     await page.comment('RAS')
 
@@ -372,6 +402,7 @@ describe('Screen: counting the till a second time', () => {
     const first = await salesControlPage()
     await first.open('drawer')
     await waitFor(() => expect(first.theoretical()).toBe(170))
+    await first.setFloat(80)
     await first.count(50, 3)
     await first.comment('Premier comptage')
     await first.print()

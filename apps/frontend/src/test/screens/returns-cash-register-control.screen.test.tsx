@@ -133,8 +133,8 @@ describe('Screen: return cash register control, counting the drawer', () => {
   })
 
   // Every note and coin from 200 € down to 1 cent has its box; the float
-  // left in the drawer for the day is 80 € unless changed.
-  it('offers every denomination from 200 € to 1 cent, and an 80 € float', async () => {
+  // left in the drawer for the day is the controller's to type.
+  it('offers every denomination from 200 € to 1 cent, and an empty float', async () => {
     const page = await returnsCashCountPage()
 
     expect(page.denominationLabels()).toEqual([
@@ -153,8 +153,8 @@ describe('Screen: return cash register control, counting the drawer', () => {
       '0,02 €',
       '0,01 €',
     ])
-    expect(page.float()).toBe(80)
-    expect(page.real()).toBe(-80)
+    expect(page.floatText()).toBe('')
+    expect(page.real()).toBe(0)
   })
 
   // What was taken in is what is counted minus the float; the difference
@@ -165,6 +165,7 @@ describe('Screen: return cash register control, counting the drawer', () => {
     await waitFor(() => expect(page.theoretical()).toBe(6))
     expect(page.theoreticalText()).toBe('6,00')
 
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(5, 2)
@@ -201,6 +202,7 @@ describe('Screen: return cash register control, counting the drawer', () => {
     const page = await returnsCashCountPage()
     await waitFor(() => expect(page.theoretical()).toBe(6))
 
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(5, 2)
@@ -243,6 +245,7 @@ describe('Screen: return cash register control, counting the drawer', () => {
   it('saves the count as the return register’s, back to the menu, and sends it', async () => {
     const page = await returnsCashCountPage()
     await waitFor(() => expect(page.theoretical()).toBe(6))
+    await page.setFloat(80)
     await page.count(50, 1)
     await page.count(20, 1)
     await page.count(10, 1)

@@ -181,7 +181,8 @@ export const referenceSales: Array<Sale> = [
 ]
 
 // ---- counting the tills ---------------------------------------------------
-// The float is 80 € everywhere: the drawer holds it on top of the takings.
+// The float is 80 € everywhere: the drawer holds it on top of the takings,
+// and the person counting types it.
 
 export async function countSaleTill(
   till: number,
@@ -190,6 +191,7 @@ export async function countSaleTill(
   await givenWorkstation(till)
   const page = await salesControlPage()
   await page.open('drawer')
+  await page.setFloat(80)
   for (const [value, n] of counts) await page.count(value, n)
   await page.comment('Comptage du soir')
   await page.print()
@@ -203,6 +205,7 @@ export async function countDepositTill(
 ) {
   await givenWorkstation(till)
   const page = await cashRegisterControlPage()
+  await page.setFloat(80)
   for (const [value, n] of counts) await page.count(value, n)
   await page.comment('Comptage du soir')
   await page.print()

@@ -63,12 +63,15 @@ async function cashCountPage(route: string, title: string) {
     async loaded() {
       await waitFor(() => expect(page.commentText()).not.toBe(''))
     },
-    // Count, comment, print and save, as the volunteer closes the till.
+    // Float, count, comment, print and save, as the volunteer closes the
+    // till. The float is typed every time: the screen never fills it in.
     async close(
       counts: Array<[Denomination, number]>,
       comment: string,
       cashRegisterId: number,
+      float = 80,
     ) {
+      await page.setFloat(float)
       for (const [value, n] of counts) await page.count(value, n)
       await page.comment(comment)
       await page.print()

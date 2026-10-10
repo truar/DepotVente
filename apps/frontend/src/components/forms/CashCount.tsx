@@ -143,16 +143,25 @@ export function CashCount(props: { prefix?: string }) {
           <Controller
             name={path('initialAmount')}
             control={control}
-            render={({ field }) => (
-              <InputGroup className="h-8">
-                <InputGroupInput
-                  {...field}
-                  id={field.name}
-                  type="text"
-                  className="tabular-nums"
-                />
-                <Euro className="w-5 pr-1" />
-              </InputGroup>
+            render={({ field, fieldState }) => (
+              <>
+                <InputGroup className="h-8">
+                  <InputGroupInput
+                    {...field}
+                    value={field.value ?? ''}
+                    id={field.name}
+                    type="text"
+                    aria-invalid={fieldState.invalid}
+                    className="tabular-nums"
+                  />
+                  <Euro className="w-5 pr-1" />
+                </InputGroup>
+                {fieldState.invalid && fieldState.error?.message && (
+                  <p className="text-red-600 text-sm">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
             )}
           />
         </div>
