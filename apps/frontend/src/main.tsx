@@ -51,7 +51,24 @@ if (rootElement && !rootElement.innerHTML) {
 // SKIP_WAITING. A new build therefore downloads, precaches, and then waits —
 // it takes over the next time the browser is reopened, so no reload can ever
 // surprise a cashier mid-form.
+//
+// The browser itself only looks for a new sw.js when a page loads, and a till
+// keeps the same page open all day: without the timer below, a rebuild of the
+// server went unnoticed until someone reloaded.
+const UPDATE_CHECK_INTERVAL = 60_000
+
 registerSW({
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return
+    setInterval(() => {
+      // Still downloading the build found by the previous check.
+      if (registration.installing) return
+      registration.update().catch(() => {
+        // Server unreachable: the app keeps running offline, the next tick
+        // tries again.
+      })
+    }, UPDATE_CHECK_INTERVAL)
+  },
   // Belt and braces. In 'prompt' mode the plugin still attaches a
   // `controlling` -> window.location.reload() listener as soon as a new worker
   // enters "waiting" (see node_modules/vite-plugin-pwa/dist/client/build/
