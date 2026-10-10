@@ -27,10 +27,16 @@ export async function depositEditPage(depositId: string) {
     // ---- article rows ------------------------------------------------
     // Rows of the articles table: the ones holding the category, brand and
     // discipline comboboxes (the colour datalist input counts as one too).
+    // The count is structural, so it skips the visibility check (see
+    // deposit-add.page.ts).
     articleRows() {
       return screen
         .getAllByRole('row')
-        .filter((row) => within(row).queryAllByRole('combobox').length === 4)
+        .filter(
+          (row) =>
+            within(row).queryAllByRole('combobox', { hidden: true }).length ===
+            4,
+        )
     },
     articleRow(index: number) {
       const row = page.articleRows().at(index)
@@ -78,12 +84,15 @@ export async function depositEditPage(depositId: string) {
       )
       const color = comboboxes.find((el) => el.tagName === 'INPUT')
       if (!color) throw new Error('No colour input in the article row')
-      // As a volunteer does: open, type to narrow the list, pick the match.
+      // As a volunteer does: open, type to narrow the list, pick the match,
+      // in the open list only (see deposit-add.page.ts).
       const pick = async (combobox: HTMLElement, value: string) => {
         await u.click(combobox)
         const popover = await screen.findByRole('dialog')
         await u.type(within(popover).getByRole('combobox'), value)
-        await u.click(await screen.findByRole('option', { name: value }))
+        await u.click(
+          await within(popover).findByRole('option', { name: value }),
+        )
       }
       if (article.category) await pick(category, article.category)
       if (article.brand) await pick(brand, article.brand)

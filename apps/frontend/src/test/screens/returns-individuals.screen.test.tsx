@@ -93,7 +93,10 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
 
     await waitFor(() => expect(page.depositRow()).toBeNull())
     expect(page.selectedDeposit()).toBe('Rechercher une fiche')
-    expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon'])
+    // The list follows the local base, refreshed once the cheque is saved.
+    await waitFor(async () =>
+      expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon']),
+    )
 
     // The cheque is listed for the evening review: Durand's fiche, cheque
     // n°1042 signed by Paul, for what was owed.
@@ -161,10 +164,14 @@ describe('Screen: the fiches offered for a cheque', () => {
 
     const page = await returnsIndividualsPage()
 
-    expect(await page.offeredDeposits()).toEqual([
-      '12 - Camille Durand',
-      '13 - Jean Bon',
-    ])
+    // The list fills from the local base in two steps, the fiches then their
+    // sellers, and reads "Aucune fiche dépôt" meanwhile: wait for it.
+    await waitFor(async () =>
+      expect(await page.offeredDeposits()).toEqual([
+        '12 - Camille Durand',
+        '13 - Jean Bon',
+      ]),
+    )
   })
 })
 

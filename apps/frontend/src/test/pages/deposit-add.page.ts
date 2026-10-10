@@ -116,10 +116,17 @@ export async function depositAddPage(user?: User) {
     },
     // Rows of the articles table: the ones holding the category, brand and
     // discipline comboboxes (the colour datalist input counts as one too).
+    // The count is structural, so it skips the visibility check
+    // (`hidden: true`): jsdom computes styles up every ancestor of every
+    // candidate, which cost ~350 ms on a 27-article form.
     articleRows() {
       return screen
         .getAllByRole('row')
-        .filter((row) => within(row).queryAllByRole('combobox').length === 4)
+        .filter(
+          (row) =>
+            within(row).queryAllByRole('combobox', { hidden: true }).length ===
+            4,
+        )
     },
     articleRow(index: number) {
       const row = page.articleRows().at(index)
@@ -146,11 +153,16 @@ export async function depositAddPage(user?: User) {
       const color = comboboxes.find((el) => el.tagName === 'INPUT')
       if (!color) throw new Error('No colour input in the article row')
       // As a volunteer does: open, type to narrow the list, pick the match.
+      // The match is looked for in the open list only: every article row
+      // carries a colour datalist, hundreds of native <option> in all, and
+      // a whole-page search pays for each of them (~350 ms a pick).
       const pick = async (combobox: HTMLElement, value: string) => {
         await u.click(combobox)
         const popover = await screen.findByRole('dialog')
         await u.type(within(popover).getByRole('combobox'), value)
-        await u.click(await screen.findByRole('option', { name: value }))
+        await u.click(
+          await within(popover).findByRole('option', { name: value }),
+        )
       }
       if (article.category) await pick(category, article.category)
       if (article.brand) await pick(brand, article.brand)
@@ -245,8 +257,18 @@ export async function depositAddPage(user?: User) {
     // chosen, then the chosen label: find it by its markup, so the status
     // can be changed more than once.
     async chooseStatus(label: string) {
-      await u.click(page.statusSelect())
-      await u.click(await screen.findByRole('option', { name: label }))
+      const select = page.statusSelect()
+      await u.click(select)
+      // In the open list only, which the select names in aria-controls: a
+      // whole-page search would also go through the article rows' datalists.
+      const list = await waitFor(() => {
+        const open = document.getElementById(
+          select.getAttribute('aria-controls') ?? '',
+        )
+        if (!open) throw new Error('The status list is not open')
+        return open
+      })
+      await u.click(await within(list).findByRole('option', { name: label }))
     },
     // What the status select shows, "Statut" while none is chosen.
     status(): string {

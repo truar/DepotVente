@@ -374,7 +374,8 @@ describe('Sync: pushing local writes to the server', () => {
       'deposits',
       'articles',
     ])
+    // The server has them; the outbox empties once each answer is back.
     const morning = await settingsPage()
-    expect(morning.waitingCount()).toBe(0)
+    await waitFor(() => expect(morning.waitingCount()).toBe(0))
   })
 })
