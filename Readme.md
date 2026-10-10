@@ -270,6 +270,10 @@ and don't publish it.
 docker compose up -d --build
 ```
 
+This first build needs internet: it fetches the Node and nginx base images and
+the npm packages. It is the only step that does — once the images are on the
+Mac, starting the server works with no internet at all.
+
 Verify locally on the server (no warning, padlock closed):
 ```
 https://bourseauski.local
@@ -375,7 +379,7 @@ Expected: padlock icon closed, no warning, the app loads. Open DevTools →
 - Start: `docker compose up -d`
 - Stop: `docker compose down`
 - Logs: `docker compose logs -f caddy backend frontend`
-- Rebuild after a code change: `docker compose up -d --build`
+- Rebuild after a code change: `docker compose up -d --build` (needs internet)
 
 After a rebuild, client PCs do **not** pick up the new version on a refresh. The
 service worker downloads and caches it silently, then waits: it only takes over
@@ -419,6 +423,11 @@ Nine client PCs, one Mac as the server, one day. Work top to bottom.
 - [ ] `certs/` copied to a USB key. It is gitignored — nothing else backs it up,
       and the certificate cannot be recovered from a running container.
 - [ ] `rootCA.pem` sent to whoever sets up the client PCs (see step 3).
+- [ ] On the server Mac, with internet: pull the final code, then
+      `./scripts/start-server.sh --rebuild`. The venue may have no internet,
+      and building is the only thing that needs it. On site the server starts
+      from the images built here; `start-server.sh` never builds or downloads
+      anything without `--rebuild`.
 - [ ] `docker compose down && docker compose up -d` succeeds from cold. This is
       the single most valuable check: it proves the stack survives a reboot or a
       power blip.
@@ -436,7 +445,9 @@ services, waits until all four are healthy, issues the certificate for the
 address this network gave the Mac, verifies HTTPS, and prints the hosts line for
 the client PCs. It stops with a plain-language message if any step fails.
 
-Add `--rebuild` only after a code change.
+Add `--rebuild` only after a code change, and never on site: it needs internet.
+If an image is missing, `start-server.sh` says so and stops rather than trying
+to download it.
 
 **Desktop icons.** If whoever runs the server on the day would rather not use a
 terminal, put three double-clickable icons on the Desktop once, in advance:

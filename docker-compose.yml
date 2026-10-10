@@ -28,6 +28,10 @@ services:
     build:
       context: .
       target: backend-prod
+    # Named explicitly so the image does not depend on the folder name: a copy
+    # of the project in another folder would otherwise look for an image that
+    # does not exist and try to build it, which needs internet.
+    image: depotvente-backend:latest
     container_name: cmr_backend
     restart: unless-stopped
     # `pnpm traces` reads these logs through `docker compose logs`. Rotated so
@@ -68,6 +72,7 @@ services:
     build:
       context: .
       target: frontend-prod
+    image: depotvente-frontend:latest
     container_name: cmr_frontend
     restart: unless-stopped
     ports:
