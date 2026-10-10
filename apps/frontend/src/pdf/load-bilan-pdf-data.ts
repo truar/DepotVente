@@ -228,8 +228,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const totalChecks = sumOf(sales, (s) => s.checkAmount ?? 0)
   const totalDeferred = sumOf(sales, (s) => s.deferredAmount ?? 0)
   // Ce qui est réellement entré : cartes, espèces comptées, chèques. Le
-  // différé, réglé avant la fin, n'est encore ni en caisse ni sur un relevé :
-  // il entre directement dans la recette bourse ci-dessous.
+  // différé n'est encore ni en caisse ni sur un relevé : il n'entre pas dans
+  // la recette bourse, il explique une part de l'écart (voir le solde).
   const totalPayments = add(totalCards, totalCash, totalChecks)
 
   // Cotisations encaissées = real cash counted in the deposit registers and in
@@ -289,7 +289,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // recette gonfle de tout ce qui reste à régler aux particuliers.
   const actualRevenue = add(
     totalPayments,
-    totalDeferred,
     collectedContributions,
     -totalDisbursed,
     -unmadeIndividualChecks,
@@ -299,12 +298,19 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // Différence de caisses = les écarts constatés aux contrôles. Les contrôles
   // de caisse de retour sont comptés comme les autres : leurs espèces entrent
   // dans la recette réelle ci-dessus, donc leur écart explique bien un manque
-  // ou un excédent réel. Le solde ci-dessous ne garde que ce qu'il reste à
-  // expliquer.
+  // ou un excédent réel. Les paiements différés et les cotisations non payées,
+  // dus à la bourse mais pas encore encaissés, expliquent le reste de l'écart.
+  // Le solde ne garde que ce qu'il reste à expliquer : 0 quand tout est
+  // expliqué.
   const controlsDiff = sumOf(cashRegisterControls, (c) => c.difference)
   const cashRegisterDiff = controlsDiff
   const theoreticalVsActualDiff = add(actualRevenue, -theoreticalRevenue)
-  const diffBalance = add(theoreticalVsActualDiff, -cashRegisterDiff)
+  const diffBalance = add(
+    theoreticalVsActualDiff,
+    -cashRegisterDiff,
+    totalDeferred,
+    unpaidContributions,
+  )
 
   const data: BilanPdfData = {
     year: getYear(),
@@ -504,12 +510,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           formula: `Σ checkAmount sur ${num(sales.length)} ventes`,
         },
         {
-          label: 'Total différé',
-          value: eur(totalDeferred),
-          source: 'Σ sale.deferredAmount',
-          formula: `Σ deferredAmount sur ${num(sales.length)} ventes`,
-        },
-        {
           label: 'Montant total décaissé',
           value: eur(totalDisbursed),
           source: 'règlements pros + particuliers (dépôts collectés)',
@@ -543,8 +543,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Recette bourse',
           value: eur(actualRevenue),
           source:
-            'total paiements + différé + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
-          formula: `${eur(totalPayments)} + ${eur(totalDeferred)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
+            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
+          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
         },
         {
           label: 'Différence recette théorique et réelle',
@@ -560,10 +560,26 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           formula: `${eur(controlsDiff)} (${num(cashRegisterControls.length)} caisses : ${num(depositRegisters.length)} dépôt, ${num(saleRegisters.length)} vente, ${num(returnRegisters.length)} retour)`,
         },
         {
+          label: 'Paiements différés',
+          value: eur(totalDeferred),
+          source: 'Σ sale.deferredAmount — dus, pas encore encaissés',
+          formula: `Σ deferredAmount sur ${num(sales.length)} ventes`,
+        },
+        {
+          // Same amount as « Cotisations non payées » above; named apart so
+          // the audit keeps one row per label.
+          label: 'Cotisations non payées (différence)',
+          value: eur(unpaidContributions),
+          source:
+            'contributionAmount (A_PAYER) — dues, dans la recette théorique, jamais encaissées',
+          formula: `Σ contributionAmount des dépôts A_PAYER`,
+        },
+        {
           label: 'Solde différence',
           value: eur(diffBalance),
-          source: 'diff recette − différence de caisses',
-          formula: `${eur(theoreticalVsActualDiff)} − ${eur(cashRegisterDiff)}`,
+          source:
+            'diff recette − différence de caisses + paiements différés + cotisations non payées',
+          formula: `${eur(theoreticalVsActualDiff)} − ${eur(cashRegisterDiff)} + ${eur(totalDeferred)} + ${eur(unpaidContributions)}`,
         },
       ],
     },

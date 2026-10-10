@@ -193,9 +193,9 @@ describe('Report: the balance, variant by variant', () => {
   })
 
   // What is still owed is due to the bourse, so it is in the theoretical
-  // takings; it never reached a till, so it stays in the gap with the
-  // takings, down to the balance.
-  it('V1a: a contribution still to pay at the close is due to the bourse, but never collected', async () => {
+  // takings; it never reached a till, so it opens a gap with the takings,
+  // which its own difference line explains.
+  it('V1a: a contribution still to pay at the close is due to the bourse, and explains the gap', async () => {
     await givenTheReferenceBourseWhere((bourse) => {
       // Bon sells nothing: there is no cheque to take it from.
       bourse.fiches.bon.contribution = 'A_PAYER'
@@ -208,13 +208,16 @@ describe('Report: the balance, variant by variant', () => {
       // 4 paid + 2 unpaid + 62 rights − 0 bought by the club.
       'Recette bourse théorique': '68,00 €',
       'Différence recette théorique et réelle': '-2,00 €',
-      'Solde différence': '-2,00 €',
+      'Cotisations non payées (différence)': '2,00 €',
+      // −2 − 0 + 0 + 2.
+      'Solde différence': '0,00 €',
     })
   })
 
-  // Bruno pays later: the money is settled before the end. It belongs to the
-  // takings, but it is not in a till or on a card statement yet.
-  it('V4: a deferred payment counts in the takings, not in what was collected', async () => {
+  // Bruno pays later: the money is due to the bourse, but it is not in a till
+  // or on a card statement yet. It is out of the takings, and explains the
+  // gap with the theoretical ones.
+  it('V4: a deferred payment is out of the takings, and explains the gap', async () => {
     await givenTheReferenceBourseWhere((bourse) => {
       bourse.sales[1].pay = { deferred: 150 }
     })
@@ -222,11 +225,14 @@ describe('Report: the balance, variant by variant', () => {
     expect(await balanceLines()).toEqual({
       ...referenceBalance,
       'Total cartes': '0,00 €',
-      'Total différé': '150,00 €',
       // Cards, cash and cheques only.
       'Total paiements': '370,00 €',
-      // 370 + 150 + 2 − 456.
-      'Recette bourse': '66,00 €',
+      // 370 + 2 − 456.
+      'Recette bourse': '-84,00 €',
+      'Différence recette théorique et réelle': '-150,00 €',
+      'Paiements différés': '150,00 €',
+      // −150 − 0 + 150.
+      'Solde différence': '0,00 €',
     })
   })
 

@@ -31,7 +31,6 @@ export const referenceBalance: Record<string, string> = {
   // As counted: 140 at till 5000, 30 at till 6000.
   'Total espèces': '170,00 €',
   'Total chèques': '200,00 €',
-  'Total différé': '0,00 €',
   'Montant total décaissé': '456,00 €',
   'Règlements pros': '170,00 €',
   // Durand 126, Martin 162 − 2.
@@ -42,5 +41,7 @@ export const referenceBalance: Record<string, string> = {
   'Recette bourse': '66,00 €',
   'Différence recette théorique et réelle': '0,00 €',
   'Différence de caisses': '0,00 €',
+  'Paiements différés': '0,00 €',
+  'Cotisations non payées (différence)': '0,00 €',
   'Solde différence': '0,00 €',
 }

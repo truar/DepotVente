@@ -34,6 +34,12 @@ describe('Report: the balance of the reference bourse', () => {
       for (const value of Object.values(balance.lines())) {
         if (/[€%]$/.test(value)) expect(pdf).toContain(value)
       }
+      // What explains the gap between the two takings is listed under it,
+      // the deferred payments no longer among the collected ones.
+      expect(pdf).toMatch(
+        /Différence de caisses.*Paiements différés.*Cotisations non payées.*Solde différence/s,
+      )
+      expect(pdf).not.toContain('Total différé')
     },
     DAY,
   )

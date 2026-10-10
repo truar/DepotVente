@@ -312,9 +312,6 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
               <Line label="Total chèques" indent>
                 <Amount value={collection.totalChecks} />
               </Line>
-              <Line label="Total différé" indent>
-                <Amount value={collection.totalDeferred} />
-              </Line>
             </View>
             <View style={styles.column}>
               <Line label="Montant total décaissé">
@@ -351,6 +348,12 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
             </Line>
             <Line label="Différence de caisses" indent compact>
               <Amount value={collection.cashRegisterDiff} />
+            </Line>
+            <Line label="Paiements différés" indent compact>
+              <Amount value={collection.totalDeferred} />
+            </Line>
+            <Line label="Cotisations non payées" indent compact>
+              <Amount value={rights.unpaidContributions} />
             </Line>
             <Line label="Solde différence" indent compact>
               <Amount value={collection.diffBalance} />
