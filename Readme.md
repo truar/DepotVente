@@ -381,12 +381,21 @@ Expected: padlock icon closed, no warning, the app loads. Open DevTools →
 - Logs: `docker compose logs -f caddy backend frontend`
 - Rebuild after a code change: `docker compose up -d --build` (needs internet)
 
-After a rebuild, client PCs do **not** pick up the new version on a refresh. The
-service worker downloads and caches it silently, then waits: it only takes over
-once every tab for `bourseauski.local` on that PC is closed. To apply an update,
-**quit the browser completely and reopen it**. This is deliberate — it means a
-mid-event redeploy can never reload a till out from under a cashier, and an open
-tab keeps working against the version it already has.
+After a rebuild, each client PC notices the new version within a minute, as
+long as it reaches the server. Its service worker downloads and caches it
+silently, then a banner shows at the top of every page: « Nouvelle version de
+l'application disponible — Mettre à jour ». Nothing reloads on its own, so a
+mid-event redeploy can never reload a till out from under a cashier. To apply
+the update, **click « Mettre à jour » between two customers**: every tab of the
+app on that PC reloads onto the new version. Left alone, the new version takes
+over once every tab for `bourseauski.local` on that PC is closed.
+
+A refresh (F5) does not apply it, and **Ctrl+Shift+R is not an update**: it
+loads that one page from the server, past the service worker, but the old
+version is still the one that answers the next time the page loads. Use the
+banner. To check which version a PC runs, see *Paramètres → Identité du poste
+→ Version de l'application*, or the *Version* column of `pnpm traces` for all
+PCs at once.
 
 ### Troubleshooting
 

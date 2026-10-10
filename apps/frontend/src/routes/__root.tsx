@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
 import { ErrorAlertHost } from '@/components/custom/ErrorAlertHost'
 import { DatasetResetDialog } from '@/components/custom/DatasetResetDialog'
+import { AppUpdateBanner } from '@/components/custom/AppUpdateBanner'
 import { useIgnoreScannerShortcut } from '@/hooks/useIgnoreScannerShortcut'
 import { useAlertOnFailedLocalWrite } from '@/hooks/useAlertOnFailedLocalWrite'
 
@@ -18,6 +19,7 @@ function RootDocument() {
       <Toaster position="bottom-left" />
       <ErrorAlertHost />
       <DatasetResetDialog />
+      <AppUpdateBanner />
       {import.meta.env.DEV && !import.meta.env.TEST && (
         <TanStackDevtools
           config={{

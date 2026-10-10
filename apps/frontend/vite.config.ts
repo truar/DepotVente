@@ -45,10 +45,11 @@ export default defineConfig({
     // Must come last so it sees the final emitted asset list (Tailwind's plugin
     // emits the CSS asset).
     VitePWA({
-      // NOT 'autoUpdate': that compiles in a `controlling` -> location.reload()
-      // listener, and a surprise reload mid-sale would wipe an in-progress form.
-      // 'prompt' + a no-op onNeedRefresh (see src/main.tsx) means a new build is
-      // precached silently and takes over the next time the browser is reopened.
+      // NOT 'autoUpdate': that reloads every tab as soon as a new build is
+      // installed, and a surprise reload mid-sale would wipe an in-progress
+      // form. With 'prompt', a new build is precached silently and offered in
+      // a banner (see src/main.tsx); it takes over when the operator clicks
+      // « Mettre à jour », or once every tab of the app is closed.
       registerType: 'prompt',
       // We register by hand in main.tsx; 'auto' would inject registerSW.js too
       // and register twice.
@@ -119,7 +120,8 @@ export default defineConfig({
         // Offline-capable after one page load instead of two.
         clientsClaim: true,
         // The hinge of the no-surprise-reload behaviour: a new worker waits
-        // until every tab of this origin is closed.
+        // until every tab of this origin is closed, or until the banner's
+        // « Mettre à jour » sends it SKIP_WAITING.
         skipWaiting: false,
 
         // Deliberately empty. NEVER add a rule matching /api: a cached
