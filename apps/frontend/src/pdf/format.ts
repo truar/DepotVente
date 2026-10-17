@@ -24,6 +24,7 @@ const decFmt = new Intl.NumberFormat('fr-FR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
+const intFmt = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 
 /** Currency, grouped, always 2 decimals: "186 590,98 €". */
 export const pdfEur = (n: number) => normalizeSpaces(eurFmt.format(n))
@@ -31,6 +32,8 @@ export const pdfEur = (n: number) => normalizeSpaces(eurFmt.format(n))
 export const pdfPct = (n: number) => normalizeSpaces(pctFmt.format(n))
 /** Plain decimal, 2 decimals: "2,95". */
 export const pdfDec = (n: number) => normalizeSpaces(decFmt.format(n))
+/** Whole number, grouped: "1 234". */
+export const pdfInt = (n: number) => normalizeSpaces(intFmt.format(n))
 
 /**
  * How a cash difference reads, the way the till count says it: counted minus

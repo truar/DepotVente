@@ -1,5 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
+  Activity,
   ChevronLeft,
   Package,
   Scale,
@@ -96,6 +97,12 @@ export function RouteComponent() {
               onClick={() => navigate({ to: '/reports/material' })}
               icon={<SportShoeIcon className="w-8 h-8 text-blue-600" />}
               title="Bilan matériel"
+              variant="blue"
+            />
+            <ClickableCard
+              onClick={() => navigate({ to: '/reports/live' })}
+              icon={<Activity className="w-8 h-8 text-blue-600" />}
+              title="Suivi en direct"
               variant="blue"
             />
           </div>

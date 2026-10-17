@@ -15,7 +15,7 @@ export type Sale = {
   checkAmount: number | null | undefined
   deferredAmount: number | null | undefined
   totalRefundAmount: number
-  createdAt: Date
+  createdAt: StoredDate
   updatedAt: Date
   deletedAt: Date | null
 }
@@ -220,8 +220,9 @@ export type WorkstationMetadata = {
 //   - une chaîne ISO quand il arrive par la synchro : sync-service fait un
 //     `bulkPut` du JSON brut du serveur, sans réhydrater les dates.
 //
-// Le type le dit pour `collectedAt` et pour le `updatedAt` des contrôles de
-// caisse, seuls champs date réellement lus et formatés par un écran. Les autres
+// Le type le dit pour `collectedAt`, pour le `updatedAt` des contrôles de
+// caisse et pour le `createdAt` des ventes, seuls champs date réellement lus et
+// formatés par un écran. Les autres
 // (`createdAt`, `updatedAt`, `returnedCalculationDate`) ont la même dualité
 // mais ne sont aujourd'hui que testés contre null : si l'un d'eux se met à être
 // formaté, il doit passer par `toIsoString` lui aussi.

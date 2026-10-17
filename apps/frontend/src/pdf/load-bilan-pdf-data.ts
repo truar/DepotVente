@@ -8,9 +8,9 @@ import { computeReturn } from '@/services/return-computation.ts'
 // Les montants s'additionnent en centimes entiers : 10,10 € + 20,20 € font
 // 30,30 €, pas 30.299999999999997, et un bilan juste affiche 0,00 €, jamais
 // « -0,00 € ».
-const add = (...amounts: Array<number>) =>
+export const add = (...amounts: Array<number>) =>
   fromCents(amounts.reduce((a, amount) => a + toCents(amount), 0))
-const sumOf = <T>(items: Array<T>, amount: (item: T) => number) =>
+export const sumOf = <T>(items: Array<T>, amount: (item: T) => number) =>
   add(...items.map(amount))
 
 function computeSaleTotal(sale: Sale): number {
@@ -33,7 +33,7 @@ const safeDiv = (numerator: number, denominator: number) =>
  * y sont rattachés par l'import).
  */
 const EXCLUDED_SALE_REGISTER_IDS = new Set([1])
-const isReportedSaleRegister = (id: number) =>
+export const isReportedSaleRegister = (id: number) =>
   !EXCLUDED_SALE_REGISTER_IDS.has(id)
 
 // --- French display formatters, used only to make the audit trail readable ---

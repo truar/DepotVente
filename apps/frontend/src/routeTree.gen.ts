@@ -31,6 +31,7 @@ import { Route as ReportsSummarySalesRouteImport } from './routes/reports/summar
 import { Route as ReportsSummaryDepositsRouteImport } from './routes/reports/summary-deposits'
 import { Route as ReportsMaterialProRouteImport } from './routes/reports/material-pro'
 import { Route as ReportsMaterialRouteImport } from './routes/reports/material'
+import { Route as ReportsLiveRouteImport } from './routes/reports/live'
 import { Route as ReportsBalanceRouteImport } from './routes/reports/balance'
 import { Route as HiddenPdfsSummaryReturnDepositsRouteImport } from './routes/hidden-pdfs/summary-return-deposits'
 import { Route as HiddenPdfsSummaryDepositsRouteImport } from './routes/hidden-pdfs/summary-deposits'
@@ -163,6 +164,11 @@ const ReportsMaterialProRoute = ReportsMaterialProRouteImport.update({
 const ReportsMaterialRoute = ReportsMaterialRouteImport.update({
   id: '/reports/material',
   path: '/reports/material',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsLiveRoute = ReportsLiveRouteImport.update({
+  id: '/reports/live',
+  path: '/reports/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsBalanceRoute = ReportsBalanceRouteImport.update({
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/reports/balance': typeof ReportsBalanceRoute
+  '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/reports/balance': typeof ReportsBalanceRoute
+  '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/hidden-pdfs/summary-deposits': typeof HiddenPdfsSummaryDepositsRoute
   '/hidden-pdfs/summary-return-deposits': typeof HiddenPdfsSummaryReturnDepositsRoute
   '/reports/balance': typeof ReportsBalanceRoute
+  '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/reports/balance'
+    | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
     | '/reports/summary-deposits'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/reports/balance'
+    | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
     | '/reports/summary-deposits'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/hidden-pdfs/summary-deposits'
     | '/hidden-pdfs/summary-return-deposits'
     | '/reports/balance'
+    | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
     | '/reports/summary-deposits'
@@ -586,6 +598,7 @@ export interface RootRouteChildren {
   HiddenPdfsSummaryDepositsRoute: typeof HiddenPdfsSummaryDepositsRoute
   HiddenPdfsSummaryReturnDepositsRoute: typeof HiddenPdfsSummaryReturnDepositsRoute
   ReportsBalanceRoute: typeof ReportsBalanceRoute
+  ReportsLiveRoute: typeof ReportsLiveRoute
   ReportsMaterialRoute: typeof ReportsMaterialRoute
   ReportsMaterialProRoute: typeof ReportsMaterialProRoute
   ReportsSummaryDepositsRoute: typeof ReportsSummaryDepositsRoute
@@ -771,6 +784,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsMaterialRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/live': {
+      id: '/reports/live'
+      path: '/reports/live'
+      fullPath: '/reports/live'
+      preLoaderRoute: typeof ReportsLiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/balance': {
       id: '/reports/balance'
       path: '/reports/balance'
@@ -949,6 +969,7 @@ const rootRouteChildren: RootRouteChildren = {
   HiddenPdfsSummaryDepositsRoute: HiddenPdfsSummaryDepositsRoute,
   HiddenPdfsSummaryReturnDepositsRoute: HiddenPdfsSummaryReturnDepositsRoute,
   ReportsBalanceRoute: ReportsBalanceRoute,
+  ReportsLiveRoute: ReportsLiveRoute,
   ReportsMaterialRoute: ReportsMaterialRoute,
   ReportsMaterialProRoute: ReportsMaterialProRoute,
   ReportsSummaryDepositsRoute: ReportsSummaryDepositsRoute,
