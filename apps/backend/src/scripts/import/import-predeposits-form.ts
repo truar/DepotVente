@@ -212,6 +212,42 @@ function normalizeBrand(value: string): string {
   return known ?? titleCase(value)
 }
 
+// Distance de Damerau-Levenshtein (variante « optimal string alignment ») :
+// lettres ajoutées, supprimées, remplacées, ou deux voisines inversées, chacune
+// pour 1. « rossigonl » est à 1 de « rossignol ».
+function distance(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array<number>(b.length).fill(0)])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+    }
+  }
+  return d[a.length][b.length]
+}
+
+// Valeurs de la liste les plus proches d'une saisie hors liste, comparées sous
+// leur forme normalisée (sans casse ni accent) : au plus 3, à égalité de
+// distance, et seulement jusqu'au seuil — 1 faute jusqu'à 4 lettres, une de
+// plus par tranche de 4 lettres, 3 au plus. Le script propose, ne corrige pas.
+function suggest(value: string, byKey: Map<string, string>, toKey: (v: string) => string = key): string {
+  const k = toKey(value)
+  if (k === '') return ''
+  const threshold = Math.min(3, Math.ceil(k.length / 4))
+  let best = threshold
+  let matches: string[] = []
+  for (const [candidateKey, candidate] of byKey) {
+    if (candidateKey === '') continue
+    const dist = distance(k, candidateKey)
+    if (dist > best) continue
+    if (dist < best || matches.length === 0) [best, matches] = [dist, [candidate]]
+    else matches.push(candidate)
+  }
+  return matches.length > 0 && matches.length <= 3 ? ` → ${matches.join(' / ')} ?` : ''
+}
+
 function normalizeColor(value: string): string {
   const k = key(value)
   return colorsByKey.get(k) ?? COLOR_ALIASES[k] ?? sentenceCase(value)
@@ -236,6 +272,32 @@ function identificationLetter(index: number): string {
 }
 
 // ── Lecture du CSV ──────────────────────────────────────────────────────────
+
+// Google exporte en UTF-8. Un CSV ouvert puis réenregistré dans Excel arrive
+// souvent dans un autre encodage (« Val\xe9rie », illisible en UTF-8), ou
+// décodé puis réencodé une fois de trop (« ValÃ©rie »). Dans les deux cas
+// les accents seraient importés abîmés : on s'arrête avant.
+function readUtf8(csvPath: string): string {
+  const fail = (detail: string) => {
+    console.error(`❌ Accents abîmés dans le CSV : ${detail}`)
+    console.error('   Le fichier a sans doute été réenregistré hors de Google (Excel…).')
+    console.error('   Retélécharger l’export depuis Google Sheets : Fichier → Télécharger → CSV.')
+    process.exit(1)
+  }
+  let text = ''
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(fs.readFileSync(csvPath))
+  } catch {
+    fail('le fichier n’est pas en UTF-8')
+  }
+  const lines = text.split(/\r?\n/)
+  const broken = lines.findIndex((line) => /\uFFFD|[ÃÂ][\u0080-\u00BF]/.test(line))
+  if (broken !== -1) {
+    const sample = lines[broken].match(/.{0,20}(?:\uFFFD|[ÃÂ][\u0080-\u00BF]).{0,20}/)?.[0]
+    fail(`ligne ${broken + 1}, « ${sample} »`)
+  }
+  return text
+}
 
 // CSV RFC 4180 : virgules, guillemets doublés, retours à la ligne entre
 // guillemets.
@@ -333,7 +395,8 @@ interface Report {
 }
 
 function readResponse(row: string[], number: number, report: Report): Response {
-  const who = `réponse ${number} (${clean(row[2])} ${clean(row[1])})`
+  // Ligne de la Google Sheet des réponses : l'en-tête est la ligne 1.
+  const who = `ligne ${number + 1}, réponse ${number} (${clean(row[2])} ${clean(row[1])})`
   const createdAt = parseTimestamp(clean(row[0]))
   if (!createdAt) report.errors.push(`${who} : horodatage illisible « ${row[0]} »`)
 
@@ -341,7 +404,7 @@ function readResponse(row: string[], number: number, report: Report): Response {
   if (!/^0\d{9}$/.test(phoneNumber)) report.warnings.push(`${who} : téléphone « ${clean(row[3])} » → « ${phoneNumber} », pas 10 chiffres`)
 
   const city = normalizeCity(clean(row[5]))
-  if (city !== '' && !cities.includes(city)) report.offList.push(`${who} : ville « ${clean(row[5])} » → « ${city} »`)
+  if (city !== '' && !cities.includes(city)) report.offList.push(`${who} : ville « ${clean(row[5])} »${suggest(clean(row[5]), citiesByKey, cityKey)}`)
 
   const articles: ArticleInput[] = []
   for (let start = SELLER_HEADERS.length; start < row.length; start += ARTICLE_HEADERS.length) {
@@ -352,23 +415,23 @@ function readResponse(row: string[], number: number, report: Report): Response {
     const where = `${who}, article ${identificationLetter(articles.length)}`
 
     const category = categoriesByKey.get(key(CATEGORY_MAP[rawCategory] ?? rawCategory)) ?? rawCategory
-    if (!categories.includes(category)) report.errors.push(`${where} : type de matériel inconnu « ${rawCategory} »`)
+    if (!categories.includes(category)) report.errors.push(`${where} : type de matériel inconnu « ${rawCategory} »${suggest(rawCategory, categoriesByKey)}`)
 
     const discipline = disciplinesByKey.get(key(DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline)) ?? rawDiscipline
-    if (!disciplines.includes(discipline)) report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »`)
+    if (!disciplines.includes(discipline)) report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »${suggest(rawDiscipline, disciplinesByKey)}`)
 
     // La marque est une liste fermée au poste, comme la catégorie et la
     // discipline : une valeur hors liste s'y affiche vide et l'info est perdue.
     // On vérifie la valeur finale, alias compris.
     const brand = normalizeBrand(rawBrand)
-    if (!brands.includes(brand)) report.errors.push(`${where} : marque « ${rawBrand} » → « ${brand} » absente de la liste`)
+    if (!brands.includes(brand)) report.errors.push(`${where} : marque « ${rawBrand} » absente de la liste${suggest(rawBrand, brandsByKey)}`)
 
     const price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
     if (!(price > 0)) report.errors.push(`${where} : prix « ${rawPrice} » illisible`)
 
     const color = rawColor === '' ? '' : normalizeColor(rawColor)
     if (color === '') report.warnings.push(`${where} : couleur vide, à compléter au dépôt`)
-    else if (!colors.includes(color)) report.offList.push(`${where} : couleur « ${rawColor} » → « ${color} »`)
+    else if (!colors.includes(color)) report.offList.push(`${where} : couleur « ${rawColor} »${suggest(rawColor, colorsByKey)}`)
 
     articles.push({ category, discipline, brand, model: rawModel, size: rawSize, color, price })
   }
@@ -437,7 +500,7 @@ async function main() {
     process.exit(1)
   }
 
-  const [header, ...rows] = parseCsv(fs.readFileSync(csvPath, 'utf-8'))
+  const [header, ...rows] = parseCsv(readUtf8(csvPath))
   checkHeaders(header)
 
   const report: Report = { errors: [], warnings: [], offList: [] }

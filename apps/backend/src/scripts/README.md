@@ -175,6 +175,19 @@ couleur sont des suggestions : une valeur absente reste lisible, la simulation
 la signale avec sa réponse et son article (« 🔎 Hors liste ») pour qu'on la
 corrige dans le CSV si besoin.
 
+Pour chaque valeur hors liste, le script propose la plus proche
+(`marque « Rossigol » absente de la liste → Rossignol ?`) : distance de
+Damerau-Levenshtein sur les formes sans casse ni accent, une inversion de deux
+lettres comptant pour une faute. Seuil : 1 faute jusqu'à 4 lettres, une de plus
+par tranche de 4, 3 au plus ; rien n'est proposé au-delà, ni quand plus de
+trois valeurs sont à égalité. Il propose, il ne corrige pas : la correction se
+fait dans le CSV.
+
+Le CSV doit être l'export UTF-8 de Google. Un fichier qui n'est pas en UTF-8,
+ou dont les accents ont été décodés deux fois (`ValÃ©rie`), arrête le script
+avant toute lecture : c'est le signe qu'il a été réenregistré dans Excel, il
+faut retélécharger l'export.
+
 ## 🗄️ Réinitialiser & importer la base
 
 Les commandes Prisma vivent dans le package `database` (pas `backend`).
