@@ -3,7 +3,7 @@ export const cities = [
   'ALBY S/CHERAN',
   'ANNECY',
   'ANNECY LE VX',
-  'AIX LES BS',
+  'AIX LES BAINS',
   'ALLEVES',
   'ARGONAY',
   'CESSENS',
