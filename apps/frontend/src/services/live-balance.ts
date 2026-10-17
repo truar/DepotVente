@@ -14,13 +14,16 @@ export type LiveBalance = {
   // ventes, comme le théorique de leur contrôle : elles ne sont pas encore
   // comptées.
   expectedCash: number
+  // Le « panier » d'un dépôt : ce qu'une fiche met en vente en moyenne, en
+  // euros et en articles. Mêmes fiches et mêmes articles que le bilan.
+  depositAverage: { amount: number; articles: number }
   // La dernière vente arrivée dans la base de ce poste, et sa caisse.
   lastSale: { at: string; cashRegisterId: number } | null
 }
 
 /**
  * Ce que le suivi en direct affiche : le bilan du moment, plus les espèces
- * attendues et la dernière vente reçue. Mêmes ventes que le bilan : ni
+ * attendues, le dépôt moyen et la dernière vente reçue. Mêmes ventes que le bilan : ni
  * supprimées, ni de la caisse 1.
  */
 export async function loadLiveBalance(): Promise<LiveBalance> {
@@ -49,5 +52,12 @@ export async function loadLiveBalance(): Promise<LiveBalance> {
     }
   }
 
-  return { balance: data, expectedCash, lastSale }
+  const { fichesCount, totalAmount, articlesCount } = data.deposits
+  const perFiche = (n: number) => (fichesCount === 0 ? 0 : n / fichesCount)
+  const depositAverage = {
+    amount: perFiche(totalAmount),
+    articles: perFiche(articlesCount),
+  }
+
+  return { balance: data, expectedCash, depositAverage, lastSale }
 }

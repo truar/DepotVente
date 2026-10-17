@@ -41,6 +41,12 @@ describe('Report: following the bourse live', () => {
 
     const live = await liveBalancePage()
 
+    // Four fiches put 860 € and 9 articles on sale.
+    expect(live.tile('Dépôts')).toEqual([
+      '4',
+      'panier 215,00 €',
+      '2,25 articles',
+    ])
     expect(live.tile('Articles vendus')).toEqual(['5 / 9', '55,56 %'])
     expect(live.tile('Montant des ventes')).toEqual([
       '520,00 €',
@@ -103,6 +109,17 @@ describe('Report: following the bourse live', () => {
       Cartes: '170,00 €',
       Total: '540,00 €',
     })
+  })
+
+  it('shows zeros, not NaN, before anything is deposited', async () => {
+    const live = await liveBalancePage()
+
+    expect(live.tile('Dépôts')).toEqual(['0', 'panier 0,00 €', '0,00 articles'])
+    expect(live.tile('Acheteurs')).toEqual([
+      '0',
+      'panier 0,00 €',
+      '0,00 articles',
+    ])
   })
 
   it('says when the last sale arrived, and from which till', async () => {

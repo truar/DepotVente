@@ -65,12 +65,16 @@ function LiveBalanceView({ live }: { live: LiveBalance }) {
           : 'Aucune vente reçue'}
       </p>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-3">
+        <Tile title="Dépôts" value={pdfInt(deposits.fichesCount)}>
+          <p>panier {pdfEur(live.depositAverage.amount)}</p>
+          <p>{pdfDec(live.depositAverage.articles)} articles</p>
+        </Tile>
         <Tile
           title="Articles vendus"
           value={`${pdfInt(sales.soldArticlesCount)} / ${pdfInt(deposits.articlesCount)}`}
         >
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+          <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
             <div
               className="h-full bg-blue-600"
               style={{
@@ -145,13 +149,13 @@ function Tile(props: { title: string; value: string; children: ReactNode }) {
   return (
     <article
       aria-label={title}
-      className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-lg"
+      className="flex flex-col gap-1 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-md"
     >
       <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
         {title}
       </h3>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
-      <div className="flex flex-col gap-1 text-sm text-gray-600">
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <div className="flex flex-col gap-0.5 text-xs text-gray-600">
         {children}
       </div>
     </article>
