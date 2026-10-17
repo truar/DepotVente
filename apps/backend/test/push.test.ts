@@ -177,6 +177,33 @@ describe('POST /api/push', () => {
       ).resolves.toMatchObject({ city: 'Annecy' })
     })
 
+    // 2 € per started block of five articles: a seller bringing 26 articles
+    // owes 12 €, past what a two-digit amount can hold.
+    it('stores a contribution of ten euros or more', async () => {
+      const seller = contact()
+      await push(pushBody({ recordId: seller.id, data: seller }))
+      const deposit = {
+        id: randomUUID(),
+        sellerId: seller.id,
+        contributionStatus: 'A_PAYER',
+        contributionAmount: 12,
+        depositIndex: 100,
+        incrementStart: 0,
+        dropWorkstationId: 1,
+        type: 'PARTICULIER',
+      }
+
+      const res = await push(
+        pushBody({ collection: 'deposits', recordId: deposit.id, data: deposit }),
+      )
+
+      expect(res.statusCode).toBe(200)
+      const stored = await prisma.deposit.findUnique({
+        where: { id: deposit.id },
+      })
+      expect(Number(stored?.contributionAmount)).toBe(12)
+    })
+
     it('soft-deletes the record, and accepts the same delete twice', async () => {
       const record = contact()
       await push(pushBody({ recordId: record.id, data: record }))
