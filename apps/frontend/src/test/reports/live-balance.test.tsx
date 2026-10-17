@@ -41,11 +41,15 @@ describe('Report: following the bourse live', () => {
 
     const live = await liveBalancePage()
 
-    // Four fiches put 860 € and 9 articles on sale.
-    expect(live.tile('Dépôts')).toEqual([
-      '4',
-      'panier 215,00 €',
-      '2,25 articles',
+    // Four fiches put 860 € and 9 articles on sale: the three private
+    // sellers 360 € and 7 articles, Sport Pro 500 € and 2. Together, the
+    // average fiche would read 215 €, nearly twice a private seller's.
+    expect(live.tile('Dépôts')).toEqual(['4'])
+    expect(live.tileTable('Dépôts')).toEqual([
+      ['', 'Particuliers', 'Pros'],
+      ['fiches', '3', '1'],
+      ['panier', '120,00 €', '500,00 €'],
+      ['articles', '2,33', '2,00'],
     ])
     expect(live.tile('Articles vendus')).toEqual(['5 / 9', '55,56 %'])
     expect(live.tile('Montant des ventes')).toEqual([
@@ -114,7 +118,13 @@ describe('Report: following the bourse live', () => {
   it('shows zeros, not NaN, before anything is deposited', async () => {
     const live = await liveBalancePage()
 
-    expect(live.tile('Dépôts')).toEqual(['0', 'panier 0,00 €', '0,00 articles'])
+    expect(live.tile('Dépôts')).toEqual(['0'])
+    expect(live.tileTable('Dépôts')).toEqual([
+      ['', 'Particuliers', 'Pros'],
+      ['fiches', '0', '0'],
+      ['panier', '0,00 €', '0,00 €'],
+      ['articles', '0,00', '0,00'],
+    ])
     expect(live.tile('Acheteurs')).toEqual([
       '0',
       'panier 0,00 €',

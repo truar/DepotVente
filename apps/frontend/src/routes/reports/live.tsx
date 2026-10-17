@@ -65,10 +65,40 @@ function LiveBalanceView({ live }: { live: LiveBalance }) {
           : 'Aucune vente reçue'}
       </p>
 
-      <div className="grid grid-cols-5 gap-3">
+      {/* La tuile « Dépôts » garde au moins la largeur de son tableau : sur
+          un écran de 1024 px, le panier pro débordait de sa colonne. */}
+      <div className="grid grid-cols-[minmax(max-content,1fr)_repeat(4,minmax(0,1fr))] gap-3">
         <Tile title="Dépôts" value={pdfInt(deposits.fichesCount)}>
-          <p>panier {pdfEur(live.depositAverage.amount)}</p>
-          <p>{pdfDec(live.depositAverage.articles)} articles</p>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <td />
+                <th scope="col" className="text-right font-semibold">
+                  Particuliers
+                </th>
+                <th scope="col" className="pl-2 text-right font-semibold">
+                  Pros
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <TypeRow
+                label="fiches"
+                particuliers={pdfInt(deposits.particuliers.fichesCount)}
+                pros={pdfInt(deposits.pros.fichesCount)}
+              />
+              <TypeRow
+                label="panier"
+                particuliers={pdfEur(live.depositAverage.particuliers.amount)}
+                pros={pdfEur(live.depositAverage.pros.amount)}
+              />
+              <TypeRow
+                label="articles"
+                particuliers={pdfDec(live.depositAverage.particuliers.articles)}
+                pros={pdfDec(live.depositAverage.pros.articles)}
+              />
+            </tbody>
+          </table>
         </Tile>
         <Tile
           title="Articles vendus"
@@ -159,6 +189,19 @@ function Tile(props: { title: string; value: string; children: ReactNode }) {
         {children}
       </div>
     </article>
+  )
+}
+
+function TypeRow(props: { label: string; particuliers: string; pros: string }) {
+  const { label, particuliers, pros } = props
+  return (
+    <tr>
+      <th scope="row" className="pr-2 text-left font-normal">
+        {label}
+      </th>
+      <td className="whitespace-nowrap text-right">{particuliers}</td>
+      <td className="whitespace-nowrap pl-2 text-right">{pros}</td>
+    </tr>
   )
 }
 

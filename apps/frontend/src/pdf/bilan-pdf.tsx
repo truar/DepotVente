@@ -113,6 +113,12 @@ function Line({
   )
 }
 
+export type DepositTypeFigures = {
+  fichesCount: number
+  articlesCount: number
+  totalAmount: number
+}
+
 export type BilanPdfData = {
   year: number
   deposits: {
@@ -124,6 +130,10 @@ export type BilanPdfData = {
     articlesCount: number
     /** Montant total du dépôt (somme des prix des articles) */
     totalAmount: number
+    /** Les mêmes fiches et articles, des seuls particuliers */
+    particuliers: DepositTypeFigures
+    /** Les mêmes fiches et articles, des seuls pros */
+    pros: DepositTypeFigures
   }
   sales: {
     /** Nombre d'acheteurs distincts */

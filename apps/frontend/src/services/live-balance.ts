@@ -1,4 +1,4 @@
-import type { BilanPdfData } from '@/pdf/bilan-pdf.tsx'
+import type { BilanPdfData, DepositTypeFigures } from '@/pdf/bilan-pdf.tsx'
 import { db, toIsoString } from '@/db.ts'
 import {
   add,
@@ -6,6 +6,8 @@ import {
   loadBilanPdfData,
   sumOf,
 } from '@/pdf/load-bilan-pdf-data.ts'
+
+type DepositAverage = { amount: number; articles: number }
 
 export type LiveBalance = {
   // Les chiffres du bilan, tels que le PDF les imprimerait à cet instant.
@@ -15,8 +17,10 @@ export type LiveBalance = {
   // comptées.
   expectedCash: number
   // Le « panier » d'un dépôt : ce qu'une fiche met en vente en moyenne, en
-  // euros et en articles. Mêmes fiches et mêmes articles que le bilan.
-  depositAverage: { amount: number; articles: number }
+  // euros et en articles, particuliers et pros à part — quelques fiches pros
+  // de centaines d'articles noieraient la moyenne des particuliers. Mêmes
+  // fiches et mêmes articles que le bilan.
+  depositAverage: Record<'particuliers' | 'pros', DepositAverage>
   // La dernière vente arrivée dans la base de ce poste, et sa caisse.
   lastSale: { at: string; cashRegisterId: number } | null
 }
@@ -52,12 +56,16 @@ export async function loadLiveBalance(): Promise<LiveBalance> {
     }
   }
 
-  const { fichesCount, totalAmount, articlesCount } = data.deposits
-  const perFiche = (n: number) => (fichesCount === 0 ? 0 : n / fichesCount)
   const depositAverage = {
-    amount: perFiche(totalAmount),
-    articles: perFiche(articlesCount),
+    particuliers: averageOf(data.deposits.particuliers),
+    pros: averageOf(data.deposits.pros),
   }
 
   return { balance: data, expectedCash, depositAverage, lastSale }
+}
+
+function averageOf(figures: DepositTypeFigures): DepositAverage {
+  const { fichesCount, totalAmount, articlesCount } = figures
+  const perFiche = (n: number) => (fichesCount === 0 ? 0 : n / fichesCount)
+  return { amount: perFiche(totalAmount), articles: perFiche(articlesCount) }
 }

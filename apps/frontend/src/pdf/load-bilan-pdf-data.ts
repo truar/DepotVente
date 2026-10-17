@@ -165,6 +165,20 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const predepositsCount = confirmedPredeposits.length
   const articlesCount = depositArticles.length
   const depositTotalAmount = sumOf(depositArticles, (x) => x.price)
+  // The same fiches and articles, one type of seller at a time: a handful
+  // of pro fiches of hundreds of articles would drown the private sellers
+  // in any average.
+  const depositFiguresOf = (type: Deposit['type']) => {
+    const ids = new Set(
+      deposits.filter((d) => d.type === type).map((d) => d.id),
+    )
+    const articles = depositArticles.filter((a) => ids.has(a.depositId))
+    return {
+      fichesCount: ids.size,
+      articlesCount: articles.length,
+      totalAmount: sumOf(articles, (x) => x.price),
+    }
+  }
 
   // Achats CMR: what the club bought back to make up for a theft.
   const cmrPurchaseSales = sales.filter((s) => cmrContactIds.has(s.buyerId))
@@ -347,6 +361,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       predepositsCount,
       articlesCount,
       totalAmount: depositTotalAmount,
+      particuliers: depositFiguresOf('PARTICULIER'),
+      pros: depositFiguresOf('PRO'),
     },
     sales: {
       buyersCount,

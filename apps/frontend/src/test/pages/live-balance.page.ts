@@ -1,5 +1,5 @@
 // Page object for « Suivi en direct de la bourse » (/reports/live, admin
-// only): four tiles, then the detail of the theoretical takings beside what
+// only): five tiles, then the detail of the theoretical takings beside what
 // came in, all as the balance would print them now.
 import { plain } from '@/test/amounts.ts'
 import { openScreen, screen, within } from '@/test/screen.tsx'
@@ -16,6 +16,14 @@ export async function liveBalancePage() {
     tile(name: string): Array<string> {
       const tile = screen.getByRole('article', { name })
       return [...tile.querySelectorAll('p')].map((p) => plain(p.textContent))
+    },
+    // The table of a tile split by type of seller, header row first:
+    // [['', 'Particuliers', 'Pros'], ['fiches', '3', '1'], …].
+    tileTable(name: string): Array<Array<string>> {
+      const tile = screen.getByRole('article', { name })
+      return [...tile.querySelectorAll('tr')].map((row) =>
+        [...row.children].map((cell) => plain(cell.textContent)),
+      )
     },
     // Every line of a block, « Droits CMR » -> « 62,00 € ».
     lines(block: string): Record<string, string> {
