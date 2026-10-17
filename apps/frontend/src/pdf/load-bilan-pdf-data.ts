@@ -1,8 +1,9 @@
 import type { BilanPdfData } from './bilan-pdf'
-import type {Deposit, Sale} from '@/db';
+import type {Article, Deposit, Sale} from '@/db';
 import {   db } from '@/db'
 import { fromCents, getYear, isClubBuyer, toCents } from '@/utils'
 import { cashVerdict } from '@/pdf/format.ts'
+import { computeReturn } from '@/services/return-computation.ts'
 
 // Les montants s'additionnent en centimes entiers : 10,10 € + 20,20 € font
 // 30,30 €, pas 30.299999999999997, et un bilan juste affiche 0,00 €, jamais
@@ -113,9 +114,34 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const depositIdsWithArticles = new Set(
     depositArticles.map((a) => a.depositId),
   )
-  const deposits = allDeposits.filter(
-    (d) => d.deletedAt == null && depositIdsWithArticles.has(d.id),
+  // Le bilan est imprimé plusieurs fois dans la journée : le retour de chaque
+  // fiche y est refait d'après ses ventes du moment, comme « Calculer les
+  // retours » l'établirait, sans attendre ce calcul ni dépendre de sa
+  // dernière exécution. Seule une fiche dont le chèque est fait garde ce
+  // qu'elle porte : c'est ce qui a été payé au vendeur.
+  const cmrContactIds = new Set(
+    allContacts.filter((c) => isClubBuyer(c)).map((c) => c.id),
   )
+  const clubSaleIds = new Set(
+    allSales.filter((s) => cmrContactIds.has(s.buyerId)).map((s) => s.id),
+  )
+  const articlesByDeposit = new Map<string, Array<Article>>()
+  for (const article of allArticles) {
+    const articles = articlesByDeposit.get(article.depositId) ?? []
+    articles.push(article)
+    articlesByDeposit.set(article.depositId, articles)
+  }
+  const deposits = allDeposits
+    .filter((d) => d.deletedAt == null && depositIdsWithArticles.has(d.id))
+    .map((d) =>
+      d.checkId != null
+        ? d
+        : {
+            ...d,
+            ...computeReturn(d, articlesByDeposit.get(d.id) ?? [], clubSaleIds),
+          },
+    )
+  const chequeWrittenCount = deposits.filter((d) => d.checkId != null).length
   const sales = allSales.filter(
     (s) => s.deletedAt == null && isReportedSaleRegister(s.incrementStart),
   )
@@ -141,9 +167,6 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const depositTotalAmount = sumOf(depositArticles, (x) => x.price)
 
   // Achats CMR: what the club bought back to make up for a theft.
-  const cmrContactIds = new Set(
-    allContacts.filter((c) => isClubBuyer(c)).map((c) => c.id),
-  )
   const cmrPurchaseSales = sales.filter((s) => cmrContactIds.has(s.buyerId))
   const cmrPurchaseSaleIds = new Set(cmrPurchaseSales.map((s) => s.id))
   const cmrPurchases = sumOf(cmrPurchaseSales, computeSaleTotal)
@@ -452,7 +475,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Cotisations payées',
           value: eur(paidContributions),
           source:
-            'contributionAmount (PAYE + SOLDE) + dueContributionAmount (DEDUITE)',
+            'contributionAmount (PAYE + SOLDE) + dueContributionAmount (DEDUITE, dès que les ventes du vendeur la couvrent)',
           formula: `${eur(paidContributionsPaye)} (PAYE) + ${eur(paidContributionsSolde)} (SOLDE) + ${eur(deductedContributions)} (DEDUITE)`,
         },
         {
@@ -470,8 +493,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Droits CMR',
           value: eur(cmrRights),
-          source: 'Σ deposit.clubAmount (10% part. / 15% pro du vendu)',
-          formula: `Σ clubAmount sur ${num(fichesCount)} dépôts`,
+          source:
+            'Σ clubAmount (10% part. / 15% pro du vendu), refait d’après les ventes du moment',
+          formula: `Σ clubAmount sur ${num(fichesCount)} dépôts : ${num(fichesCount - chequeWrittenCount)} refait(s) d’après les ventes, ${num(chequeWrittenCount)} au chèque fait`,
         },
         {
           label: 'Achats CMR',
@@ -524,7 +548,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Règlements pros',
           value: eur(proPayments),
-          source: 'Σ sellerAmount (PRO) — réglés d’office',
+          source:
+            'Σ sellerAmount (PRO), refait d’après les ventes du moment — réglés d’office',
           formula: `Σ sellerAmount sur ${num(proDeposits.length)} dépôt(s) pro`,
         },
         {
@@ -542,7 +567,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Chèques particuliers non faits',
           value: eur(unmadeIndividualChecks),
-          source: 'Σ sellerAmount (PARTICULIER, sans chèque)',
+          source:
+            'Σ sellerAmount (PARTICULIER, sans chèque), refait d’après les ventes du moment',
           formula: `Σ sellerAmount dus sans chèque émis`,
         },
         {

@@ -75,6 +75,9 @@ export type BourseSpec = {
   sales: Array<SaleSpec>
   refunds: Array<RefundSpec>
   counts: Array<CountSpec>
+  // Fiches whose return is worked out (« Calculer les retours »), at till
+  // 7000.
+  returnsWorkedOut: Array<string>
   // Fiches whose contribution is settled in the evening, at till 7000.
   settled: Array<string>
   // Fiches whose seller comes for the cheque, at till 7000.
@@ -161,6 +164,7 @@ export function referenceBourse(): BourseSpec {
       { till: 2000, type: 'DEPOSIT', real: 0 },
       { till: 7000, type: 'RETURN', real: 0 },
     ],
+    returnsWorkedOut: ['durand', 'martin', 'bon', 'sport'],
     settled: [],
     cheques: ['durand', 'martin'],
   }
@@ -262,8 +266,8 @@ export async function givenTheBourse(spec: BourseSpec) {
 
   // ---- the evening, at the return till ----
   await givenWorkstation(7000)
-  for (const { deposit } of Object.values(fiches)) {
-    await app.computeReturn(deposit.id)
+  for (const key of spec.returnsWorkedOut) {
+    await app.computeReturn(fiches[key].deposit.id)
   }
   for (const key of spec.settled) {
     await db.deposits.update(fiches[key].deposit.id, {

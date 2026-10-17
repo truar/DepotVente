@@ -10,6 +10,8 @@ import {
   referenceBourse,
 } from '@/test/scenarios/bourse-state.ts'
 import { referenceBalance } from '@/test/scenarios/reference-balance.ts'
+import { db } from '@/db.ts'
+import { givenSale } from '@/test/harness.ts'
 
 // The reference bourse, changed by `change`, built into the base.
 async function givenTheReferenceBourseWhere(
@@ -275,6 +277,64 @@ describe('Report: the balance, variant by variant', () => {
       'Montant total décaissé': '483,27 €',
       'Règlements particuliers': '313,27 €',
       'Recette bourse': '69,03 €',
+    })
+  })
+
+  // Nobody works the returns out during the day, yet the balance is printed
+  // several times: it works each fiche's return out again from its sales, so
+  // the rights and what the sellers are owed are already there.
+  it('V14: before any return is worked out, the balance already counts what the sales owe', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.returnsWorkedOut = []
+      bourse.cheques = []
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      // No cheque written yet: only the pro is paid.
+      'Montant total décaissé': '170,00 €',
+      'Règlements particuliers': '0,00 €',
+      // Durand 126, Martin 162 − 2: still in the tills, owed to them.
+      'Chèques particuliers non faits': '286,00 €',
+    })
+  })
+
+  // A return worked out early is no longer the last word: a sale made since
+  // counts at once, without working the returns out again.
+  it('V15: a sale made after the returns are worked out counts at once', async () => {
+    await givenTheReferenceBourseWhere()
+    // Denis buys Bon's 20 € article at till 6000, by card.
+    const bon = await db.deposits.where({ depositIndex: 2001 }).first()
+    const article = (
+      await db.articles.where({ depositId: bon!.id }).toArray()
+    ).find((a) => a.price === 20)!
+    const { sale } = await givenSale({
+      saleIndex: 6002,
+      incrementStart: 6000,
+      cashAmount: 0,
+      cardAmount: 20,
+      buyer: { lastName: 'Moreau', firstName: 'Denis' },
+    })
+    await db.articles.update(article.id, { saleId: sale.id, status: 'SOLD' })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      "Nombre d'acheteurs": '4',
+      'Panier moyen (€)': '135,00 €',
+      'Panier moyen (articles)': '1,5',
+      "Nombre d'articles vendus": '6',
+      '% des articles en dépôt': '66,67 %',
+      'Montant total des ventes': '540,00 €',
+      '% de la valeur du dépôt': '62,79 %',
+      // 62 + 10 % of 20.
+      'Droits CMR': '64,00 €',
+      'Recette bourse théorique': '68,00 €',
+      'Total paiements': '540,00 €',
+      'Total cartes': '170,00 €',
+      // Bon's 20 − 2, no cheque written for him yet.
+      'Chèques particuliers non faits': '18,00 €',
+      // 540 + 2 − 456 − 18.
+      'Recette bourse': '68,00 €',
     })
   })
 })
