@@ -154,19 +154,26 @@ sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée.
 | Formulaire | Pré-dépôt |
 |---|---|
 | Nom / Prénom | `NOM` en majuscules / `Prénom` capitalisé |
-| Portable | chiffres seuls (`06.31.14.41.54` → `0631144154`) |
-| Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`), sinon en majuscules |
+| Portable | chiffres seuls (`06.31.14.41.54` → `0631144154`), `+33`/`0033` remplacé par `0`, `0` initial remis sur 9 chiffres (`673999680` → `0673999680`) ; signalé s'il n'a toujours pas 10 chiffres |
+| Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`, `Menthonnex-sous-Clermont` → `MENTHONNEX` via `CITY_ALIASES`), sinon en majuscules et signalée |
 | Type de matériel | `Vêtements de ski` → `Vêtement`, le reste ramené à `types/categories.ts` sans casse ni accent (`Batons` → `Bâtons`) |
 | Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste ramené à `types/disciplines.ts` sans casse ni accent (`Telemark` → `Télémark`) |
-| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`), sinon gardée |
-| Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée |
+| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`), sinon **bloque** |
+| Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée et signalée |
 | Descriptif / Taille / Prix | modèle / taille / prix, tels quels |
 
 Les fiches sont numérotées par ordre alphabétique (nom puis prénom) à la suite
 du plus grand numéro de pré-dépôt en base ; les articles prennent les lettres
-A, B, C… dans l'ordre du formulaire. Un type de matériel ou une discipline
-inconnus, un prix illisible ou un téléphone déjà présent en base bloquent
-`--apply` : ce dernier cas empêche un second passage du script.
+A, B, C… dans l'ordre du formulaire. Un type de matériel, une discipline ou
+une marque hors liste, un prix illisible ou un téléphone déjà présent en base
+bloquent `--apply` : ce dernier cas empêche un second passage du script.
+
+Chaque champ ramené à une liste est comparé à cette liste **après** le mapping,
+alias compris. Type de matériel, discipline et marque sont des listes fermées
+au poste : une valeur absente s'y afficherait vide, donc elle bloque. Ville et
+couleur sont des suggestions : une valeur absente reste lisible, la simulation
+la signale avec sa réponse et son article (« 🔎 Hors liste ») pour qu'on la
+corrige dans le CSV si besoin.
 
 ## 🗄️ Réinitialiser & importer la base
 

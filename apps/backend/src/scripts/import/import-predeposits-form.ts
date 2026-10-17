@@ -108,6 +108,8 @@ const CITY_ALIASES: Record<string, string> = {
   VALLIERESSFIER: 'VALLIERES',
   MARCELLAZALBANAIS: 'MARCELLAZ',
   ENTRELACSSTGERMAINLACHAMBOTTE: 'ENTRELACS',
+  MENTHONNEXSOUSCLERMONT: 'MENTHONNEX',
+  MENTHONNEXSOUSCLERMOND: 'MENTHONNEX',
 }
 
 // ── Arguments ───────────────────────────────────────────────────────────────
@@ -175,10 +177,12 @@ function sentenceCase(value: string): string {
   return base.charAt(0).toLocaleUpperCase('fr') + base.slice(1)
 }
 
+// « +33 6 31… », « 0033 6 31… » et « +33 (0)6 31… » → « 0631… » ; un numéro
+// de 9 chiffres a perdu son 0 initial (Google Sheets le lit comme un nombre).
 function normalizePhone(value: string): string {
   const digits = value.replace(/\D/g, '')
-  if (digits.length === 11 && digits.startsWith('33')) return `0${digits.slice(2)}`
-  return digits
+  const national = digits.replace(/^(00)?33(0)?(?=\d{9}$)/, '')
+  return national.length === 9 ? `0${national}` : national
 }
 
 function cityKey(value: string): string {
@@ -195,19 +199,17 @@ const categoriesByKey = new Map(categories.map((category) => [key(category), cat
 const disciplinesByKey = new Map(disciplines.map((discipline) => [key(discipline), discipline]))
 const colorsByKey = new Map(colors.map((color) => [key(color), color]))
 
-function normalizeCity(value: string): { city: string; matched: boolean } {
+function normalizeCity(value: string): string {
   const k = cityKey(value)
   const known = citiesByKey.get(k) ?? CITY_ALIASES[k]
-  if (known) return { city: known, matched: true }
-  return { city: value.toLocaleUpperCase('fr'), matched: false }
+  return known ?? value.toLocaleUpperCase('fr')
 }
 
-function normalizeBrand(value: string): { brand: string; matched: boolean } {
-  if (value === '') return { brand: '?', matched: true }
+function normalizeBrand(value: string): string {
+  if (value === '') return '?'
   const k = key(value)
   const known = brandsByKey.get(k) ?? BRAND_ALIASES[k]
-  if (known) return { brand: known, matched: true }
-  return { brand: titleCase(value), matched: false }
+  return known ?? titleCase(value)
 }
 
 function normalizeColor(value: string): string {
@@ -325,12 +327,9 @@ interface Response {
 interface Report {
   errors: string[]
   warnings: string[]
-  unknownBrands: Map<string, number>
-  unknownCities: Map<string, number>
-}
-
-function bump(map: Map<string, number>, value: string) {
-  map.set(value, (map.get(value) ?? 0) + 1)
+  // Valeurs absentes d'une liste à suggestions (ville, couleur) : le poste les
+  // affiche telles quelles, mais il faut les relire.
+  offList: string[]
 }
 
 function readResponse(row: string[], number: number, report: Report): Response {
@@ -341,8 +340,8 @@ function readResponse(row: string[], number: number, report: Report): Response {
   const phoneNumber = normalizePhone(row[3] ?? '')
   if (!/^0\d{9}$/.test(phoneNumber)) report.warnings.push(`${who} : téléphone « ${clean(row[3])} » → « ${phoneNumber} », pas 10 chiffres`)
 
-  const { city, matched } = normalizeCity(clean(row[5]))
-  if (!matched && city !== '') bump(report.unknownCities, city)
+  const city = normalizeCity(clean(row[5]))
+  if (city !== '' && !cities.includes(city)) report.offList.push(`${who} : ville « ${clean(row[5])} » → « ${city} »`)
 
   const articles: ArticleInput[] = []
   for (let start = SELLER_HEADERS.length; start < row.length; start += ARTICLE_HEADERS.length) {
@@ -358,14 +357,18 @@ function readResponse(row: string[], number: number, report: Report): Response {
     const discipline = disciplinesByKey.get(key(DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline)) ?? rawDiscipline
     if (!disciplines.includes(discipline)) report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »`)
 
-    const { brand, matched: brandMatched } = normalizeBrand(rawBrand)
-    if (!brandMatched) bump(report.unknownBrands, brand)
+    // La marque est une liste fermée au poste, comme la catégorie et la
+    // discipline : une valeur hors liste s'y affiche vide et l'info est perdue.
+    // On vérifie la valeur finale, alias compris.
+    const brand = normalizeBrand(rawBrand)
+    if (!brands.includes(brand)) report.errors.push(`${where} : marque « ${rawBrand} » → « ${brand} » absente de la liste`)
 
     const price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
     if (!(price > 0)) report.errors.push(`${where} : prix « ${rawPrice} » illisible`)
 
     const color = rawColor === '' ? '' : normalizeColor(rawColor)
     if (color === '') report.warnings.push(`${where} : couleur vide, à compléter au dépôt`)
+    else if (!colors.includes(color)) report.offList.push(`${where} : couleur « ${rawColor} » → « ${color} »`)
 
     articles.push({ category, discipline, brand, model: rawModel, size: rawSize, color, price })
   }
@@ -437,7 +440,7 @@ async function main() {
   const [header, ...rows] = parseCsv(fs.readFileSync(csvPath, 'utf-8'))
   checkHeaders(header)
 
-  const report: Report = { errors: [], warnings: [], unknownBrands: new Map(), unknownCities: new Map() }
+  const report: Report = { errors: [], warnings: [], offList: [] }
   const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
@@ -551,13 +554,10 @@ async function main() {
     }
     console.log()
   }
-  if (report.unknownBrands.size > 0) {
-    console.log('🏷️  Marques hors liste, gardées telles quelles :')
-    console.log(`   ${[...report.unknownBrands].map(([brand, n]) => `${brand} (${n})`).join(', ')}\n`)
-  }
-  if (report.unknownCities.size > 0) {
-    console.log('🏘️  Villes hors liste, gardées telles quelles :')
-    console.log(`   ${[...report.unknownCities].map(([city, n]) => `${city} (${n})`).join(', ')}\n`)
+  if (report.offList.length > 0) {
+    console.log('🔎 Hors liste, gardé tel quel (à relire, corriger dans le CSV si besoin) :')
+    for (const line of report.offList) console.log(`   ${line}`)
+    console.log()
   }
   if (report.warnings.length > 0) {
     console.log('⚠️  Avertissements :')
