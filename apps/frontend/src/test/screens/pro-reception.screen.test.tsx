@@ -18,16 +18,16 @@ const pending = (category: string, price: number): Partial<Article> => ({
 const code = (depositIndex: number, letter: string) =>
   `${YEAR} ${depositIndex}${letter}`
 
-// ALLOSKI (fiche 3) brings two pairs of skis and two pairs of boots.
-// PERRILLAT (fiche 2) is the other professional of the day.
+// ALPHA (fiche 3) brings two pairs of skis and two pairs of boots.
+// BRAVO (fiche 2) is the other professional of the day.
 async function givenTwoProfessionals() {
   await givenWorkstation(1000)
-  const allosky = await givenDeposit(
+  const alpha = await givenDeposit(
     {
       depositIndex: 3,
       type: 'PRO',
       contributionStatus: 'PRO',
-      seller: { lastName: 'Allo', firstName: 'Ski' },
+      seller: { lastName: 'Alpha', firstName: 'Ski' },
     },
     [
       pending('Skis', 200),
@@ -36,16 +36,16 @@ async function givenTwoProfessionals() {
       pending('Chaussures', 60),
     ],
   )
-  const perrillat = await givenDeposit(
+  const bravo = await givenDeposit(
     {
       depositIndex: 2,
       type: 'PRO',
       contributionStatus: 'PRO',
-      seller: { lastName: 'Perrillat', firstName: 'Sport' },
+      seller: { lastName: 'Bravo', firstName: 'Sport' },
     },
     [pending('Skis', 300)],
   )
-  return { allosky, perrillat }
+  return { alpha, bravo }
 }
 
 const statusOf = async (articleId: string) =>
@@ -63,7 +63,7 @@ describe('Screen: receiving a professional’s articles', () => {
     const page = await proReceptionPage()
     // Picking a professional is enough: there is no "Valider" after it.
     expect(page.hasButton('Valider')).toBe(false)
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     expect(page.scannedCount()).toBe(0)
     expect(page.totalCount()).toBe(4)
@@ -82,12 +82,12 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('asks before switching to another professional picked in the list', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     await waitFor(() => expect(page.totalCount()).toBe(4))
 
     // Another professional is picked by mistake: the volunteer is asked,
     // says no, and stays on the open one.
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
     let question = await page.question()
     expect(question.title).toBe(
       'Etes vous sur de vouloir changer de professionnel\u00a0?',
@@ -95,7 +95,7 @@ describe('Screen: receiving a professional’s articles', () => {
     await question.decline()
     expect(page.totalCount()).toBe(4)
 
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
     question = await page.question()
     await question.confirm()
     await waitFor(() => expect(page.totalCount()).toBe(1))
@@ -103,10 +103,10 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('keeps the professional open, without asking, when picked again', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     await waitFor(() => expect(page.totalCount()).toBe(4))
 
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     expect(page.isQuestionOpen()).toBe(false)
     expect(page.totalCount()).toBe(4)
@@ -114,7 +114,7 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('receives a scanned article, moves the count, and lists it under its category', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     await page.scan(code(3, 'A'))
     await page.lastToast(`Dépôt de l'article ${code(3, 'A')} effectué`)
@@ -136,7 +136,7 @@ describe('Screen: receiving a professional’s articles', () => {
       expect.objectContaining({
         collection: 'articles',
         operation: 'update',
-        recordId: day.allosky.articles[0].id,
+        recordId: day.alpha.articles[0].id,
         status: 'pending',
         data: { status: 'RECEPTION_OK', updatedAt: expect.any(Date) },
       }),
@@ -145,7 +145,7 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('queues one reception per article scanned in, for the other computers', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     await page.scan(code(3, 'A'))
     await page.scan(code(3, 'C'))
@@ -155,8 +155,8 @@ describe('Screen: receiving a professional’s articles', () => {
     expect(
       queued.map((op) => [op.collection, op.operation, op.recordId]),
     ).toEqual([
-      ['articles', 'update', day.allosky.articles[0].id],
-      ['articles', 'update', day.allosky.articles[2].id],
+      ['articles', 'update', day.alpha.articles[0].id],
+      ['articles', 'update', day.alpha.articles[2].id],
     ])
     expect(queued.map((op) => op.data.status)).toEqual([
       'RECEPTION_OK',
@@ -169,7 +169,7 @@ describe('Screen: receiving a professional’s articles', () => {
   // glance which line it landed on.
   it('makes the article just scanned stand out for a few seconds', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     expect(page.highlightedCodes()).toEqual([])
 
     await page.scan(code(3, 'A'))
@@ -187,7 +187,7 @@ describe('Screen: receiving a professional’s articles', () => {
   // article joins the received list under its own category.
   it('keeps the list grouped by category as the groups are scanned', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     // The two pairs of skis
     await page.scan(code(3, 'A'))
@@ -221,7 +221,7 @@ describe('Screen: receiving a professional’s articles', () => {
   // to receive is how the desk checks a group is finished.
   it('offers every category in the filter, even those with nothing to scan', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toHaveLength(4))
 
@@ -245,7 +245,7 @@ describe('Screen: receiving a professional’s articles', () => {
   // on it, unlike on the deposit sheet a private seller takes home.
   it('prints the pending articles without the notices meant for members', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     await page.showPending()
     await waitFor(() => expect(page.listedCodes()).toHaveLength(4))
 
@@ -253,7 +253,7 @@ describe('Screen: receiving a professional’s articles', () => {
 
     const sheet = await lastPrintedText()
     expect(sheet).toContain('Fiche N° 3')
-    expect(sheet).toContain('ALLO Ski')
+    expect(sheet).toContain('ALPHA Ski')
     expect(sheet).toContain('Sous-total Skis : 2 articles')
     // A professional collects nothing on Saturday evening, and the club's
     // announcements are not addressed to a shop.
@@ -265,7 +265,7 @@ describe('Screen: receiving a professional’s articles', () => {
 
   it('refuses an article that belongs to another professional', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     await page.scan(code(2, 'A'))
 
@@ -278,14 +278,14 @@ describe('Screen: receiving a professional’s articles', () => {
     expect(page.scannedCount()).toBe(0)
     expect(page.listedCodes()).toEqual([])
     expect(page.scanInput()).toBe('')
-    await expect(statusOf(day.perrillat.articles[0].id)).resolves.toBe(
+    await expect(statusOf(day.bravo.articles[0].id)).resolves.toBe(
       'RECEPTION_PENDING',
     )
   })
 
   it('refuses an article already received, and does not count it twice', async () => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     await page.scan(code(3, 'A'))
     await waitFor(() => expect(page.scannedCount()).toBe(1))
 
@@ -311,7 +311,7 @@ describe('Screen: receiving a professional’s articles', () => {
     ],
   ])('refuses a code %s', async (_label, scanned, message) => {
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     await page.scan(scanned)
 

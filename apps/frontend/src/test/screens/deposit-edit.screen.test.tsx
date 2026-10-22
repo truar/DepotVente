@@ -149,7 +149,7 @@ describe('Screen: correct a registered deposit', () => {
         type: 'PRO',
         contributionStatus: 'PRO',
         contributionAmount: 0,
-        seller: { lastName: 'Allo', firstName: 'Ski' },
+        seller: { lastName: 'Alpha', firstName: 'Ski' },
       },
       [{ status: 'RECEPTION_PENDING' }, {}, { status: 'RECEPTION_PENDING' }],
     )
@@ -159,7 +159,7 @@ describe('Screen: correct a registered deposit', () => {
     await page.savedToast(12)
 
     // At the reception desk, A and C are still waiting to be scanned.
-    const reception = await proReceptionOf('Allo')
+    const reception = await proReceptionOf('Alpha')
     // The counts load after the professional is picked.
     await waitFor(() =>
       expect([reception.scannedCount(), reception.totalCount()]).toEqual([
@@ -227,7 +227,7 @@ describe('Screen: correct a registered deposit', () => {
         type: 'PRO',
         contributionStatus: 'PRO',
         contributionAmount: 0,
-        seller: { lastName: 'Allo', firstName: 'Ski' },
+        seller: { lastName: 'Alpha', firstName: 'Ski' },
       },
       [{ status: 'RECEPTION_PENDING' }],
     )
@@ -239,7 +239,7 @@ describe('Screen: correct a registered deposit', () => {
     await page.savedToast(12)
 
     // At the reception desk, B counts as scanned; only A is still awaited.
-    const reception = await proReceptionOf('Allo')
+    const reception = await proReceptionOf('Alpha')
     // The counts load after the professional is picked.
     await waitFor(() =>
       expect([reception.scannedCount(), reception.totalCount()]).toEqual([

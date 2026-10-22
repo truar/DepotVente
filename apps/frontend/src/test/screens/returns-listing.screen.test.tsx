@@ -32,7 +32,7 @@ describe('Screen: the return listing', () => {
         type: 'PRO',
         contributionStatus: 'PRO',
         contributionAmount: 0,
-        seller: { lastName: 'Allo', firstName: 'Ski' },
+        seller: { lastName: 'Alpha', firstName: 'Ski' },
       },
       [{ price: 200, saleId: 'a-sale', status: 'SOLD' }],
     )

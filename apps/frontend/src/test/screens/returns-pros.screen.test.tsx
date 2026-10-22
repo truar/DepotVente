@@ -5,35 +5,35 @@ import { depositEditPage } from '@/test/pages/deposit-edit.page.ts'
 import { returnsProsPage } from '@/test/pages/returns-pros.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
-// At the end of the sale, PERRILLAT (fiche 4) comes back for the two pairs
-// of skis nobody bought. ALLOSKI (fiche 3) is the other professional.
+// At the end of the sale, BRAVO (fiche 4) comes back for the two pairs
+// of skis nobody bought. ALPHA (fiche 3) is the other professional.
 describe('Screen: return the unsold articles to a professional', () => {
-  let perrillatCodes: Array<string>
-  let alloCode: string
+  let bravoCodes: Array<string>
+  let alphaCode: string
 
   beforeEach(async () => {
     signedInAs()
     await givenWorkstation(1000)
-    const allo = await givenDeposit(
+    const alpha = await givenDeposit(
       {
         depositIndex: 3,
         type: 'PRO',
         contributionStatus: 'PRO',
-        seller: { lastName: 'Allo', firstName: 'Ski' },
+        seller: { lastName: 'Alpha', firstName: 'Ski' },
       },
       [{ price: 200 }],
     )
-    const perrillat = await givenDeposit(
+    const bravo = await givenDeposit(
       {
         depositIndex: 4,
         type: 'PRO',
         contributionStatus: 'PRO',
-        seller: { lastName: 'Perrillat', firstName: 'Jean' },
+        seller: { lastName: 'Bravo', firstName: 'Jean' },
       },
       [{ price: 90 }, { price: 70 }],
     )
-    perrillatCodes = perrillat.articles.map((a) => a.code)
-    alloCode = allo.articles[0].code
+    bravoCodes = bravo.articles.map((a) => a.code)
+    alphaCode = alpha.articles[0].code
   })
 
   it('opens the professional picked in the list, then scans their articles out', async () => {
@@ -42,44 +42,44 @@ describe('Screen: return the unsold articles to a professional', () => {
     // Picking a professional is enough: there is no "Valider" after it.
     expect(page.hasButton('Valider')).toBe(false)
 
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
-    expect(page.selectedPro()).toBe('4 - Jean Perrillat')
+    expect(page.selectedPro()).toBe('4 - Jean Bravo')
     expect(page.returnedCount()).toBe(0)
     expect(page.toReturnCount()).toBe(2)
 
-    await page.scan(perrillatCodes[0])
+    await page.scan(bravoCodes[0])
 
     await waitFor(() => expect(page.returnedCount()).toBe(1))
     expect(page.toReturnCount()).toBe(1)
     // The pair scanned out is listed as already scanned; the other one is
     // still waiting for its scan.
-    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[0]]))
+    await waitFor(() => expect(page.listedCodes()).toEqual([bravoCodes[0]]))
     await page.showPending()
-    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[1]]))
+    await waitFor(() => expect(page.listedCodes()).toEqual([bravoCodes[1]]))
   })
 
   it('asks before switching to another professional picked in the list', async () => {
     const page = await returnsProsPage()
 
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
     expect(page.toReturnCount()).toBe(2)
 
     // Another professional is picked by mistake: the volunteer is asked,
     // says no, and stays on the open one.
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     let question = await page.question()
     expect(question.title).toBe(
       'Etes vous sur de vouloir changer de professionnel\u00a0?',
     )
     await question.decline()
-    expect(page.selectedPro()).toBe('4 - Jean Perrillat')
+    expect(page.selectedPro()).toBe('4 - Jean Bravo')
     expect(page.toReturnCount()).toBe(2)
 
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
     question = await page.question()
     await question.confirm()
-    expect(page.selectedPro()).toBe('3 - Ski Allo')
+    expect(page.selectedPro()).toBe('3 - Ski Alpha')
     await waitFor(() => expect(page.toReturnCount()).toBe(1))
   })
 
@@ -87,31 +87,31 @@ describe('Screen: return the unsold articles to a professional', () => {
   // must not close their articles.
   it('keeps the professional open when picked again', async () => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
     expect(page.isQuestionOpen()).toBe(false)
-    expect(page.selectedPro()).toBe('4 - Jean Perrillat')
+    expect(page.selectedPro()).toBe('4 - Jean Bravo')
     expect(page.isScanOpen()).toBe(true)
   })
 
-  // The volunteer scans a pair of skis PERRILLAT takes back. The
+  // The volunteer scans a pair of skis BRAVO takes back. The
   // toast confirms it, the pair moves from « En attente de scan » to « Déjà
   // scannés », and the field is ready for the next scan.
   it('confirms a scan, moves the article to the scanned list and empties the field', async () => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
-    await page.scan(perrillatCodes[1])
+    await page.scan(bravoCodes[1])
 
-    await page.toast(`Retour de l'article ${perrillatCodes[1]} effectué`)
+    await page.toast(`Retour de l'article ${bravoCodes[1]} effectué`)
     expect(page.scanInput()).toBe('')
     await waitFor(() => expect(page.returnedCount()).toBe(1))
     expect(page.toReturnCount()).toBe(1)
-    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[1]]))
+    await waitFor(() => expect(page.listedCodes()).toEqual([bravoCodes[1]]))
     await page.showPending()
-    await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[0]]))
+    await waitFor(() => expect(page.listedCodes()).toEqual([bravoCodes[0]]))
   })
 
   // The scanned list is sorted by category, not by scan: the article just
@@ -119,22 +119,22 @@ describe('Screen: return the unsold articles to a professional', () => {
   // glance which line it landed on.
   it('makes the article just scanned stand out for a few seconds', async () => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
     expect(page.highlightedCodes()).toEqual([])
 
-    await page.scan(perrillatCodes[0])
-    await page.scan(perrillatCodes[1])
+    await page.scan(bravoCodes[0])
+    await page.scan(bravoCodes[1])
     await waitFor(() => expect(page.listedCodes()).toHaveLength(2))
     // Only the last one.
-    expect(page.highlightedCodes()).toEqual([perrillatCodes[1]])
+    expect(page.highlightedCodes()).toEqual([bravoCodes[1]])
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    expect(page.highlightedCodes()).toEqual([perrillatCodes[1]])
+    expect(page.highlightedCodes()).toEqual([bravoCodes[1]])
     await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
   })
 
   // A code that is not an article, or an article of
-  // ALLOSKI scanned while PERRILLAT is open, is refused with an alert; the
+  // ALPHA scanned while BRAVO is open, is refused with an alert; the
   // field is emptied and nothing is returned.
   it.each([
     [
@@ -144,12 +144,12 @@ describe('Screen: return the unsold articles to a professional', () => {
     ],
     [
       "an article of another professional's deposit",
-      () => alloCode,
+      () => alphaCode,
       (c: string) => `L'article ${c} n'appartient pas à ce dépôt`,
     ],
   ])('refuses %s', async (_label, scanned, message) => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
     await page.scan(scanned())
 
@@ -166,21 +166,21 @@ describe('Screen: return the unsold articles to a professional', () => {
   // scan is refused, the pair is counted once.
   it('refuses an article already scanned out', async () => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
-    await page.scan(perrillatCodes[0])
-    await page.toast(`Retour de l'article ${perrillatCodes[0]} effectué`)
+    await page.pickPro('Bravo')
+    await page.scan(bravoCodes[0])
+    await page.toast(`Retour de l'article ${bravoCodes[0]} effectué`)
 
-    await page.scan(perrillatCodes[0])
+    await page.scan(bravoCodes[0])
 
     const alert = await page.alert()
     expect(alert.message).toBe(
-      `Retour de l'article ${perrillatCodes[0]} déja effectué`,
+      `Retour de l'article ${bravoCodes[0]} déja effectué`,
     )
     await alert.dismiss()
     expect(page.scanInput()).toBe('')
     expect(page.returnedCount()).toBe(1)
     expect(page.toReturnCount()).toBe(1)
-    expect(page.listedCodes()).toEqual([perrillatCodes[0]])
+    expect(page.listedCodes()).toEqual([bravoCodes[0]])
   })
 
   // BERTRAND (fiche 5) has an article that is not on the shelf
@@ -264,12 +264,12 @@ describe('Screen: return the unsold articles to a professional', () => {
   // The other computers learn that each pair was handed back.
   it('sends each return to the other computers', async () => {
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
-    await page.scan(perrillatCodes[0])
-    await page.toast(`Retour de l'article ${perrillatCodes[0]} effectué`)
-    await page.scan(perrillatCodes[1])
-    await page.toast(`Retour de l'article ${perrillatCodes[1]} effectué`)
+    await page.scan(bravoCodes[0])
+    await page.toast(`Retour de l'article ${bravoCodes[0]} effectué`)
+    await page.scan(bravoCodes[1])
+    await page.toast(`Retour de l'article ${bravoCodes[1]} effectué`)
 
     const outbox = await local.outbox()
     const articles = await local.articles()
@@ -282,8 +282,8 @@ describe('Screen: return the unsold articles to a professional', () => {
         op.data.status,
       ]),
     ).toEqual([
-      ['articles', 'update', idOf(perrillatCodes[0]), 'RETURNED'],
-      ['articles', 'update', idOf(perrillatCodes[1]), 'RETURNED'],
+      ['articles', 'update', idOf(bravoCodes[0]), 'RETURNED'],
+      ['articles', 'update', idOf(bravoCodes[1]), 'RETURNED'],
     ])
   })
 })

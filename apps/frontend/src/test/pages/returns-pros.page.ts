@@ -46,7 +46,7 @@ export async function returnsProsPage() {
       }
     },
     isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
-    // The professional the combobox shows, e.g. "4 - Jean Perrillat".
+    // The professional the combobox shows, e.g. "4 - Jean Bravo".
     selectedPro: () => page.proCombobox().textContent.trim(),
 
     // ---- scanning ------------------------------------------------------

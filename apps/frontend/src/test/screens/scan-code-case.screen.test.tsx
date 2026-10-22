@@ -31,12 +31,12 @@ describe('Screen: an article code entered in lower case', () => {
         depositIndex: 3,
         type: 'PRO',
         contributionStatus: 'PRO',
-        seller: { lastName: 'Allo', firstName: 'Ski' },
+        seller: { lastName: 'Alpha', firstName: 'Ski' },
       },
       [{ price: 200, status: 'RECEPTION_PENDING' }],
     )
     const page = await proReceptionPage()
-    await page.pickPro('Allo')
+    await page.pickPro('Alpha')
 
     await page.scan(articles[0].code.toLowerCase())
 
@@ -51,12 +51,12 @@ describe('Screen: an article code entered in lower case', () => {
         depositIndex: 4,
         type: 'PRO',
         contributionStatus: 'PRO',
-        seller: { lastName: 'Perrillat', firstName: 'Jean' },
+        seller: { lastName: 'Bravo', firstName: 'Jean' },
       },
       [{ price: 90, status: 'RECEPTION_OK' }],
     )
     const page = await returnsProsPage()
-    await page.pickPro('Perrillat')
+    await page.pickPro('Bravo')
 
     await page.scan(articles[0].code.toLowerCase())
 
