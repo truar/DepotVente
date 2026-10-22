@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { normalizeDecimal } from '@/utils'
 
 export const ArticleSchema = z.object({
   id: z.string().optional(),
@@ -14,7 +15,11 @@ export const ArticleSchema = z.object({
     .optional(),
   softDeletionEnabled: z.boolean().optional(),
   labelPrinted: z.boolean().optional(),
-  price: z.coerce.number().gt(0, { message: 'Le prix est requis' }),
+  // Tapé « 12,50 » comme « 12.50 ».
+  price: z.preprocess(
+    normalizeDecimal,
+    z.coerce.number().gt(0, { message: 'Le prix est requis' }),
+  ),
   discipline: z.string().nonempty({ message: 'La discipline est requise' }),
   brand: z.string().nonempty({ message: 'La marque est requise' }),
   type: z.string().nonempty({ message: 'Le type est requis' }),

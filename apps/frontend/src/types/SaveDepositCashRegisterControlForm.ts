@@ -1,13 +1,17 @@
 import { z } from 'zod'
+import { normalizeDecimal } from '@/utils'
 
 export const CashRegisterControlFormSchema = z.object({
   id: z.string().optional(),
   cashRegisterId: z.number(),
   // Tapé par la personne qui fait le contrôle, jamais prérempli : vide, il
-  // bloque l'impression et la validation ; 0 reste une réponse.
+  // bloque l'impression et la validation ; 0 reste une réponse. « 80,50 »
+  // vaut « 80.50 ».
   initialAmount: z.preprocess(
     (value) =>
-      typeof value === 'string' && value.trim() === '' ? undefined : value,
+      typeof value === 'string' && value.trim() === ''
+        ? undefined
+        : normalizeDecimal(value),
     z.coerce.number({ error: 'Le fonds de caisse est obligatoire' }),
   ),
   realAmount: z.coerce.number(),

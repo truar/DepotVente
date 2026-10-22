@@ -18,7 +18,13 @@ import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
-import { fromCents, getYear, shortArticleCode, toCents } from '@/utils'
+import {
+  fromCents,
+  getYear,
+  parseAmount,
+  shortArticleCode,
+  toCents,
+} from '@/utils'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -134,8 +140,9 @@ type SaleFormProps = {
   incrementStart: number
 }
 
+// Un montant tapé, « 12,50 » comme « 12.50 » ; 0 s'il n'est pas lisible.
 const toNumber = (value: unknown) => {
-  const n = typeof value === 'number' ? value : parseFloat(value as string)
+  const n = parseAmount(value)
   return Number.isNaN(n) ? 0 : n
 }
 
@@ -215,15 +222,17 @@ function SaleForm(props: SaleFormProps) {
   const watchedArticles = watch('articles')
   const hasArticles = (watchedArticles ?? []).some((a) => !a.isDeleted)
   const checkPaymentTotal = (data: EditSaleFormType) => {
+    // Comparaison en centimes entiers : 30,30 − 10,10 fait bien 20,20, et
+    // non 20.199999999999996.
     const totalPrice =
       data.articles?.reduce(
-        (acc, cur) => acc + (cur.isDeleted ? 0 : toNumber(cur.price)),
+        (acc, cur) => acc + (cur.isDeleted ? 0 : toCents(toNumber(cur.price))),
         0,
       ) ?? 0
-    const cashAmount = toNumber(data.cashAmount)
-    const cardAmount = toNumber(data.cardAmount)
-    const checkAmount = toNumber(data.checkAmount)
-    const deferredAmount = toNumber(data.deferredAmount)
+    const cashAmount = toCents(toNumber(data.cashAmount))
+    const cardAmount = toCents(toNumber(data.cardAmount))
+    const checkAmount = toCents(toNumber(data.checkAmount))
+    const deferredAmount = toCents(toNumber(data.deferredAmount))
     const refunded = enteredRefunds(data)
     if (
       totalPrice !==
@@ -231,7 +240,7 @@ function SaleForm(props: SaleFormProps) {
         cardAmount +
         checkAmount +
         deferredAmount -
-        (refunded.card + refunded.cash)
+        (toCents(refunded.card) + toCents(refunded.cash))
     ) {
       setError('root.totalPrice', {
         type: 'value',

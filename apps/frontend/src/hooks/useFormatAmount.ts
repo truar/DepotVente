@@ -4,7 +4,7 @@ import { useIntl } from 'react-intl'
 // Un montant affiché dans un champ en lecture seule, à la française et au
 // centime : « 1 234,50 ». Sans le symbole € : le champ porte déjà l'icône.
 // Le texte obtenu est fait pour être lu, jamais pour être relu par le
-// formulaire (parseFloat ne comprend pas la virgule).
+// formulaire (l’espace des milliers de « 1 234,50 » ne se relit pas).
 export function useFormatAmount() {
   const intl = useIntl()
   return useCallback(

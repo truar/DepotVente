@@ -622,4 +622,32 @@ describe('Screen: prices with cents', () => {
     await page.save()
     await page.savedToast(2001)
   })
+
+  // A volunteer types the cents after a comma, the French way, or after a
+  // point, as on the numeric keypad: both read the same amount.
+  it.each(['10.10', '10,10'])(
+    'takes a payment typed %s and saves it to the cent',
+    async (typed) => {
+      const page = await twoArticlesAt1010And2020()
+
+      await page.pay({ cash: typed, card: 20.2 })
+      expect(page.totalPaymentText()).toBe('Total règlement : 30,30 €')
+      await page.save()
+      await page.savedToast(2001)
+
+      const [sale] = await local.sales()
+      expect(sale).toMatchObject({ cashAmount: 10.1, cardAmount: 20.2 })
+    },
+  )
+
+  it.each(['35.50', '35,50'])(
+    'gives back 5,20 when the buyer hands over %s',
+    async (typed) => {
+      const page = await twoArticlesAt1010And2020()
+
+      await page.pay({ cash: 30.3 })
+      await page.receiveCash(typed)
+      expect(page.changeText()).toBe('5,20')
+    },
+  )
 })

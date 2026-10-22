@@ -166,13 +166,14 @@ export async function salesAddPage() {
     },
 
     // ---- payment -------------------------------------------------------
+    // An amount is typed as given: 30.3, or the text « 30,30 ».
     async pay(amounts: {
-      cash?: number
-      card?: number
-      check?: number
-      deferred?: number
+      cash?: number | string
+      card?: number | string
+      check?: number | string
+      deferred?: number | string
     }) {
-      const set = async (label: string, amount?: number) => {
+      const set = async (label: string, amount?: number | string) => {
         if (amount === undefined) return
         const input = screen.getByLabelText(label)
         await u.clear(input)
@@ -184,7 +185,7 @@ export async function salesAddPage() {
       await set('Montant différé', amounts.deferred)
     },
     // « Espèces reçues »: what the buyer hands over, to work out the change.
-    async receiveCash(amount: number) {
+    async receiveCash(amount: number | string) {
       const input = screen.getByLabelText('Espèces reçues')
       await u.clear(input)
       await u.type(input, String(amount))

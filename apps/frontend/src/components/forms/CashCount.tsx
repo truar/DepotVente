@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { cn } from '@/lib/utils'
 import { useFormatAmount } from '@/hooks/useFormatAmount.ts'
-import { fromCents, toCents } from '@/utils'
+import { fromCents, parseAmount, toCents } from '@/utils'
 
 /**
  * Le comptage du tiroir, commun aux trois caisses (dépôt, retour, vente) :
@@ -51,7 +51,7 @@ export function CashCount(props: { prefix?: string }) {
   const coinsCents = sumCents(amounts.slice(NOTES_COUNT))
   const countedCents = notesCents + coinsCents
   const realAmount = fromCents(
-    countedCents - toCents(Number(initialAmount) || 0),
+    countedCents - toCents(parseAmount(initialAmount) || 0),
   )
   const difference = fromCents(toCents(realAmount) - toCents(theoreticalAmount))
 

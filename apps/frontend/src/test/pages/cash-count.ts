@@ -52,7 +52,8 @@ export function cashCount(u: User) {
       descriptionOf(input(denominationLabel(value))),
     notesTotal: () => groupTotal('Billets'),
     coinsTotal: () => groupTotal('Pièces'),
-    async setFloat(floatAmount: number) {
+    // Typed as given: 80, or the text « 80,50 ».
+    async setFloat(floatAmount: number | string) {
       const field = input('Fonds de caisse')
       await u.clear(field)
       await u.type(field, String(floatAmount))

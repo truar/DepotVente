@@ -281,6 +281,36 @@ describe('Screen: register a walk-in deposit typed by hand', () => {
   })
 })
 
+// The cents of a price come after a comma, the French way, or after a
+// point: both read the same price.
+describe('Screen: a price with cents', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  it.each(['120.50', '120,50'])(
+    'saves a price typed %s to the cent',
+    async (typed) => {
+      const page = await depositAddPage()
+      await page.fillSeller({
+        lastName: 'Bernard',
+        firstName: 'Paul',
+        phoneNumber: '0622222222',
+      })
+      await page.addArticle()
+      await page.fillArticle(0, { ...validArticle, price: typed })
+      await page.chooseStatus('Payé')
+      await page.printSummary()
+      await page.save()
+      await page.savedToast(1001)
+
+      const [article] = await local.articles()
+      expect(article.price).toBe(120.5)
+    },
+  )
+})
+
 // The printed sheet is the seller's receipt: no deposit without it.
 describe('Screen: the deposit sheet must be printed before saving', () => {
   beforeEach(async () => {

@@ -88,6 +88,30 @@ describe('Screen: deposit cash register control', () => {
     expect(page.difference()).toBe(-20)
   })
 
+  // The cents of the float come after a comma, the French way, or after a
+  // point: both read the same amount.
+  it.each(['80.50', '80,50'])(
+    'takes a float typed %s off the count, and saves it to the cent',
+    async (typed) => {
+      const page = await cashRegisterControlPage()
+
+      await page.setFloat(typed)
+      await page.count(50, 1)
+      await page.count(20, 1)
+      await page.count(10, 1)
+      await page.count(5, 1)
+      await page.count(1, 1)
+      expect(page.realText()).toBe('5,50')
+
+      await page.comment('RAS')
+      await page.print()
+      await page.save()
+      await page.savedToast(1000)
+      const [control] = await local.cashRegisterControls()
+      expect(control).toMatchObject({ initialAmount: 80.5 })
+    },
+  )
+
   it('records a short drawer as such, with every denomination, then returns to the menu', async () => {
     const page = await cashRegisterControlPage()
     await page.setFloat(80)

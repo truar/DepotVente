@@ -286,4 +286,38 @@ describe('Screen: amounts with cents on a sale brought back', () => {
     await page.refund({ cash: 10.1 })
     expect(page.remainingToRefundText()).toBe('20,20')
   })
+
+  // The cents come after a comma, the French way, or after a point: both
+  // read the same amount.
+  it.each(['10.10', '10,10'])(
+    'books a refund typed %s to the cent',
+    async (typed) => {
+      await givenWorkstation(2000)
+      const page = await salesEditPage(sale.id)
+
+      await page.returnArticle(first)
+      await page.refund({ cash: typed, comment: 'Trop petit' })
+      expect(page.remainingToRefundText()).toBe('0,00')
+      await page.save()
+      await page.savedToast(2001)
+
+      expect(await local.refunds()).toMatchObject([{ cashAmount: 10.1 }])
+    },
+  )
+
+  it.each(['20.20', '20,20'])(
+    'takes a corrected payment typed %s',
+    async (typed) => {
+      await givenWorkstation(2000)
+      const page = await salesEditPage(sale.id)
+
+      await page.returnArticle(first)
+      await page.pay({ cash: typed })
+      await page.save()
+      await page.savedToast(2001)
+
+      const [saved] = await local.sales()
+      expect(saved).toMatchObject({ cashAmount: 20.2 })
+    },
+  )
 })

@@ -4,7 +4,12 @@
 import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, within } from '@/test/screen.tsx'
 
-type RefundEntry = { card?: number; cash?: number; comment?: string }
+// An amount is typed as given: 10.1, or the text « 10,10 ».
+type RefundEntry = {
+  card?: number | string
+  cash?: number | string
+  comment?: string
+}
 
 export async function salesEditPage(saleId: string) {
   const { user: u, router } = await openScreen(`/sales/${saleId}/edit`)
@@ -106,12 +111,12 @@ export async function salesEditPage(saleId: string) {
 
     // ---- what the buyer paid --------------------------------------------
     async pay(amounts: {
-      cash?: number
-      card?: number
-      check?: number
-      deferred?: number
+      cash?: number | string
+      card?: number | string
+      check?: number | string
+      deferred?: number | string
     }) {
-      const set = async (label: string, amount?: number) => {
+      const set = async (label: string, amount?: number | string) => {
         if (amount === undefined) return
         const input = field(label)
         await u.clear(input)

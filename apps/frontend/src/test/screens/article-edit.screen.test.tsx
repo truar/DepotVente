@@ -64,6 +64,25 @@ describe('Screen: correcting an article', () => {
 
   // Another code searched while an article is open: the volunteer is asked
   // first; saying no keeps the article, and what was typed on it.
+  // The cents come after a comma, the French way, or after a point: both
+  // read the same price.
+  it.each(['95.50', '95,50'])(
+    'saves a price typed %s to the cent',
+    async (typed) => {
+      const { articles } = await givenDeposit({}, [{ price: 120 }])
+      const [skis] = articles
+      const page = await articleEditPage()
+      await page.search(skis.code, '12 A')
+
+      await page.setPrice(typed)
+      await page.validate()
+      await page.lastToast(`Article ${skis.code} mis à jour`)
+
+      const saved = (await local.articles()).find((a) => a.id === skis.id)
+      expect(saved?.price).toBe(95.5)
+    },
+  )
+
   it('asks before opening another article searched while one is open', async () => {
     const { articles } = await givenDeposit({}, [{ price: 120 }, { price: 80 }])
     const [skis, boots] = articles

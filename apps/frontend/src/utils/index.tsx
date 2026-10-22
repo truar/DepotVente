@@ -222,6 +222,18 @@ export function isClubBuyer(contact: { lastName: string }): boolean {
   return contact.lastName.trim().toUpperCase() === 'CMR'
 }
 
+// Un montant tapé à la française, « 12,50 », ou au pavé numérique,
+// « 12.50 » : la virgule devient un point, pour zod comme pour Number.
+export function normalizeDecimal(value: unknown): unknown {
+  return typeof value === 'string' ? value.trim().replace(',', '.') : value
+}
+
+// Le nombre d'un montant tapé avec une virgule ou un point ; NaN s'il n'en
+// est pas un.
+export function parseAmount(value: unknown): number {
+  return Number(normalizeDecimal(value))
+}
+
 export function toCents(amount: number): number {
   return Math.round(amount * 100)
 }

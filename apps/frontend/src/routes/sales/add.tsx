@@ -57,6 +57,7 @@ import {
   fromCents,
   getYear,
   normalizeArticleCode,
+  parseAmount,
   shortArticleCode,
   toCents,
 } from '@/utils'
@@ -76,8 +77,9 @@ export const Route = createFileRoute('/sales/add')({
   ),
 })
 
+// Un montant tapé, « 12,50 » comme « 12.50 » ; 0 s'il n'est pas lisible.
 function toNumber(value: unknown) {
-  const n = typeof value === 'number' ? value : parseFloat(value as string)
+  const n = parseAmount(value)
   return Number.isNaN(n) ? 0 : n
 }
 
@@ -634,7 +636,7 @@ function PaymentForm() {
       toCents(toNumber(checkAmount)) +
       toCents(toNumber(deferredAmount)),
   )
-  const cashReceivedNumber = parseFloat(cashReceived)
+  const cashReceivedNumber = parseAmount(cashReceived)
   let cashReturned = fromCents(
     Math.max(0, toCents(cashReceivedNumber) - toCents(toNumber(cashAmount))),
   )

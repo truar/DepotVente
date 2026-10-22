@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ArticleSchema } from '@/types/CreateDepositForm.ts'
 import { SaleFormSchema } from '@/types/saleForm.ts'
+import { normalizeDecimal } from '@/utils'
 
 export const EditArticleSchema = ArticleSchema.extend({
   id: z.string(),
@@ -23,8 +24,8 @@ export const EditArticleSchema = ArticleSchema.extend({
 export const RefundLineSchema = z.object({
   id: z.string().nullable(),
   incrementStart: z.number().nullable(),
-  cardAmount: z.coerce.number().nullable(),
-  cashAmount: z.coerce.number().nullable(),
+  cardAmount: z.preprocess(normalizeDecimal, z.coerce.number().nullable()),
+  cashAmount: z.preprocess(normalizeDecimal, z.coerce.number().nullable()),
   comment: z.string().nullable().optional(),
 })
 
