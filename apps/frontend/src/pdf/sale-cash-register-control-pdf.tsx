@@ -332,7 +332,7 @@ function GlobalHeader({
       <View style={{ flexDirection: 'row', gap: 5 }}>
         <CMRLogo />
         <View style={styles.title}>
-          <Text>Bourse au skis {year}</Text>
+          <Text>Bourse aux skis {year}</Text>
           <Text>Club Montagnard Rumillien</Text>
           <Text>Contrôle caisse ventes</Text>
         </View>

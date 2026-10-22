@@ -104,7 +104,7 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
         <View style={{ flexDirection: 'row', gap: 5 }}>
           <CMRLogo />
           <View style={styles.headerTitle}>
-            <Text>Bourse au skis {data.year}</Text>
+            <Text>Bourse aux skis {data.year}</Text>
             <Text>Club Montagnard Rumillien</Text>
             <Text>Récapitulatif des ventes</Text>
           </View>

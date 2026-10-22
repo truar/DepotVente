@@ -163,7 +163,7 @@ export const DepositCashRegisterControlPdf = (
               <View style={{ flexDirection: 'row', gap: 5 }}>
                 <CMRLogo />
                 <View style={styles.title}>
-                  <Text>Bourse au skis {data.year}</Text>
+                  <Text>Bourse aux skis {data.year}</Text>
                   <Text>Club Montagnard Rumillien</Text>
                   <Text>{data.title ?? 'Contrôle caisse dépôts'}</Text>
                 </View>

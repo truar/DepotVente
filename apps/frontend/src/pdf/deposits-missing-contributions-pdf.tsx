@@ -139,7 +139,7 @@ export const DepositsMissingContributionPdf = (
             <View style={{ flexDirection: 'row', gap: 5 }}>
               <CMRLogo />
               <View style={styles.title}>
-                <Text>Bourse au skis {data.year}</Text>
+                <Text>Bourse aux skis {data.year}</Text>
                 <Text>Club Montagnard Rumillien</Text>
                 <Text>Retours</Text>
               </View>

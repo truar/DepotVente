@@ -160,7 +160,7 @@ export const PredepositsPdf = (props: PdfsProps) => {
           <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
             <View style={styles.title}>
-              <Text>Bourse au skis {data.deposit.year}</Text>
+              <Text>Bourse aux skis {data.deposit.year}</Text>
               <Text>Club Montagnard Rumillien</Text>
               <Text>Pré-Dépôt</Text>
             </View>

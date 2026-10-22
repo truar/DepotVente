@@ -63,10 +63,10 @@ export default defineConfig({
       // Replaces public/manifest.json, which was untouched CTA boilerplate.
       manifest: {
         id: '/',
-        name: 'Bourse au ski — CMR',
-        short_name: 'Bourse au ski',
+        name: 'Bourse aux skis — CMR',
+        short_name: 'Bourse aux skis',
         description:
-          'Gestion des dépôts et des ventes de la bourse au ski (fonctionne hors ligne).',
+          'Gestion des dépôts et des ventes de la bourse aux skis (fonctionne hors ligne).',
         lang: 'fr-FR',
         start_url: '/',
         scope: '/',

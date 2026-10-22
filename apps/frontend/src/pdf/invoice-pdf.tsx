@@ -181,7 +181,7 @@ export const InvoicesPdf = (props: InvoicesPdfProps) => {
           <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
             <View style={styles.title}>
-              <Text>Bourse au skis {sale.year}</Text>
+              <Text>Bourse aux skis {sale.year}</Text>
               <Text>Club Montagnard Rumillien</Text>
               <Text>Facture</Text>
             </View>

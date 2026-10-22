@@ -210,7 +210,7 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
           <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
             <View style={styles.headerTitle}>
-              <Text>Bourse au skis {data.year}</Text>
+              <Text>Bourse aux skis {data.year}</Text>
               <Text>Club Montagnard Rumillien</Text>
               <Text>Bilan de la bourse</Text>
             </View>

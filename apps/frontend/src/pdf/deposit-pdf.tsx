@@ -293,7 +293,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
           <View style={{ flexDirection: 'row', gap: 5 }}>
             <CMRLogo />
             <View style={styles.title}>
-              <Text>Bourse au skis {data.deposit.year}</Text>
+              <Text>Bourse aux skis {data.deposit.year}</Text>
               <Text>Club Montagnard Rumillien</Text>
               <Text>Dépôt</Text>
             </View>

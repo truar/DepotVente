@@ -50,6 +50,12 @@ describe('The deposit sheet', () => {
     professional = await print('PRO')
   })
 
+  it('is headed with the bourse and its year', () => {
+    for (const text of [privateSeller, professional]) {
+      expect(text).toContain(`Bourse aux skis ${YEAR}`)
+    }
+  })
+
   it('is the same sheet for both: seller, number and articles', () => {
     for (const text of [privateSeller, professional]) {
       expect(text).toContain('Fiche N° 1001')
