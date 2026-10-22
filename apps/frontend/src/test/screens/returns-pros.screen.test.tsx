@@ -114,6 +114,25 @@ describe('Screen: return the unsold articles to a professional', () => {
     await waitFor(() => expect(page.listedCodes()).toEqual([perrillatCodes[0]]))
   })
 
+  // The scanned list is sorted by category, not by scan: the article just
+  // scanned stands out for a few seconds, so the volunteer sees at a
+  // glance which line it landed on.
+  it('makes the article just scanned stand out for a few seconds', async () => {
+    const page = await returnsProsPage()
+    await page.pickPro('Perrillat')
+    expect(page.highlightedCodes()).toEqual([])
+
+    await page.scan(perrillatCodes[0])
+    await page.scan(perrillatCodes[1])
+    await waitFor(() => expect(page.listedCodes()).toHaveLength(2))
+    // Only the last one.
+    expect(page.highlightedCodes()).toEqual([perrillatCodes[1]])
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    expect(page.highlightedCodes()).toEqual([perrillatCodes[1]])
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+  })
+
   // A code that is not an article, or an article of
   // ALLOSKI scanned while PERRILLAT is open, is refused with an alert; the
   // field is emptied and nothing is returned.

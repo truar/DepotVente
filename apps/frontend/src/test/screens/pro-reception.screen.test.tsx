@@ -164,6 +164,25 @@ describe('Screen: receiving a professional’s articles', () => {
     ])
   })
 
+  // The received list is sorted by category, not by scan: the article
+  // just scanned stands out for a few seconds, so the volunteer sees at a
+  // glance which line it landed on.
+  it('makes the article just scanned stand out for a few seconds', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Allo')
+    expect(page.highlightedCodes()).toEqual([])
+
+    await page.scan(code(3, 'A'))
+    await page.scan(code(3, 'C'))
+    await page.listShows([code(3, 'C'), code(3, 'A')])
+    // Only the last one.
+    expect(page.highlightedCodes()).toEqual([code(3, 'C')])
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    expect(page.highlightedCodes()).toEqual([code(3, 'C')])
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+  })
+
   // The desk works category by category: the skis, then the boots. Each
   // article joins the received list under its own category.
   it('keeps the list grouped by category as the groups are scanned', async () => {

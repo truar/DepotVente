@@ -15,6 +15,7 @@ import {
   useState,
 } from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
+import { useHighlight } from '@/hooks/useHighlight.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
@@ -121,6 +122,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const [listMode, setListMode] = useState<'RETURNED' | 'RECEPTION_OK'>(
     'RETURNED',
   )
+  const { highlighted, highlight } = useHighlight()
   const printUnreturned = useCallback(async () => {
     const data = await loadUnreturnedArticlesPdfData(depositId)
     if (!data) return
@@ -130,7 +132,11 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   }, [depositId])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReturnArticleInput key={depositId} depositId={depositId} />
+      <ReturnArticleInput
+        key={depositId}
+        depositId={depositId}
+        onReturned={highlight}
+      />
       <ReturnedArticleCount depositId={depositId} />
       <TotalArticleReceivedUnsoldCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -167,13 +173,20 @@ function ProArticlesForm(props: ProArticlesFormProps) {
         </div>
       )}
 
-      <ArticleList depositId={depositId} mode={listMode} />
+      <ArticleList
+        depositId={depositId}
+        mode={listMode}
+        highlightedId={highlighted}
+      />
     </div>
   )
 }
 
-function ReturnArticleInput(props: { depositId: string }) {
-  const { depositId } = props
+function ReturnArticleInput(props: {
+  depositId: string
+  onReturned: (articleId: string) => void
+}) {
+  const { depositId, onReturned } = props
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
   const checkKeyDown = useCallback(
@@ -218,9 +231,10 @@ function ReturnArticleInput(props: { depositId: string }) {
 
     await articlesDb.markArticleAsReturned(article.id)
     toast.success(`Retour de l'article ${articleCode} effectué`)
+    onReturned(article.id)
 
     setArticleCode('')
-  }, [articleCode, articlesDb, depositId])
+  }, [articleCode, articlesDb, depositId, onReturned])
 
   return (
     <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -286,10 +300,11 @@ function TotalArticleReceivedUnsoldCount(props: { depositId: string }) {
 type ArticleListProps = {
   depositId: string
   mode: 'RETURNED' | 'RECEPTION_OK'
+  highlightedId: string | null
 }
 
 function ArticleList(props: ArticleListProps) {
-  const { depositId, mode } = props
+  const { depositId, mode, highlightedId } = props
 
   const articles = useLiveQuery(async () => {
     const rows = await db.articles.where({ depositId, status: mode }).toArray()
@@ -316,6 +331,8 @@ function ArticleList(props: ArticleListProps) {
       hideSelectionCount
       initialSorting={[{ id: 'category', desc: false }]}
       initialPageSize={50}
+      getRowId={(article) => article.id}
+      highlightedRowId={highlightedId}
     />
   )
 }

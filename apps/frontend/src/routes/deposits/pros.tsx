@@ -16,6 +16,7 @@ import {
   useState,
 } from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
+import { useHighlight } from '@/hooks/useHighlight.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { toast } from 'sonner'
@@ -122,6 +123,7 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   const [listMode, setListMode] = useState<'RECEPTION_OK' | 'RECEPTION_PENDING'>(
     'RECEPTION_OK',
   )
+  const { highlighted, highlight } = useHighlight()
   const printPending = useCallback(async () => {
     const data = await loadPendingArticlesPdfData(depositId)
     if (!data) return
@@ -136,7 +138,11 @@ function ProArticlesForm(props: ProArticlesFormProps) {
   }, [depositId])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-      <ReceiveArticleInput key={depositId} depositId={depositId} />
+      <ReceiveArticleInput
+        key={depositId}
+        depositId={depositId}
+        onReceived={highlight}
+      />
       <ReceivedArticleCount depositId={depositId} />
       <TotalArticleCount depositId={depositId} />
       <div className="grid grid-cols-5 w-6/12 gap-3 items-baseline">
@@ -173,13 +179,20 @@ function ProArticlesForm(props: ProArticlesFormProps) {
         </div>
       )}
 
-      <ArticleList depositId={depositId} mode={listMode} />
+      <ArticleList
+        depositId={depositId}
+        mode={listMode}
+        highlightedId={highlighted}
+      />
     </div>
   )
 }
 
-function ReceiveArticleInput(props: { depositId: string }) {
-  const { depositId } = props
+function ReceiveArticleInput(props: {
+  depositId: string
+  onReceived: (articleId: string) => void
+}) {
+  const { depositId, onReceived } = props
   const [articleCode, setArticleCode] = useState('')
   const articlesDb = useArticlesDb()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -211,12 +224,13 @@ function ReceiveArticleInput(props: { depositId: string }) {
 
       await articlesDb.markArticleAsReceived(article.id)
       toast.success(`Dépôt de l'article ${articleCode} effectué`)
+      onReceived(article.id)
 
       setArticleCode('')
     } finally {
       inputRef.current?.focus()
     }
-  }, [articleCode, articlesDb, depositId])
+  }, [articleCode, articlesDb, depositId, onReceived])
 
   const checkKeyDown = useCallback(
     async (e: KeyboardEvent) => {
@@ -306,10 +320,11 @@ function TotalArticleCount(props: { depositId: string }) {
 type ArticleListProps = {
   depositId: string
   mode: 'RECEPTION_OK' | 'RECEPTION_PENDING'
+  highlightedId: string | null
 }
 
 function ArticleList(props: ArticleListProps) {
-  const { depositId, mode } = props
+  const { depositId, mode, highlightedId } = props
 
   const articles = useLiveQuery(async () => {
     const rows = await db.articles
@@ -338,6 +353,8 @@ function ArticleList(props: ArticleListProps) {
       hideSelectionCount
       initialSorting={[{ id: 'category', desc: false }]}
       initialPageSize={50}
+      getRowId={(article) => article.id}
+      highlightedRowId={highlightedId}
     />
   )
 }

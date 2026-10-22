@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -58,6 +59,11 @@ interface DataTableProps<TData, TValue> {
   hideGlobalFilter?: boolean
   initialSorting?: SortingState
   initialPageSize?: number
+  // L'identifiant d'une ligne, à donner pour pouvoir en mettre une en avant.
+  getRowId?: (row: TData) => string
+  // La ligne mise en avant (l'article qui vient d'être scanné), surlignée
+  // et marquée comme ligne courante.
+  highlightedRowId?: string | null
 }
 
 export function DataTable<TData, TValue>({
@@ -71,6 +77,8 @@ export function DataTable<TData, TValue>({
   hideGlobalFilter,
   initialSorting,
   initialPageSize,
+  getRowId,
+  highlightedRowId,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState<any>([])
   const [sorting, setSorting] = useState<SortingState>(initialSorting ?? [])
@@ -79,6 +87,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    getRowId,
     autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -181,21 +190,28 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const highlighted = row.id === highlightedRowId
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    aria-current={highlighted || undefined}
+                    className={cn(
+                      highlighted && 'bg-yellow-200 hover:bg-yellow-200',
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell

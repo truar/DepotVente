@@ -97,6 +97,12 @@ export async function returnsProsPage() {
         // every column; only real rows have one cell per column.
         .filter((cells) => cells.length > 1)
         .map((cells) => cells[0]),
+    // The article just scanned stands out in the list for a few seconds:
+    // its row is the current one.
+    highlightedCodes: (): Array<string> =>
+      screen
+        .queryAllByRole('row', { current: true })
+        .map((row) => within(row).getAllByRole('cell')[0].textContent.trim()),
   }
   return page
 }

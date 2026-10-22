@@ -135,6 +135,12 @@ export async function proReceptionPage() {
       return options
     },
     listedCodes: () => page.rows().map((cells) => cells[0]),
+    // The article just scanned stands out in the list for a few seconds:
+    // its row is the current one.
+    highlightedCodes: (): Array<string> =>
+      screen
+        .queryAllByRole('row', { current: true })
+        .map((row) => within(row).getAllByRole('cell')[0].textContent.trim()),
     listedCategories: () => page.rows().map((cells) => cells[2]),
     // The price, last column, as shown: { 'code': '200,00 €' }.
     listedPrices: (): Record<string, string> =>
