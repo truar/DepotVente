@@ -19,13 +19,13 @@ import { Button } from '@/components/ui/button.tsx'
 // cmdk's default filter is a fuzzy *subsequence* matcher scored over the item's
 // value and its keywords. At a till that is wrong twice over:
 //
-//   - "rua" matches any name holding r...u...a in that order, so it returned 24
-//     of the 210 contacts - "rutella", "ROUSSEL ADELAIDE", "GRUFFAT" - when one
-//     of them actually contains "rua".
+//   - "dur" matches any name holding d...u...r in that order, so it returned
+//     dozens of the 210 contacts - "dufour", "DUPUIS ROMAIN", "LEDUC ROBERT" -
+//     when one of them actually contains "dur".
 //   - the value we pass for people and deposits is a UUID, and cmdk searches
 //     that too. Typing the deposit number "12" matched 127 of 210 deposits
-//     through their ids alone, ranking "3042 - thierry roche" (0.89) above
-//     "1012 - Karine RAFFESTIN" (0.17), the one that does contain "12".
+//     through their ids alone, ranking "3042 - paul bernard" (0.89) above
+//     "1012 - Lucie MARTIN" (0.17), the one that does contain "12".
 //
 // Volunteers type a name or a deposit number and expect the entries containing
 // it. So match literally: on the keywords when the caller passes them (which
@@ -42,7 +42,7 @@ export function filterItem(
   search: string,
   keywords?: string[],
 ): number {
-  // Each word is matched on its own, so "ruaro laurence" finds the contact
+  // Each word is matched on its own, so "durand camille" finds the contact
   // whose last name and first name are two separate keywords.
   const terms = normalize(search).split(/\s+/).filter(Boolean)
   if (terms.length === 0) return 1
@@ -52,7 +52,7 @@ export function filterItem(
     return 0
   }
   // Entries starting with what was typed rank above ones that merely contain
-  // it, so "rua" puts RUARO first. Equal scores keep the order given, which is
+  // it, so "dur" puts DURAND first. Equal scores keep the order given, which is
   // already alphabetical (contacts) or by deposit number (deposits).
   return fields.some((field) => field.startsWith(terms[0])) ? 2 : 1
 }

@@ -12,8 +12,8 @@ function RouteComponent() {
       <ReturnDepositPdf
         data={{
           contact: {
-            lastName: 'Donsez sperber',
-            firstName: 'Thibault',
+            lastName: 'Durand',
+            firstName: 'Camille',
             city: 'Rumilly',
             phoneNumber: '0102030405',
           },

@@ -20,7 +20,7 @@ data was prepared on: section 2 says what to carry over and how to load it.
 | --------------------------- | -------------------------------------------------------------------------------------------------- |
 | Deposits                    | 211 — 203 private sellers, 8 professionals                                                         |
 | Articles                    | 3202                                                                                               |
-| Pro articles to receive     | 260 — fiches 2 PERRILLAT, 3 ALLOSKI, 4 SPORT; skis, boots and poles, 30 each (20 poles on fiche 4) |
+| Pro articles to receive     | 260 — pro fiches 2, 3 and 4; skis, boots and poles, 30 each (20 poles on fiche 4)                  |
 | Articles ready for the till | 1132 received and unsold, from 203 sellers                                                         |
 | Predeposits still free      | 6 (the other 55 already became deposits in 2025)                                                   |
 | Accounts                    | `admin@cmr.com` / `admin` · `benevole@cmr.com` / `benevole`                                        |

@@ -12,8 +12,8 @@ function RouteComponent() {
       <InvoicePdf
         data={{
           contact: {
-            lastName: 'Donsez sperber',
-            firstName: 'Thibault',
+            lastName: 'Durand',
+            firstName: 'Camille',
             phoneNumber: '0102030405',
           },
           sale: {
