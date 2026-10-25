@@ -145,8 +145,20 @@ Le chemin est relatif au dossier depuis lequel on lance `pnpm`.
 - `--skip a` - Ignore ces réponses.
 
 Les numéros sont ceux de la simulation (« réponse n » = rang dans le CSV, en-tête
-exclu). Deux réponses qui partagent un téléphone, un email ou un nom + prénom
-sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée.
+exclu).
+
+Les réponses d'une **même personne** (mêmes nom, prénom et téléphone, sans
+casse ni accent) sont fusionnées d'office en une fiche : articles à la suite,
+coordonnées de la plus récente. Si elles ont les mêmes articles (formulaire
+renvoyé : même catégorie, discipline, marque, taille et prix, le descriptif et
+la couleur ressaisis ne comptent pas), ils ne sont gardés qu'une fois, ceux de
+la réponse la plus récente.
+
+Les autres réponses qui partagent un téléphone, un email ou un nom + prénom
+sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée. La
+simulation dit pourquoi, et marque d'un ☎️ les cas où il faut **appeler le
+vendeur** : un même téléphone sous deux noms, ou une même personne dont une
+partie seulement des articles se répète (renvoi, ou deux objets identiques ?).
 
 **Mapping :**
 

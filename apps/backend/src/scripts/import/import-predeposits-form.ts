@@ -22,9 +22,15 @@
 // lettres A, B, C… dans l'ordre du formulaire, et un articleIndex global à la
 // suite du plus grand déjà en base.
 //
-// Doublons : deux réponses qui partagent un téléphone, un email ou un nom +
-// prénom sont signalées et ne sont jamais fusionnées d'office. Chaque réponse
-// d'un groupe de doublons doit être arbitrée avant --apply :
+// Doublons : les réponses d'une même personne (mêmes nom, prénom et
+// téléphone) sont fusionnées d'office en une fiche, coordonnées de la plus
+// récente ; si elles ont les mêmes articles (formulaire renvoyé, voir
+// articleKey dans predeposit-duplicates.ts), ils ne sont gardés qu'une fois. Les autres réponses qui partagent un
+// téléphone, un email ou un nom + prénom sont signalées et jamais fusionnées
+// d'office, pas plus qu'une même personne dont une partie seulement des
+// articles se répète. Un même téléphone sous deux noms, ou ces articles en
+// partie répétés, demandent d'appeler le vendeur. Chaque réponse d'un groupe
+// de doublons restant doit être arbitrée avant --apply :
 //   --merge 37,38   fusionne ces réponses en une seule fiche (articles à la
 //                   suite, dans l'ordre des réponses ; coordonnées de la plus
 //                   récente)
@@ -45,6 +51,13 @@ import { cities } from '../../../../frontend/src/types/cities'
 import { colors } from '../../../../frontend/src/types/colors'
 import { disciplines } from '../../../../frontend/src/types/disciplines'
 import { brandsByKey, findBrand } from './predeposit-brand'
+import {
+  type ArticleInput,
+  duplicateReason,
+  findDuplicates,
+  type Response,
+  sameSeller,
+} from './predeposit-duplicates'
 import { normalizeSize } from './predeposit-size'
 
 const SELLER_HEADERS = ['Timestamp', 'Prénom', 'Nom', 'Portable', 'Email Address', 'Ville']
@@ -355,27 +368,6 @@ function checkHeaders(header: string[]) {
 
 // ── Modèle ──────────────────────────────────────────────────────────────────
 
-interface ArticleInput {
-  category: string
-  discipline: string
-  brand: string
-  model: string
-  size: string
-  color: string
-  price: number
-}
-
-interface Response {
-  number: number
-  createdAt: Date
-  firstName: string
-  lastName: string
-  phoneNumber: string
-  email: string
-  city: string
-  articles: ArticleInput[]
-}
-
 interface Report {
   errors: string[]
   warnings: string[]
@@ -452,30 +444,10 @@ function readResponse(row: string[], number: number, report: Report): Response {
   }
 }
 
-// Regroupe les réponses qui partagent un téléphone, un email ou un nom +
-// prénom (union-find). Ne renvoie que les groupes d'au moins deux réponses.
-function findDuplicates(responses: Response[]): Response[][] {
-  const parent = responses.map((_, index) => index)
-  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
-  const seen = new Map<string, number>()
-  responses.forEach((response, index) => {
-    const keys = [
-      response.phoneNumber && `tel:${response.phoneNumber}`,
-      response.email && `mail:${response.email}`,
-      `nom:${key(response.lastName)}|${key(response.firstName)}`,
-    ].filter(Boolean) as string[]
-    for (const k of keys) {
-      const other = seen.get(k)
-      if (other === undefined) seen.set(k, index)
-      else parent[find(index)] = find(other)
-    }
-  })
-  const groups = new Map<number, Response[]>()
-  responses.forEach((response, index) => {
-    const root = find(index)
-    groups.set(root, [...(groups.get(root) ?? []), response])
-  })
-  return [...groups.values()].filter((group) => group.length > 1)
+const DUPLICATE_REASONS: Record<ReturnType<typeof duplicateReason>, string> = {
+  'same-phone': '☎️  même téléphone, noms différents : appeler pour vérifier',
+  'same-seller': '☎️  même personne, une partie des articles en double : appeler pour vérifier',
+  other: 'même email ou même nom, téléphone différent',
 }
 
 function describe(response: Response): string {
@@ -535,11 +507,17 @@ async function main() {
   }
 
   const duplicates = findDuplicates(allResponses)
+  // Même personne (nom, prénom, téléphone) : une fiche, sans arbitrage.
+  const { merges: sellerMerges } = sameSeller(allResponses, decided)
+  const sameSellerNumbers = new Set(sellerMerges.flatMap(({ responses }) => responses.map((r) => r.number)))
+  for (const n of sameSellerNumbers) decided.add(n)
   const unresolved = duplicates.filter((group) => group.some((response) => !decided.has(response.number)))
 
   // Fiches à créer : réponses fusionnées, gardées, ou sans doublon ; les
-  // réponses ignorées disparaissent.
-  const merged = new Set(merges.flat())
+  // réponses ignorées disparaissent. `origins` dit de quelles réponses vient
+  // une fiche fusionnée, rangée sous le numéro de la plus récente.
+  const merged = new Set([...merges.flat(), ...sameSellerNumbers])
+  const origins = new Map<number, string>()
   const fiches: Response[] = []
   for (const group of merges) {
     const responses = group.map((n) => byNumber.get(n)!).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -549,6 +527,16 @@ async function main() {
       createdAt: responses[0].createdAt,
       articles: responses.flatMap((response) => response.articles),
     })
+    origins.set(latest.number, `réponses ${group.join('+')}`)
+  }
+  for (const { responses, articles, repeated } of sellerMerges) {
+    const latest = responses[responses.length - 1]
+    fiches.push({ ...latest, createdAt: responses[0].createdAt, articles })
+    origins.set(
+      latest.number,
+      `réponses ${responses.map((r) => r.number).join('+')}, même personne` +
+        (repeated ? ', articles en double gardés une fois' : ''),
+    )
   }
   for (const response of allResponses) {
     if (merged.has(response.number) || skips.has(response.number)) continue
@@ -601,9 +589,7 @@ async function main() {
   console.log(`📖 ${path.basename(csvPath)} : ${allResponses.length} réponse(s)\n`)
   console.log(`📋 ${plan.length} fiche(s) à créer, numérotées à partir de ${lastPredepositIndex + 1} :`)
   for (const { fiche, predepositIndex, articles } of plan) {
-    const origin = merged.has(fiche.number)
-      ? `réponses ${merges.find((g) => g.includes(fiche.number))!.join('+')}`
-      : `réponse ${fiche.number}`
+    const origin = origins.get(fiche.number) ?? `réponse ${fiche.number}`
     console.log(
       `   ${String(predepositIndex).padStart(3)}  ${fiche.lastName} ${fiche.firstName} — ${fiche.phoneNumber} — ` +
         `${fiche.city} — ${articles.length} article(s) (${origin})`,
@@ -614,8 +600,12 @@ async function main() {
   if (duplicates.length > 0) {
     console.log(`👥 ${duplicates.length} groupe(s) de doublons (même téléphone, email ou nom) :`)
     for (const group of duplicates) {
-      const pending = group.some((response) => !decided.has(response.number))
-      console.log(`   ${pending ? '❓ à arbitrer' : '✅ arbitré'} :`)
+      const status = group.some((response) => !decided.has(response.number))
+        ? `❓ à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]}`
+        : group.every((response) => sameSellerNumbers.has(response.number))
+          ? '✅ même personne, une seule fiche'
+          : '✅ arbitré'
+      console.log(`   ${status} :`)
       for (const response of group) console.log(`      ${describe(response)}`)
     }
     console.log()
@@ -644,7 +634,7 @@ async function main() {
   const blockers = [...report.errors]
   for (const group of unresolved) {
     blockers.push(
-      `doublon non arbitré : réponses ${group.map((r) => r.number).join(', ')} ` +
+      `doublon à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]} : réponses ${group.map((r) => r.number).join(', ')} ` +
         `(--merge ${group.map((r) => r.number).join(',')}, --keep … ou --skip …)`,
     )
   }
