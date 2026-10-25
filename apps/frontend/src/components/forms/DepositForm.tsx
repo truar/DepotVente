@@ -304,10 +304,10 @@ function ArticleForm(props: ArticleFormProps) {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
                 Discipline
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[110px]">
                 Couleur
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[150px]">
                 Taille
               </th>
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600">
