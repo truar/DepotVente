@@ -82,6 +82,7 @@ const BRAND_ALIASES: Record<string, string> = {
   technica: 'Tecnica',
   dare2be: 'Dare2b',
   decathon: 'Decathlon',
+  colombia: 'Columbia',
 }
 
 // Couleurs écrites au féminin ou au pluriel, ramenées à types/colors.ts.
