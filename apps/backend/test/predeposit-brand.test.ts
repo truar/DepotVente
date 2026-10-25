@@ -12,9 +12,17 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })
 
-  it.each(['Kiabi', 'U Oxyg', 'Pantalon V', ''])('ne trouve pas de marque dans « %s »', (value) => {
+  it.each(['Kiabi', 'Pantalon V', ''])('ne trouve pas de marque dans « %s »', (value) => {
     expect(findBrand(value)).toEqual({ brand: undefined, rest: '' })
   })
+
+  // La marque textile de Super U s'écrit de plusieurs façons.
+  it.each(['U-Oxyg', 'U Oxyg', 'U-OXYG', 'UOXYG', 'U Oxygn', "U Oxyg'n", 'Oxyg', 'OXYGN'])(
+    'reconnaît « %s » comme U-Oxyg',
+    (value) => {
+      expect(findBrand(value)).toEqual({ brand: 'U-Oxyg', rest: '' })
+    },
+  )
 
   // Quand une partie seulement du champ est une marque, le reste est rendu
   // pour partir au descriptif.

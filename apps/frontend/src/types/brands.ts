@@ -546,6 +546,7 @@ export const brands = [
   'Fatcan',
   'Bliz',
   'Viking Of Norway',
+  'U-Oxyg',
 ]
 
 export const brandsItems = brands.map((brand) => ({

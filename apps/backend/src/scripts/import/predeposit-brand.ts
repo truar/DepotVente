@@ -13,6 +13,10 @@ const BRAND_ALIASES: Record<string, string> = {
   dare2be: 'Dare2b',
   decathon: 'Decathlon',
   colombia: 'Columbia',
+  // Marque textile de Super U, aussi écrite « U Oxygn » ou « Oxyg'n ».
+  uoxygn: 'U-Oxyg',
+  oxyg: 'U-Oxyg',
+  oxygn: 'U-Oxyg',
 }
 
 // Forme de comparaison : minuscules, sans accent, sans rien d'autre que
