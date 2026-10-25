@@ -44,6 +44,7 @@ import { categories } from '../../../../frontend/src/types/categories'
 import { cities } from '../../../../frontend/src/types/cities'
 import { colors } from '../../../../frontend/src/types/colors'
 import { disciplines } from '../../../../frontend/src/types/disciplines'
+import { normalizeSize } from './predeposit-size'
 
 const SELLER_HEADERS = ['Timestamp', 'Prénom', 'Nom', 'Portable', 'Email Address', 'Ville']
 const ARTICLE_HEADERS = [
@@ -392,6 +393,9 @@ interface Report {
   // Valeurs absentes d'une liste à suggestions (ville, couleur) : le poste les
   // affiche telles quelles, mais il faut les relire.
   offList: string[]
+  // Tailles dont normalizeSize a retiré des mots (« Pointure », un nom de
+  // modèle…) : à relire, le mot retiré peut avoir sa place dans le descriptif.
+  sizes: string[]
 }
 
 function readResponse(row: string[], number: number, report: Report): Response {
@@ -433,7 +437,10 @@ function readResponse(row: string[], number: number, report: Report): Response {
     if (color === '') report.warnings.push(`${where} : couleur vide, à compléter au dépôt`)
     else if (!colors.includes(color)) report.offList.push(`${where} : couleur « ${rawColor} »${suggest(rawColor, colorsByKey)}`)
 
-    articles.push({ category, discipline, brand, model: rawModel, size: rawSize, color, price })
+    const { size, removed } = normalizeSize(rawSize)
+    if (removed.length > 0) report.sizes.push(`${where} : taille « ${rawSize} » → « ${size} », retiré : ${removed.join(', ')}`)
+
+    articles.push({ category, discipline, brand, model: rawModel, size, color, price })
   }
   if (articles.length === 0) report.warnings.push(`${who} : aucun article`)
 
@@ -503,7 +510,7 @@ async function main() {
   const [header, ...rows] = parseCsv(readUtf8(csvPath))
   checkHeaders(header)
 
-  const report: Report = { errors: [], warnings: [], offList: [] }
+  const report: Report = { errors: [], warnings: [], offList: [], sizes: [] }
   const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
@@ -620,6 +627,11 @@ async function main() {
   if (report.offList.length > 0) {
     console.log('🔎 Hors liste, gardé tel quel (à relire, corriger dans le CSV si besoin) :')
     for (const line of report.offList) console.log(`   ${line}`)
+    console.log()
+  }
+  if (report.sizes.length > 0) {
+    console.log('✂️  Tailles raccourcies, mots retirés (à relire, le descriptif peut les reprendre) :')
+    for (const line of report.sizes) console.log(`   ${line}`)
     console.log()
   }
   if (report.warnings.length > 0) {
