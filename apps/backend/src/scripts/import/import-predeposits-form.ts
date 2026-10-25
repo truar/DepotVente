@@ -44,6 +44,7 @@ import { categories } from '../../../../frontend/src/types/categories'
 import { cities } from '../../../../frontend/src/types/cities'
 import { colors } from '../../../../frontend/src/types/colors'
 import { disciplines } from '../../../../frontend/src/types/disciplines'
+import { brandsByKey, findBrand } from './predeposit-brand'
 import { normalizeSize } from './predeposit-size'
 
 const SELLER_HEADERS = ['Timestamp', 'Prénom', 'Nom', 'Portable', 'Email Address', 'Ville']
@@ -69,20 +70,6 @@ const CATEGORY_MAP: Record<string, string> = {
 const DISCIPLINE_MAP: Record<string, string> = {
   'Randonnée Pédestre': 'Rando Pédestre',
   'Randonnée Alpine': 'Rando Alpine',
-}
-
-// Fautes de frappe courantes que la comparaison sans casse ni accent ne
-// rattrape pas. Clé : forme normalisée par key().
-const BRAND_ALIASES: Record<string, string> = {
-  quechua: 'Quechua',
-  queshua: 'Quechua',
-  queschua: 'Quechua',
-  volki: 'Volkl',
-  fisher: 'Fischer',
-  technica: 'Tecnica',
-  dare2be: 'Dare2b',
-  decathon: 'Decathlon',
-  colombia: 'Columbia',
 }
 
 // Couleurs écrites au féminin ou au pluriel, ramenées à types/colors.ts.
@@ -197,7 +184,6 @@ function cityKey(value: string): string {
 }
 
 const citiesByKey = new Map(cities.map((city) => [cityKey(city), city]))
-const brandsByKey = new Map(brands.map((brand) => [key(brand), brand]))
 const categoriesByKey = new Map(categories.map((category) => [key(category), category]))
 const disciplinesByKey = new Map(disciplines.map((discipline) => [key(discipline), discipline]))
 const colorsByKey = new Map(colors.map((color) => [key(color), color]))
@@ -208,11 +194,12 @@ function normalizeCity(value: string): string {
   return known ?? value.toLocaleUpperCase('fr')
 }
 
-function normalizeBrand(value: string): string {
-  if (value === '') return '?'
-  const k = key(value)
-  const known = brandsByKey.get(k) ?? BRAND_ALIASES[k]
-  return known ?? titleCase(value)
+// `rest` : ce qui, dans le champ marque, n'est pas la marque (« AJ 3 » dans
+// « ALPINA AJ 3 »), à mettre au descriptif.
+function normalizeBrand(value: string): { brand: string; rest: string } {
+  if (value === '') return { brand: '?', rest: '' }
+  const { brand, rest } = findBrand(value)
+  return brand === undefined ? { brand: titleCase(value), rest: '' } : { brand, rest }
 }
 
 // Distance de Damerau-Levenshtein (variante « optimal string alignment ») :
@@ -398,6 +385,9 @@ interface Report {
   // Tailles dont normalizeSize a retiré des mots (« Pointure », un nom de
   // modèle…) : à relire, le mot retiré peut avoir sa place dans le descriptif.
   sizes: string[]
+  // Champs marque dont une partie seulement est une marque (« ALPINA AJ 3 ») :
+  // le reste est parti au descriptif, à relire.
+  brands: string[]
 }
 
 function readResponse(row: string[], number: number, report: Report): Response {
@@ -428,9 +418,13 @@ function readResponse(row: string[], number: number, report: Report): Response {
 
     // La marque est une liste fermée au poste, comme la catégorie et la
     // discipline : une valeur hors liste s'y affiche vide et l'info est perdue.
-    // On vérifie la valeur finale, alias compris.
-    const brand = normalizeBrand(rawBrand)
+    // On vérifie la valeur finale, alias compris. Le reste d'un champ dont
+    // une partie seulement est une marque passe au descriptif, à la suite de
+    // celui du vendeur.
+    const { brand, rest } = normalizeBrand(rawBrand)
     if (!brands.includes(brand)) report.errors.push(`${where} : marque « ${rawBrand} » absente de la liste${suggest(rawBrand, brandsByKey)}`)
+    if (rest !== '') report.brands.push(`${where} : marque « ${rawBrand} » → ${brand}, « ${rest} » ajouté au descriptif`)
+    const model = [rawModel, rest].filter(Boolean).join(' ')
 
     const price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
     if (!(price > 0)) report.errors.push(`${where} : prix « ${rawPrice} » illisible`)
@@ -442,7 +436,7 @@ function readResponse(row: string[], number: number, report: Report): Response {
     const { size, removed } = normalizeSize(rawSize)
     if (removed.length > 0) report.sizes.push(`${where} : taille « ${rawSize} » → « ${size} », retiré : ${removed.join(', ')}`)
 
-    articles.push({ category, discipline, brand, model: rawModel, size, color, price })
+    articles.push({ category, discipline, brand, model, size, color, price })
   }
   if (articles.length === 0) report.warnings.push(`${who} : aucun article`)
 
@@ -512,7 +506,7 @@ async function main() {
   const [header, ...rows] = parseCsv(readUtf8(csvPath))
   checkHeaders(header)
 
-  const report: Report = { errors: [], warnings: [], offList: [], sizes: [] }
+  const report: Report = { errors: [], warnings: [], offList: [], sizes: [], brands: [] }
   const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
@@ -629,6 +623,11 @@ async function main() {
   if (report.offList.length > 0) {
     console.log('🔎 Hors liste, gardé tel quel (à relire, corriger dans le CSV si besoin) :')
     for (const line of report.offList) console.log(`   ${line}`)
+    console.log()
+  }
+  if (report.brands.length > 0) {
+    console.log('🏷️  Marques trouvées dans une partie du champ, le reste ajouté au descriptif (à relire) :')
+    for (const line of report.brands) console.log(`   ${line}`)
     console.log()
   }
   if (report.sizes.length > 0) {

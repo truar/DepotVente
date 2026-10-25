@@ -157,7 +157,7 @@ sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée.
 | Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`, `Menthonnex-sous-Clermont` → `MENTHONNEX` via `CITY_ALIASES`), sinon en majuscules et signalée |
 | Type de matériel | `Vêtements de ski` → `Vêtement`, le reste ramené à `types/categories.ts` sans casse ni accent (`Batons` → `Bâtons`) |
 | Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste ramené à `types/disciplines.ts` sans casse ni accent (`Telemark` → `Télémark`) |
-| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`), sinon **bloque** |
+| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`, alias dans `import/predeposit-brand.ts`). Si une partie seulement du champ est une marque, on la garde et le reste passe à la suite du descriptif (`ALPINA AJ 3` → `Alpina`, « AJ 3 » au descriptif), signalé (« 🏷️ Marques trouvées dans une partie du champ ») ; sinon **bloque** |
 | Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée et signalée |
 | Taille | ne garde que les mots d'une taille (liste exhaustive dans `import/predeposit-size.ts` : XS…XXXL, TU, cm, mm, ans, mois, EU/US/UK, Bébé, Naissance), chiffres et séparateurs compris ; `Taille unique` → `TU`, `80 cms` → `80cm`, `4A`/`8ans` → `4 ans`/`8 ans`, `18M` → `18 mois`. Les autres mots (`Pointure`, un nom de modèle…) sont retirés et signalés (« ✂️ Tailles raccourcies ») |
 | Descriptif / Prix | modèle / prix, tels quels |
