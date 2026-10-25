@@ -7,6 +7,7 @@ import {
 } from '@/test/harness.ts'
 import { articleEditPage } from '@/test/pages/article-edit.page.ts'
 import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
+import { depositEditPage } from '@/test/pages/deposit-edit.page.ts'
 import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
 import { lastPrintedText } from '@/test/printed.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
@@ -690,6 +691,89 @@ describe('Screen: article rows', () => {
       [`${YEAR} 1001B`, 'DELETED'],
     ])
     expect((await local.deposits())[0]).toMatchObject({ contributionAmount: 2 })
+  })
+})
+
+// A seller declared seven articles on their predeposit; on the day, two are
+// refused (B in the middle, G the last row). Their rows stay on the fiche,
+// struck through, so the deposit keeps a trace of what was declared, but the
+// seller only pays for the five left: 2 € instead of 4 €. That holds on the
+// screen, on the printed sheet, in the saved deposit, in the deposits list
+// and on the fiche reopened later.
+describe('Screen: articles deleted from a predeposit', () => {
+  const codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+  const deleted = [false, true, false, false, false, false, true]
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+    await givenPredeposit(
+      {},
+      Array.from({ length: 7 }, () => ({})),
+    )
+  })
+
+  it('keeps them on the fiche, marked deleted, and leaves them out of the contribution', async () => {
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+    expect(page.articleCount()).toBe(7)
+    expect(page.contributionAmount()).toBe(4)
+
+    await page.removeArticle(1)
+    await page.removeArticle(6)
+
+    expect(page.articleCodes()).toEqual(codes.map((l) => `1001 ${l}`))
+    expect(codes.map((_, index) => page.isArticleDeleted(index))).toEqual(
+      deleted,
+    )
+    expect(page.articleCount()).toBe(5)
+    expect(page.contributionAmount()).toBe(2)
+
+    // The sheet the seller takes home lists all seven and counts five.
+    await page.chooseStatus('Payé')
+    await page.printSummary()
+    const sheet = await lastPrintedText()
+    for (const letter of codes) {
+      expect(sheet).toContain(`1001 ${letter} Skis Salomon`)
+    }
+    expect(sheet).toContain('Nb articles : 5')
+    expect(sheet).toContain('Cotisations : 2,00 € (Payé)')
+
+    await page.save()
+    await page.savedToast(1001)
+
+    // Saved: the two refused articles as DELETED, the deposit at 2 €, which
+    // is what the reports add up as cotisations.
+    const [deposit] = await local.deposits()
+    expect(deposit).toMatchObject({
+      contributionStatus: 'PAYE',
+      contributionAmount: 2,
+    })
+    const articles = (await local.articles()).sort((a, b) =>
+      a.identificationLetter.localeCompare(b.identificationLetter),
+    )
+    expect(articles.map((a) => [a.identificationLetter, a.status])).toEqual(
+      codes.map((letter, index) => [
+        letter,
+        deleted[index] ? 'DELETED' : 'RECEPTION_OK',
+      ]),
+    )
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.deposit(1001)).toMatchObject({
+      articleCount: 5,
+      contributionAmount: '2,00 €',
+    })
+
+    // Reopened, the fiche still shows the refused rows, struck through.
+    const reopened = await depositEditPage(deposit.id)
+    expect(reopened.articleCodes()).toEqual(codes.map((l) => `1001 ${l}`))
+    expect(codes.map((_, index) => reopened.isArticleDeleted(index))).toEqual(
+      deleted,
+    )
+    expect(reopened.articleCount()).toBe(5)
+    expect(reopened.contributionAmount()).toBe(2)
   })
 })
 
