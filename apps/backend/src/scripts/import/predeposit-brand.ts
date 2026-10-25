@@ -17,6 +17,15 @@ const BRAND_ALIASES: Record<string, string> = {
   uoxygn: 'U-Oxyg',
   oxyg: 'U-Oxyg',
   oxygn: 'U-Oxyg',
+  gapkids: 'Gap',
+  // Vendue sous le nom « Vertigo Alpes » ou « Alpes Vertigo ».
+  vertigoalpes: 'Vertigo',
+  alpesvertigo: 'Vertigo',
+  // Shaver est un modèle de snowboard enfant d'O'Sin (Original Sin), que les
+  // vendeurs prennent pour la marque.
+  shaver: 'Osin',
+  shavers: 'Osin',
+  originalsin: 'Osin',
 }
 
 // Forme de comparaison : minuscules, sans accent, sans rien d'autre que

@@ -547,6 +547,21 @@ export const brands = [
   'Bliz',
   'Viking Of Norway',
   'U-Oxyg',
+  'Aigle',
+  'AlpenGaudi',
+  'Béaba',
+  'Gap',
+  'Grain de Blé',
+  'Jones',
+  'Kiabi',
+  'Kipsta',
+  'La Compagnie des Petits',
+  'Primark',
+  'Primigi',
+  'Sevira Kids',
+  'Tissaia',
+  'U-Topik',
+  'Vertigo',
 ]
 
 export const brandsItems = brands.map((brand) => ({

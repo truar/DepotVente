@@ -12,7 +12,8 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })
 
-  it.each(['Kiabi', 'Pantalon V', ''])('ne trouve pas de marque dans « %s »', (value) => {
+  // Saisies des pré-dépôts 2026 qui ne sont pas des marques, ou introuvables.
+  it.each(['CORED', 'Happy', 'Pop', 'Baby shoes', 'Pantalon V', ''])('ne trouve pas de marque dans « %s »', (value) => {
     expect(findBrand(value)).toEqual({ brand: undefined, rest: '' })
   })
 
@@ -23,6 +24,33 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
       expect(findBrand(value)).toEqual({ brand: 'U-Oxyg', rest: '' })
     },
   )
+
+  // Marques saisies dans les pré-dépôts 2026, vérifiées puis ajoutées à la
+  // liste, telles que les vendeurs les ont écrites.
+  it.each([
+    ['Aigle', 'Aigle'],
+    ['Alpen gaudi', 'AlpenGaudi'],
+    ['Béaba', 'Béaba'],
+    ['GAP KIDS', 'Gap'],
+    ['Grain de blé', 'Grain de Blé'],
+    ['JONES', 'Jones'],
+    ['Kiabi', 'Kiabi'],
+    ['KIPSTA', 'Kipsta'],
+    ['La compagnie des petits', 'La Compagnie des Petits'],
+    ['Primark', 'Primark'],
+    ['Primigi', 'Primigi'],
+    ['Sevira kids', 'Sevira Kids'],
+    ['Tissaia', 'Tissaia'],
+    ['U-topik', 'U-Topik'],
+    ['Utopik', 'U-Topik'],
+    ['Vertigo', 'Vertigo'],
+    ['Vertigo Alpes', 'Vertigo'],
+    // Shaver est un modèle de snowboard enfant d'O'Sin, pas une marque.
+    ['Shavers', 'Osin'],
+    ['Original Sin', 'Osin'],
+  ])('reconnaît « %s » comme %s', (value, brand) => {
+    expect(findBrand(value)).toEqual({ brand, rest: '' })
+  })
 
   // Quand une partie seulement du champ est une marque, le reste est rendu
   // pour partir au descriptif.
