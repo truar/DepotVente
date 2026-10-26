@@ -61,7 +61,7 @@ export function brandKey(value: string): string {
 export const brandsByKey = new Map(brands.map((brand) => [brandKey(brand), brand]))
 
 function known(k: string): string | undefined {
-  return k === '' ? undefined : (brandsByKey.get(k) ?? BRAND_ALIASES[k])
+  return brandsByKey.get(k) ?? BRAND_ALIASES[k]
 }
 
 // Quand le champ entier n'est pas une marque mais qu'une partie l'est
@@ -71,6 +71,9 @@ function known(k: string): string | undefined {
 // moins de deux caractères n'est jamais prise pour une marque : la liste en
 // contient d'une seule lettre (« V »), qu'un mot isolé déclencherait à tort.
 export function findBrand(value: string): { brand: string | undefined; rest: string } {
+  // Sans lettre ni chiffre (vide, « ? », « .?. ») : le vendeur ne connaît pas
+  // la marque.
+  if (brandKey(value) === '') return { brand: '?', rest: '' }
   const whole = known(brandKey(value))
   if (whole !== undefined) return { brand: whole, rest: '' }
   const words = value.split(/\s+/).filter(Boolean)

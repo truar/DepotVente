@@ -210,7 +210,6 @@ function normalizeCity(value: string): string {
 // `rest` : ce qui, dans le champ marque, n'est pas la marque (« AJ 3 » dans
 // « ALPINA AJ 3 »), à mettre au descriptif.
 function normalizeBrand(value: string): { brand: string; rest: string } {
-  if (value === '') return { brand: '?', rest: '' }
   const { brand, rest } = findBrand(value)
   return brand === undefined ? { brand: titleCase(value), rest: '' } : { brand, rest }
 }

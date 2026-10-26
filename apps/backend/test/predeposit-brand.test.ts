@@ -15,8 +15,13 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
   })
 
   // Saisies des pré-dépôts 2026 qui ne sont pas des marques, ou introuvables.
-  it.each(['CORED', 'Happy', 'Pop', 'Baby shoes', 'Pantalon V', ''])('ne trouve pas de marque dans « %s »', (value) => {
+  it.each(['CORED', 'Happy', 'Pop', 'Baby shoes', 'Pantalon V'])('ne trouve pas de marque dans « %s »', (value) => {
     expect(findBrand(value)).toEqual({ brand: undefined, rest: '' })
+  })
+
+  // Sans lettre ni chiffre, le vendeur ne connaît pas la marque.
+  it.each(['', '?', '.?.', '-', '/'])('rend « %s » comme marque inconnue ?', (value) => {
+    expect(findBrand(value)).toEqual({ brand: '?', rest: '' })
   })
 
   // La marque textile de Super U s'écrit de plusieurs façons.
