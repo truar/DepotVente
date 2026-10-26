@@ -7,6 +7,8 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     ['ROSSIGNOL', 'Rossignol'],
     ['Black Diamond', 'Black Diamond'],
     ['Queschua', 'Quechua'],
+    // Ancienne écriture de la liste, remplacée par Quechua le 17 octobre.
+    ['Quescha', 'Quechua'],
     ['Colombia', 'Columbia'],
   ])('reconnaît « %s » comme %s', (value, brand) => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
