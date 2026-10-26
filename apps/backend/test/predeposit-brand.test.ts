@@ -52,6 +52,44 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })
 
+  // Marques de la liste du responsable qui manquaient à la nôtre.
+  it.each(['Banana Moon', 'Snowlife', 'Rose', 'Skibag', 'Confortable', 'X-SOCKS', 'POW'])(
+    'reconnaît « %s »',
+    (value) => {
+      expect(findBrand(value)).toEqual({ brand: value, rest: '' })
+    },
+  )
+
+  // Doublons et fautes de frappe retirés de la liste : l'ancienne écriture
+  // donne la marque officielle.
+  it.each([
+    ['Techno Pro', 'Tecno Pro'],
+    ['Tecnopro', 'Tecno Pro'],
+    ['North Wave', 'Northwave'],
+    ['Dee luxe', 'Deeluxe'],
+    ['Spider', 'Spyder'],
+    ['Spyder Active', 'Spyder'],
+    ["Van's", 'Vans'],
+    ['Ellse', 'Ellesse'],
+    ['Smartwood', 'Smartwool'],
+    ['Tomic', 'Atomic'],
+    ['Bori', 'Boeri'],
+    ['Equitheme', 'Equi-Thème'],
+    ['Iekuitheme', 'Equi-Thème'],
+    ['Ternva', 'Ternua'],
+    ['Easy Entry Roxa', 'Roxa'],
+    ['Skichic', 'Ski Chic'],
+    ['Mountain Hardware', 'Mountain Hardwear'],
+    ['Montain Safety Research', 'MSR'],
+    ['Mountain Safety Research', 'MSR'],
+    ['Nothern Lites', 'Northern Lites'],
+    ["O'Neil", "O'Neill"],
+    ['Hang-Wag', 'Hanwag'],
+    ['Isle Jacobsen', 'Ilse Jacobsen'],
+  ])('reconnaît « %s » comme %s', (value, brand) => {
+    expect(findBrand(value)).toEqual({ brand, rest: '' })
+  })
+
   // Quand une partie seulement du champ est une marque, le reste est rendu
   // pour partir au descriptif.
   it.each([

@@ -26,6 +26,25 @@ const BRAND_ALIASES: Record<string, string> = {
   shaver: 'Osin',
   shavers: 'Osin',
   originalsin: 'Osin',
+  // Doublons et fautes de frappe retirés de la liste en octobre 2026, au
+  // profit de la marque officielle.
+  technopro: 'Tecno Pro',
+  spider: 'Spyder',
+  spyderactive: 'Spyder',
+  ellse: 'Ellesse',
+  smartwood: 'Smartwool',
+  tomic: 'Atomic',
+  bori: 'Boeri',
+  iekuitheme: 'Equi-Thème',
+  ternva: 'Ternua',
+  easyentryroxa: 'Roxa',
+  mountainhardware: 'Mountain Hardwear',
+  montainsafetyresearch: 'MSR',
+  mountainsafetyresearch: 'MSR',
+  nothernlites: 'Northern Lites',
+  oneil: "O'Neill",
+  hangwag: 'Hanwag',
+  islejacobsen: 'Ilse Jacobsen',
 }
 
 // Forme de comparaison : minuscules, sans accent, sans rien d'autre que
