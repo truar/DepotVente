@@ -10,6 +10,7 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     // Ancienne écriture de la liste, remplacée par Quechua le 17 octobre.
     ['Quescha', 'Quechua'],
     ['Colombia', 'Columbia'],
+    ['Nordic', 'Nordica'],
   ])('reconnaît « %s » comme %s', (value, brand) => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })

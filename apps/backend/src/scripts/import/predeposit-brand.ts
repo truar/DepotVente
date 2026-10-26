@@ -9,6 +9,7 @@ const BRAND_ALIASES: Record<string, string> = {
   queschua: 'Quechua',
   quescha: 'Quechua',
   volki: 'Volkl',
+  nordic: 'Nordica',
   fisher: 'Fischer',
   technica: 'Tecnica',
   dare2be: 'Dare2b',
