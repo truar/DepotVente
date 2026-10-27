@@ -479,6 +479,41 @@ Open.
       can do for performance, and it costs nothing.
 - [ ] Lid open, plugged in, automatic updates off.
 
+### Loading the predeposits and the pros
+
+Once, on the server Mac, into the day's empty database, before the client PCs
+log in. Both imports simulate by default: read the report, then run again with
+`--apply`. Both refuse to write twice. The data files are personal or
+commercial data and stay out of git (`tmp/`).
+
+**On the machine that prepares the data** (Python 3 with `openpyxl`), decode
+and check the pros' export: the five `.xlsx` files they send (`Article <date>`,
+`Fiche <date>`, `Marque`, `Materiel`, `Type`), in one folder.
+
+```bash
+python3 apps/backend/src/scripts/import/pros/decode_pro.py tmp/pro
+```
+
+It must end with « Aucun point bloquant ». It writes `tmp/pro/articles-pro.csv`,
+one decoded article per line, readable in a spreadsheet, and the full report in
+`tmp/pro/verification.txt`. Put the CSV on Google Drive (private, not « anyone
+with the link ») or on the USB key.
+
+**On the server Mac, with internet** (the venue may have none): download
+`articles-pro.csv` and the predeposit responses (Google Sheets → File →
+Download → CSV) into `tmp/`. The scripts need `pnpm install` and the `.env`
+of [REHEARSAL.md](REHEARSAL.md), section 2.
+
+```bash
+pnpm --filter backend script:import-predeposits tmp/<responses>.csv            # simulation
+pnpm --filter backend script:import-predeposits tmp/<responses>.csv --apply
+pnpm --filter backend script:import-pros tmp/articles-pro.csv                   # simulation
+pnpm --filter backend script:import-pros tmp/articles-pro.csv --apply
+```
+
+The pros' articles arrive « à réceptionner », to scan in the pros' reception
+screen; `script:pro-barcodes` prints them on a sheet for a rehearsal.
+
 ### 3. Each client PC — order matters
 
 Build the USB kit once, on the server, after its address is fixed:
