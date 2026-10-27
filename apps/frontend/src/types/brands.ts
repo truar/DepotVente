@@ -557,6 +557,9 @@ export const brands = [
   'Confortable',
   'X-SOCKS',
   'POW',
+  'Black Crows',
+  'Jack Wolfskin',
+  'Olang',
 ]
 
 export const brandsItems = brands.map((brand) => ({

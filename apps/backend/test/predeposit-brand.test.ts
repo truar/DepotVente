@@ -68,6 +68,16 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     },
   )
 
+  // Marques du référentiel des pros qui manquaient à la nôtre, telles qu'ils
+  // les écrivent.
+  it.each([
+    ['Black Crows', 'Black Crows'],
+    ['JACK WOLFSKIN', 'Jack Wolfskin'],
+    ['OLANG', 'Olang'],
+  ])('reconnaît « %s » comme %s', (value, brand) => {
+    expect(findBrand(value)).toEqual({ brand, rest: '' })
+  })
+
   // Doublons et fautes de frappe retirés de la liste : l'ancienne écriture
   // donne la marque officielle.
   it.each([
