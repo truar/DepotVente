@@ -36,6 +36,7 @@ const BRAND_ALIASES: Record<string, string> = {
   // Marque d'anoraks enfant, que les vendeurs abrègent.
   himalaya: 'Himalaya Mountain',
   weze: 'Wedze',
+  reuch: 'Reusch',
   spider: 'Spyder',
   spyderactive: 'Spyder',
   ellse: 'Ellesse',
