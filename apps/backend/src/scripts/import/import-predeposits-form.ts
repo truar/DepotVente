@@ -73,7 +73,7 @@ import {
   type Response,
   sameSeller,
 } from './predeposit-duplicates'
-import { type Correction, correctionKey, readCorrections } from './predeposit-corrections'
+import { type Correction, correctionKey, readCorrections, REFUSED_MODEL } from './predeposit-corrections'
 import { DECISIONS, formatTimestamp, parseTimestamp, resolveDecisions } from './predeposit-decisions'
 import { normalizeSize } from './predeposit-size'
 
@@ -460,11 +460,14 @@ function readResponse(
       note(letter, 'marque', rawBrand, brand, `marque trouvée dans une partie du champ, « ${rest} » ajouté au descriptif`)
     }
     // Le descriptif du doc est final : il remplace la saisie et le reste du
-    // champ marque. Une marque hors liste garde sa saisie en tête.
+    // champ marque. Une marque hors liste garde sa saisie en tête, sauf devant
+    // « A supprimer », qui doit rester tel quel pour être repéré.
     const model =
-      correction?.model !== undefined
-        ? [lead, correction.model].filter(Boolean).join(' ')
-        : [lead, rawModel, rest].filter(Boolean).join(' ')
+      correction?.model === REFUSED_MODEL
+        ? REFUSED_MODEL
+        : correction?.model !== undefined
+          ? [lead, correction.model].filter(Boolean).join(' ')
+          : [lead, rawModel, rest].filter(Boolean).join(' ')
 
     let price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
     if (!(price > 0)) {
