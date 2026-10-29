@@ -565,6 +565,12 @@ export const brands = [
   'Himalaya Mountain',
   'Okaïdi',
   'Orchestra',
+  'Roces',
+  'Dorotennis',
+  'Teddy Smith',
+  'Canadian Peak',
+  'Vertbaudet',
+  'Pimkie',
 ]
 
 export const brandsItems = brands.map((brand) => ({

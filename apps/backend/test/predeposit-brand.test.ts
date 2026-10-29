@@ -91,6 +91,19 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     ['TECNO', 'Tecno Pro'],
     ['Weze', 'Wedze'],
     ['REUCH', 'Reusch'],
+    ['WEDIZE', 'Wedze'],
+    ['Volk', 'Volkl'],
+    ['Haed', 'Head'],
+    ['Nide ecker', 'Nidecker'],
+    ['quick silver', 'Quiksilver'],
+    ['Annapurna', 'Anapurna'],
+    ['dorotenns', 'Dorotennis'],
+    ['ROCES', 'Roces'],
+    ['VERTBAUDET', 'Vertbaudet'],
+    ['pimkie', 'Pimkie'],
+    // Marques entières, pas « Smith » ni « Peak » avec le reste au descriptif.
+    ['Teddy Smith', 'Teddy Smith'],
+    ['Canadian peak', 'Canadian Peak'],
   ])('reconnaît « %s » comme %s', (value, brand) => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })
