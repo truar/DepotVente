@@ -89,6 +89,7 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     ['Orchestra', 'Orchestra'],
     ['Technipro', 'Tecno Pro'],
     ['TECNO', 'Tecno Pro'],
+    ['Weze', 'Wedze'],
   ])('reconnaît « %s » comme %s', (value, brand) => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })

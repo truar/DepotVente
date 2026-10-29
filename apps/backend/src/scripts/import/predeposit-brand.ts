@@ -35,6 +35,7 @@ const BRAND_ALIASES: Record<string, string> = {
   tecno: 'Tecno Pro',
   // Marque d'anoraks enfant, que les vendeurs abrègent.
   himalaya: 'Himalaya Mountain',
+  weze: 'Wedze',
   spider: 'Spyder',
   spyderactive: 'Spyder',
   ellse: 'Ellesse',
