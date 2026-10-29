@@ -121,7 +121,12 @@ services:
           memory: 512m
 
 volumes:
+  # The database lives in this volume. Setting PG_VOLUME in the root .env
+  # switches to another one (another year, the rehearsal) without deleting it.
+  # Compose does not notice the change by itself:
+  #   docker compose up -d --force-recreate --no-build postgres backend
   postgres_data:
+    name: ${PG_VOLUME:-depotvente_postgres_data}
     driver: local
   caddy_data:
     driver: local

@@ -15,3 +15,6 @@ results/
 
 # Finder
 .DS_Store
+
+# Which database volume docker compose uses (docker-compose.yml, PG_VOLUME)
+/.env
