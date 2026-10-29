@@ -42,8 +42,10 @@
 // reprendre tel quel, et chaque doublon non arbitré, est noté au journal :
 // <export>-journal.csv, à côté du CSV, écrit à chaque passage.
 //
-// Garde-fou : --apply refuse d'écrire si un pré-dépôt avec le même téléphone
-// existe déjà en base, ce qui empêche un second passage du script.
+// Import itératif : le script se relance sur l'export complet autant qu'il le
+// faut. Une fiche dont le téléphone est déjà en base (même supprimée) est
+// sautée, seules les nouvelles sont créées, numérotées à la suite. Une fiche
+// déjà en base dont le nombre d'articles a changé est notée au journal.
 import fs from 'fs'
 import path from 'path'
 import { prisma } from 'database'
@@ -564,30 +566,62 @@ async function main() {
   // État de la base
   let lastPredepositIndex = 0
   let lastArticleIndex = 0
-  let existingPhones = new Map<string, string>()
+  // Pré-dépôts déjà en base, par téléphone, supprimés compris : un pré-dépôt
+  // supprimé au comptoir ne doit pas revenir au passage suivant.
+  let existingPhones = new Map<string, { label: string; articles: number }>()
   try {
     const [predepositMax, articleMax, existing] = await Promise.all([
       prisma.predeposit.aggregate({ _max: { predepositIndex: true } }),
       prisma.predepositArticle.aggregate({ _max: { articleIndex: true } }),
       prisma.predeposit.findMany({
-        where: { deletedAt: null },
-        select: { predepositIndex: true, sellerLastName: true, sellerPhoneNumber: true },
+        select: {
+          predepositIndex: true,
+          sellerLastName: true,
+          sellerPhoneNumber: true,
+          deletedAt: true,
+          _count: { select: { articles: { where: { deletedAt: null } } } },
+        },
       }),
     ])
     lastPredepositIndex = predepositMax._max.predepositIndex ?? 0
     lastArticleIndex = articleMax._max.articleIndex ?? 0
     existingPhones = new Map(
-      existing.map((p) => [normalizePhone(p.sellerPhoneNumber), `fiche ${p.predepositIndex} ${p.sellerLastName}`]),
+      existing.map((p) => [
+        normalizePhone(p.sellerPhoneNumber),
+        {
+          label: `fiche ${p.predepositIndex} ${p.sellerLastName}${p.deletedAt ? ' (supprimée)' : ''}`,
+          articles: p._count.articles,
+        },
+      ]),
     )
   } catch (error) {
     if (apply) throw error
     console.warn(`⚠️  Base injoignable, simulation sur une base vide : ${(error as Error).message.split('\n')[0]}\n`)
   }
+  // Import itératif : une fiche dont le téléphone est déjà en base a été
+  // importée à un passage précédent, elle est sautée. Si ses articles ne sont
+  // plus en même nombre (réponse renvoyée depuis), c'est noté au journal, à
+  // reporter à la main : la fiche a pu être reprise au comptoir.
   const alreadyThere = fiches.filter((fiche) => existingPhones.has(fiche.phoneNumber))
+  const changed = alreadyThere.filter((fiche) => existingPhones.get(fiche.phoneNumber)!.articles !== fiche.articles.length)
+  for (const fiche of changed) {
+    const existing = existingPhones.get(fiche.phoneNumber)!
+    report.journal.push({
+      line: fiche.number + 1,
+      response: fiche.number,
+      seller: `${fiche.lastName} ${fiche.firstName}`,
+      article: '',
+      field: 'déjà en base',
+      input: `${fiche.articles.length} article(s) dans le Sheet`,
+      imported: `non, ${existing.label} garde ses ${existing.articles} article(s)`,
+      reason: 'réponse modifiée depuis le passage précédent ; à reporter à la main',
+    })
+  }
+  const toCreate = fiches.filter((fiche) => !existingPhones.has(fiche.phoneNumber))
 
   const year = new Date().getFullYear()
   let articleIndex = lastArticleIndex
-  const plan = fiches.map((fiche, offset) => ({
+  const plan = toCreate.map((fiche, offset) => ({
     fiche,
     predepositIndex: lastPredepositIndex + 1 + offset,
     articles: fiche.articles.map((article, index) => ({
@@ -608,6 +642,17 @@ async function main() {
     )
   }
   console.log(`   Total : ${plan.reduce((sum, p) => sum + p.articles.length, 0)} article(s)\n`)
+  if (alreadyThere.length > 0) {
+    console.log(`⏭️  ${alreadyThere.length} fiche(s) déjà en base, sautée(s)`)
+    for (const fiche of changed) {
+      const existing = existingPhones.get(fiche.phoneNumber)!
+      console.log(
+        `   ⚠️  ${fiche.lastName} ${fiche.firstName} : ${fiche.articles.length} article(s) dans le Sheet, ` +
+          `${existing.articles} en base (${existing.label}) — à reporter à la main (voir le journal)`,
+      )
+    }
+    console.log()
+  }
 
   if (duplicates.length > 0) {
     console.log(`👥 ${duplicates.length} groupe(s) de doublons (même téléphone, email ou nom) :`)
@@ -672,24 +717,12 @@ async function main() {
   }
   writeJournal(csvPath, report.journal)
 
-  // Seul garde-fou : un second passage du script dupliquerait les fiches.
-  const blockers: string[] = []
-  for (const fiche of alreadyThere) {
-    blockers.push(`${fiche.lastName} ${fiche.firstName} (${fiche.phoneNumber}) existe déjà en base : ${existingPhones.get(fiche.phoneNumber)}`)
-  }
-  if (blockers.length > 0) {
-    console.log('❌ À régler avant --apply :')
-    for (const blocker of blockers) console.log(`   ${blocker}`)
-    console.log()
-  }
-
   if (!apply) {
     console.log('Simulation : rien n’a été écrit. Relancer avec --apply pour importer.')
     return
   }
-  if (blockers.length > 0) {
-    console.error('❌ Import annulé, rien n’a été écrit.')
-    process.exitCode = 1
+  if (plan.length === 0) {
+    console.log('✅ Rien de nouveau à importer.')
     return
   }
 

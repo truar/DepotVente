@@ -12,9 +12,12 @@
 //
 // Le chemin du CSV est relatif au dossier depuis lequel on lance pnpm.
 //
-// Garde-fous : --apply refuse d'écrire si un numéro de fiche ou un code
-// d'article existe déjà en base, ce qui empêche aussi un second passage du
-// script. Tout est écrit dans une seule transaction, tout ou rien, puis relu.
+// Import itératif : une fiche dont le numéro est déjà en base (même supprimée)
+// a été importée à un passage précédent, elle est sautée ; seules les
+// nouvelles sont écrites. Une fiche sautée dont le nombre d'articles a changé
+// est signalée, à reporter à la main. Garde-fou : --apply refuse d'écrire si
+// un code d'article d'une nouvelle fiche existe déjà en base. Tout est écrit
+// dans une seule transaction, tout ou rien, puis relu.
 import fs from 'fs'
 import path from 'path'
 import { prisma } from 'database'
@@ -43,15 +46,33 @@ async function main() {
     process.exit(1)
   }
 
-  const { year, fiches, errors } = readProArticles(parseCsv(text))
-  if (fiches.length > 0) {
-    const taken = await prisma.deposit.findMany({
-      where: { depositIndex: { in: fiches.map((fiche) => fiche.number) } },
-      select: { depositIndex: true, deletedAt: true },
-    })
-    for (const deposit of taken) {
-      errors.push(`fiche ${deposit.depositIndex} déjà en base${deposit.deletedAt ? ' (supprimée)' : ''}`)
+  const { year, fiches: all, errors } = readProArticles(parseCsv(text))
+  const taken = await prisma.deposit.findMany({
+    where: { depositIndex: { in: all.map((fiche) => fiche.number) } },
+    select: { depositIndex: true, type: true, deletedAt: true, _count: { select: { articles: { where: { deletedAt: null } } } } },
+  })
+  const takenByNumber = new Map(taken.map((deposit) => [deposit.depositIndex, deposit]))
+  for (const fiche of all) {
+    const deposit = takenByNumber.get(fiche.number)
+    if (!deposit) continue
+    if (deposit.type !== 'PRO') {
+      errors.push(`fiche ${fiche.number} : numéro déjà pris par un dépôt ${deposit.type}`)
+      continue
     }
+    const state = deposit.deletedAt ? ', supprimée' : ''
+    if (deposit._count.articles === fiche.articles.length) {
+      console.log(`⏭️  fiche ${fiche.number} ${fiche.name} : déjà en base${state}, sautée`)
+    } else {
+      console.log(
+        `⚠️  fiche ${fiche.number} ${fiche.name} : déjà en base${state}, sautée, mais ${fiche.articles.length} ` +
+          `articles dans le fichier et ${deposit._count.articles} en base — à reporter à la main`,
+      )
+    }
+  }
+  const fiches = all.filter((fiche) => !takenByNumber.has(fiche.number))
+  // Une fiche pro sautée est déjà en base ; un numéro pris par un autre dépôt
+  // est une erreur ci-dessus.
+  if (fiches.length > 0) {
     const codes = fiches.flatMap((fiche) => fiche.articles.map((article) => article.code))
     const takenCodes = await prisma.article.findMany({ where: { code: { in: codes } }, select: { code: true } })
     if (takenCodes.length > 0) {
@@ -74,6 +95,10 @@ async function main() {
   }
   if (!process.argv.includes('--apply')) {
     console.log('\nSimulation : rien n’est écrit. Relancer avec --apply.')
+    return
+  }
+  if (fiches.length === 0) {
+    console.log('\n✅ Aucune nouvelle fiche pro à importer.')
     return
   }
 

@@ -196,8 +196,14 @@ partie seulement des articles se répète (renvoi, ou deux objets identiques ?).
 
 Les fiches sont numérotées par ordre alphabétique (nom puis prénom) à la suite
 du plus grand numéro de pré-dépôt en base ; les articles prennent les lettres
-A, B, C… dans l'ordre du formulaire. Seul un téléphone déjà présent en base
-bloque `--apply` : il empêche un second passage du script.
+A, B, C… dans l'ordre du formulaire. L'import est itératif : on le relance
+sur l'export complet après chaque nouvelle réponse. Une fiche dont le
+téléphone est déjà en base (même supprimée) est sautée, seules les nouvelles
+sont créées ; si une fiche sautée n'a plus le même nombre d'articles (réponse
+renvoyée depuis), c'est signalé et noté au journal, à reporter à la main.
+`import-pros.ts` fait de même par numéro de fiche pro.
+`./scripts/prepare-sale-db.sh` enchaîne les deux (`--new <volume>` la première
+fois).
 
 Chaque champ ramené à une liste est comparé à cette liste **après** le mapping,
 alias compris. Type de matériel, discipline et marque sont des listes fermées
