@@ -29,7 +29,7 @@ export const cities = [
   'GRESY S/AIX',
   'GRUFFY',
   'HAUTEVILLE SUR FIER',
-  'HERY',
+  'HERY SUR ALBY',
   'LA BIOLLE',
   'LE REVARD',
   'LESCHERAINES',

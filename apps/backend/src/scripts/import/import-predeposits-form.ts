@@ -117,6 +117,8 @@ const CITY_ALIASES: Record<string, string> = {
   ENTRELACSSTGERMAINLACHAMBOTTE: 'ENTRELACS',
   MENTHONNEXSOUSCLERMONT: 'MENTHONNEX',
   MENTHONNEXSOUSCLERMOND: 'MENTHONNEX',
+  // Écrite « HERY » dans la liste jusqu'en octobre 2026.
+  HERY: 'HERY SUR ALBY',
 }
 
 // ── Arguments ───────────────────────────────────────────────────────────────
