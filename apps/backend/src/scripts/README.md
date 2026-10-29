@@ -132,20 +132,27 @@ créés sans dépôt associé ; les postes les reçoivent à leur prochain poll.
 # 1. Simulation : rien n'est écrit, affiche les fiches, les doublons et ce qui bloque
 pnpm --filter backend script:import-predeposits "tmp/Réponses.csv"
 
-# 2. Arbitrer les doublons signalés, puis importer
-pnpm --filter backend script:import-predeposits "tmp/Réponses.csv" --merge 57,58 --skip 61 --apply
+# 2. Arbitrer les doublons signalés dans import/predeposit-decisions.ts, puis importer
+pnpm --filter backend script:import-predeposits "tmp/Réponses.csv" --apply
 ```
 
 Le chemin est relatif au dossier depuis lequel on lance `pnpm`.
 
 **Options :**
 - `--apply` - Écrit en base (une transaction : tout ou rien). Sans lui, simulation.
-- `--merge a,b` - Fusionne ces réponses en une seule fiche : articles à la suite, coordonnées de la réponse la plus récente.
-- `--keep a,b` - Garde ces réponses comme fiches distinctes.
-- `--skip a` - Ignore ces réponses.
 
-Les numéros sont ceux de la simulation (« réponse n » = rang dans le CSV, en-tête
-exclu).
+**Arbitrages :** ils sont codés dans `import/predeposit-decisions.ts`, pas passés
+en ligne de commande. Trois listes : `skip` (réponses ignorées), `keep`
+(gardées comme fiches distinctes) et `merge` (groupes fusionnés en une fiche :
+articles à la suite, coordonnées de la réponse la plus récente). Une réponse y
+est repérée par son **horodatage**, la colonne Timestamp de l'export telle
+quelle (`10/20/2026 9:20:08`), que la simulation affiche entre parenthèses pour
+chaque doublon. Il ne bouge pas quand une ligne du Sheet est ajoutée ou
+supprimée, et ne désigne personne : le dépôt est public, donc jamais de nom,
+de téléphone ni d'email dans ce fichier. Un horodatage absent de l'export, mal
+recopié ou cité deux fois arrête le script : les listes de l'an passé se vident
+avant d'importer le formulaire suivant. Un groupe dont il ne reste qu'une
+réponse, une fois les autres ignorées, n'a plus rien à arbitrer.
 
 Les réponses d'une **même personne** (mêmes nom, prénom et téléphone, sans
 casse ni accent) sont fusionnées d'office en une fiche : articles à la suite,
@@ -155,7 +162,8 @@ la couleur ressaisis ne comptent pas), ils ne sont gardés qu'une fois, ceux de
 la réponse la plus récente.
 
 Les autres réponses qui partagent un téléphone, un email ou un nom + prénom
-sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée. La
+sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée dans
+`predeposit-decisions.ts`. La
 simulation dit pourquoi, et marque d'un ☎️ les cas où il faut **appeler le
 vendeur** : un même téléphone sous deux noms, ou une même personne dont une
 partie seulement des articles se répète (renvoi, ou deux objets identiques ?).

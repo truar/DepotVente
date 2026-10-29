@@ -30,15 +30,11 @@
 // d'office, pas plus qu'une même personne dont une partie seulement des
 // articles se répète. Un même téléphone sous deux noms, ou ces articles en
 // partie répétés, demandent d'appeler le vendeur. Chaque réponse d'un groupe
-// de doublons restant doit être arbitrée avant --apply :
-//   --merge 37,38   fusionne ces réponses en une seule fiche (articles à la
-//                   suite, dans l'ordre des réponses ; coordonnées de la plus
-//                   récente)
-//   --keep 12,40    garde ces réponses comme fiches distinctes
-//   --skip 61       ignore ces réponses
-// Les numéros sont ceux affichés par la simulation (« réponse n »), c'est-à-dire
-// le rang de la réponse dans le CSV, en-tête exclu. Chaque option peut être
-// répétée.
+// de doublons restant doit être arbitrée avant --apply, dans DECISIONS
+// (predeposit-decisions.ts) : ignorée, gardée comme fiche distincte, ou
+// fusionnée. Une réponse y est repérée par son horodatage, que la simulation
+// affiche. Un groupe dont il ne reste qu'une réponse une fois les autres
+// ignorées est arbitré.
 //
 // Garde-fou : --apply refuse d'écrire si un pré-dépôt avec le même téléphone
 // existe déjà en base, ce qui empêche un second passage du script.
@@ -59,6 +55,7 @@ import {
   type Response,
   sameSeller,
 } from './predeposit-duplicates'
+import { DECISIONS, formatTimestamp, parseTimestamp, resolveDecisions } from './predeposit-decisions'
 import { normalizeSize } from './predeposit-size'
 
 const SELLER_HEADERS = ['Timestamp', 'Prénom', 'Nom', 'Portable', 'Email Address', 'Ville']
@@ -118,36 +115,8 @@ const CITY_ALIASES: Record<string, string> = {
 
 // ── Arguments ───────────────────────────────────────────────────────────────
 
-function listArg(name: string): number[] {
-  const values: number[] = []
-  process.argv.forEach((value, index) => {
-    if (value !== `--${name}`) return
-    for (const part of (process.argv[index + 1] ?? '').split(',')) {
-      const n = Number(part.trim())
-      if (!Number.isInteger(n) || n < 1) {
-        console.error(`❌ --${name} attend des numéros de réponse : « ${process.argv[index + 1]} »`)
-        process.exit(1)
-      }
-      values.push(n)
-    }
-  })
-  return values
-}
-
-function mergeGroups(): number[][] {
-  const groups: number[][] = []
-  process.argv.forEach((value, index) => {
-    if (value === '--merge') groups.push((process.argv[index + 1] ?? '').split(',').map((n) => Number(n.trim())))
-  })
-  return groups
-}
-
 const apply = process.argv.includes('--apply')
-const csvArg = process.argv.slice(2).find((value, index, args) => {
-  if (value.startsWith('--')) return false
-  const previous = args[index - 1]
-  return !['--merge', '--keep', '--skip'].includes(previous)
-})
+const csvArg = process.argv.slice(2).find((value) => !value.startsWith('--'))
 
 // ── Normalisation ───────────────────────────────────────────────────────────
 
@@ -254,14 +223,6 @@ function suggest(value: string, byKey: Map<string, string>, toKey: (v: string) =
 function normalizeColor(value: string): string {
   const k = key(value)
   return colorsByKey.get(k) ?? COLOR_ALIASES[k] ?? sentenceCase(value)
-}
-
-// « 10/15/2025 17:49:47 » : format américain M/D/YYYY de Google Sheets.
-function parseTimestamp(value: string): Date | undefined {
-  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})$/)
-  if (!match) return undefined
-  const [, month, day, year, hours, minutes, seconds] = match.map(Number)
-  return new Date(year, month - 1, day, hours, minutes, seconds)
 }
 
 function identificationLetter(index: number): string {
@@ -413,7 +374,7 @@ function describe(response: Response): string {
   const date = response.createdAt.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
   const articles = response.articles.map((a) => `${a.category} ${a.brand} ${a.price}€`).join(', ')
   return (
-    `réponse ${response.number} — ${date} — ${response.lastName} ${response.firstName}, ` +
+    `réponse ${response.number} — ${date} (${formatTimestamp(response.createdAt)}) — ${response.lastName} ${response.firstName}, ` +
     `${response.phoneNumber}, ${response.email}, ${response.city}\n` +
     `        ${response.articles.length} article(s) : ${articles}`
   )
@@ -424,7 +385,7 @@ function describe(response: Response): string {
 async function main() {
   if (!csvArg) {
     console.error(
-      'Usage : script:import-predeposits <export.csv> [--merge 37,38] [--keep 12,40] [--skip 61] [--apply]',
+      'Usage : script:import-predeposits <export.csv> [--apply]',
     )
     process.exit(1)
   }
@@ -441,36 +402,27 @@ async function main() {
   const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
-  // Arbitrages
-  const merges = mergeGroups()
-  const keeps = new Set(listArg('keep'))
-  const skips = new Set(listArg('skip'))
-  const decided = new Set<number>([...keeps, ...skips])
-  for (const group of merges) {
-    if (group.length < 2 || group.some((n) => !Number.isInteger(n))) {
-      console.error(`❌ --merge attend au moins deux numéros de réponse séparés par des virgules`)
-      process.exit(1)
-    }
-    for (const n of group) decided.add(n)
-  }
-  const mentioned = [...merges.flat(), ...keeps, ...skips]
-  for (const n of mentioned) {
-    if (!byNumber.has(n)) {
-      console.error(`❌ Réponse ${n} inexistante (le CSV en compte ${allResponses.length})`)
-      process.exit(1)
-    }
-  }
-  if (new Set(mentioned).size !== mentioned.length) {
-    console.error('❌ Une même réponse est citée dans plusieurs arbitrages')
+  // Arbitrages, codés dans predeposit-decisions.ts
+  const { merges, keeps, skips, errors: decisionErrors } = resolveDecisions(allResponses, DECISIONS)
+  if (decisionErrors.length > 0) {
+    console.error('❌ Arbitrages de predeposit-decisions.ts qui ne s’appliquent pas à cet export :')
+    for (const error of decisionErrors) console.error(`   ${error}`)
     process.exit(1)
   }
+  const decided = new Set<number>([...keeps, ...skips, ...merges.flat()])
 
   const duplicates = findDuplicates(allResponses)
   // Même personne (nom, prénom, téléphone) : une fiche, sans arbitrage.
   const { merges: sellerMerges } = sameSeller(allResponses, decided)
   const sameSellerNumbers = new Set(sellerMerges.flatMap(({ responses }) => responses.map((r) => r.number)))
   for (const n of sameSellerNumbers) decided.add(n)
-  const unresolved = duplicates.filter((group) => group.some((response) => !decided.has(response.number)))
+  // Une fois les réponses ignorées retirées, un groupe réduit à une réponse
+  // n'a plus de doublon.
+  const isResolved = (group: Response[]) => {
+    const left = group.filter((response) => !skips.has(response.number))
+    return left.length < 2 || left.every((response) => decided.has(response.number))
+  }
+  const unresolved = duplicates.filter((group) => !isResolved(group))
 
   // Fiches à créer : réponses fusionnées, gardées, ou sans doublon ; les
   // réponses ignorées disparaissent. `origins` dit de quelles réponses vient
@@ -559,13 +511,16 @@ async function main() {
   if (duplicates.length > 0) {
     console.log(`👥 ${duplicates.length} groupe(s) de doublons (même téléphone, email ou nom) :`)
     for (const group of duplicates) {
-      const status = group.some((response) => !decided.has(response.number))
+      const status = !isResolved(group)
         ? `❓ à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]}`
         : group.every((response) => sameSellerNumbers.has(response.number))
           ? '✅ même personne, une seule fiche'
-          : '✅ arbitré'
+          : '✅ arbitré dans predeposit-decisions.ts'
       console.log(`   ${status} :`)
-      for (const response of group) console.log(`      ${describe(response)}`)
+      for (const response of group) {
+        const note = skips.has(response.number) ? ' [ignorée]' : keeps.has(response.number) ? ' [gardée]' : ''
+        console.log(`      ${describe(response)}${note}`)
+      }
     }
     console.log()
   }
@@ -594,7 +549,7 @@ async function main() {
   for (const group of unresolved) {
     blockers.push(
       `doublon à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]} : réponses ${group.map((r) => r.number).join(', ')} ` +
-        `(--merge ${group.map((r) => r.number).join(',')}, --keep … ou --skip …)`,
+        `(horodatages ${group.map((r) => formatTimestamp(r.createdAt)).join(', ')}, à reporter dans predeposit-decisions.ts)`,
     )
   }
   for (const fiche of alreadyThere) {
