@@ -574,6 +574,9 @@ async function main() {
       prisma.predeposit.aggregate({ _max: { predepositIndex: true } }),
       prisma.predepositArticle.aggregate({ _max: { articleIndex: true } }),
       prisma.predeposit.findMany({
+        // deletedAt: {} lève le filtre de l'extension soft-delete, qui cache
+        // sinon les supprimés.
+        where: { deletedAt: {} },
         select: {
           predepositIndex: true,
           sellerLastName: true,

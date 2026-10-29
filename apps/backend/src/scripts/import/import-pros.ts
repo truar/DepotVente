@@ -48,7 +48,9 @@ async function main() {
 
   const { year, fiches: all, errors } = readProArticles(parseCsv(text))
   const taken = await prisma.deposit.findMany({
-    where: { depositIndex: { in: all.map((fiche) => fiche.number) } },
+    // deletedAt: {} lève le filtre de l'extension soft-delete : une fiche
+    // supprimée compte aussi.
+    where: { depositIndex: { in: all.map((fiche) => fiche.number) }, deletedAt: {} },
     select: { depositIndex: true, type: true, deletedAt: true, _count: { select: { articles: { where: { deletedAt: null } } } } },
   })
   const takenByNumber = new Map(taken.map((deposit) => [deposit.depositIndex, deposit]))
@@ -74,7 +76,7 @@ async function main() {
   // est une erreur ci-dessus.
   if (fiches.length > 0) {
     const codes = fiches.flatMap((fiche) => fiche.articles.map((article) => article.code))
-    const takenCodes = await prisma.article.findMany({ where: { code: { in: codes } }, select: { code: true } })
+    const takenCodes = await prisma.article.findMany({ where: { code: { in: codes }, deletedAt: {} }, select: { code: true } })
     if (takenCodes.length > 0) {
       const sample = takenCodes.slice(0, 10).map((article) => article.code)
       errors.push(`${takenCodes.length} code(s) d'article déjà en base : ${sample.join(', ')}${takenCodes.length > 10 ? '…' : ''}`)
