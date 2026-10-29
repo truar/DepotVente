@@ -31,6 +31,10 @@ const BRAND_ALIASES: Record<string, string> = {
   // Doublons et fautes de frappe retirés de la liste en octobre 2026, au
   // profit de la marque officielle.
   technopro: 'Tecno Pro',
+  technipro: 'Tecno Pro',
+  tecno: 'Tecno Pro',
+  // Marque d'anoraks enfant, que les vendeurs abrègent.
+  himalaya: 'Himalaya Mountain',
   spider: 'Spyder',
   spyderactive: 'Spyder',
   ellse: 'Ellesse',

@@ -78,6 +78,21 @@ describe('findBrand (import des pré-dépôts du Google Form)', () => {
     expect(findBrand(value)).toEqual({ brand, rest: '' })
   })
 
+  // Marques des pré-dépôts 2026 qui manquaient à la liste, telles que les
+  // vendeurs les écrivent.
+  it.each([
+    ['HALTI ', 'Halti'],
+    ['Anapurna', 'Anapurna'],
+    ['Himalaya', 'Himalaya Mountain'],
+    ['Okaïdi', 'Okaïdi'],
+    ['Okaidi', 'Okaïdi'],
+    ['Orchestra', 'Orchestra'],
+    ['Technipro', 'Tecno Pro'],
+    ['TECNO', 'Tecno Pro'],
+  ])('reconnaît « %s » comme %s', (value, brand) => {
+    expect(findBrand(value)).toEqual({ brand, rest: '' })
+  })
+
   // Doublons et fautes de frappe retirés de la liste : l'ancienne écriture
   // donne la marque officielle.
   it.each([

@@ -560,6 +560,11 @@ export const brands = [
   'Black Crows',
   'Jack Wolfskin',
   'Olang',
+  'Halti',
+  'Anapurna',
+  'Himalaya Mountain',
+  'Okaïdi',
+  'Orchestra',
 ]
 
 export const brandsItems = brands.map((brand) => ({
