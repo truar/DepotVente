@@ -233,6 +233,20 @@ function normalizeColor(value: string): string {
   return colorsByKey.get(k) ?? COLOR_ALIASES[k] ?? sentenceCase(value)
 }
 
+// Nuances qui accompagnent une couleur sans en être une autre (« Bleu foncé »).
+const COLOR_SHADES = new Set(['fonce', 'clair', 'fluo', 'pale', 'vif', 'marine'])
+
+// « Bleu et rose », « Noir/orange », « Bleu marine » : des couleurs de la
+// liste, avec leurs nuances. Gardé tel quel, lisible au poste, et pas
+// signalé : rien à traiter.
+function isColorMix(value: string): boolean {
+  const words = stripAccents(value)
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((word) => word !== '' && word !== 'et' && !COLOR_SHADES.has(word))
+  return words.length >= 1 && words.every((word) => colorsByKey.has(key(word)) || key(word) in COLOR_ALIASES)
+}
+
 function identificationLetter(index: number): string {
   let letter = ''
   let n = index
@@ -316,8 +330,9 @@ interface Report {
   // « ? » ou 0, à traiter.
   errors: string[]
   warnings: string[]
-  // Valeurs absentes d'une liste à suggestions (ville, couleur) : le poste les
-  // affiche telles quelles, mais il faut les relire.
+  // Valeurs absentes d'une liste à suggestions (ville, couleur qui n'est pas un
+  // mélange de couleurs de la liste) : le poste les affiche telles quelles,
+  // mais il faut les relire.
   offList: string[]
   // Tailles dont normalizeSize a retiré des mots (« Pointure », un nom de
   // modèle…) : à relire, le mot retiré peut avoir sa place dans le descriptif.
@@ -406,7 +421,7 @@ function readResponse(row: string[], number: number, report: Report): Response {
 
     const color = rawColor === '' ? '' : normalizeColor(rawColor)
     if (color === '') report.warnings.push(`${where} : couleur vide, à compléter au dépôt`)
-    else if (!colors.includes(color)) {
+    else if (!colors.includes(color) && !isColorMix(rawColor)) {
       report.offList.push(`${where} : couleur « ${rawColor} »${suggest(rawColor, colorsByKey)}`)
       note(letter, 'couleur', rawColor, color, `hors liste${suggest(rawColor, colorsByKey)}`)
     }
