@@ -29,12 +29,18 @@
 // téléphone, un email ou un nom + prénom sont signalées et jamais fusionnées
 // d'office, pas plus qu'une même personne dont une partie seulement des
 // articles se répète. Un même téléphone sous deux noms, ou ces articles en
-// partie répétés, demandent d'appeler le vendeur. Chaque réponse d'un groupe
-// de doublons restant doit être arbitrée avant --apply, dans DECISIONS
-// (predeposit-decisions.ts) : ignorée, gardée comme fiche distincte, ou
-// fusionnée. Une réponse y est repérée par son horodatage, que la simulation
+// partie répétés, demandent d'appeler le vendeur. Ces doublons s'arbitrent
+// dans DECISIONS (predeposit-decisions.ts) : réponse ignorée, gardée comme
+// fiche distincte, ou fusionnée, repérée par son horodatage que la simulation
 // affiche. Un groupe dont il ne reste qu'une réponse une fois les autres
-// ignorées est arbitré.
+// ignorées est arbitré ; un groupe non arbitré est importé en fiches
+// distinctes.
+//
+// Tolérance : tout s'importe. Un champ sans correspondance dans une liste
+// fermée est importé vide (la marque en « ? », la saisie en tête du
+// descriptif), un prix illisible à 0. Chaque champ que le script n'a pas pu
+// reprendre tel quel, et chaque doublon non arbitré, est noté au journal :
+// <export>-journal.csv, à côté du CSV, écrit à chaque passage.
 //
 // Garde-fou : --apply refuse d'écrire si un pré-dépôt avec le même téléphone
 // existe déjà en base, ce qui empêche un second passage du script.
@@ -288,7 +294,24 @@ function checkHeaders(header: string[]) {
 
 // ── Modèle ──────────────────────────────────────────────────────────────────
 
+// Une ligne du journal : ce que le script a fait d'un champ qu'il n'a pas pu
+// reprendre tel quel. Écrit à côté du CSV (même nom, suffixe -journal.csv),
+// pour être traité à la main.
+interface JournalEntry {
+  line: number
+  response: number
+  seller: string
+  article: string
+  field: string
+  input: string
+  imported: string
+  reason: string
+}
+
 interface Report {
+  // Valeurs sans correspondance dans une liste fermée (type de matériel,
+  // discipline, marque) ou illisibles (prix, horodatage) : importées vides,
+  // « ? » ou 0, à traiter.
   errors: string[]
   warnings: string[]
   // Valeurs absentes d'une liste à suggestions (ville, couleur) : le poste les
@@ -300,19 +323,31 @@ interface Report {
   // Champs marque dont une partie seulement est une marque (« ALPINA AJ 3 ») :
   // le reste est parti au descriptif, à relire.
   brands: string[]
+  journal: JournalEntry[]
 }
 
 function readResponse(row: string[], number: number, report: Report): Response {
   // Ligne de la Google Sheet des réponses : l'en-tête est la ligne 1.
   const who = `ligne ${number + 1}, réponse ${number} (${clean(row[2])} ${clean(row[1])})`
+  const note = (article: string, field: string, input: string, imported: string, reason: string) =>
+    report.journal.push({ line: number + 1, response: number, seller: `${clean(row[2])} ${clean(row[1])}`, article, field, input, imported, reason })
   const createdAt = parseTimestamp(clean(row[0]))
-  if (!createdAt) report.errors.push(`${who} : horodatage illisible « ${row[0]} »`)
+  if (!createdAt) {
+    report.errors.push(`${who} : horodatage illisible « ${row[0]} », remplacé par l'heure de l'import`)
+    note('', 'horodatage', clean(row[0]), 'heure de l’import', 'illisible')
+  }
 
   const phoneNumber = normalizePhone(row[3] ?? '')
-  if (!/^0\d{9}$/.test(phoneNumber)) report.warnings.push(`${who} : téléphone « ${clean(row[3])} » → « ${phoneNumber} », pas 10 chiffres`)
+  if (!/^0\d{9}$/.test(phoneNumber)) {
+    report.warnings.push(`${who} : téléphone « ${clean(row[3])} » → « ${phoneNumber} », pas 10 chiffres`)
+    note('', 'téléphone', clean(row[3]), phoneNumber, 'pas 10 chiffres')
+  }
 
   const city = normalizeCity(clean(row[5]))
-  if (city !== '' && !cities.includes(city)) report.offList.push(`${who} : ville « ${clean(row[5])} »${suggest(clean(row[5]), citiesByKey, cityKey)}`)
+  if (city !== '' && !cities.includes(city)) {
+    report.offList.push(`${who} : ville « ${clean(row[5])} »${suggest(clean(row[5]), citiesByKey, cityKey)}`)
+    note('', 'ville', clean(row[5]), city, `hors liste${suggest(clean(row[5]), citiesByKey, cityKey)}`)
+  }
 
   const articles: ArticleInput[] = []
   for (let start = SELLER_HEADERS.length; start < row.length; start += ARTICLE_HEADERS.length) {
@@ -320,33 +355,65 @@ function readResponse(row: string[], number: number, report: Report): Response {
       .slice(start, start + 7)
       .map(clean)
     if (![rawCategory, rawBrand, rawDiscipline, rawModel, rawColor, rawSize, rawPrice].some(Boolean)) continue
-    const where = `${who}, article ${identificationLetter(articles.length)}`
+    const letter = identificationLetter(articles.length)
+    const where = `${who}, article ${letter}`
 
-    const category = categoriesByKey.get(key(CATEGORY_MAP[rawCategory] ?? rawCategory)) ?? rawCategory
-    if (!categories.includes(category)) report.errors.push(`${where} : type de matériel inconnu « ${rawCategory} »${suggest(rawCategory, categoriesByKey)}`)
+    // Sans correspondance dans une liste fermée, le champ est importé vide (la
+    // marque en « ? ») et noté au journal : le poste le fait compléter au dépôt.
+    let category = categoriesByKey.get(key(CATEGORY_MAP[rawCategory] ?? rawCategory)) ?? rawCategory
+    if (!categories.includes(category)) {
+      const hint = suggest(rawCategory, categoriesByKey)
+      report.errors.push(`${where} : type de matériel inconnu « ${rawCategory} »${hint}, importé vide`)
+      note(letter, 'type de matériel', rawCategory, '', `hors liste${hint}`)
+      category = ''
+    }
 
-    const discipline = disciplinesByKey.get(key(DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline)) ?? rawDiscipline
-    if (!disciplines.includes(discipline)) report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »${suggest(rawDiscipline, disciplinesByKey)}`)
+    let discipline = disciplinesByKey.get(key(DISCIPLINE_MAP[rawDiscipline] ?? rawDiscipline)) ?? rawDiscipline
+    if (!disciplines.includes(discipline)) {
+      const hint = suggest(rawDiscipline, disciplinesByKey)
+      report.errors.push(`${where} : discipline inconnue « ${rawDiscipline} »${hint}, importée vide`)
+      note(letter, 'discipline', rawDiscipline, '', `hors liste${hint}`)
+      discipline = ''
+    }
 
     // La marque est une liste fermée au poste, comme la catégorie et la
-    // discipline : une valeur hors liste s'y affiche vide et l'info est perdue.
-    // On vérifie la valeur finale, alias compris. Le reste d'un champ dont
-    // une partie seulement est une marque passe au descriptif, à la suite de
-    // celui du vendeur.
-    const { brand, rest } = normalizeBrand(rawBrand)
-    if (!brands.includes(brand)) report.errors.push(`${where} : marque « ${rawBrand} » absente de la liste${suggest(rawBrand, brandsByKey)}`)
-    if (rest !== '') report.brands.push(`${where} : marque « ${rawBrand} » → ${brand}, « ${rest} » ajouté au descriptif`)
-    const model = [rawModel, rest].filter(Boolean).join(' ')
+    // discipline. On vérifie la valeur finale, alias compris. Hors liste, elle
+    // devient « ? » et ce que le vendeur a écrit passe en tête du descriptif,
+    // pour rester lisible au dépôt. Le reste d'un champ dont une partie
+    // seulement est une marque passe au descriptif, à la suite de celui du
+    // vendeur.
+    let { brand, rest } = normalizeBrand(rawBrand)
+    let lead = ''
+    if (!brands.includes(brand)) {
+      const hint = suggest(rawBrand, brandsByKey)
+      report.errors.push(`${where} : marque « ${rawBrand} » absente de la liste${hint}, importée « ? »`)
+      note(letter, 'marque', rawBrand, '?', `hors liste${hint}, saisie gardée en tête du descriptif`)
+      ;[brand, rest, lead] = ['?', '', rawBrand]
+    } else if (rest !== '') {
+      report.brands.push(`${where} : marque « ${rawBrand} » → ${brand}, « ${rest} » ajouté au descriptif`)
+      note(letter, 'marque', rawBrand, brand, `marque trouvée dans une partie du champ, « ${rest} » ajouté au descriptif`)
+    }
+    const model = [lead, rawModel, rest].filter(Boolean).join(' ')
 
-    const price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
-    if (!(price > 0)) report.errors.push(`${where} : prix « ${rawPrice} » illisible`)
+    let price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
+    if (!(price > 0)) {
+      report.errors.push(`${where} : prix « ${rawPrice} » illisible, importé à 0`)
+      note(letter, 'prix', rawPrice, '0', 'illisible')
+      price = 0
+    }
 
     const color = rawColor === '' ? '' : normalizeColor(rawColor)
     if (color === '') report.warnings.push(`${where} : couleur vide, à compléter au dépôt`)
-    else if (!colors.includes(color)) report.offList.push(`${where} : couleur « ${rawColor} »${suggest(rawColor, colorsByKey)}`)
+    else if (!colors.includes(color)) {
+      report.offList.push(`${where} : couleur « ${rawColor} »${suggest(rawColor, colorsByKey)}`)
+      note(letter, 'couleur', rawColor, color, `hors liste${suggest(rawColor, colorsByKey)}`)
+    }
 
     const { size, removed } = normalizeSize(rawSize)
-    if (removed.length > 0) report.sizes.push(`${where} : taille « ${rawSize} » → « ${size} », retiré : ${removed.join(', ')}`)
+    if (removed.length > 0) {
+      report.sizes.push(`${where} : taille « ${rawSize} » → « ${size} », retiré : ${removed.join(', ')}`)
+      note(letter, 'taille', rawSize, size, `mots retirés : ${removed.join(', ')}`)
+    }
 
     articles.push({ category, discipline, brand, model, size, color, price })
   }
@@ -380,6 +447,23 @@ function describe(response: Response): string {
   )
 }
 
+function csvField(value: string | number): string {
+  const text = String(value)
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+// Le journal, à côté du CSV : même nom, suffixe -journal.csv. Il contient les
+// noms des vendeurs, donc il reste dans tmp/, hors git, comme l'export.
+function writeJournal(csvPath: string, journal: JournalEntry[]) {
+  const journalPath = csvPath.replace(/\.csv$/i, '') + '-journal.csv'
+  const header = ['Ligne Sheet', 'Réponse', 'Vendeur', 'Article', 'Champ', 'Saisi', 'Importé', 'Motif']
+  const rows = [...journal]
+    .sort((a, b) => a.line - b.line || a.article.localeCompare(b.article))
+    .map((e) => [e.line, e.response, e.seller, e.article, e.field, e.input, e.imported, e.reason])
+  fs.writeFileSync(journalPath, [header, ...rows].map((row) => row.map(csvField).join(',')).join('\n') + '\n')
+  console.log(`📝 Journal : ${journal.length} ligne(s) dans ${journalPath}\n`)
+}
+
 // ── Programme ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -398,7 +482,7 @@ async function main() {
   const [header, ...rows] = parseCsv(readUtf8(csvPath))
   checkHeaders(header)
 
-  const report: Report = { errors: [], warnings: [], offList: [], sizes: [], brands: [] }
+  const report: Report = { errors: [], warnings: [], offList: [], sizes: [], brands: [], journal: [] }
   const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
@@ -512,7 +596,7 @@ async function main() {
     console.log(`👥 ${duplicates.length} groupe(s) de doublons (même téléphone, email ou nom) :`)
     for (const group of duplicates) {
       const status = !isResolved(group)
-        ? `❓ à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]}`
+        ? `❓ non arbitré, gardé en fiches distinctes, ${DUPLICATE_REASONS[duplicateReason(group)]}`
         : group.every((response) => sameSellerNumbers.has(response.number))
           ? '✅ même personne, une seule fiche'
           : '✅ arbitré dans predeposit-decisions.ts'
@@ -545,13 +629,34 @@ async function main() {
     console.log()
   }
 
-  const blockers = [...report.errors]
-  for (const group of unresolved) {
-    blockers.push(
-      `doublon à arbitrer, ${DUPLICATE_REASONS[duplicateReason(group)]} : réponses ${group.map((r) => r.number).join(', ')} ` +
-        `(horodatages ${group.map((r) => formatTimestamp(r.createdAt)).join(', ')}, à reporter dans predeposit-decisions.ts)`,
-    )
+  // Rien de ce qui précède n'empêche l'import : les champs sans correspondance
+  // sont importés vides, « ? » ou 0, et les doublons non arbitrés gardés en
+  // fiches distinctes. Tout est noté au journal.
+  if (report.errors.length > 0) {
+    console.log('🛠️  Importé sans correspondance, à traiter (voir le journal) :')
+    for (const line of report.errors) console.log(`   ${line}`)
+    console.log()
   }
+  for (const group of unresolved) {
+    const reason = DUPLICATE_REASONS[duplicateReason(group)]
+    const timestamps = group.map((r) => formatTimestamp(r.createdAt)).join(', ')
+    for (const response of group.filter((r) => !skips.has(r.number))) {
+      report.journal.push({
+        line: response.number + 1,
+        response: response.number,
+        seller: `${response.lastName} ${response.firstName}`,
+        article: '',
+        field: 'doublon',
+        input: `réponses ${group.map((r) => r.number).join(', ')}`,
+        imported: 'fiche distincte',
+        reason: `${reason} ; à arbitrer dans predeposit-decisions.ts (horodatages ${timestamps})`,
+      })
+    }
+  }
+  writeJournal(csvPath, report.journal)
+
+  // Seul garde-fou : un second passage du script dupliquerait les fiches.
+  const blockers: string[] = []
   for (const fiche of alreadyThere) {
     blockers.push(`${fiche.lastName} ${fiche.firstName} (${fiche.phoneNumber}) existe déjà en base : ${existingPhones.get(fiche.phoneNumber)}`)
   }

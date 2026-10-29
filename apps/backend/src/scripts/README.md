@@ -129,7 +129,7 @@ ski », à lancer **une seule fois, le matin de la bourse**. Les pré-dépôts s
 créés sans dépôt associé ; les postes les reçoivent à leur prochain poll.
 
 ```bash
-# 1. Simulation : rien n'est écrit, affiche les fiches, les doublons et ce qui bloque
+# 1. Simulation : rien n'est écrit, affiche les fiches, les doublons, et écrit le journal
 pnpm --filter backend script:import-predeposits "tmp/Réponses.csv"
 
 # 2. Arbitrer les doublons signalés dans import/predeposit-decisions.ts, puis importer
@@ -140,6 +140,18 @@ Le chemin est relatif au dossier depuis lequel on lance `pnpm`.
 
 **Options :**
 - `--apply` - Écrit en base (une transaction : tout ou rien). Sans lui, simulation.
+
+**Tout s'importe.** Un champ sans correspondance n'arrête pas l'import : un type
+de matériel ou une discipline hors liste est importé vide, une marque hors liste
+en « ? » (la saisie du vendeur passe en tête du descriptif), un prix illisible à
+0. Le formulaire de dépôt exige type, discipline et marque : le bénévole les
+complète au poste. Un doublon non arbitré est importé en fiches distinctes.
+
+**Le journal.** Chaque passage, simulation comprise, écrit à côté du CSV un
+`<export>-journal.csv` : une ligne par champ que le script n'a pas repris tel
+quel (ligne du Sheet, réponse, vendeur, article, champ, valeur saisie, valeur
+importée, motif avec la valeur la plus proche quand il y en a une) et par
+doublon non arbitré. Il contient les noms des vendeurs : il reste dans `tmp/`.
 
 **Arbitrages :** ils sont codés dans `import/predeposit-decisions.ts`, pas passés
 en ligne de commande. Trois listes : `skip` (réponses ignorées), `keep`
@@ -162,8 +174,8 @@ la couleur ressaisis ne comptent pas), ils ne sont gardés qu'une fois, ceux de
 la réponse la plus récente.
 
 Les autres réponses qui partagent un téléphone, un email ou un nom + prénom
-sont des doublons : `--apply` refuse tant que chacune n'est pas arbitrée dans
-`predeposit-decisions.ts`. La
+sont des doublons, à arbitrer dans `predeposit-decisions.ts` ; sans arbitrage,
+elles sont importées en fiches distinctes et notées au journal. La
 simulation dit pourquoi, et marque d'un ☎️ les cas où il faut **appeler le
 vendeur** : un même téléphone sous deux noms, ou une même personne dont une
 partie seulement des articles se répète (renvoi, ou deux objets identiques ?).
@@ -177,31 +189,30 @@ partie seulement des articles se répète (renvoi, ou deux objets identiques ?).
 | Ville | ramenée à `types/cities.ts` (`Saint Félix` → `ST FELIX`, `Menthonnex-sous-Clermont` → `MENTHONNEX` via `CITY_ALIASES`), sinon en majuscules et signalée |
 | Type de matériel | `Vêtements de ski` → `Vêtement`, le reste ramené à `types/categories.ts` sans casse ni accent (`Batons` → `Bâtons`) |
 | Discipline | `Randonnée Pédestre/Alpine` → `Rando Pédestre/Alpine`, le reste ramené à `types/disciplines.ts` sans casse ni accent (`Telemark` → `Télémark`) |
-| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`, alias dans `import/predeposit-brand.ts`). Si une partie seulement du champ est une marque, on la garde et le reste passe à la suite du descriptif (`ALPINA AJ 3` → `Alpina`, « AJ 3 » au descriptif), signalé (« 🏷️ Marques trouvées dans une partie du champ ») ; sinon **bloque** |
+| Marque | ramenée à `types/brands.ts` sans casse ni accent (`SALOMON` → `Salomon`, alias dans `import/predeposit-brand.ts`). Si une partie seulement du champ est une marque, on la garde et le reste passe à la suite du descriptif (`ALPINA AJ 3` → `Alpina`, « AJ 3 » au descriptif), signalé (« 🏷️ Marques trouvées dans une partie du champ ») ; sinon importée « ? », la saisie en tête du descriptif, et notée au journal |
 | Couleur | ramenée à `types/colors.ts` quand c'est une seule couleur (`Bleue` → `Bleu`), sinon gardée et signalée |
 | Taille | ne garde que les mots d'une taille (liste exhaustive dans `import/predeposit-size.ts` : XS…XXXL, TU, cm, mm, ans, mois, EU/US/UK, Bébé, Naissance), chiffres et séparateurs compris ; `Taille unique` → `TU`, `80 cms` → `80cm`, `4A`/`8ans` → `4 ans`/`8 ans`, `18M` → `18 mois`. Les autres mots (`Pointure`, un nom de modèle…) sont retirés et signalés (« ✂️ Tailles raccourcies ») |
 | Descriptif / Prix | modèle / prix, tels quels |
 
 Les fiches sont numérotées par ordre alphabétique (nom puis prénom) à la suite
 du plus grand numéro de pré-dépôt en base ; les articles prennent les lettres
-A, B, C… dans l'ordre du formulaire. Un type de matériel, une discipline ou
-une marque hors liste, un prix illisible ou un téléphone déjà présent en base
-bloquent `--apply` : ce dernier cas empêche un second passage du script.
+A, B, C… dans l'ordre du formulaire. Seul un téléphone déjà présent en base
+bloque `--apply` : il empêche un second passage du script.
 
 Chaque champ ramené à une liste est comparé à cette liste **après** le mapping,
 alias compris. Type de matériel, discipline et marque sont des listes fermées
-au poste : une valeur absente s'y afficherait vide, donc elle bloque. Ville et
-couleur sont des suggestions : une valeur absente reste lisible, la simulation
-la signale avec sa réponse et son article (« 🔎 Hors liste ») pour qu'on la
-corrige dans le CSV si besoin.
+au poste : une valeur absente y est importée vide (« ? » pour la marque) et
+notée au journal, et le bénévole la complète au dépôt. Ville et couleur sont des
+suggestions : une valeur absente reste lisible, gardée telle quelle et notée au
+journal (« 🔎 Hors liste » dans la simulation).
 
 Pour chaque valeur hors liste, le script propose la plus proche
 (`marque « Rossigol » absente de la liste → Rossignol ?`) : distance de
 Damerau-Levenshtein sur les formes sans casse ni accent, une inversion de deux
 lettres comptant pour une faute. Seuil : 1 faute jusqu'à 4 lettres, une de plus
 par tranche de 4, 3 au plus ; rien n'est proposé au-delà, ni quand plus de
-trois valeurs sont à égalité. Il propose, il ne corrige pas : la correction se
-fait dans le CSV.
+trois valeurs sont à égalité. Il propose, il ne corrige pas : la proposition est
+notée au journal, la correction se fait dans le Sheet ou par un alias.
 
 Le CSV doit être l'export UTF-8 de Google. Un fichier qui n'est pas en UTF-8,
 ou dont les accents ont été décodés deux fois (`ValÃ©rie`), arrête le script
