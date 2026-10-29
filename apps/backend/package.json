@@ -13,6 +13,7 @@
     "script:import": "tsx src/scripts/import/import.ts",
     "script:import-predeposits": "tsx src/scripts/import/import-predeposits-form.ts",
     "script:import-pros": "tsx src/scripts/import/import-pros.ts",
+    "script:list-refused-predeposits": "tsx src/scripts/import/list-refused-predeposits.ts",
     "script:reserve-pro": "tsx src/scripts/reserve-pro-articles.ts",
     "script:pro-barcodes": "tsx src/scripts/pro-barcodes/generate.ts"
   },
