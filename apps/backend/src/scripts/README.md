@@ -140,6 +140,29 @@ Le chemin est relatif au dossier depuis lequel on lance `pnpm`.
 
 **Options :**
 - `--apply` - Écrit en base (une transaction : tout ou rien). Sans lui, simulation.
+- `--corrections=<doc.md>` - Corrections article par article (voir plus bas).
+
+**Corrections du doc.** Le tableau du doc « Descriptifs des pré-dépôts »,
+exporté en Markdown dans `tmp/predepot/descriptifs-doc.md`, corrige chaque
+article. Une ligne y désigne un article par son N° `réponse.article` (réponse
+1 = première ligne sous l'en-tête de l'export, article 1 = premier bloc
+rempli). Ses colonnes Catégorie (`Vêtement → Gants` donne `Gants`), Marque et
+Taille remplacent la saisie, puis passent par le même mapping qu'elle ; DESC
+proposé remplace le descriptif (`—` = vide), le reste du champ marque compris.
+`A supprimer` est importé tel quel : l'article refusé reste sur la fiche et le
+vendeur l'apprend au dépôt. Les numéros bougent si une ligne du Sheet est
+supprimée : une ligne du doc dont le Vendeur ou le DESC originale ne
+correspond plus à l'export est écartée, et un article sans ligne garde sa
+saisie ; les deux sont notés au journal. Le fichier contient les noms des
+vendeurs : il reste dans `tmp/`. `./scripts/prepare-sale-db.sh` le passe à
+l'import quand il existe.
+
+Les vendeurs à prévenir, ceux dont au moins un article est `A supprimer`,
+sortent en tableau Markdown, à coller dans le doc :
+
+```bash
+pnpm --filter backend script:list-refused-predeposits "tmp/Réponses.csv" --corrections=tmp/predepot/descriptifs-doc.md
+```
 
 **Tout s'importe.** Un champ sans correspondance n'arrête pas l'import : un type
 de matériel ou une discipline hors liste est importé vide, une marque hors liste

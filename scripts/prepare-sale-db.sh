@@ -14,7 +14,10 @@
 # 1. Downloads the predeposit Google Sheet (PREDEPOSIT_SHEET_ID in the root
 #    .env, kept out of git: the Sheet holds the sellers' details).
 # 2. Simulates the pro import (tmp/pro/articles-pro.csv) and the predeposit
-#    import, then asks before writing anything.
+#    import, then asks before writing anything. When
+#    tmp/predepot/descriptifs-doc.md exists (the table of the doc « Descriptifs
+#    des pré-dépôts », exported as Markdown just before), the predeposit
+#    import takes its category, brand, size and description per article.
 # Both imports skip what an earlier run already wrote (same pro fiche number,
 # same seller phone) and only add the new fiches, so rerunning is safe.
 #
@@ -100,7 +103,15 @@ echo "$SHEET_CSV" > tmp/predepot/.last
 ok "$SHEET_CSV"
 
 pros()        { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-pros.ts" "$PROS_CSV" "$@"; }
-predeposits() { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-predeposits-form.ts" "$SHEET_CSV" "$@"; }
+CORRECTIONS="$PWD/tmp/predepot/descriptifs-doc.md"
+CORRECTIONS_ARG=()
+if [ -f "$CORRECTIONS" ]; then
+  CORRECTIONS_ARG=("--corrections=$CORRECTIONS")
+  ok "Corrections per article: $CORRECTIONS ($(date -r "$CORRECTIONS" '+%d/%m %H:%M'))"
+else
+  warn "No $CORRECTIONS: the predeposits are imported as typed in the form"
+fi
+predeposits() { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-predeposits-form.ts" "$SHEET_CSV" ${CORRECTIONS_ARG[@]+"${CORRECTIONS_ARG[@]}"} "$@"; }
 
 say "Simulating the pro import"
 pros

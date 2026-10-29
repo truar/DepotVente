@@ -8,8 +8,9 @@
 //
 //   pnpm --filter backend script:import-predeposits <export.csv>              # simulation
 //   pnpm --filter backend script:import-predeposits <export.csv> --apply      # écriture
+//   … --corrections=<doc.md>   corrections article par article (voir plus bas)
 //
-// Le chemin du CSV est relatif au dossier depuis lequel on lance pnpm.
+// Les chemins sont relatifs au dossier depuis lequel on lance pnpm.
 //
 // Format du CSV : 6 colonnes vendeur (Timestamp, Prénom, Nom, Portable, Email
 // Address, Ville), puis N blocs de 8 colonnes par article (Type de matériel,
@@ -42,6 +43,15 @@
 // reprendre tel quel, et chaque doublon non arbitré, est noté au journal :
 // <export>-journal.csv, à côté du CSV, écrit à chaque passage.
 //
+// Corrections : avec --corrections, le tableau du doc « Descriptifs des
+// pré-dépôts », exporté en Markdown, remplace pour chaque article la
+// catégorie, la marque, la taille et le descriptif saisis
+// (predeposit-corrections.ts). Le descriptif proposé est importé tel quel,
+// « A supprimer » compris : l'article refusé reste sur la fiche, pour que le
+// vendeur l'apprenne au dépôt. Une ligne dont le vendeur ou le descriptif saisi
+// ne correspond plus à l'export est écartée, et un article sans ligne garde sa
+// saisie ; les deux sont notés au journal.
+//
 // Import itératif : le script se relance sur l'export complet autant qu'il le
 // faut. Une fiche dont le téléphone est déjà en base (même supprimée) est
 // sautée, seules les nouvelles sont créées, numérotées à la suite. Une fiche
@@ -63,6 +73,7 @@ import {
   type Response,
   sameSeller,
 } from './predeposit-duplicates'
+import { type Correction, correctionKey, readCorrections } from './predeposit-corrections'
 import { DECISIONS, formatTimestamp, parseTimestamp, resolveDecisions } from './predeposit-decisions'
 import { normalizeSize } from './predeposit-size'
 
@@ -127,6 +138,10 @@ const CITY_ALIASES: Record<string, string> = {
 
 const apply = process.argv.includes('--apply')
 const csvArg = process.argv.slice(2).find((value) => !value.startsWith('--'))
+const correctionsArg = process.argv
+  .slice(2)
+  .find((value) => value.startsWith('--corrections='))
+  ?.slice('--corrections='.length)
 
 // ── Normalisation ───────────────────────────────────────────────────────────
 
@@ -342,10 +357,21 @@ interface Report {
   // Champs marque dont une partie seulement est une marque (« ALPINA AJ 3 ») :
   // le reste est parti au descriptif, à relire.
   brands: string[]
+  // Corrections du doc : appliquées, écartées (vendeur ou descriptif saisi
+  // différent), et articles restés sans ligne.
+  corrected: number
+  rejected: string[]
+  uncorrected: string[]
   journal: JournalEntry[]
 }
 
-function readResponse(row: string[], number: number, report: Report): Response {
+function readResponse(
+  row: string[],
+  number: number,
+  report: Report,
+  corrections: Map<string, Correction> | undefined,
+  used: Set<string>,
+): Response {
   // Ligne de la Google Sheet des réponses : l'en-tête est la ligne 1.
   const who = `ligne ${number + 1}, réponse ${number} (${clean(row[2])} ${clean(row[1])})`
   const note = (article: string, field: string, input: string, imported: string, reason: string) =>
@@ -370,12 +396,33 @@ function readResponse(row: string[], number: number, report: Report): Response {
 
   const articles: ArticleInput[] = []
   for (let start = SELLER_HEADERS.length; start < row.length; start += ARTICLE_HEADERS.length) {
-    const [rawCategory, rawBrand, rawDiscipline, rawModel, rawColor, rawSize, rawPrice] = row
+    let [rawCategory, rawBrand, rawDiscipline, rawModel, rawColor, rawSize, rawPrice] = row
       .slice(start, start + 7)
       .map(clean)
     if (![rawCategory, rawBrand, rawDiscipline, rawModel, rawColor, rawSize, rawPrice].some(Boolean)) continue
     const letter = identificationLetter(articles.length)
     const where = `${who}, article ${letter}`
+
+    // La ligne du doc remplace la saisie, si elle désigne bien cet article.
+    let correction = corrections?.get(correctionKey(number, articles.length + 1))
+    if (correction) {
+      used.add(correction.label)
+      const sameSeller = key(correction.seller) === key(`${clean(row[1])}${clean(row[2])}`)
+      if (!sameSeller || key(correction.originalModel) !== key(rawModel)) {
+        const found = `${correction.seller}, « ${correction.originalModel} »`
+        report.rejected.push(`${where} : ligne ${correction.label} du doc (${found}) ne correspond pas, saisie gardée`)
+        note(letter, 'correction', `${correction.label} : ${found}`, 'saisie', 'vendeur ou descriptif saisi différent dans le doc, correction écartée')
+        correction = undefined
+      } else {
+        report.corrected++
+        rawCategory = correction.category || rawCategory
+        rawBrand = correction.brand ?? rawBrand
+        rawSize = correction.size ?? rawSize
+      }
+    } else if (corrections) {
+      report.uncorrected.push(`${where} : « ${rawModel} »`)
+      note(letter, 'correction', rawModel, rawModel, `pas de ligne ${correctionKey(number, articles.length + 1)} dans le doc, saisie gardée`)
+    }
 
     // Sans correspondance dans une liste fermée, le champ est importé vide (la
     // marque en « ? ») et noté au journal : le poste le fait compléter au dépôt.
@@ -412,7 +459,12 @@ function readResponse(row: string[], number: number, report: Report): Response {
       report.brands.push(`${where} : marque « ${rawBrand} » → ${brand}, « ${rest} » ajouté au descriptif`)
       note(letter, 'marque', rawBrand, brand, `marque trouvée dans une partie du champ, « ${rest} » ajouté au descriptif`)
     }
-    const model = [lead, rawModel, rest].filter(Boolean).join(' ')
+    // Le descriptif du doc est final : il remplace la saisie et le reste du
+    // champ marque. Une marque hors liste garde sa saisie en tête.
+    const model =
+      correction?.model !== undefined
+        ? [lead, correction.model].filter(Boolean).join(' ')
+        : [lead, rawModel, rest].filter(Boolean).join(' ')
 
     let price = Number(rawPrice.replace(/[^\d,.]/g, '').replace(',', '.'))
     if (!(price > 0)) {
@@ -488,7 +540,7 @@ function writeJournal(csvPath: string, journal: JournalEntry[]) {
 async function main() {
   if (!csvArg) {
     console.error(
-      'Usage : script:import-predeposits <export.csv> [--apply]',
+      'Usage : script:import-predeposits <export.csv> [--corrections=<doc.md>] [--apply]',
     )
     process.exit(1)
   }
@@ -501,8 +553,30 @@ async function main() {
   const [header, ...rows] = parseCsv(readUtf8(csvPath))
   checkHeaders(header)
 
-  const report: Report = { errors: [], warnings: [], offList: [], sizes: [], brands: [], journal: [] }
-  const allResponses = rows.map((row, index) => readResponse(row, index + 1, report))
+  let corrections: Map<string, Correction> | undefined
+  if (correctionsArg !== undefined) {
+    const correctionsPath = path.resolve(process.env.INIT_CWD ?? process.cwd(), correctionsArg)
+    if (!fs.existsSync(correctionsPath)) {
+      console.error(`❌ Fichier de corrections introuvable : ${correctionsPath}`)
+      process.exit(1)
+    }
+    corrections = readCorrections(correctionsPath)
+    console.log(`✏️  ${path.basename(correctionsPath)} : ${corrections.size} ligne(s) de correction\n`)
+  }
+
+  const report: Report = {
+    errors: [],
+    warnings: [],
+    offList: [],
+    sizes: [],
+    brands: [],
+    corrected: 0,
+    rejected: [],
+    uncorrected: [],
+    journal: [],
+  }
+  const used = new Set<string>()
+  const allResponses = rows.map((row, index) => readResponse(row, index + 1, report, corrections, used))
   const byNumber = new Map(allResponses.map((response) => [response.number, response]))
 
   // Arbitrages, codés dans predeposit-decisions.ts
@@ -686,6 +760,20 @@ async function main() {
   if (report.sizes.length > 0) {
     console.log('✂️  Tailles raccourcies, mots retirés (à relire, le descriptif peut les reprendre) :')
     for (const line of report.sizes) console.log(`   ${line}`)
+    console.log()
+  }
+  if (corrections) {
+    const unused = [...corrections.keys()].filter((label) => !used.has(label))
+    console.log(`✏️  Corrections du doc : ${report.corrected} appliquée(s)`)
+    if (report.rejected.length > 0) {
+      console.log(`   ${report.rejected.length} écartée(s), la ligne ne correspond plus à l'export (voir le journal) :`)
+      for (const line of report.rejected) console.log(`      ${line}`)
+    }
+    if (report.uncorrected.length > 0) {
+      console.log(`   ${report.uncorrected.length} article(s) sans ligne dans le doc, saisie gardée (voir le journal) :`)
+      for (const line of report.uncorrected) console.log(`      ${line}`)
+    }
+    if (unused.length > 0) console.log(`   ${unused.length} ligne(s) du doc sans article dans l'export : ${unused.join(', ')}`)
     console.log()
   }
   if (report.warnings.length > 0) {
