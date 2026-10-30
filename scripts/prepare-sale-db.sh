@@ -10,12 +10,14 @@
 # previous base stays in its own volume, untouched), then creates the tables
 # and the volunteer accounts (migrate + seed).
 #
-# Every run, with or without --new, simulates the pro import
-# (tmp/pro/articles-pro.csv) and the predeposit import (the two CSVs in
-# tmp/predepot/final: predeposants.csv and articles.csv), then asks before
-# writing anything. Both imports skip what an earlier run already wrote (same
-# pro fiche number, same predeposit fiche number) and only add the new fiches,
-# so rerunning is safe.
+# Every run, with or without --new, first says which base it is on and what
+# that base already holds. It then takes the pros (tmp/pro/articles-pro.csv)
+# and the predeposits (the two CSVs in tmp/predepot/final: predeposants.csv
+# and articles.csv) one after the other: simulates the import, then asks
+# before writing it. A part whose files are not there yet is skipped, and said
+# so: the pros can go in first and the predeposits later. Both imports skip
+# what an earlier run already wrote (same pro fiche number, same predeposit
+# fiche number) and only add the new fiches, so rerunning is safe.
 #
 # The two predeposit CSVs are written once from the closed Google Form, then
 # reviewed and edited by hand (kept out of git: sellers' details):
@@ -46,10 +48,16 @@ fi
 PROS_CSV="$PWD/tmp/pro/articles-pro.csv"
 IMPORT_DIR="$PWD/apps/backend/src/scripts/import"
 PREDEPOSIT_DIR="$PWD/tmp/predepot/final"
-for f in predeposants.csv articles.csv; do
-  [ -f "$PREDEPOSIT_DIR/$f" ] || { bad "Predeposit file not found: $PREDEPOSIT_DIR/$f"; exit 1; }
-done
-[ -f "$PROS_CSV" ] || { bad "Pro file not found: $PROS_CSV"; exit 1; }
+HAVE_PROS=no
+[ -f "$PROS_CSV" ] && HAVE_PROS=yes
+HAVE_PREDEPOSITS=no
+if [ -f "$PREDEPOSIT_DIR/predeposants.csv" ] && [ -f "$PREDEPOSIT_DIR/articles.csv" ]; then
+  HAVE_PREDEPOSITS=yes
+elif [ -f "$PREDEPOSIT_DIR/predeposants.csv" ] || [ -f "$PREDEPOSIT_DIR/articles.csv" ]; then
+  bad "Only one of the two predeposit files is in $PREDEPOSIT_DIR"
+  info "Put both predeposants.csv and articles.csv there, then run the script again."
+  exit 1
+fi
 
 say "Checking Docker"
 require_docker || exit 1
@@ -99,28 +107,54 @@ if [ "$NEW" = yes ]; then
   ok "Migrated and seeded"
 fi
 
+# What the base holds, counted in Postgres itself: the deleted fiches and
+# articles are left out, as on the PCs.
+contents() {
+  docker exec cmr_postgres psql -U cmr_user -d cmr_db -AtF ' ' -c "
+    select
+      (select count(*) from deposits where type = 'PRO' and deleted_at is null),
+      (select count(*) from articles a join deposits d on d.id = a.deposit_id
+        where d.type = 'PRO' and d.deleted_at is null and a.deleted_at is null),
+      (select count(*) from predeposits where deleted_at is null),
+      (select count(*) from \"predepositArticles\" a join predeposits p on p.id = a.predeposit_id
+        where p.deleted_at is null and a.deleted_at is null)" |
+    { read -r pro_fiches pro_articles pre_fiches pre_articles
+      info "Pros:        $pro_fiches fiche(s), $pro_articles article(s)"
+      info "Predeposits: $pre_fiches fiche(s), $pre_articles article(s)"; }
+}
+
+say "Base $VOLUME holds"
+contents
+
 pros()        { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-pros.ts" "$PROS_CSV" "$@"; }
 predeposits() { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-predeposits-csv.ts" "$PREDEPOSIT_DIR" "$@"; }
 
-say "Simulating the pro import"
-pros
-say "Simulating the predeposit import"
-predeposits
+# Simulates one import, then asks before writing it.
+#   import_part <label> <function> <have: yes|no> <files>
+import_part() {
+  local label="$1" run="$2" have="$3" files="$4" answer
+  say "The $label"
+  if [ "$have" != yes ]; then
+    warn "No $files: the $label are not imported this time."
+    return 0
+  fi
+  "$run"
+  printf '\n'
+  read -r -p "${BLD}Import the $label into $VOLUME? (o/N) ${RST}" answer
+  case "$answer" in
+    o|O|oui|y|yes) "$run" --apply ;;
+    *) warn "The $label are not imported." ;;
+  esac
+}
 
-printf '\n'
-read -r -p "${BLD}Import the pros and the predeposits into $VOLUME? (o/N) ${RST}" answer
-case "$answer" in
-  o|O|oui|y|yes) ;;
-  *) warn "Nothing imported. Rerun the script without --new when ready."; exit 0 ;;
-esac
+import_part pros pros "$HAVE_PROS" "tmp/pro/articles-pro.csv"
+import_part predeposits predeposits "$HAVE_PREDEPOSITS" "tmp/predepot/final/predeposants.csv and articles.csv"
 
-say "Importing"
-pros --apply
-predeposits --apply
-
-say "Done"
+say "Base $VOLUME now holds"
+contents
 if [ "$NEW" = yes ]; then
-  ok "Base $VOLUME is ready; each PC will ask to rebuild its local base."
+  ok "Each PC will ask to rebuild its local base (new base)."
 else
-  ok "New fiches added to $VOLUME; the PCs get them on their next poll."
+  ok "The PCs get the new fiches on their next poll."
 fi
+info "To add what is missing later: ./scripts/prepare-sale-db.sh (without --new)."
