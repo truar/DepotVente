@@ -11,9 +11,11 @@ import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
 import {
   type KeyboardEvent,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { Input } from '@/components/ui/input.tsx'
@@ -104,11 +106,19 @@ function ArticleEditPage() {
     openArticle ? code : null,
     setCode,
   )
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Enregistré ou annulé, l'article se referme et le curseur revient dans la
+  // recherche pour le code suivant. Le focus se pose une fois le formulaire
+  // démonté : avant, la confirmation de « Annuler » le reprendrait.
+  const closeArticle = useCallback(() => setCode(''), [])
+  useEffect(() => {
+    if (!code) inputRef.current?.focus()
+  }, [code])
   return (
     <div className="flex flex-col gap-5">
-      <ArticleSearchInput onClick={request} />
+      <ArticleSearchInput onClick={request} inputRef={inputRef} />
       <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-        <ArticleEditComponent articleCode={code} onSubmit={() => setCode('')} />
+        <ArticleEditComponent articleCode={code} onClose={closeArticle} />
       </div>
       <ConfirmationDialog
         {...confirmation}
@@ -121,10 +131,11 @@ function ArticleEditPage() {
 
 type ArticleSearchInputProps = {
   onClick: (code: string) => void
+  inputRef: RefObject<HTMLInputElement | null>
 }
 
 function ArticleSearchInput(props: ArticleSearchInputProps) {
-  const { onClick } = props
+  const { onClick, inputRef } = props
   const [code, setCode] = useState<string>('')
   const checkKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -146,6 +157,7 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
       <div className="flex gap-3">
         <div>
           <Input
+            ref={inputRef}
             value={code}
             onChange={(e) => setCode(normalizeArticleCode(e.target.value))}
             placeholder="Ex: 2026 1001A"
@@ -162,15 +174,17 @@ function ArticleSearchInput(props: ArticleSearchInputProps) {
 }
 type ArticleEditComponentProps = {
   articleCode: string
-  onSubmit?: () => void
+  onClose: () => void
 }
 function ArticleEditComponent(props: ArticleEditComponentProps) {
-  const { articleCode, onSubmit } = props
+  const { articleCode, onClose } = props
   const article = useLiveQuery(
     () => db.articles.where({ code: articleCode }).first(),
     [articleCode],
   )
-  if (!article) {
+  // Le code vidé ferme le formulaire tout de suite, sans attendre que la
+  // requête ait oublié l'article précédent.
+  if (!articleCode || !article) {
     return (
       <Empty>
         <EmptyHeader>
@@ -187,12 +201,12 @@ function ArticleEditComponent(props: ArticleEditComponentProps) {
       </Empty>
     )
   }
-  return <ArticleEditForm article={article} onSubmit={onSubmit} />
+  return <ArticleEditForm article={article} onClose={onClose} />
 }
 
 type ArticleEditFormProps = {
   article: Article
-  onSubmit?: () => void
+  onClose: () => void
 }
 
 function normalizeSerialNumber(serialNumber: string | null): string {
@@ -201,8 +215,7 @@ function normalizeSerialNumber(serialNumber: string | null): string {
 }
 
 function ArticleEditForm(props: ArticleEditFormProps) {
-  const { article } = props
-  const navigate = useNavigate()
+  const { article, onClose } = props
   const dymo = useDymo()
   const articleEditMutation = useEditArticle()
   const methods = useForm<EditArticleFormType>({
@@ -254,11 +267,10 @@ function ArticleEditForm(props: ArticleEditFormProps) {
   const onSubmit = useCallback(
     async (data: EditArticleFormType) => {
       await articleEditMutation.mutate(data)
-      if (props.onSubmit) props.onSubmit()
       toast.success(`Article ${data.articleCode} mis à jour`)
-      navigate({ to: '..' })
+      onClose()
     },
-    [articleEditMutation, navigate],
+    [articleEditMutation, onClose],
   )
   const printDymo = useCallback(async () => {
     const valid = await trigger()
@@ -510,7 +522,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
           }
           title={'Etes vous sur de vouloir annuler\u00a0?'}
           description="Cette action va annuler les modifications. Les données non enregistrées seront perdues."
-          onConfirm={() => navigate({ to: '..' })}
+          onConfirm={onClose}
         />
         <CustomButton
           type="button"

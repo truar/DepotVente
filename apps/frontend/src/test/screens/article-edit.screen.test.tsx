@@ -14,7 +14,7 @@ describe('Screen: correcting an article', () => {
     await givenWorkstation(1000)
   })
 
-  it('saves the corrections, tells the volunteer and goes back to the deposit menu', async () => {
+  it('saves the corrections, tells the volunteer and waits for the next code', async () => {
     const { articles } = await givenDeposit({}, [
       { price: 120, model: 'Hero', serialNumber: null },
     ])
@@ -29,15 +29,16 @@ describe('Screen: correcting an article', () => {
     await page.validate()
 
     await page.lastToast(`Article ${skis.code} mis à jour`)
-    await waitFor(() => expect(page.pathname()).toBe('/deposits'))
+    await waitFor(() => expect(page.isFormClosed()).toBe(true))
+    expect(page.pathname()).toBe('/deposits/articles')
+    expect(page.searchField()).toHaveFocus()
 
     // Searched again, the article shows the correction: the serial number
     // trimmed, the price as typed.
-    const again = await articleEditPage()
-    await again.search(skis.code, '12 A')
-    expect(again.price()).toBe('95')
-    expect(again.description()).toBe('Hero Elite, fixations Look')
-    expect(again.serialNumber()).toBe('SN-42')
+    await page.search(skis.code, '12 A')
+    expect(page.price()).toBe('95')
+    expect(page.description()).toBe('Hero Elite, fixations Look')
+    expect(page.serialNumber()).toBe('SN-42')
 
     // Queued for the server: one update of the article, carrying every
     // field of the form (not only those that changed).
@@ -61,6 +62,26 @@ describe('Screen: correcting an article', () => {
         updatedAt: expect.any(Date),
       },
     })
+  })
+
+  // Cancelling drops what was typed and waits for the next code, as a save
+  // does.
+  it('cancels the corrections and waits for the next code', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    await page.setPrice('95')
+    await page.cancel()
+
+    await waitFor(() => expect(page.isFormClosed()).toBe(true))
+    expect(page.pathname()).toBe('/deposits/articles')
+    expect(page.searchField()).toHaveFocus()
+    expect(await local.outbox()).toHaveLength(0)
+
+    await page.search(skis.code, '12 A')
+    expect(page.price()).toBe('120')
   })
 
   // Another code searched while an article is open: the volunteer is asked

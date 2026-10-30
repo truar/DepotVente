@@ -36,6 +36,10 @@ export async function articleEditPage() {
       await (await page.question()).confirm()
       await screen.findByDisplayValue(shortCode)
     },
+    // After a save or a cancel the form is closed and the cursor waits in
+    // the search field for the next code.
+    isFormClosed: () => screen.queryByText('Aucun article') !== null,
+    searchField: () => screen.getByPlaceholderText('Ex: 2026 1001A'),
     async question() {
       const box = await screen.findByRole('alertdialog')
       return {
@@ -96,6 +100,11 @@ export async function articleEditPage() {
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))
+    },
+    // Drops what was typed, answering yes to the question.
+    async cancel() {
+      await u.click(screen.getByRole('button', { name: 'Annuler' }))
+      await (await page.question()).confirm()
     },
 
     // ---- what the volunteer is told ------------------------------------
