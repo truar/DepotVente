@@ -69,6 +69,28 @@ export async function settingsPage({
     waitingCount: () =>
       Number(identityValue("Opérations en attente d'envoi", hidden)),
 
+    // ---- Outbox — opérations en attente -----------------------------------
+    // One line per operation not yet accepted: "create · contacts · <id>"
+    // and its status ("en attente", "envoi en cours", ...).
+    waitingOperations(): Array<{ what: string; status: string }> {
+      return within(card('Outbox — opérations en attente'))
+        .queryAllByRole('listitem')
+        .map((item) => {
+          const [what, details] = Array.from(item.querySelectorAll('span')).map(
+            (span) => span.textContent.replace(/\s+/g, ' ').trim(),
+          )
+          return { what, status: details.split(' · ')[0] }
+        })
+    },
+    async retryWaiting(index: number) {
+      const buttons = within(
+        card('Outbox — opérations en attente'),
+      ).getAllByRole('button', { name: 'Réessayer' })
+      const button = buttons.at(index)
+      if (!button) throw new Error(`No waiting operation ${index}`)
+      await u.click(button)
+    },
+
     // ---- Outbox — opérations refusées ------------------------------------
     refusedOperations(): Array<RefusedOperation> {
       return within(card('Outbox — opérations refusées'))

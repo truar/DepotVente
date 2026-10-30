@@ -11,6 +11,7 @@ import {
 } from '@/test/sync/computer.ts'
 import { settingsPage } from '@/test/pages/settings.page.ts'
 import { screen, signedInAs, waitFor } from '@/test/screen.tsx'
+import { db } from '@/db.ts'
 
 // Played on the real Paramètres screen, against this computer's sync loop
 // (the worker's, driven through the same service) and a stand-in server.
@@ -88,6 +89,50 @@ describe('Screen: Paramètres', () => {
     expect(backend.received.at(-1)?.headers.workstation).toBe('2000')
   })
 
+  // A page reloaded while the seller was being sent leaves that operation
+  // « envoi en cours » for good: the queue only takes pending and failed
+  // ones, so it is never sent again and is not among the refused ones
+  // either. Paramètres lists it with the others waiting, and « Réessayer »
+  // sends it.
+  it('lists an operation stuck « envoi en cours » and re-sends it with « Réessayer »', async () => {
+    await givenWorkstation(1000)
+    const backend = givenServer()
+    fakeClock()
+    await bootComputer()
+    const page = await settingsPage()
+    backend.goesOffline()
+    await app.createDeposit(aDepositForm())
+    await waitFor(() => expect(page.waitingCount()).toBe(3))
+    const seller = await db.outbox.where('collection').equals('contacts').first()
+    if (!seller) throw new Error('No seller in the outbox')
+    // As if the page had been reloaded while it was in flight.
+    await db.outbox.update(seller.id, { status: 'syncing' })
+    backend.comesBackOnline()
+    for (let i = 0; i < 20 && page.waitingCount() > 1; i++) {
+      nextSyncTimer()
+      await settle()
+    }
+    // The queue went on without it: the seller alone is left, stuck.
+    await waitFor(() =>
+      expect(page.waitingOperations()).toEqual([
+        {
+          what: `create · contacts · ${seller.recordId}`,
+          status: 'envoi en cours',
+        },
+      ]),
+    )
+    expect(page.noRefusedOperation()).toBe(true)
+
+    await page.retryWaiting(0)
+
+    for (let i = 0; i < 20 && page.waitingCount() > 0; i++) {
+      nextSyncTimer()
+      await settle()
+    }
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
+    expect(backend.pushedRecords().at(-1)?.[0]).toBe('contacts')
+  })
+
   // An administrator re-sends an operation the server had refused, after
   // fixing the cause on the server: it leaves the refused list, the server
   // receives it again, and nothing is left waiting.
@@ -116,7 +161,7 @@ describe('Screen: Paramètres', () => {
 
     await waitFor(() => expect(backend.pushes()).toHaveLength(4))
     await waitFor(() => expect(page.noRefusedOperation()).toBe(true))
-    expect(page.waitingCount()).toBe(0)
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
     expect(backend.pushedRecords()[3][0]).toBe('contacts')
     // Current behaviour, pinned until it is decided: « Réessayer » runs the
     // queue on the page's own copy of the sync service, which never gets

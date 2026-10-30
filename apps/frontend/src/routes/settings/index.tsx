@@ -2,7 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { requireAdmin } from '@/lib/route-guards'
-import { db } from '@/db.ts'
+import { type OutboxStatus, db } from '@/db.ts'
 import { Button } from '@/components/ui/button.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
@@ -11,7 +11,7 @@ import { useWorkstation } from '@/hooks/useWorkstation.ts'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
 import { syncManager } from '@/sync-manager.ts'
-import { syncService } from '@/services/sync-service.ts'
+import { compareOutboxOrder, syncService } from '@/services/sync-service.ts'
 import { getAppVersion } from '@/services/client-identity.ts'
 
 export const Route = createFileRoute('/settings/')({
@@ -22,6 +22,13 @@ export const Route = createFileRoute('/settings/')({
     </PublicLayout>
   ),
 })
+
+const OUTBOX_STATUS_LABELS: Record<OutboxStatus, string> = {
+  pending: 'en attente',
+  syncing: 'envoi en cours',
+  failed: 'échec, nouvel essai prévu',
+  rejected: 'refusée',
+}
 
 function RouteComponent() {
   const lastSync = useLiveQuery(() => db.syncMetadata.get('lastSync'))
@@ -35,6 +42,20 @@ function RouteComponent() {
       db.outbox.where('status').anyOf('pending', 'failed', 'syncing').count(),
     [],
     0,
+  )
+  // Tout ce qui attend encore d'être envoyé. Une opération restée « envoi en
+  // cours » (page rechargée pendant l'envoi) n'est plus jamais reprise par la
+  // file : seul « Réessayer » la relance.
+  const waitingOps = useLiveQuery(
+    async () =>
+      (
+        await db.outbox
+          .where('status')
+          .anyOf('pending', 'failed', 'syncing')
+          .toArray()
+      ).sort(compareOutboxOrder),
+    [],
+    [],
   )
   const deviceId = useLiveQuery(() => db.workstation.get('deviceId'))
   const datasetEpoch = useLiveQuery(() => db.syncMetadata.get('datasetEpoch'))
@@ -105,6 +126,56 @@ function RouteComponent() {
             <dt className="text-gray-500">Opérations en attente d'envoi</dt>
             <dd>{waitingCount}</dd>
           </dl>
+        </div>
+        <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow border-2 border-red-400">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 text-xs font-bold rounded bg-red-600 text-white">
+              EXPERT
+            </span>
+            <h2 className="text-2xl">Outbox — opérations en attente</h2>
+          </div>
+          <p className="text-sm text-red-700 bg-red-50 p-3 rounded">
+            Opérations pas encore acceptées par le serveur, dans leur ordre
+            d'envoi. Une opération « envoi en cours » depuis plusieurs minutes
+            est bloquée (page rechargée pendant l'envoi) : elle ne repartira
+            qu'avec « Réessayer ». Réessayez dans l'ordre de la liste, le
+            contact avant son dépôt, le dépôt avant ses articles.
+          </p>
+          {waitingOps.length === 0 ? (
+            <p className="text-gray-600">Aucune opération en attente.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {waitingOps.map((op) => (
+                <li
+                  key={op.id}
+                  className="flex items-start justify-between gap-4 border rounded p-3"
+                >
+                  <div className="flex flex-col text-sm">
+                    <code className="text-xs text-gray-500">{op.id}</code>
+                    <span>
+                      {op.operation} · {op.collection} · {op.recordId}
+                    </span>
+                    <span className="text-gray-600">
+                      {OUTBOX_STATUS_LABELS[op.status]} ·{' '}
+                      {new Date(op.timestamp).toLocaleString('fr-FR')} ·
+                      tentatives : {op.retryCount}
+                      {op.lastAttempt &&
+                        ` · dernier essai ${new Date(op.lastAttempt).toLocaleTimeString('fr-FR')}`}
+                    </span>
+                    {op.error && (
+                      <span className="text-red-600">{op.error}</span>
+                    )}
+                  </div>
+                  <Button
+                    variant="destructive"
+                    onClick={() => syncService.retry(op.id)}
+                  >
+                    Réessayer
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="flex flex-col gap-4 bg-white p-6 rounded-lg shadow border-2 border-red-400">
           <div className="flex items-center gap-2">
