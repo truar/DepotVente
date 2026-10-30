@@ -617,34 +617,69 @@ export function shutDownComputers() {
 // fetch keeps its sockets on timers too; faking those (vi.useFakeTimers on
 // setTimeout) leaves them stalled once the clock is given back, and hangs
 // the next story.
+//
+// A request's timeout (set by SyncService.request) is held apart: the stand-in
+// server answers in no time on the fake clock, but in more than one settle()
+// on the real one, so moving the clock to it would give up on requests about
+// to be answered. It only runs when a story says the server stays silent
+// (timeOutRequest).
 const realSetTimeout = globalThis.setTimeout
-const heldTimers: Array<{ at: number; run: () => void }> = []
+const realClearTimeout = globalThis.clearTimeout
+type HeldTimer = { at: number; run: () => void; requestTimeout: boolean }
+const heldTimers: Array<HeldTimer> = []
 
+// A held timer's handle is the timer itself: clearTimeout drops it (a
+// request's timeout, once its answer is in).
 function syncAwareSetTimeout(
   callback: (...args: Array<unknown>) => void,
   ms = 0,
   ...args: Array<unknown>
 ) {
-  if (new Error().stack?.includes('sync-service.ts')) {
-    heldTimers.push({ at: Date.now() + ms, run: () => callback(...args) })
-    return 0 as unknown as ReturnType<typeof setTimeout>
+  const stack = new Error().stack ?? ''
+  if (stack.includes('sync-service.ts')) {
+    const timer: HeldTimer = {
+      at: Date.now() + ms,
+      run: () => callback(...args),
+      requestTimeout: stack.includes('SyncService.request '),
+    }
+    heldTimers.push(timer)
+    return timer as unknown as ReturnType<typeof setTimeout>
   }
   return realSetTimeout(callback, ms, ...args)
+}
+
+// The held timers a story moves through: all but the requests' timeouts,
+// soonest first.
+function scheduledTimers() {
+  return heldTimers
+    .filter((timer) => !timer.requestTimeout)
+    .sort((a, b) => a.at - b.at)
+}
+
+function runHeld(timer: HeldTimer) {
+  heldTimers.splice(heldTimers.indexOf(timer), 1)
+  if (timer.at > Date.now()) vi.setSystemTime(timer.at)
+  timer.run()
+}
+
+function syncAwareClearTimeout(handle: ReturnType<typeof setTimeout>) {
+  const held = heldTimers.indexOf(handle as unknown as HeldTimer)
+  if (held >= 0) heldTimers.splice(held, 1)
+  else realClearTimeout(handle)
 }
 
 export function fakeClock(now = new Date('2026-11-14T08:00:00')) {
   vi.useFakeTimers({ toFake: ['Date'], now })
   globalThis.setTimeout = syncAwareSetTimeout as typeof setTimeout
+  globalThis.clearTimeout = syncAwareClearTimeout as typeof clearTimeout
 }
 
 // Moves the clock to the sync's next timer and runs it. False when the sync
 // has nothing scheduled.
 export function nextSyncTimer(): boolean {
-  heldTimers.sort((a, b) => a.at - b.at)
-  const next = heldTimers.shift()
+  const next = scheduledTimers().at(0)
   if (!next) return false
-  if (next.at > Date.now()) vi.setSystemTime(next.at)
-  next.run()
+  runHeld(next)
   return true
 }
 
@@ -652,12 +687,23 @@ export function nextSyncTimer(): boolean {
 // happens now, a retry delay not yet over left waiting. Settles in between.
 export async function runDueSyncTimers(rounds = 20) {
   for (let i = 0; i < rounds; i++) {
-    heldTimers.sort((a, b) => a.at - b.at)
-    if (heldTimers[0] && heldTimers[0].at <= Date.now()) {
-      heldTimers.shift()?.run()
-    }
+    const next = scheduledTimers().at(0)
+    if (next && next.at <= Date.now()) runHeld(next)
     await settle()
   }
+}
+
+// The server stays silent on the request waiting for an answer: moves the
+// clock to that request's timeout and runs it. False when no request is
+// waiting.
+export function timeOutRequest(): boolean {
+  const waiting = heldTimers
+    .filter((timer) => timer.requestTimeout)
+    .sort((a, b) => a.at - b.at)
+    .at(0)
+  if (!waiting) return false
+  runHeld(waiting)
+  return true
 }
 
 // Lets this computer finish what it is doing (IndexedDB, HTTP), without
@@ -672,6 +718,7 @@ export async function settle(rounds = 30) {
 // computers are shut down by then).
 export function realClock() {
   globalThis.setTimeout = realSetTimeout
+  globalThis.clearTimeout = realClearTimeout
   heldTimers.length = 0
   vi.useRealTimers()
 }

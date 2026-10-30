@@ -10,6 +10,13 @@ const BASE_DELAY = 1000 // 1 second
 // How long to wait before re-trying a push refused for lack of a valid
 // token. A fresh login re-kicks the queue immediately anyway (setToken).
 const UNAUTHENTICATED_DELAY = 30_000
+// fetch() alone waits for good on a request the server never answers (Wi-Fi
+// gone mid-request, a connection left half open), holding the outbox or
+// the pull lock meanwhile: nothing leaves or arrives any more. Past this
+// delay the request is given up, as on a network error. The full base gets
+// longer: the server builds it whole before answering.
+const REQUEST_TIMEOUT = 20_000
+const FULL_BASE_TIMEOUT = 120_000
 
 // Shape of every error body the backend sends (see plugins/error-handler.ts).
 type ServerError = {
@@ -177,9 +184,14 @@ class SyncService {
 
   /**
    * fetch() against the API with the auth token, the client identity headers
-   * and the dataset epoch this computer synced against.
+   * and the dataset epoch this computer synced against. Throws, as a network
+   * error does, when the answer has not started after `timeout` ms.
    */
-  private async request(path: string, init: RequestInit = {}) {
+  private async request(
+    path: string,
+    init: RequestInit = {},
+    timeout = REQUEST_TIMEOUT,
+  ) {
     const headers: Record<string, string> = {
       ...(await clientHeaders()),
       ...(init.headers as Record<string, string> | undefined),
@@ -189,7 +201,22 @@ class SyncService {
     const epoch = await this.getMetadata('datasetEpoch')
     if (typeof epoch === 'string') headers['X-Dataset-Epoch'] = epoch
 
-    return fetch(`${API_BASE_URL}${path}`, { ...init, headers })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeout)
+    try {
+      return await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error(`Pas de réponse du serveur après ${timeout / 1000} s`)
+      }
+      throw error
+    } finally {
+      clearTimeout(timer)
+    }
   }
 
   private async readError(response: Response): Promise<ServerError> {
@@ -281,7 +308,7 @@ class SyncService {
   > {
     let response: Response
     try {
-      response = await this.request('/sync/initial')
+      response = await this.request('/sync/initial', {}, FULL_BASE_TIMEOUT)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       return { ok: false, unreachable: true, message }

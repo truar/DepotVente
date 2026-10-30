@@ -12,6 +12,7 @@ import {
   realClock,
   settle,
   shutDownComputers,
+  timeOutRequest,
 } from '@/test/sync/computer.ts'
 import { settingsPage } from '@/test/pages/settings.page.ts'
 import { openScreen, screen, signedInAs, waitFor } from '@/test/screen.tsx'
@@ -451,6 +452,40 @@ describe('Sync: pushing local writes to the server', () => {
       'deposits',
       'articles',
     ])
+    const page = await settingsPage()
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
+    expect(page.noRefusedOperation()).toBe(true)
+  })
+
+  // SYNC-26 — The server never answers the seller's request (Wi-Fi gone
+  // mid-request, a connection left half open). After 20 s the computer
+  // gives up on it, as on a network error, and sends it again; the deposit
+  // and the article follow. Without it, the queue waited for that answer
+  // for good, and nothing else left this computer.
+  it('gives up on a request the server never answers, and sends it again', async () => {
+    const backend = givenServer()
+    refusesWhatHasNoParent(backend, { holdFirstSeller: true })
+    await registerADeposit()
+    fakeClock()
+
+    await bootComputer()
+    await untilPushAttempts(backend, 1)
+    expect(timeOutRequest()).toBe(true)
+    await untilPushAttempts(backend, 4)
+
+    expect(backend.pushedRecords().map(([collection]) => collection)).toEqual([
+      'contacts',
+      'contacts',
+      'deposits',
+      'articles',
+    ])
+    // Sent again 20 s after it left, or 2 s later: the delay of a first
+    // failure counts from when the request left, and the queue may be
+    // woken by the failure itself or by that delay, whichever runs first.
+    const [silence] = delaysBetweenPushes(backend)
+    expect(silence).toBeGreaterThanOrEqual(20_000)
+    expect(silence).toBeLessThanOrEqual(22_000)
+    realClock()
     const page = await settingsPage()
     await waitFor(() => expect(page.waitingCount()).toBe(0))
     expect(page.noRefusedOperation()).toBe(true)
