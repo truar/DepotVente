@@ -106,7 +106,13 @@ export type Article = {
   color: string
   code: string
   year: number
-  status: 'RECEPTION_PENDING' | 'RECEPTION_OK' | 'DELETED' | 'RETURNED' | 'SOLD'
+  status:
+    | 'RECEPTION_PENDING'
+    | 'RECEPTION_OK'
+    | 'DELETED'
+    | 'ABSENT'
+    | 'RETURNED'
+    | 'SOLD'
   depositIndex: number
   identificationLetter: string
   articleIndex: number
@@ -115,6 +121,12 @@ export type Article = {
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
+}
+
+// Un article supprimé ou absent (introuvable) a quitté le dépôt : il ne
+// compte plus dans les totaux ni dans les compteurs.
+export function isOutOfDeposit(article: Pick<Article, 'status'>): boolean {
+  return article.status === 'DELETED' || article.status === 'ABSENT'
 }
 
 export type Contact = {

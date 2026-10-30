@@ -1,7 +1,9 @@
 // Page object for the return listing (/returns/listing, "Gérer les fiches
 // retours"): the evening screen where the club works out what each seller
 // is owed, then prints their return sheets.
-import { openScreen, screen, within } from '@/test/screen.tsx'
+import { expect } from 'vitest'
+import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
+import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 export async function returnsListingPage() {
   const { user: u, router } = await openScreen('/returns/listing')
@@ -77,6 +79,17 @@ export async function returnsListingPage() {
         ready: read('Fiches prêtes'),
         processed: read('Fiches traitées'),
       }
+    },
+    // The eye at the end of the row prints the deposit's return sheet; its
+    // text, once printed.
+    async printReturnSheet(depositIndex: number): Promise<string> {
+      const before = printedDocuments()
+      const buttons = within(page.row(depositIndex)).getAllByRole('button')
+      await u.click(buttons[buttons.length - 1])
+      await waitFor(() => expect(printedDocuments()).toBe(before + 1), {
+        timeout: 15_000,
+      })
+      return lastPrintedText()
     },
     async selectAll() {
       await u.click(screen.getByRole('checkbox', { name: 'Tous sélectionner' }))

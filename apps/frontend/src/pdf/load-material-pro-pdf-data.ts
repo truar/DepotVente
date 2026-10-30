@@ -5,7 +5,7 @@ import type {
 } from './material-pro-pdf'
 import type { BilanAuditGroup } from './load-bilan-pdf-data'
 import type { Article } from '@/db'
-import { db } from '@/db'
+import { db, isOutOfDeposit } from '@/db'
 import { getYear } from '@/utils'
 import { categories } from '@/types/categories'
 
@@ -83,7 +83,7 @@ function buildRows(depositArticles: Array<Article>): Array<MaterialProCategoryRo
  * (count / total / min / max / average) alongside the sold-side stats and the
  * sell-through ratio. A per-fiche "Bilan global" sums it up.
  *
- * "En dépôt" = articles with status ≠ DELETED (sold ones included).
+ * "En dépôt" = articles neither deleted nor absent (sold ones included).
  * "Vendus"   = articles with status === SOLD.
  */
 export async function loadMaterialProPdfData(): Promise<MaterialProResult> {
@@ -102,7 +102,7 @@ export async function loadMaterialProPdfData(): Promise<MaterialProResult> {
   // deposit.id -> its non-deleted articles
   const articlesByDeposit = new Map<string, Array<Article>>()
   for (const a of allArticles) {
-    if (a.deletedAt != null || a.status === 'DELETED') continue
+    if (a.deletedAt != null || isOutOfDeposit(a)) continue
     const bucket = articlesByDeposit.get(a.depositId)
     if (bucket) bucket.push(a)
     else articlesByDeposit.set(a.depositId, [a])
@@ -153,7 +153,7 @@ export async function loadMaterialProPdfData(): Promise<MaterialProResult> {
         {
           label: 'Total dépôt',
           value: `${depositCount} art.`,
-          source: 'Σ articles (status ≠ DELETED) du dépôt',
+          source: 'Σ articles (status ∉ {DELETED, ABSENT}) du dépôt',
           formula: `${eur(depositAmount)} sur ${rows.length} catégorie(s)`,
         },
         {

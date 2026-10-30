@@ -145,6 +145,7 @@ describe('Screen: refused scans', () => {
       { status: 'SOLD', saleId: 'some-earlier-sale' },
       { status: 'DELETED' },
       { status: 'RETURNED' },
+      { status: 'ABSENT' },
     ])
     codes = {
       ok: articles[0].code,
@@ -152,6 +153,7 @@ describe('Screen: refused scans', () => {
       sold: articles[2].code,
       deleted: articles[3].code,
       returned: articles[4].code,
+      absent: articles[5].code,
       unknown: `${YEAR} 99Z`,
     }
   })
@@ -175,6 +177,11 @@ describe('Screen: refused scans', () => {
       'Article restitué',
       (c: string) =>
         `L'article ${c} a été restitué à son déposant : il ne peut pas être vendu.`,
+    ],
+    [
+      'absent',
+      'Article absent',
+      (c: string) => `Article ${c} absent, contactez l'administrateur`,
     ],
   ])('refuses a %s article with an alert', async (kind, title, message) => {
     const page = await salesAddPage()

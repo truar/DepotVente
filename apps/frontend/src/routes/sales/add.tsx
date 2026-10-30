@@ -462,6 +462,10 @@ function SaleArticlesForm() {
           title: 'Article invendable',
           description: `Article ${articleCode} invendable, contactez l'administrateur`,
         },
+        ABSENT: {
+          title: 'Article absent',
+          description: `Article ${articleCode} absent, contactez l'administrateur`,
+        },
         RETURNED: {
           title: 'Article restitué',
           description: `L'article ${articleCode} a été restitué à son déposant : il ne peut pas être vendu.`,

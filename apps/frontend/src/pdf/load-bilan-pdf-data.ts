@@ -1,6 +1,6 @@
 import type { BilanPdfData } from './bilan-pdf'
 import type {Article, Deposit, Sale} from '@/db';
-import {   db } from '@/db'
+import {   db, isOutOfDeposit } from '@/db'
 import { fromCents, getYear, isClubBuyer, toCents } from '@/utils'
 import { cashVerdict } from '@/pdf/format.ts'
 import { computeReturn } from '@/services/return-computation.ts'
@@ -100,13 +100,13 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     db.cashRegisterControls.toArray(),
   ])
 
-  // "Articles en dépôt" = what was on sale: every article that is not
-  // deleted (sold ones included), except a pro's articles never received —
-  // they never reached the shop.
+  // "Articles en dépôt" = what was on sale: every article neither deleted
+  // nor absent (sold ones included), except a pro's articles never
+  // received — they never reached the shop.
   const depositArticles = allArticles.filter(
     (a) =>
       a.deletedAt == null &&
-      a.status !== 'DELETED' &&
+      !isOutOfDeposit(a) &&
       a.status !== 'RECEPTION_PENDING',
   )
   // A fiche without any article on sale (a pro whose articles never came)

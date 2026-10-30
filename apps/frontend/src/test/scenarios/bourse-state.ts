@@ -27,10 +27,10 @@ import {
 } from '@/test/harness.ts'
 
 // An article by its price; « pending » for a pro article never received,
-// « deleted » for one taken off.
+// « deleted » for one taken off, « absent » for one nowhere to be found.
 type ArticleSpec =
   | number
-  | { price: number; status: 'RECEPTION_PENDING' | 'DELETED' }
+  | { price: number; status: 'RECEPTION_PENDING' | 'DELETED' | 'ABSENT' }
 
 type FicheSpec = {
   seller: string // « Durand Camille »

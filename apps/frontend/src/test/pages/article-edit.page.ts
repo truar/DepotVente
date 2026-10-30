@@ -1,7 +1,7 @@
 // Page object for "Modifier un article" (/deposits/articles): the desk
 // where a volunteer looks an article up by its code and corrects it — a
 // wrong price on the label, a missing serial number, a description.
-import { openScreen, screen, within } from '@/test/screen.tsx'
+import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 export async function articleEditPage() {
   const { user: u, router } = await openScreen('/deposits/articles')
@@ -69,6 +69,20 @@ export async function articleEditPage() {
       await u.clear(input)
       if (text) await u.type(input, text)
     },
+    // In the open list only, which the select names in aria-controls: a
+    // whole-page search would also go through the color datalist.
+    async setStatus(label: string) {
+      const select = screen.getByRole('combobox', { name: 'Statut' })
+      await u.click(select)
+      const list = await waitFor(() => {
+        const open = document.getElementById(
+          select.getAttribute('aria-controls') ?? '',
+        )
+        if (!open) throw new Error('The status list is not open')
+        return open
+      })
+      await u.click(await within(list).findByRole('option', { name: label }))
+    },
     // What the form shows for the article opened.
     price: () => screen.getByLabelText<HTMLInputElement>('Prix').value,
     description: () =>
@@ -77,6 +91,8 @@ export async function articleEditPage() {
     serialNumber: () =>
       screen.getByLabelText<HTMLInputElement>('N° Série').value,
     color: () => screen.getByLabelText<HTMLInputElement>('Couleur').value,
+    status: () =>
+      screen.getByRole('combobox', { name: 'Statut' }).textContent.trim(),
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

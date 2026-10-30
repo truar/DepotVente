@@ -10,7 +10,7 @@ import {
   type DepositsPdfProps,
 } from '@/pdf/deposit-pdf.tsx'
 import { loadDepositPdfData } from '@/pdf/load-deposit-pdf-data.ts'
-import { type Contact, db, type Deposit } from '@/db.ts'
+import { type Contact, db, type Deposit, isOutOfDeposit } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
@@ -156,7 +156,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
       const articlesCount = useLiveQuery(() =>
         db.articles
           .where({ depositId: row.original.depositId })
-          .and((article) => article.status !== 'DELETED')
+          .and((article) => !isOutOfDeposit(article))
           .count(),
       )
 
@@ -183,7 +183,7 @@ export const columns: ColumnDef<DepositTableType>[] = [
       const articles = useLiveQuery(() =>
         db.articles
           .where({ depositId: row.original.depositId })
-          .and((article) => article.status !== 'DELETED')
+          .and((article) => !isOutOfDeposit(article))
           .toArray(),
       )
       const sum =
@@ -267,7 +267,7 @@ function DepositsSummary() {
   const articles = useLiveQuery(() =>
     db.articles
       .offset(0)
-      .and((article) => article.status !== 'DELETED')
+      .and((article) => !isOutOfDeposit(article))
       .toArray(),
   )
   const deposits = useLiveQuery(() => db.deposits.toArray())

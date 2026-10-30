@@ -82,6 +82,7 @@ async function createReturnDepositPdfData(
       category: article.category,
       isSold: !!article.saleId,
       isDeleted: article.status === 'DELETED',
+      isAbsent: article.status === 'ABSENT',
     })),
   }
 }

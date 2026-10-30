@@ -223,4 +223,30 @@ describe('Screen: the return listing', () => {
       contributionCollectWorkstationId: 1000,
     })
   })
+
+  // MARTIN (fiche 15) left three articles: one sold, one still on the
+  // shelf, one nowhere to be found. The return sheet says which one is
+  // absent, and counts only the two others.
+  it('prints the return sheet with the absent article marked, out of the count', async () => {
+    await givenDeposit(
+      {
+        depositIndex: 15,
+        seller: { lastName: 'Martin', firstName: 'Lucie' },
+      },
+      [
+        { price: 50, saleId: 'a-sale', status: 'SOLD' },
+        { price: 30, status: 'ABSENT' },
+        { price: 20 },
+      ],
+    )
+    const page = await returnsListingPage()
+    await waitFor(() => expect(page.returnStatus(15)).toBe('RETOUR A CALCULER'))
+
+    const sheet = await page.printReturnSheet(15)
+
+    expect(sheet).toContain('Nb articles : 2')
+    expect(sheet).toMatch(/50,00 € Vendu/)
+    expect(sheet).toMatch(/30,00 € Absent/)
+    expect(sheet).not.toMatch(/20,00 € (Vendu|Absent)/)
+  })
 })

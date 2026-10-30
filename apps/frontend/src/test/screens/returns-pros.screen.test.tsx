@@ -207,6 +207,12 @@ describe('Screen: return the unsold articles to a professional', () => {
       (c) =>
         `L'article ${c} n'a pas été réceptionné, contactez un administrateur`,
     ],
+    [
+      'marked absent',
+      { status: 'ABSENT' },
+      (c) =>
+        `L'article ${c} est marqué comme absent, contactez un administrateur`,
+    ],
   ])('refuses the scan of an article %s', async (_label, article, message) => {
     const bertrand = await givenDeposit(
       {

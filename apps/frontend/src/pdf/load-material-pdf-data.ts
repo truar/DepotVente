@@ -5,7 +5,7 @@ import type {
 } from './material-pdf'
 import type { BilanAuditGroup } from './load-bilan-pdf-data'
 import type { Article, Deposit } from '@/db'
-import { db } from '@/db'
+import { db, isOutOfDeposit } from '@/db'
 import { getYear } from '@/utils'
 import { categories } from '@/types/categories'
 import { disciplines } from '@/types/disciplines'
@@ -37,7 +37,7 @@ export type MaterialResult = {
  * "Bilan matériel" — global material breakdown for the whole bourse.
  *
  * Every non-deleted article is grouped by category (Skis, Chaussures, …); each
- * category shows its total "en dépôt" (status ≠ DELETED) vs "vendu"
+ * category shows its total "en dépôt" (ni supprimé ni absent) vs "vendu"
  * (status = SOLD) counts and the sell-through ratio, broken down by discipline
  * (the app's disciplines: Alpin, Fond, Rando Alpine, …). A final split reports
  * pro vs particulier volumes.
@@ -55,7 +55,7 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
   const articles = allArticles.filter(
     (a) =>
       a.deletedAt == null &&
-      a.status !== 'DELETED' &&
+      !isOutOfDeposit(a) &&
       !HIDDEN_CATEGORIES.has(a.category || ''),
   )
 
@@ -141,7 +141,7 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
       entries: blocks.map((b) => ({
         label: b.category,
         value: `${num(b.soldCount)}/${num(b.depositCount)}`,
-        source: 'articles (status ≠ DELETED) / vendus (SOLD), par catégorie',
+        source: 'articles (status ∉ {DELETED, ABSENT}) / vendus (SOLD), par catégorie',
         formula:
           b.disciplines.length > 0
             ? `${pct(b.soldRatio)} — ${b.disciplines
@@ -156,7 +156,7 @@ export async function loadMaterialPdfData(): Promise<MaterialResult> {
         {
           label: 'Total articles en dépôt',
           value: num(totalDeposit),
-          source: 'articles (status ≠ DELETED)',
+          source: 'articles (status ∉ {DELETED, ABSENT})',
           formula: `Σ sur ${num(blocks.length)} catégories`,
         },
         {

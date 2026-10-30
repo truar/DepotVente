@@ -124,6 +124,8 @@ export type Article = {
   category: string
   isSold: boolean
   isDeleted?: boolean
+  // Introuvable : la ligne le dit, et il sort du nombre d'articles.
+  isAbsent?: boolean
 }
 
 export type ReturnDepositPdfProps = {
@@ -259,7 +261,11 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Nb articles :</Text>
               <Text style={styles.articleCount}>
-                {articles.filter((article) => !article.isDeleted).length}
+                {
+                  articles.filter(
+                    (article) => !article.isDeleted && !article.isAbsent,
+                  ).length
+                }
               </Text>
             </View>
             <View style={styles.contactLine}>
@@ -405,7 +411,9 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
                     </Text>
                   </View>
                   <View style={styles.tableColSold}>
-                    <Text style={cellStyle}>{article.isSold && 'Vendu'}</Text>
+                    <Text style={cellStyle}>
+                      {article.isSold ? 'Vendu' : article.isAbsent && 'Absent'}
+                    </Text>
                   </View>
                 </View>
               )

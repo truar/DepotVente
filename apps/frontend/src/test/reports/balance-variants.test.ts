@@ -99,6 +99,21 @@ describe('Report: the balance, variant by variant', () => {
     })
   })
 
+  // An article nowhere to be found leaves the deposit like a deleted one.
+  it('V7b: an absent article leaves the deposit', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.fiches.durand.articles[2] = { price: 10, status: 'ABSENT' }
+    })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      "Nombre d'articles en dépôt": '8',
+      'Montant du dépôt': '850,00 €',
+      '% des articles en dépôt': '62,50 %',
+      '% de la valeur du dépôt': '61,18 %',
+    })
+  })
+
   // Articles that never reached the shop were never on sale: neither they
   // nor a fiche left without any article count.
   it('V12: a pro fiche never received leaves the balance as it was', async () => {

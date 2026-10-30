@@ -325,6 +325,7 @@ describe('Screen: receiving a professional’s articles', () => {
     ['SOLD', (c: string) => `L'article ${c} a déjà été vendu`],
     ['DELETED', (c: string) => `L'article ${c} a été supprimé`],
     ['RETURNED', (c: string) => `L'article ${c} a été restitué`],
+    ['ABSENT', (c: string) => `L'article ${c} est marqué comme absent`],
   ] as const)('refuses a %s article', async (status, message) => {
     await givenDeposit(
       {

@@ -214,6 +214,7 @@ function ReceiveArticleInput(props: {
         const reason: Record<typeof article.status, string> = {
           RECEPTION_OK: `Dépôt de l'article ${articleCode} déja effectué`,
           DELETED: `L'article ${articleCode} a été supprimé`,
+          ABSENT: `L'article ${articleCode} est marqué comme absent`,
           RETURNED: `L'article ${articleCode} a été restitué`,
           SOLD: `L'article ${articleCode} a déjà été vendu`,
         }

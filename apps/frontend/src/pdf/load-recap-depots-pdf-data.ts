@@ -1,6 +1,6 @@
 import type { RecapDepotsData, RecapDepotsRow } from './recap-depots-pdf'
 import type { BilanAuditGroup } from './load-bilan-pdf-data'
-import { db } from '@/db'
+import { db, isOutOfDeposit } from '@/db'
 import { getYear } from '@/utils'
 
 const eurFmt = new Intl.NumberFormat('fr-FR', {
@@ -35,7 +35,7 @@ export type RecapDepotsResult = {
  * caisse 1 via the import). Per caisse:
  *  - Nb Vendeurs   = nb de fiches de dépôt
  *  - Nb Pré-dépôts = nb de pré-dépôts confirmés dont le dépôt est sur cette caisse
- *  - Valeur dépôt  = Σ price des articles (status ≠ DELETED) des dépôts de la caisse
+ *  - Valeur dépôt  = Σ price des articles (status ∉ {DELETED, ABSENT}) des dépôts de la caisse
  *  - Nb Articles   = nb de ces articles
  *
  * Table Pré-dépôts — une ligne de synthèse sur l'ensemble des pré-dépôts.
@@ -55,7 +55,7 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
     (a) => a.deletedAt == null,
   )
   const depositArticles = allArticles.filter(
-    (a) => a.deletedAt == null && a.status !== 'DELETED',
+    (a) => a.deletedAt == null && !isOutOfDeposit(a),
   )
 
   // deposit.id -> caisse (incrementStart)
@@ -158,13 +158,13 @@ export async function loadRecapDepotsPdfData(): Promise<RecapDepotsResult> {
         {
           label: 'Valeur dépôt',
           value: eur(depositsTotal.depositValue),
-          source: 'Σ article.price (status ≠ DELETED)',
+          source: 'Σ article.price (status ∉ {DELETED, ABSENT})',
           formula: 'articles rattachés au dépôt via depositId',
         },
         {
           label: 'Nb Articles',
           value: num(depositsTotal.articlesCount),
-          source: 'nb articles (status ≠ DELETED)',
+          source: 'nb articles (status ∉ {DELETED, ABSENT})',
           formula: '—',
         },
         {

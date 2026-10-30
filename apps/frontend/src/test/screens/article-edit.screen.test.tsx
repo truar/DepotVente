@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { articleEditPage } from '@/test/pages/article-edit.page.ts'
+import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // A label went out with the wrong price, or the seller remembers the serial
@@ -157,5 +158,32 @@ describe('Screen: correcting an article', () => {
     expect(again.color()).toBe('')
     const [update] = await local.outbox()
     expect(update.data).toMatchObject({ color: '' })
+  })
+
+  // An article nowhere to be found is marked absent, no reason needed: it
+  // leaves the deposit like a deleted one, out of the fiche's count and
+  // amount on the deposits list.
+  it('marks an article absent, which leaves the deposit counts', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }, { price: 80 }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    await page.setStatus('Absent')
+    await page.validate()
+
+    await page.lastToast(`Article ${skis.code} mis à jour`)
+    const again = await articleEditPage()
+    await again.search(skis.code, '12 A')
+    expect(again.status()).toBe('Absent')
+    const [update] = await local.outbox()
+    expect(update.data).toMatchObject({ status: 'ABSENT' })
+
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(1)
+    expect(listing.deposit(12)).toMatchObject({
+      articleCount: 1,
+      amount: '80,00 €',
+    })
   })
 })

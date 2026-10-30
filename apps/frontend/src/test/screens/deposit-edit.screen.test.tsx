@@ -141,6 +141,22 @@ describe('Screen: correct a registered deposit', () => {
     expect(reopened.isArticleDeleted(2)).toBe(false)
   })
 
+  // An article marked absent on « Modifier un article » does not block
+  // the fiche: it is saved, and the article stays absent.
+  it('saves a fiche holding an absent article, which stays absent', async () => {
+    const { deposit, articles } = await givenDeposit({}, [
+      {},
+      { status: 'ABSENT' },
+    ])
+    const page = await depositEditPage(deposit.id)
+
+    await page.save()
+    await page.savedToast(12)
+
+    const saved = (await local.articles()).find((a) => a.id === articles[1].id)
+    expect(saved?.status).toBe('ABSENT')
+  })
+
   // A professional's articles stay pending until they are scanned
   // in at the reception desk. Correcting the fiche must not receive them.
   it('leaves untouched articles of a professional in their status', async () => {

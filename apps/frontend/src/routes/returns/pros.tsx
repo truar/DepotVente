@@ -215,10 +215,12 @@ function ReturnArticleInput(props: {
       setArticleCode('')
       return
     }
-    // Seul un article en rayon (réceptionné, ni vendu ni supprimé) est rendu.
+    // Seul un article en rayon (réceptionné, ni vendu, ni supprimé, ni
+    // absent) est rendu.
     const notOnShelf = {
       SOLD: 'est marqué comme vendu',
       DELETED: 'est marqué comme supprimé',
+      ABSENT: 'est marqué comme absent',
       RECEPTION_PENDING: "n'a pas été réceptionné",
     } as const
     if (article.status !== 'RECEPTION_OK') {
