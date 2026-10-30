@@ -422,7 +422,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
           />
         </div>
         {/* Montré au caissier quand il scanne l'article à la vente. */}
-        <div className="col-span-2">
+        <div className="col-span-4">
           <Controller
             control={control}
             name="saleAlert"
