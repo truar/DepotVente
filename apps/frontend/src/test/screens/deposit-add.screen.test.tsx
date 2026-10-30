@@ -6,6 +6,12 @@ import {
   givenWorkstation,
   local,
 } from '@/test/harness.ts'
+import {
+  DYMO_SERVICE,
+  givenLabelPrinter,
+  noDymoPrinter,
+  printedLabels,
+} from '@/test/labels.ts'
 import { articleEditPage } from '@/test/pages/article-edit.page.ts'
 import { depositAddPage } from '@/test/pages/deposit-add.page.ts'
 import { depositEditPage } from '@/test/pages/deposit-edit.page.ts'
@@ -375,6 +381,78 @@ describe('Screen: the deposit sheet must be printed before saving', () => {
     await page.printSummary()
 
     await waitFor(() => expect(page.errors()).toEqual([]))
+  })
+})
+
+// The printer of a row prints the label of the article on the Dymo, before
+// the fiche is saved.
+describe("Screen: printing an article's label", () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  async function aRowToLabel() {
+    const page = await depositAddPage()
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    return page
+  }
+
+  it('prints the label of the row and marks it printed', async () => {
+    givenLabelPrinter()
+    const page = await aRowToLabel()
+
+    await page.printLabel(0)
+
+    await waitFor(() => expect(page.isLabelPrinted(0)).toBe(true))
+    expect(printedLabels().map((label) => label.shortCode)).toEqual(['1001 A'])
+  })
+
+  // Until now, nothing happened at all: the volunteer could not tell a
+  // missing printer from a slow one.
+  it('tells the volunteer when no label printer is found, and how to bring it back', async () => {
+    givenLabelPrinter({ connected: false })
+    const page = await aRowToLabel()
+
+    await page.printLabel(0)
+
+    const alert = await page.alert()
+    expect(alert.message).toBe(noDymoPrinter)
+    expect(alert.link).toBe(DYMO_SERVICE)
+    await alert.dismiss()
+    expect(page.isLabelPrinted(0)).toBe(false)
+    expect(printedLabels()).toEqual([])
+  })
+
+  // The DYMO service was out of reach when the page loaded (certificate not
+  // yet accepted): once the certificate is accepted in another tab, the
+  // next click prints. The tab used to need a reload, which emptied the
+  // form.
+  it('prints once the certificate is accepted, without reloading the page', async () => {
+    const dymo = givenLabelPrinter({ missedAtLoad: true })
+    const page = await aRowToLabel()
+    await page.printLabel(0)
+    await (await page.alert()).dismiss()
+
+    dymo.acceptCertificate()
+    await page.printLabel(0)
+
+    await waitFor(() => expect(page.isLabelPrinted(0)).toBe(true))
+    expect(printedLabels().map((label) => label.shortCode)).toEqual(['1001 A'])
+    expect(page.isAlertOpen()).toBe(false)
+  })
+
+  // No DYMO framework on the computer at all: the print fails outright.
+  it('tells the volunteer when the label cannot be printed', async () => {
+    const page = await aRowToLabel()
+
+    await page.printLabel(0)
+
+    const alert = await page.alert()
+    expect(alert.message).toBe("L'impression de l'étiquette a échoué.")
+    await alert.dismiss()
+    expect(page.isLabelPrinted(0)).toBe(false)
   })
 })
 

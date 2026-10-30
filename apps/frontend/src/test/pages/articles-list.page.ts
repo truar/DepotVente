@@ -138,6 +138,7 @@ export async function articlesListPage() {
       return {
         title: within(box).getByRole('heading').textContent.trim(),
         message: within(box).getByRole('paragraph').textContent.trim(),
+        link: within(box).queryByRole('link')?.getAttribute('href') ?? null,
         dismiss: () => u.click(within(box).getByRole('button', { name: 'OK' })),
       }
     },

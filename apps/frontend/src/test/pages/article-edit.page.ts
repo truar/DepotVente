@@ -55,6 +55,16 @@ export async function articleEditPage() {
       }
     },
     isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
+    // The error box, with the link it offers if any.
+    async alert() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        message: within(box).getByRole('paragraph').textContent.trim(),
+        link: within(box).queryByRole('link')?.getAttribute('href') ?? null,
+        dismiss: () => u.click(within(box).getByRole('button', { name: 'OK' })),
+      }
+    },
 
     // ---- correcting it -----------------------------------------------------
     async setPrice(price: string) {

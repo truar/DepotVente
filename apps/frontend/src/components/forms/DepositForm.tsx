@@ -67,7 +67,8 @@ import {
 } from '@/components/ui/select.tsx'
 import { colors } from '@/types/colors.ts'
 import { MonetaryField } from '@/components/custom/input/MonetaryField.tsx'
-import { useDymo } from '@/hooks/useDymo.ts'
+import { alertNoDymoPrinter, useDymo } from '@/hooks/useDymo.ts'
+import { showErrorAlert } from '@/stores/errorAlertStore.ts'
 import { useDebouncedCallback } from 'use-debounce'
 import { usePrintDepositFromForm } from '@/hooks/usePrintDepositFromForm.tsx'
 
@@ -665,19 +666,27 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
     const valid = await trigger(`deposit.articles.${index}`)
     if (!valid) return
     const field = getValues(`deposit.articles.${index}`)
-    const printed = await dymo.print({
-      color: field.color,
-      brand: field.brand,
-      size: field.size ?? '',
-      category: field.type,
-      code: field.articleCode,
-      price: `${field.price}`,
-      shortCode: field.shortArticleCode,
-      model: field.model ?? '',
-    })
-    if (printed) {
-      setValue(`deposit.articles.${index}.labelPrinted`, true)
+    let printed: boolean
+    try {
+      printed = await dymo.print({
+        color: field.color,
+        brand: field.brand,
+        size: field.size ?? '',
+        category: field.type,
+        code: field.articleCode,
+        price: `${field.price}`,
+        shortCode: field.shortArticleCode,
+        model: field.model ?? '',
+      })
+    } catch {
+      showErrorAlert("L'impression de l'étiquette a échoué.")
+      return
     }
+    if (!printed) {
+      alertNoDymoPrinter()
+      return
+    }
+    setValue(`deposit.articles.${index}.labelPrinted`, true)
   }, [dymo, getValues, setValue, index, trigger])
 
   const debouncedPrintDymo = useDebouncedCallback(printDymo, 1000)

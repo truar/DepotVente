@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { articleEditPage } from '@/test/pages/article-edit.page.ts'
 import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
-import { givenLabelPrinter, printedLabels } from '@/test/labels.ts'
+import {
+  DYMO_SERVICE,
+  givenLabelPrinter,
+  noDymoPrinter,
+  printedLabels,
+} from '@/test/labels.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // A label went out with the wrong price, or the seller remembers the serial
@@ -156,6 +161,22 @@ describe('Screen: correcting an article', () => {
         },
       ]),
     )
+  })
+
+  // Until now, nothing happened at all when no printer answered.
+  it('tells the volunteer when no label printer is found', async () => {
+    givenLabelPrinter({ connected: false })
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const page = await articleEditPage()
+    await page.search(articles[0].code, '12 A')
+
+    await page.printLabel()
+
+    const alert = await page.alert()
+    expect(alert.message).toBe(noDymoPrinter)
+    expect(alert.link).toBe(DYMO_SERVICE)
+    await alert.dismiss()
+    expect(printedLabels()).toEqual([])
   })
 
   // A serial number typed on the wrong article is wiped out: searched again,

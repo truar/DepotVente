@@ -29,7 +29,8 @@ import { disciplineItems } from '@/types/disciplines.ts'
 import { brandsItems } from '@/types/brands.ts'
 import { colors } from '@/types/colors.ts'
 import { useEditArticle } from '@/hooks/useEditArticle.ts'
-import { useDymo } from '@/hooks/useDymo.ts'
+import { alertNoDymoPrinter, useDymo } from '@/hooks/useDymo.ts'
+import { showErrorAlert } from '@/stores/errorAlertStore.ts'
 import {
   Select,
   SelectContent,
@@ -185,17 +186,24 @@ function ArticleEditForm(props: ArticleEditFormProps) {
     const valid = await trigger()
     if (!valid) return
     const field = getValues()
-    dymo.print({
-      color: field.color,
-      brand: field.brand,
-      size: field.size,
-      category: field.type,
-      code: field.articleCode,
-      price: `${field.price}`,
-      shortCode: field.shortArticleCode,
-      model: field.model ?? '',
-      serialNumber: field.serialNumber ?? '',
-    })
+    let printed: boolean
+    try {
+      printed = await dymo.print({
+        color: field.color,
+        brand: field.brand,
+        size: field.size,
+        category: field.type,
+        code: field.articleCode,
+        price: `${field.price}`,
+        shortCode: field.shortArticleCode,
+        model: field.model ?? '',
+        serialNumber: field.serialNumber ?? '',
+      })
+    } catch {
+      showErrorAlert("L'impression de l'étiquette a échoué.")
+      return
+    }
+    if (!printed) alertNoDymoPrinter()
   }, [dymo, getValues])
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

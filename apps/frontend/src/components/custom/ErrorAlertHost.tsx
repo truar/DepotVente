@@ -15,6 +15,7 @@ export function ErrorAlertHost() {
   const title = useErrorAlertStore((s) => s.title)
   const description = useErrorAlertStore((s) => s.description)
   const actionLabel = useErrorAlertStore((s) => s.actionLabel)
+  const link = useErrorAlertStore((s) => s.link)
   const dismiss = useErrorAlertStore((s) => s.dismiss)
 
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
@@ -77,6 +78,16 @@ export function ErrorAlertHost() {
         <AlertDialogHeader>
           <AlertDialogTitle>{title ?? 'Erreur'}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
+          {link && (
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-primary underline"
+            >
+              {link.label}
+            </a>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction onClick={() => dismiss()}>

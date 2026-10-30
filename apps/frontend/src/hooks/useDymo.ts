@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react'
 import type { Article } from '@/db.ts'
 import { normalizeSerialNumber, shortArticleCode } from '@/utils'
+import { showErrorAlert } from '@/stores/errorAlertStore.ts'
 
 export type ArticlePrintParam = {
   code: string
@@ -49,6 +50,37 @@ export function replacePlaceholders(
 
 const getPrinters = () => {
   return window.dymo.label.framework.getPrinters()
+}
+
+// Le service DYMO manqué au chargement de la page (certificat pas encore
+// accepté, service démarré après le navigateur) : le framework garde cet
+// échec et ne liste plus aucune imprimante, même une fois le service
+// joignable. checkEnvironment() synchrone le cherche à nouveau et oublie
+// l'échec s'il répond, sans recharger l'onglet. La version asynchrone ne
+// l'oublie pas (voir dymo-framework.test.ts).
+const firstPrinter = () => {
+  const printer = getPrinters().at(0)
+  if (printer) return printer
+  window.dymo.label.framework.checkEnvironment()
+  return getPrinters().at(0)
+}
+
+// Où accepter le certificat du service DYMO de ce poste.
+export const DYMO_SERVICE_URL =
+  'https://127.0.0.1:41951/DYMO/DLS/Printing/StatusConnected'
+
+export function alertNoDymoPrinter(consequence?: string) {
+  showErrorAlert(
+    "Aucune imprimante Dymo trouvée. Vérifier qu'elle est branchée et allumée. " +
+      "Si le certificat Dymo n'a pas encore été accepté sur ce poste : ouvrir " +
+      "le lien ci-dessous, accepter le certificat, puis relancer l'impression. " +
+      'Inutile de recharger la page.' +
+      (consequence ? ` ${consequence}` : ''),
+    {
+      title: 'Imprimante Dymo introuvable',
+      link: { href: DYMO_SERVICE_URL, label: 'Ouvrir le service Dymo' },
+    },
+  )
 }
 
 // DYMO Connect (Win10+) label format. Not used at runtime today — the v8
@@ -805,7 +837,7 @@ export function useDymo() {
     label.setObjectText('PRIX', param.price ? `${param.price} €` : '')
     label.setObjectText('N° Serie', safe(param.serialNumber))
 
-    const printer = getPrinters().at(0)
+    const printer = firstPrinter()
     if (!printer) return false
     label.print(printer.name)
     return true

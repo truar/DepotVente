@@ -209,6 +209,34 @@ export async function depositAddPage(user?: User) {
         within(row).getByRole('button', { name: "Restaurer l'article" }),
       )
     },
+    // The printer of a row sends its label to the Dymo a second after the
+    // click, so that a double click prints it once. Named by its hint:
+    // « Non imprimée », then « Étiquette imprimée — réimprimer ».
+    async printLabel(index: number) {
+      await u.click(
+        within(page.articleRow(index)).getByRole('button', {
+          name: /^(Non imprimée|Étiquette imprimée)/,
+        }),
+      )
+    },
+    isLabelPrinted(index: number) {
+      return (
+        within(page.articleRow(index)).queryByRole('button', {
+          name: 'Étiquette imprimée — réimprimer',
+        }) !== null
+      )
+    },
+    // The error box, with the link it offers if any.
+    async alert() {
+      const box = await screen.findByRole('alertdialog', {}, { timeout: 3_000 })
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        message: within(box).getByRole('paragraph').textContent.trim(),
+        link: within(box).queryByRole('link')?.getAttribute('href') ?? null,
+        dismiss: () => u.click(within(box).getByRole('button', { name: 'OK' })),
+      }
+    },
+    isAlertOpen: () => screen.queryByRole('alertdialog') !== null,
     articleCount(): number {
       return Number(
         screen.getByText(/Nombre d'articles/).textContent.replace(/\D/g, ''),

@@ -21,7 +21,7 @@ import { Combobox } from '@/components/Combobox.tsx'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { articleColumns } from '@/components/custom/articleColumns.tsx'
-import { articleLabel, useDymo } from '@/hooks/useDymo.ts'
+import { alertNoDymoPrinter, articleLabel, useDymo } from '@/hooks/useDymo.ts'
 import { showErrorAlert } from '@/stores/errorAlertStore'
 import { compareIdentificationLetters, normalizeArticleCode } from '@/utils'
 
@@ -312,7 +312,7 @@ function PrintLabelsButton({ table }: { table: Table<Article> }) {
     try {
       for (const article of ticked) {
         if (!(await dymo.print(articleLabel(article)))) {
-          showErrorAlert(`Aucune imprimante Dymo trouvée. ${stillTicked}`)
+          alertNoDymoPrinter(stillTicked)
           return
         }
         printed.push(article.id)

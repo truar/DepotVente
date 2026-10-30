@@ -19,10 +19,29 @@ export type PrintedLabel = {
 
 const labels: Array<PrintedLabel> = []
 
+// Where the volunteer accepts the certificate of the DYMO service, and what
+// a screen says when it finds no printer.
+export const DYMO_SERVICE =
+  'https://127.0.0.1:41951/DYMO/DLS/Printing/StatusConnected'
+export const noDymoPrinter =
+  "Aucune imprimante Dymo trouvée. Vérifier qu'elle est branchée et allumée. " +
+  "Si le certificat Dymo n'a pas encore été accepté sur ce poste : ouvrir le " +
+  "lien ci-dessous, accepter le certificat, puis relancer l'impression. " +
+  'Inutile de recharger la page.'
+
 // A label printer plugged in (or none: the DYMO service answers, but lists
 // no printer).
-export function givenLabelPrinter(options: { connected?: boolean } = {}) {
-  const { connected = true } = options
+//
+// `missedAtLoad`: the DYMO service was out of reach when the page loaded
+// (its certificate not yet accepted, or the service started after the
+// browser). Like the real framework (see dymo-framework.test.ts), this one
+// keeps that failure and lists no printer, even once the certificate is
+// accepted, until checkEnvironment() looks for the service again.
+export function givenLabelPrinter(
+  options: { connected?: boolean; missedAtLoad?: boolean } = {},
+) {
+  const { connected = true, missedAtLoad = false } = options
+  const service = { reachable: !missedAtLoad, found: !missedAtLoad }
   server.use(
     http.get('/article-label.label', () =>
       HttpResponse.text('<DieCutLabel Version="8.0"/>'),
@@ -40,13 +59,16 @@ export function givenLabelPrinter(options: { connected?: boolean } = {}) {
   window.dymo = {
     label: {
       framework: {
-        getPrinters: () => (connected ? [printer] : []),
-        checkEnvironment: () => ({
-          errorDetails: '',
-          isBrowserSupported: true,
-          isFrameworkInstalled: true,
-          isWebServicePresent: true,
-        }),
+        getPrinters: () => (connected && service.found ? [printer] : []),
+        checkEnvironment: () => {
+          if (service.reachable) service.found = true
+          return {
+            errorDetails: '',
+            isBrowserSupported: true,
+            isFrameworkInstalled: true,
+            isWebServicePresent: service.reachable,
+          }
+        },
         trace: 0,
         init: () => {},
         openLabelXml: () => {
@@ -71,6 +93,13 @@ export function givenLabelPrinter(options: { connected?: boolean } = {}) {
           }
         },
       },
+    },
+  }
+  return {
+    // The volunteer opens the DYMO service in another tab and accepts its
+    // certificate; the page itself is not reloaded.
+    acceptCertificate() {
+      service.reachable = true
     },
   }
 }

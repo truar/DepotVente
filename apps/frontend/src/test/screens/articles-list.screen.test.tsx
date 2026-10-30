@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
-import { givenLabelPrinter, printedLabels } from '@/test/labels.ts'
+import {
+  DYMO_SERVICE,
+  givenLabelPrinter,
+  noDymoPrinter,
+  printedLabels,
+} from '@/test/labels.ts'
 import { articlesListPage } from '@/test/pages/articles-list.page.ts'
 import { screen, signedInAs, waitFor } from '@/test/screen.tsx'
 
@@ -200,8 +205,9 @@ describe('Screen: the articles list', () => {
 
     const alert = await page.alert()
     expect(alert.message).toBe(
-      "Aucune imprimante Dymo trouvée. Les articles encore cochés n'ont pas été imprimés.",
+      `${noDymoPrinter} Les articles encore cochés n'ont pas été imprimés.`,
     )
+    expect(alert.link).toBe(DYMO_SERVICE)
     expect(printedLabels()).toEqual([])
     await alert.dismiss()
     expect(page.ticked()).toBe(2)
