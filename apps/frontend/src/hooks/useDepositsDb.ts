@@ -6,10 +6,19 @@ export function useDepositsDb() {
     return db.deposits.get(id)
   }
 
-  function count(workstation: Workstation) {
-    return db.deposits
+  // Le numéro de la prochaine fiche : le plus grand de la caisse + 1, et non
+  // son nombre de fiches + 1 qui, passé un trou dans les numéros, en
+  // redonnait un déjà pris. Une fiche supprimée garde le sien.
+  async function nextIndex(workstation: Workstation) {
+    const deposits = await db.deposits
       .where({ incrementStart: workstation.incrementStart })
-      .count()
+      .toArray()
+    return (
+      deposits.reduce(
+        (max, deposit) => Math.max(max, deposit.depositIndex),
+        workstation.incrementStart,
+      ) + 1
+    )
   }
 
   function findProfessionals() {
@@ -37,5 +46,5 @@ export function useDepositsDb() {
     await syncService.addToOutbox('deposits', 'update', id, data)
   }
 
-  return { get, insert, update, count, findProfessionals }
+  return { get, insert, update, nextIndex, findProfessionals }
 }

@@ -292,6 +292,50 @@ describe('Screen: register a walk-in deposit typed by hand', () => {
   })
 })
 
+// A deposit takes the number after the highest one of its cash register,
+// not the count of its deposits plus one: past a hole in the numbers, the
+// count gave a number already taken.
+describe('Screen: the number of the next deposit', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  it('follows the highest deposit of the cash register, past a hole', async () => {
+    await givenDeposit({ incrementStart: 1000, depositIndex: 1001 })
+    await givenDeposit({ incrementStart: 1000, depositIndex: 1003 })
+
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    // The count gave 1003, already taken.
+    expect(page.articleCodes()).toEqual(['1004 A'])
+  })
+
+  it('does not give back the number of a deleted deposit', async () => {
+    await givenDeposit({ incrementStart: 1000, depositIndex: 1001 })
+    await givenDeposit({
+      incrementStart: 1000,
+      depositIndex: 1002,
+      deletedAt: new Date(),
+    })
+
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    expect(page.articleCodes()).toEqual(['1003 A'])
+  })
+
+  it('ignores the deposits of the other cash registers', async () => {
+    await givenDeposit({ incrementStart: 3000, depositIndex: 3004 })
+
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    expect(page.articleCodes()).toEqual(['1001 A'])
+  })
+})
+
 // The cents of a price come after a comma, the French way, or after a
 // point: both read the same price.
 describe('Screen: a price with cents', () => {
@@ -725,22 +769,22 @@ describe('Screen: a pro typed by hand on cash register 1', () => {
     })
     await page.addArticle()
     await page.fillArticle(0, validArticle)
-    // incrementStart + fiches already on the register + 1, as on every
-    // register: fiche 8 after the six imported ones.
-    expect(page.articleCodes()).toEqual(['8 A'])
+    // The highest fiche of the register + 1, as on every register: fiche 7
+    // after the six imported ones.
+    expect(page.articleCodes()).toEqual(['7 A'])
     expect(page.contributionAmount()).toBe(0)
 
     await page.printSummary()
     const sheet = await lastPrintedText()
-    expect(sheet).toContain('Fiche N° 8')
+    expect(sheet).toContain('Fiche N° 7')
     expect(sheet).toContain('SPORTS ALPHA')
     expect(sheet).toContain('Cotisations : Pro')
     expect(sheet).not.toContain('Information :')
 
     await page.save()
-    await page.savedToast(8)
+    await page.savedToast(7)
 
-    const deposit = (await local.deposits()).find((d) => d.depositIndex === 8)
+    const deposit = (await local.deposits()).find((d) => d.depositIndex === 7)
     expect(deposit).toMatchObject({
       type: 'PRO',
       contributionStatus: 'PRO',
@@ -752,20 +796,20 @@ describe('Screen: a pro typed by hand on cash register 1', () => {
       (a) => a.depositId === deposit?.id,
     )
     expect(articles.map((a) => [a.code, a.status])).toEqual([
-      [`${YEAR} 8A`, 'RECEPTION_OK'],
+      [`${YEAR} 7A`, 'RECEPTION_OK'],
     ])
     // The other PCs get it as a pro: 15 % for the club, in the pros'
     // returns.
     const pushed = (await local.outbox()).find(
       (op) => op.collection === 'deposits',
     )
-    expect(pushed?.data).toMatchObject({ type: 'PRO', depositIndex: 8 })
+    expect(pushed?.data).toMatchObject({ type: 'PRO', depositIndex: 7 })
 
     // The form is ready for the next pro.
     expect(page.seller().lastName).toBe('')
     expect(page.status()).toBe('Pro')
     await page.addArticle()
-    expect(page.articleCodes()).toEqual(['9 A'])
+    expect(page.articleCodes()).toEqual(['8 A'])
   })
 })
 

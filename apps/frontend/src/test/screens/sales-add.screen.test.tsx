@@ -101,6 +101,47 @@ describe('Screen: sell two articles to a walk-in buyer', () => {
   })
 })
 
+// A sale takes the number after the highest one of its cash register, not
+// the count of its sales plus one: past a hole in the numbers, the count
+// gave a number already taken.
+describe('Screen: the number of the next sale', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+  })
+
+  it('follows the highest sale of the cash register, past a hole', async () => {
+    await givenSale({ incrementStart: 2000, saleIndex: 2001 })
+    await givenSale({ incrementStart: 2000, saleIndex: 2003 })
+
+    const page = await salesAddPage()
+
+    // The count gave 2003, already taken.
+    expect(page.saleIndex()).toBe(2004)
+  })
+
+  it('does not give back the number of a deleted sale', async () => {
+    await givenSale({ incrementStart: 2000, saleIndex: 2001 })
+    await givenSale({
+      incrementStart: 2000,
+      saleIndex: 2002,
+      deletedAt: new Date(),
+    })
+
+    const page = await salesAddPage()
+
+    expect(page.saleIndex()).toBe(2003)
+  })
+
+  it('ignores the sales of the other cash registers', async () => {
+    await givenSale({ incrementStart: 3000, saleIndex: 3007 })
+
+    const page = await salesAddPage()
+
+    expect(page.saleIndex()).toBe(2001)
+  })
+})
+
 // The sale being rung up is kept in the tab as it is typed: a reload used
 // to empty the cart. Saving, « Annuler » and « Retour au menu » drop it, as
 // before.

@@ -2,10 +2,19 @@ import { db, type Sale, type Workstation } from '@/db.ts'
 import { syncService } from '@/services/sync-service.ts'
 
 export function useSalesDb() {
-  function count(workstation: Workstation) {
-    return db.sales
+  // Le numéro de la prochaine vente : le plus grand de la caisse + 1, et non
+  // son nombre de ventes + 1 qui, passé un trou dans les numéros, en
+  // redonnait un déjà pris. Une vente supprimée garde le sien.
+  async function nextIndex(workstation: Workstation) {
+    const sales = await db.sales
       .where({ incrementStart: workstation.incrementStart })
-      .count()
+      .toArray()
+    return (
+      sales.reduce(
+        (max, sale) => Math.max(max, sale.saleIndex),
+        workstation.incrementStart,
+      ) + 1
+    )
   }
 
   async function insert(sale: Sale) {
@@ -26,5 +35,5 @@ export function useSalesDb() {
     await syncService.addToOutbox('sales', 'update', id, data)
   }
 
-  return { count, insert, update }
+  return { nextIndex, insert, update }
 }
