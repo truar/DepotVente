@@ -146,7 +146,8 @@ export type Contact = {
 
 // Lifecycle of a local write waiting to reach the server:
 //   pending  - not sent yet
-//   syncing  - request in flight
+//   syncing  - request in flight, or left so by a page closed or reloaded
+//              while it was; the queue sends it again either way
 //   failed   - the server or the network did not answer (5xx, timeout);
 //              retried automatically with backoff
 //   rejected - the server refused the write itself (4xx) or the retries ran

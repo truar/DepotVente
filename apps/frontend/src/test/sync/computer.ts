@@ -21,6 +21,7 @@ import type { syncService } from '@/services/sync-service.ts'
 import { db } from '@/db.ts'
 import { getDeviceId } from '@/services/client-identity.ts'
 import { YEAR } from '@/test/harness.ts'
+import { aLockManager } from '@/test/locks.ts'
 import { server } from '@/test/server.ts'
 import { generateArticleCode } from '@/utils'
 import { syncManager } from '@/sync-manager.ts'
@@ -593,11 +594,16 @@ export async function openAnotherTab() {
 
 // Closes the application: the worker is gone with its timers. Its service
 // instance stays in memory here, so it is disarmed (without a token it
-// pushes nothing, and it is never asked to poll again).
+// pushes nothing, and it is never asked to poll again). The browser releases
+// every lock its pages held, even one held by a request still on its way.
 export function shutDownComputers() {
   for (const service of running.splice(0)) service.setToken(null)
   Reflect.set(syncManager, 'worker', null)
   vi.unstubAllGlobals()
+  Object.defineProperty(navigator, 'locks', {
+    value: aLockManager(),
+    configurable: true,
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -640,6 +646,18 @@ export function nextSyncTimer(): boolean {
   if (next.at > Date.now()) vi.setSystemTime(next.at)
   next.run()
   return true
+}
+
+// Runs the sync's timers that are due, the clock staying where it is: what
+// happens now, a retry delay not yet over left waiting. Settles in between.
+export async function runDueSyncTimers(rounds = 20) {
+  for (let i = 0; i < rounds; i++) {
+    heldTimers.sort((a, b) => a.at - b.at)
+    if (heldTimers[0] && heldTimers[0].at <= Date.now()) {
+      heldTimers.shift()?.run()
+    }
+    await settle()
+  }
 }
 
 // Lets this computer finish what it is doing (IndexedDB, HTTP), without

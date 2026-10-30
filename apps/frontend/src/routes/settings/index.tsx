@@ -136,10 +136,11 @@ function RouteComponent() {
           </div>
           <p className="text-sm text-red-700 bg-red-50 p-3 rounded">
             Opérations pas encore acceptées par le serveur, dans leur ordre
-            d'envoi. Une opération « envoi en cours » depuis plusieurs minutes
-            est bloquée (page rechargée pendant l'envoi) : elle ne repartira
-            qu'avec « Réessayer ». Réessayez dans l'ordre de la liste, le
-            contact avant son dépôt, le dépôt avant ses articles.
+            d'envoi. Elles repartent d'elles-mêmes, y compris une opération
+            restée « envoi en cours » parce que la page a été rechargée pendant
+            l'envoi. « Réessayer » la renvoie sans attendre : réessayez alors
+            dans l'ordre de la liste, le contact avant son dépôt, le dépôt avant
+            ses articles.
           </p>
           {waitingOps.length === 0 ? (
             <p className="text-gray-600">Aucune opération en attente.</p>

@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import { liveQuery } from 'dexie'
-import type { EpochMismatch, OutboxOperation } from '@/db.ts'
+import type { EpochMismatch, OutboxOperation, OutboxStatus } from '@/db.ts'
 import { db } from '@/db.ts'
 import { clientHeaders } from '@/services/client-identity.ts'
 
@@ -75,6 +75,13 @@ async function withLockIfFree(
   )
 }
 
+// What the queue sends. « syncing » is in it: an operation whose page was
+// closed or reloaded while its request was on its way stays « syncing » for
+// good. The queue runs under OUTBOX_LOCK, so when it reads one, no other tab
+// is sending it: it is sent again. Sending twice is harmless, the server
+// takes a write it already has as done (see ReplicationService).
+const TO_SEND: Array<OutboxStatus> = ['pending', 'failed', 'syncing']
+
 export function compareOutboxOrder(a: OutboxOperation, b: OutboxOperation) {
   return a.timestamp - b.timestamp || (a.seq ?? 0) - (b.seq ?? 0)
 }
@@ -122,12 +129,7 @@ class SyncService {
     this.started = true
     // Use Dexie's liveQuery to react to outbox changes
     liveQuery(() =>
-      db.outbox
-        .where('status')
-        .equals('pending')
-        .or('status')
-        .equals('failed')
-        .sortBy('timestamp'),
+      db.outbox.where('status').anyOf(TO_SEND).sortBy('timestamp'),
     ).subscribe({
       next: (operations) => {
         if (operations.length > 0 && !this.isSyncing) {
@@ -561,7 +563,7 @@ class SyncService {
     }
 
     const pendingOps = (
-      await db.outbox.where('status').anyOf('pending', 'failed').toArray()
+      await db.outbox.where('status').anyOf(TO_SEND).toArray()
     ).sort(compareOutboxOrder)
 
     for (const op of pendingOps) {

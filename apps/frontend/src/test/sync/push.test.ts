@@ -429,4 +429,62 @@ describe('Sync: pushing local writes to the server', () => {
     const morning = await settingsPage()
     await waitFor(() => expect(morning.waitingCount()).toBe(0))
   })
+
+  // SYNC-25 — The page is reloaded (F5, « Mettre à jour », a crash) while
+  // the seller is on its way to the server, which never answers that
+  // request. The reopened page sends the seller again, before the deposit
+  // and the article the server refuses without it.
+  it('sends again a write whose page was reloaded while it was on its way', async () => {
+    const backend = givenServer()
+    refusesWhatHasNoParent(backend, { holdFirstSeller: true })
+    await bootComputer()
+    await registerADeposit()
+    await waitFor(() => expect(backend.pushes()).toHaveLength(1))
+
+    shutDownComputers()
+    await bootComputer()
+
+    await waitFor(() => expect(backend.pushes()).toHaveLength(4))
+    expect(backend.pushedRecords().map(([collection]) => collection)).toEqual([
+      'contacts',
+      'contacts',
+      'deposits',
+      'articles',
+    ])
+    const page = await settingsPage()
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
+    expect(page.noRefusedOperation()).toBe(true)
+  })
 })
+
+// As the server's foreign keys do: a deposit whose seller it does not have,
+// an article whose deposit it does not have, are refused. With
+// `holdFirstSeller` the first seller pushed never gets an answer.
+function refusesWhatHasNoParent(
+  backend: FakeServer,
+  { holdFirstSeller = false } = {},
+) {
+  const accepted = new Set<string>()
+  let holdSeller = holdFirstSeller
+  backend.answerPushes(async (push) => {
+    if (push.collection === 'contacts' && holdSeller) {
+      holdSeller = false
+      return new Promise<never>(() => {})
+    }
+    const parent =
+      push.collection === 'deposits'
+        ? push.data.sellerId
+        : push.collection === 'articles'
+          ? push.data.depositId
+          : null
+    if (typeof parent === 'string' && !accepted.has(parent)) {
+      return {
+        status: 409,
+        code: 'MISSING_REFERENCE',
+        message: 'Référence vers un enregistrement inconnu (clé étrangère).',
+      }
+    }
+    accepted.add(push.recordId)
+    return 'accepted' as const
+  })
+}
