@@ -64,6 +64,11 @@ export async function articleEditPage() {
       await u.clear(input)
       if (text) await u.type(input, text)
     },
+    async setColor(text: string) {
+      const input = screen.getByLabelText('Couleur')
+      await u.clear(input)
+      if (text) await u.type(input, text)
+    },
     // What the form shows for the article opened.
     price: () => screen.getByLabelText<HTMLInputElement>('Prix').value,
     description: () =>
@@ -71,6 +76,7 @@ export async function articleEditPage() {
         .value,
     serialNumber: () =>
       screen.getByLabelText<HTMLInputElement>('N° Série').value,
+    color: () => screen.getByLabelText<HTMLInputElement>('Couleur').value,
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

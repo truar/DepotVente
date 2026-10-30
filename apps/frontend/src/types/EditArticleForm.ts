@@ -13,7 +13,8 @@ export const EditArticleSchema = z
     brand: z.string().nonempty({ message: 'La marque est requise' }),
     type: z.string().nonempty({ message: 'Le type est requis' }),
     size: z.string().nonempty({ message: 'La taille est requise' }),
-    color: z.string().nonempty({ message: 'La couleur est requise' }),
+    // Facultative ici : un article corrigé peut rester sans couleur.
+    color: z.string(),
     model: z.string().optional(),
     serialNumber: z.string().optional(),
     articleCode: z.string(),

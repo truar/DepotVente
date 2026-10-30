@@ -139,4 +139,23 @@ describe('Screen: correcting an article', () => {
     const [update] = await local.outbox()
     expect(update.data).toMatchObject({ serialNumber: null })
   })
+
+  // The color is not required here: a volunteer who cannot tell it, or
+  // finds it wrong, leaves it empty and the correction is still saved.
+  it('saves the article with no color when the field is emptied', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    await page.setColor('')
+    await page.validate()
+
+    await page.lastToast(`Article ${skis.code} mis à jour`)
+    const again = await articleEditPage()
+    await again.search(skis.code, '12 A')
+    expect(again.color()).toBe('')
+    const [update] = await local.outbox()
+    expect(update.data).toMatchObject({ color: '' })
+  })
 })
