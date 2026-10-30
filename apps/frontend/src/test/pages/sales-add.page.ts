@@ -96,6 +96,14 @@ export async function salesAddPage() {
       }
     },
     isQuestionOpen: () => screen.queryByRole('alertdialog') !== null,
+    // Both ask first (see question()).
+    async cancel() {
+      await u.click(screen.getByRole('button', { name: 'Annuler' }))
+    },
+    async backToMenu() {
+      await u.click(screen.getByRole('link', { name: 'Retour au menu' }))
+    },
+    hasText: (text: string) => screen.queryByText(text) !== null,
     async fillBuyer(buyer: {
       lastName?: string
       firstName?: string

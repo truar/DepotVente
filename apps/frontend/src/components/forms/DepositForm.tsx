@@ -71,6 +71,7 @@ import { alertNoDymoPrinter, useDymo } from '@/hooks/useDymo.ts'
 import { showErrorAlert } from '@/stores/errorAlertStore.ts'
 import { useDebouncedCallback } from 'use-debounce'
 import { usePrintDepositFromForm } from '@/hooks/usePrintDepositFromForm.tsx'
+import { useFormDraft } from '@/hooks/useFormDraft.ts'
 
 type DepositFormProps = {
   depositIndex: number
@@ -79,6 +80,10 @@ type DepositFormProps = {
   mutation: { mutate: (param: DepositFormType['deposit']) => Promise<void> }
   onReset?: () => void
   onSuccess?: () => void
+  // Création seulement : la fiche en cours est gardée dans l'onglet sous
+  // cette clé et survit à un rechargement (voir useFormDraft).
+  draftKey?: string
+  onDraftRestored?: (deposit: DepositFormType['deposit']) => void
 }
 export function DepositForm(props: DepositFormProps) {
   const {
@@ -88,6 +93,8 @@ export function DepositForm(props: DepositFormProps) {
     mutation,
     onReset,
     onSuccess,
+    draftKey,
+    onDraftRestored,
   } = props
   const methods = useForm<DepositFormType>({
     resolver: typedZodResolver(
@@ -115,6 +122,21 @@ export function DepositForm(props: DepositFormProps) {
     },
   })
   const { handleSubmit, setValue, reset, setError } = methods
+
+  useFormDraft(methods, draftKey, {
+    belongsHere: (draft) =>
+      draft.deposit.depotIndex === depositIndex &&
+      !draft.deposit.id &&
+      Array.isArray(draft.deposit.articles),
+    isBlank: ({ deposit }) =>
+      !deposit.lastName &&
+      !deposit.firstName &&
+      !deposit.phoneNumber &&
+      !deposit.city &&
+      !deposit.predepositId &&
+      deposit.articles.length === 0,
+    onRestore: (draft) => onDraftRestored?.(draft.deposit),
+  })
 
   useEffect(() => {
     setValue('deposit.depotIndex', depositIndex)
@@ -412,6 +434,10 @@ const ArticleFormFooter = memo(function ArticleFormFooter(
                   name={controllerField.name}
                   value={controllerField.value ?? ''}
                   onValueChange={(value) => {
+                    // Radix renvoie '' quand le statut est posé par le code
+                    // après le montage (fiche restaurée après un
+                    // rechargement) : aucun statut ne vaut '', on l'ignore.
+                    if (!value) return
                     controllerField.onChange(value)
                     setValue(
                       'deposit.contributionAmount',

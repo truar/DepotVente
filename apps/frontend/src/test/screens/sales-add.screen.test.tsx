@@ -95,6 +95,87 @@ describe('Screen: sell two articles to a walk-in buyer', () => {
   })
 })
 
+// The sale being rung up is kept in the tab as it is typed: a reload used
+// to empty the cart. Saving, « Annuler » and « Retour au menu » drop it, as
+// before.
+describe('Screen: the sale being rung up survives a reload', () => {
+  const DRAFT_RESTORED = 'Saisie en cours restaurée'
+  let codes: Array<string>
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [
+      { price: 120 },
+      { price: 80, category: 'Chaussures', brand: 'Nordica' },
+    ])
+    codes = articles.map((a) => a.code)
+  })
+
+  async function aSaleRungUp() {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.scan(codes[1])
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 200 })
+    return page
+  }
+
+  function expectEmpty(page: Awaited<ReturnType<typeof salesAddPage>>) {
+    expect(page.scannedCodes()).toEqual([])
+    expect(page.buyer().lastName).toBe('')
+    expect(page.hasText(DRAFT_RESTORED)).toBe(false)
+  }
+
+  it('starts the next sale empty after a reload, once the sale is saved', async () => {
+    const page = await aSaleRungUp()
+    await page.save()
+    await page.savedToast(2001)
+
+    const reloaded = await salesAddPage()
+
+    expectEmpty(reloaded)
+    expect(reloaded.saleIndex()).toBe(2002)
+  })
+
+  it('starts empty after a reload, once « Annuler » is confirmed', async () => {
+    const page = await aSaleRungUp()
+    await page.cancel()
+    await (await page.question()).confirm()
+
+    expectEmpty(await salesAddPage())
+  })
+
+  it('starts empty after a reload, once « Retour au menu » is confirmed', async () => {
+    const page = await aSaleRungUp()
+    await page.backToMenu()
+    await (await page.question()).confirm()
+    await waitFor(() => expect(page.pathname()).toBe('/sales'))
+
+    expectEmpty(await salesAddPage())
+  })
+
+  it('keeps the scanned articles, the buyer and the payment across a reload', async () => {
+    await aSaleRungUp()
+
+    const reloaded = await salesAddPage()
+
+    await waitFor(() => expect(reloaded.hasText(DRAFT_RESTORED)).toBe(true))
+    expect(reloaded.scannedCodes()).toEqual([`${YEAR} 12A`, `${YEAR} 12B`])
+    expect(reloaded.buyer()).toMatchObject({
+      lastName: 'Petit',
+      firstName: 'Anna',
+      phoneNumber: '0633333333',
+    })
+    expect(reloaded.totalPayment()).toBe(200)
+    expect(reloaded.saleIndex()).toBe(2001)
+
+    await reloaded.save()
+    await reloaded.savedToast(2001)
+    expect(await local.sales()).toHaveLength(1)
+  })
+})
+
 // The four payment modes must add up to the total, to the euro.
 describe('Screen: the payment must cover the total', () => {
   let code: string

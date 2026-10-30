@@ -28,6 +28,10 @@ beforeEach(async () => {
   })
 })
 
+// The tab's sessionStorage, where a screen keeps what is being typed across
+// a reload: one story's draft must not show up in the next one.
+beforeEach(() => sessionStorage.clear())
+
 // The browser's Web Locks, shared by the tabs of this computer (see
 // locks.ts). jsdom has none; a fresh set for every story.
 beforeEach(() => {

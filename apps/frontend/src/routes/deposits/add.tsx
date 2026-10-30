@@ -14,6 +14,10 @@ import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { db } from '@/db.ts'
 import { Combobox } from '@/components/Combobox.tsx'
 import { loadDepositFormFromPredeposit } from '@/services/deposit-from-predeposit.ts'
+import { clearFormDraft } from '@/hooks/useFormDraft.ts'
+
+// La fiche en cours, gardée dans l'onglet (voir useFormDraft).
+const DRAFT_KEY = 'draft:/deposits/add'
 
 export const Route = createFileRoute('/deposits/add')({
   beforeLoad: requireAuthAndWorkstation,
@@ -66,7 +70,10 @@ export function RouteComponent() {
         onOpenChange={setBackOpen}
         title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les données non enregistrées seront perdues."
-        onConfirm={() => navigate({ to: '..' })}
+        onConfirm={() => {
+          clearFormDraft(DRAFT_KEY)
+          void navigate({ to: '..' })
+        }}
       />
     </>
   )
@@ -132,6 +139,15 @@ function DepositAddComponent(props: DepositAddComponentProps) {
         onReset={() => {
           setFormData(undefined)
           setLoadedPredepositId(null)
+        }}
+        draftKey={DRAFT_KEY}
+        // Une fiche de pré-dépôt restaurée reste affichée dans la liste, et
+        // en choisir une autre demande confirmation, comme avant le
+        // rechargement.
+        onDraftRestored={(deposit) => {
+          if (!deposit.predepositId) return
+          setFormData(deposit)
+          setLoadedPredepositId(deposit.predepositId)
         }}
       />
       <ConfirmationDialog

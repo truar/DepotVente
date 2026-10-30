@@ -456,6 +456,110 @@ describe("Screen: printing an article's label", () => {
   })
 })
 
+// The deposit being typed is kept in the tab as it is typed: reloading the
+// page, to find the Dymo again for instance, used to empty the form. Saving,
+// « Annuler » and « Retour au menu » drop it, as before.
+describe('Screen: the deposit being typed survives a reload', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  async function aDepositTyped() {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    await page.chooseStatus('Payé')
+    return page
+  }
+
+  function expectEmpty(page: Awaited<ReturnType<typeof depositAddPage>>) {
+    expect(page.seller().lastName).toBe('')
+    expect(page.articleCodes()).toEqual([])
+    expect(page.hasText(DRAFT_RESTORED)).toBe(false)
+  }
+
+  it('starts the next deposit empty after a reload, once the deposit is saved', async () => {
+    const page = await aDepositTyped()
+    await page.printSummary()
+    await page.save()
+    await page.savedToast(1001)
+
+    expectEmpty(await depositAddPage())
+  })
+
+  it('starts empty after a reload, once « Annuler » is confirmed', async () => {
+    const page = await aDepositTyped()
+    await page.cancel()
+    await (await page.dialog()).confirm()
+
+    expectEmpty(await depositAddPage())
+  })
+
+  it('starts empty after a reload, once « Retour au menu » is confirmed', async () => {
+    const page = await aDepositTyped()
+    await page.backToMenu()
+    await (await page.dialog()).confirm()
+    await waitFor(() => expect(page.pathname()).toBe('/deposits'))
+
+    expectEmpty(await depositAddPage())
+  })
+
+  it('keeps the deposit being typed across a reload, its printed label and printed sheet included', async () => {
+    givenLabelPrinter()
+    const page = await aDepositTyped()
+    await page.printLabel(0)
+    await waitFor(() => expect(page.isLabelPrinted(0)).toBe(true))
+    await page.printSummary()
+
+    const reloaded = await depositAddPage()
+
+    await waitFor(() => expect(reloaded.hasText(DRAFT_RESTORED)).toBe(true))
+    expect(reloaded.seller()).toMatchObject({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    expect(reloaded.articleCodes()).toEqual(['1001 A'])
+    expect(reloaded.isLabelPrinted(0)).toBe(true)
+    expect(reloaded.status()).toBe('Payé')
+
+    // The sheet was printed before the reload: no need to print it again.
+    await reloaded.save()
+    await reloaded.savedToast(1001)
+    expect(await local.deposits()).toHaveLength(1)
+  })
+
+  it('keeps the predeposit loaded across a reload', async () => {
+    await givenPredeposit({}, [{}, {}])
+    const page = await depositAddPage()
+    await page.loadPredeposit('Martin Lucie')
+
+    const reloaded = await depositAddPage()
+
+    await waitFor(() => expect(reloaded.hasText(DRAFT_RESTORED)).toBe(true))
+    expect(reloaded.selectedPredeposit()).toBe('Martin Lucie')
+    expect(reloaded.seller().lastName).toBe('Martin')
+    expect(reloaded.articleCodes()).toEqual(['1001 A', '1001 B'])
+  })
+
+  // The article codes carry the deposit number: a deposit typed for
+  // another cash register is not brought back on this one.
+  it('drops the deposit typed for another cash register', async () => {
+    await aDepositTyped()
+    await givenWorkstation(3000)
+
+    const reloaded = await depositAddPage()
+
+    expectEmpty(reloaded)
+  })
+})
+
 // The contribution is 2 € per started block of five articles, and follows
 // the count as rows are removed or brought back. Deleted rows do not
 // count.
@@ -562,6 +666,8 @@ describe('Screen: the contribution follows the number of articles', () => {
     })
   })
 })
+
+const DRAFT_RESTORED = 'Saisie en cours restaurée'
 
 const validArticle = {
   category: 'Skis',

@@ -67,6 +67,7 @@ import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
+import { clearFormDraft, useFormDraft } from '@/hooks/useFormDraft.ts'
 
 export const Route = createFileRoute('/sales/add')({
   beforeLoad: requireAuthAndWorkstation,
@@ -82,6 +83,9 @@ function toNumber(value: unknown) {
   const n = parseAmount(value)
   return Number.isNaN(n) ? 0 : n
 }
+
+// La vente en cours, gardée dans l'onglet (voir useFormDraft).
+const DRAFT_KEY = 'draft:/sales/add'
 
 const ArticleCodeFocusContext =
   createContext<RefObject<HTMLInputElement | null> | null>(null)
@@ -121,7 +125,10 @@ function RouteComponent() {
         onOpenChange={setBackOpen}
         title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les données non enregistrées seront perdues."
-        onConfirm={() => navigate({ to: '..' })}
+        onConfirm={() => {
+          clearFormDraft(DRAFT_KEY)
+          void navigate({ to: '..' })
+        }}
       />
     </>
   )
@@ -158,6 +165,22 @@ function SalesForm(props: SalesFormProps) {
   useEffect(() => {
     setValue('saleIndex', saleIndex)
   }, [saleIndex])
+
+  useFormDraft(methods, DRAFT_KEY, {
+    belongsHere: (draft) =>
+      draft.saleIndex === saleIndex && Array.isArray(draft.articles),
+    isBlank: ({ buyer, articles, ...payments }) =>
+      !buyer.contactId &&
+      !buyer.lastName &&
+      !buyer.firstName &&
+      !buyer.phoneNumber &&
+      !buyer.city &&
+      articles.length === 0 &&
+      !toNumber(payments.cashAmount) &&
+      !toNumber(payments.cardAmount) &&
+      !toNumber(payments.checkAmount) &&
+      !toNumber(payments.deferredAmount),
+  })
 
   const checkPaymentTotal = (data: SaleFormType) => {
     // Comparaison en centimes entiers : exacte, sans erreur d'arrondi.
