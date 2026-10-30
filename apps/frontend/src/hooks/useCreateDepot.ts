@@ -1,6 +1,6 @@
 import { db } from '@/db.ts'
 import { v4 } from 'uuid'
-import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { depositTypeOf, useWorkstation } from '@/hooks/useWorkstation.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { useContactsDb } from './useContactsDb.ts'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
@@ -35,7 +35,7 @@ export function useCreateDepot() {
 
         const depositId = await depotDb.insert({
           id: v4(),
-          type: 'PARTICULIER',
+          type: depositTypeOf(workstation),
           sellerId: contactId,
           contributionStatus: data.contributionStatus!,
           contributionAmount: data.contributionAmount,

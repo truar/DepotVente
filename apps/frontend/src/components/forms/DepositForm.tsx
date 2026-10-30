@@ -88,7 +88,10 @@ export function DepositForm(props: DepositFormProps) {
         city: formData?.city ?? '',
         predepositId: formData?.predepositId,
         sellerId: formData?.sellerId,
-        contributionStatus: formData?.contributionStatus ?? (null as any),
+        // Un pro ne paie pas de cotisation : « Pro » est choisi d'office.
+        contributionStatus:
+          formData?.contributionStatus ??
+          (depositType === 'PRO' ? 'PRO' : (null as any)),
         contributionAmount: formData?.contributionAmount ?? 0,
         articles: formData?.articles ?? [],
       },

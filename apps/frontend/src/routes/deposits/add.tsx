@@ -2,10 +2,11 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback, useState } from 'react'
 import type { DepositFormType } from '@/types/CreateDepositForm.ts'
+import type { Deposit } from '@/db.ts'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { useCreateDepot } from '@/hooks/useCreateDepot.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
-import { useWorkstation } from '@/hooks/useWorkstation.ts'
+import { depositTypeOf, useWorkstation } from '@/hooks/useWorkstation.ts'
 import PublicLayout from '@/components/PublicLayout'
 import { Page } from '@/components/Page.tsx'
 import { DepositForm } from '@/components/forms/DepositForm.tsx'
@@ -32,7 +33,11 @@ export function RouteComponent() {
     () => depotDb.count(workstation),
     [workstation],
   )
-  if (currentDepotCount === undefined) return null
+  // La caisse vaut 0 tant qu'elle n'est pas lue (la route en exige une) :
+  // le formulaire attend de savoir si c'est celle des pros, car il fixe à
+  // son montage ses champs obligatoires et la cotisation choisie d'office.
+  if (currentDepotCount === undefined || !workstation.incrementStart)
+    return null
   const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
 
   return (
@@ -51,7 +56,10 @@ export function RouteComponent() {
         }
         title="Enregistrer des articles"
       >
-        <DepositAddComponent depositIndex={depositCurrentIndex} />
+        <DepositAddComponent
+          depositIndex={depositCurrentIndex}
+          depositType={depositTypeOf(workstation)}
+        />
       </Page>
       <ConfirmationDialog
         open={backOpen}
@@ -66,9 +74,10 @@ export function RouteComponent() {
 
 type DepositAddComponentProps = {
   depositIndex: number
+  depositType: Deposit['type']
 }
 function DepositAddComponent(props: DepositAddComponentProps) {
-  const { depositIndex } = props
+  const { depositIndex, depositType } = props
   const createDepotMutation = useCreateDepot()
   const [formData, setFormData] = useState<
     DepositFormType['deposit'] | undefined
@@ -117,6 +126,7 @@ function DepositAddComponent(props: DepositAddComponentProps) {
       />
       <DepositForm
         depositIndex={depositIndex}
+        depositType={depositType}
         formData={formData}
         mutation={createDepotMutation}
         onReset={() => {

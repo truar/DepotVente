@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   YEAR,
+  givenDeposit,
   givenPredeposit,
   givenWorkstation,
   local,
@@ -197,6 +198,8 @@ describe('Screen: register a walk-in deposit typed by hand', () => {
 
   it('numbers the articles, computes the contribution, saves, and moves on to the next deposit number', async () => {
     const page = await depositAddPage()
+    // Nothing chosen: the volunteer asks whether the seller pays now.
+    expect(page.status()).toBe('Statut')
 
     await page.fillSeller({
       lastName: 'Bernard',
@@ -249,6 +252,7 @@ describe('Screen: register a walk-in deposit typed by hand', () => {
     })
     expect(deposit).toMatchObject({
       sellerId: contact.id,
+      type: 'PARTICULIER',
       depositIndex: 1001,
       contributionStatus: 'PAYE',
       contributionAmount: 2,
@@ -466,6 +470,82 @@ const validArticle = {
   color: 'Rouge',
   price: '120',
 }
+
+// Cash register 1 is the pros' one, as in the former software: the pros'
+// imported fiches are on it, and a pro who sent no export is typed there
+// like a walk-in seller, and saved as a pro.
+describe('Screen: a pro typed by hand on cash register 1', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1)
+    for (let depositIndex = 1; depositIndex <= 6; depositIndex++) {
+      await givenDeposit({
+        type: 'PRO',
+        contributionStatus: 'PRO',
+        contributionAmount: 0,
+        depositIndex,
+        incrementStart: 1,
+        dropWorkstationId: 1,
+      })
+    }
+  })
+
+  it('saves a PRO deposit with "Pro" already chosen, needing neither first name nor phone', async () => {
+    const page = await depositAddPage()
+    expect(page.status()).toBe('Pro')
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.fillSeller({
+      lastName: 'Sports Alpha',
+      firstName: '',
+      phoneNumber: '',
+      city: 'Annecy',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    // incrementStart + fiches already on the register + 1, as on every
+    // register: fiche 8 after the six imported ones.
+    expect(page.articleCodes()).toEqual(['8 A'])
+    expect(page.contributionAmount()).toBe(0)
+
+    await page.printSummary()
+    const sheet = await lastPrintedText()
+    expect(sheet).toContain('Fiche N° 8')
+    expect(sheet).toContain('SPORTS ALPHA')
+    expect(sheet).toContain('Cotisations : Pro')
+    expect(sheet).not.toContain('Information :')
+
+    await page.save()
+    await page.savedToast(8)
+
+    const deposit = (await local.deposits()).find((d) => d.depositIndex === 8)
+    expect(deposit).toMatchObject({
+      type: 'PRO',
+      contributionStatus: 'PRO',
+      contributionAmount: 0,
+      incrementStart: 1,
+      dropWorkstationId: 1,
+    })
+    const articles = (await local.articles()).filter(
+      (a) => a.depositId === deposit?.id,
+    )
+    expect(articles.map((a) => [a.code, a.status])).toEqual([
+      [`${YEAR} 8A`, 'RECEPTION_OK'],
+    ])
+    // The other PCs get it as a pro: 15 % for the club, in the pros'
+    // returns.
+    const pushed = (await local.outbox()).find(
+      (op) => op.collection === 'deposits',
+    )
+    expect(pushed?.data).toMatchObject({ type: 'PRO', depositIndex: 8 })
+
+    // The form is ready for the next pro.
+    expect(page.seller().lastName).toBe('')
+    expect(page.status()).toBe('Pro')
+    await page.addArticle()
+    expect(page.articleCodes()).toEqual(['9 A'])
+  })
+})
 
 describe('Screen: required fields block the save', () => {
   beforeEach(async () => {
