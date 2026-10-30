@@ -124,7 +124,8 @@ export type Article = {
   category: string
   isSold: boolean
   isDeleted?: boolean
-  // Introuvable : la ligne le dit, et il sort du nombre d'articles.
+  // Introuvable : la ligne le dit, barrée comme une supprimée, et il sort
+  // du nombre d'articles.
   isAbsent?: boolean
 }
 
@@ -371,10 +372,9 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             </View>
 
             {articles.map((article, index) => {
-              const cellStyle = article.isDeleted
-                ? styles.deletedCell
-                : undefined
-              const rowStyle = article.isDeleted
+              const struckOff = article.isDeleted || article.isAbsent
+              const cellStyle = struckOff ? styles.deletedCell : undefined
+              const rowStyle = struckOff
                 ? [styles.tableRow, styles.tableRowDeleted]
                 : styles.tableRow
               return (
