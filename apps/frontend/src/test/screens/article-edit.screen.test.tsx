@@ -200,11 +200,15 @@ describe('Screen: correcting an article', () => {
     const [update] = await local.outbox()
     expect(update.data).toMatchObject({ status: 'ABSENT' })
 
+    // The amount is summed on its own, after the count, and reads
+    // « 0,00 € » until then.
     const listing = await depositsListingPage()
     await listing.waitForDeposits(1)
-    expect(listing.deposit(12)).toMatchObject({
-      articleCount: 1,
-      amount: '80,00 €',
-    })
+    await waitFor(() =>
+      expect(listing.deposit(12)).toMatchObject({
+        articleCount: 1,
+        amount: '80,00 €',
+      }),
+    )
   })
 })
