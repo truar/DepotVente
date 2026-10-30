@@ -354,6 +354,28 @@ describe('Screen: the deposit sheet must be printed before saving', () => {
 
     expect(await local.deposits()).toHaveLength(1)
   })
+
+  // Once printed, the red line goes: left there, it reads as if the form
+  // were still blocked.
+  it('clears the request to print as soon as the summary is printed', async () => {
+    const page = await depositAddPage()
+    await page.fillSeller({
+      lastName: 'Bernard',
+      firstName: 'Paul',
+      phoneNumber: '0622222222',
+    })
+    await page.addArticle()
+    await page.fillArticle(0, validArticle)
+    await page.chooseStatus('Payé')
+    await page.save()
+    expect(page.errors()).toEqual([
+      "Merci d'imprimer la fiche dépôt avant de valider",
+    ])
+
+    await page.printSummary()
+
+    await waitFor(() => expect(page.errors()).toEqual([]))
+  })
 })
 
 // The contribution is 2 € per started block of five articles, and follows

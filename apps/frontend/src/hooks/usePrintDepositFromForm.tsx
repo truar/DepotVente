@@ -9,7 +9,8 @@ import { printPdf } from '@/pdf/print.tsx'
 export function usePrintDepositFromForm(
   depositType: 'PARTICULIER' | 'PRO' = 'PARTICULIER',
 ) {
-  const { getValues, trigger, setValue } = useFormContext<DepositFormType>()
+  const { getValues, trigger, setValue, clearErrors } =
+    useFormContext<DepositFormType>()
   return useCallback(async () => {
     const valid = await trigger('deposit')
     if (!valid) return
@@ -48,5 +49,7 @@ export function usePrintDepositFromForm(
     })
     await printPdf(<DepositPdf data={data} copy={2} />)
     setValue('isSummaryPrinted', true)
-  }, [getValues, trigger, setValue, depositType])
+    // « Merci d'imprimer… » ne s'efface sinon qu'au prochain « Valider ».
+    clearErrors('root.summary')
+  }, [getValues, trigger, setValue, clearErrors, depositType])
 }
