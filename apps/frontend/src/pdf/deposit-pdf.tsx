@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
   },
   tableCol: {
-    width: '11%',
+    width: '10%',
   },
   tableColNarrow: {
-    width: '9.5%',
+    width: '8.5%',
   },
   tableColPrice: {
     textAlign: 'right',
@@ -93,6 +93,9 @@ const styles = StyleSheet.create({
   },
   tableColDesc: {
     width: '25%',
+  },
+  tableColStatus: {
+    width: '6%',
   },
   headerCell: {
     fontStyle: 'italic',
@@ -130,6 +133,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     justifyContent: 'space-between',
   },
+  // Sous la colonne des prix, pas sous la dernière colonne (vide).
+  subtotalAmount: {
+    marginRight: '6%',
+  },
 })
 
 export type Article = {
@@ -143,6 +150,9 @@ export type Article = {
   category: string
   serialNumber?: string
   isDeleted?: boolean
+  // Introuvable : barré comme un supprimé, la dernière colonne le dit, et
+  // il sort du nombre d'articles.
+  isAbsent?: boolean
 }
 
 export type DepositPdfProps = {
@@ -323,7 +333,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
             <View style={styles.contactLine}>
               <Text style={styles.contactLineHeader}>Nb articles :</Text>
               <Text style={styles.articleCount}>
-                {articles.filter((a) => !a.isDeleted).length}
+                {articles.filter((a) => !a.isDeleted && !a.isAbsent).length}
               </Text>
             </View>
             <View style={styles.contactLine}>
@@ -387,13 +397,15 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
               <View style={styles.tableColPrice}>
                 <Text style={styles.headerCell}>Prix</Text>
               </View>
+              <View style={styles.tableColStatus}>
+                <Text style={styles.headerCell}></Text>
+              </View>
             </View>
 
             {articles.map((article, index) => {
-              const cellStyle = article.isDeleted
-                ? styles.deletedCell
-                : undefined
-              const rowStyle = article.isDeleted
+              const struckOff = article.isDeleted || article.isAbsent
+              const cellStyle = struckOff ? styles.deletedCell : undefined
+              const rowStyle = struckOff
                 ? [styles.tableRow, styles.tableRowDeleted]
                 : styles.tableRow
               const isLastOfCategory =
@@ -438,6 +450,11 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
                         />
                       </Text>
                     </View>
+                    <View style={styles.tableColStatus}>
+                      <Text style={cellStyle}>
+                        {article.isAbsent && 'Absent'}
+                      </Text>
+                    </View>
                   </View>
                   {isLastOfCategory && (
                     <CategorySubtotalRow
@@ -479,7 +496,7 @@ export const DepositsPdf = (props: DepositsPdfProps) => {
 function CategorySubtotalRow(props: { category: string; articles: Array<Article> }) {
   const { category, articles } = props
   const inCategory = articles.filter(
-    (a) => a.category === category && !a.isDeleted,
+    (a) => a.category === category && !a.isDeleted && !a.isAbsent,
   )
   const total = inCategory.reduce((sum, a) => sum + a.price, 0)
   return (
@@ -488,7 +505,7 @@ function CategorySubtotalRow(props: { category: string; articles: Array<Article>
         Sous-total {category} : {inCategory.length} article
         {inCategory.length > 1 ? 's' : ''}
       </Text>
-      <Text>
+      <Text style={styles.subtotalAmount}>
         <FormattedNumber
           value={total}
           style="currency"

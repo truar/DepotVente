@@ -5,8 +5,10 @@
 // Actions do things; readers return what the volunteer sees, and the story
 // does the expecting. The article rows share their markup with the deposit
 // form of /deposits/add (see deposit-add.page.ts).
+import { expect } from 'vitest'
 import { euros, plain } from '@/test/amounts.ts'
-import { openScreen, screen, within } from '@/test/screen.tsx'
+import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
+import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 export async function depositEditPage(depositId: string) {
   const { user: u, router } = await openScreen(`/deposits/${depositId}/edit`)
@@ -107,6 +109,15 @@ export async function depositEditPage(depositId: string) {
         await u.clear(price)
         await u.type(price, article.price)
       }
+    },
+    // « Imprimer » prints the deposit sheet again; its text, once printed.
+    async printSummary(): Promise<string> {
+      const before = printedDocuments()
+      await u.click(screen.getByRole('button', { name: 'Imprimer' }))
+      await waitFor(() => expect(printedDocuments()).toBe(before + 1), {
+        timeout: 15_000,
+      })
+      return lastPrintedText()
     },
     // On this screen every article is already saved: the bin strikes it
     // through instead of taking the line away.

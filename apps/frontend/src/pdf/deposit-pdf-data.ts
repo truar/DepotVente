@@ -12,6 +12,7 @@ export type DepositPdfArticleSource = {
   color: string
   serialNumber?: string | null
   isDeleted: boolean
+  isAbsent: boolean
 }
 
 export type DepositPdfDataSource = {
@@ -48,6 +49,7 @@ export function toDepositPdfData(
       color: a.color,
       serialNumber: a.serialNumber ?? '',
       isDeleted: a.isDeleted,
+      isAbsent: a.isAbsent,
     })),
   }
 }

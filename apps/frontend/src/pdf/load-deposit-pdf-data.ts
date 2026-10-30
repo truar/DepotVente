@@ -40,6 +40,7 @@ export async function loadDepositPdfData(
       price: a.price,
       color: a.color,
       isDeleted: a.status === 'DELETED',
+      isAbsent: a.status === 'ABSENT',
     })),
   })
 }

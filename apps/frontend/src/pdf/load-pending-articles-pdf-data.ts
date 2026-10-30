@@ -43,6 +43,7 @@ export async function loadPendingArticlesPdfData(
       color: a.color,
       serialNumber: a.serialNumber,
       isDeleted: a.status === 'DELETED',
+      isAbsent: a.status === 'ABSENT',
     })),
   })
 }

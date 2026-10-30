@@ -157,6 +157,23 @@ describe('Screen: correct a registered deposit', () => {
     expect(saved?.status).toBe('ABSENT')
   })
 
+  // Printed again from this screen, the sheet strikes the absent article
+  // off like the deleted one, counts neither, and says which is absent.
+  it('prints the sheet with the absent article marked, out of the count', async () => {
+    const { deposit } = await givenDeposit({}, [
+      { price: 120 },
+      { price: 30, status: 'ABSENT' },
+      { price: 20, status: 'DELETED' },
+    ])
+    const page = await depositEditPage(deposit.id)
+
+    const sheet = await page.printSummary()
+
+    expect(sheet).toContain('Nb articles : 1')
+    expect(sheet).toMatch(/30,00 € Absent/)
+    expect(sheet).not.toMatch(/20,00 € Absent/)
+  })
+
   // A professional's articles stay pending until they are scanned
   // in at the reception desk. Correcting the fiche must not receive them.
   it('leaves untouched articles of a professional in their status', async () => {

@@ -2,6 +2,7 @@
 // des dépôts"): where a volunteer looks back at the deposits registered so
 // far, their seller, how many articles they hold and what they owe.
 import { expect } from 'vitest'
+import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 // Cells of a deposit row, in column order (the deposit id column is
@@ -56,6 +57,17 @@ export async function depositsListingPage() {
         contributionAmount: cells[6],
         amount: cells[7],
       }
+    },
+    // The eye at the end of the row reprints the deposit sheet; its text,
+    // once printed.
+    async printDepositSheet(depositIndex: number): Promise<string> {
+      const before = printedDocuments()
+      const buttons = within(page.row(depositIndex)).getAllByRole('button')
+      await u.click(buttons[buttons.length - 1])
+      await waitFor(() => expect(printedDocuments()).toBe(before + 1), {
+        timeout: 15_000,
+      })
+      return lastPrintedText()
     },
     // The list fills from the local base, and each row counts its articles
     // on its own: wait until the deposits are there and counted.

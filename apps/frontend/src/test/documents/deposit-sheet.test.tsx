@@ -78,3 +78,56 @@ describe('The deposit sheet', () => {
     expect(professional).not.toContain('Information :')
   })
 })
+
+// The same fiche reprinted once the bourse is under way: a line struck off
+// at the desk stays on the sheet, struck through, but no longer counts.
+const reprinted = (
+  ...lines: Array<{ price: number; isDeleted?: boolean; isAbsent?: boolean }>
+) => {
+  const fiche = sheet('PARTICULIER')
+  return {
+    ...fiche,
+    articles: lines.map((line, index) => ({
+      ...fiche.articles[0],
+      shortCode: `1001 ${String.fromCharCode(65 + index)}`,
+      isDeleted: false,
+      ...line,
+    })),
+  }
+}
+
+describe('A reprinted deposit sheet', () => {
+  it('leaves a deleted article out of the count and of the subtotal', async () => {
+    await printPdf(
+      <DepositPdf
+        data={reprinted({ price: 120 }, { price: 20, isDeleted: true })}
+        showCategorySubtotals
+      />,
+    )
+    const text = await lastPrintedText()
+
+    expect(text).toContain('Nb articles : 1')
+    expect(text).toContain('Sous-total Skis : 1 article 120,00 €')
+  })
+
+  // An article nowhere to be found goes the way of a deleted one, and the
+  // last column says it is absent, as on the return sheet.
+  it('strikes an absent article off like a deleted one, and says it is absent', async () => {
+    await printPdf(
+      <DepositPdf
+        data={reprinted(
+          { price: 120 },
+          { price: 30, isAbsent: true },
+          { price: 20, isDeleted: true },
+        )}
+        showCategorySubtotals
+      />,
+    )
+    const text = await lastPrintedText()
+
+    expect(text).toContain('Nb articles : 1')
+    expect(text).toContain('Sous-total Skis : 1 article 120,00 €')
+    expect(text).toMatch(/30,00 € Absent/)
+    expect(text.match(/Absent/g)).toHaveLength(1)
+  })
+})

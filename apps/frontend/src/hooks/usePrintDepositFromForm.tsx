@@ -43,6 +43,7 @@ export function usePrintDepositFromForm(
         price: a.price,
         color: a.color,
         isDeleted: a.isDeleted ?? false,
+        isAbsent: a.status === 'ABSENT',
       })),
     })
     await printPdf(<DepositPdf data={data} copy={2} />)

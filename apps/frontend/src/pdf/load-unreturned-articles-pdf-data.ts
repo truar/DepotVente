@@ -42,6 +42,7 @@ export async function loadUnreturnedArticlesPdfData(
       color: a.color,
       serialNumber: a.serialNumber,
       isDeleted: a.status === 'DELETED',
+      isAbsent: a.status === 'ABSENT',
     })),
   })
 }
