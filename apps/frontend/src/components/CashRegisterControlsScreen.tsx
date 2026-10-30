@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { FormattedNumber } from 'react-intl'
-import type {CashRegisterControl, StoredDate} from '@/db.ts';
+import type { CashRegisterControl, StoredDate } from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import {
@@ -12,13 +12,61 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-import {   toIsoString } from '@/db.ts'
+import { db, toIsoString } from '@/db.ts'
 import { useCashRegisterControlsDb } from '@/hooks/useCashRegisterControlsDb.ts'
+import { PRO_WORKSTATION } from '@/hooks/useWorkstation.ts'
 
 // Les caisses sont numérotées de 1000 en 1000 : le numéro sert de départ à la
 // numérotation des dépôts et des ventes. La liste est fixe, que la caisse ait
 // servi ou non : sans contrôle enregistré, elle est « Manquant ».
 const CASH_REGISTER_IDS = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
+
+// Une caisse ajoutée entre deux milliers pour absorber l'affluence (6500 à
+// côté de 6000) a son propre tiroir : elle rejoint la liste du comptoir où
+// elle a travaillé, ou dès qu'elle y a été contrôlée. La caisse 1 des pros
+// n'est pas un tiroir à compter.
+async function cashRegisterIdsOf(type: CashRegisterControl['type']) {
+  const worked = await workedCashRegisterIds(type)
+  const counted = await db.cashRegisterControls
+    .filter((control) => control.type === type)
+    .toArray()
+  const extra = [...worked, ...counted.map((c) => c.cashRegisterId)].filter(
+    (id): id is number => id != null && id > 0 && id !== PRO_WORKSTATION,
+  )
+  return Array.from(new Set([...CASH_REGISTER_IDS, ...extra])).sort(
+    (a, b) => a - b,
+  )
+}
+
+// Ce qui compte dans le théorique de la caisse, comptoir par comptoir.
+async function workedCashRegisterIds(
+  type: CashRegisterControl['type'],
+): Promise<Array<number | null | undefined>> {
+  const live = <T extends { deletedAt?: unknown }>(row: T) =>
+    row.deletedAt == null
+  switch (type) {
+    case 'DEPOSIT':
+      return (await db.deposits.filter(live).toArray()).map(
+        (deposit) => deposit.incrementStart,
+      )
+    case 'SALE': {
+      const [sales, refunds] = await Promise.all([
+        db.sales.filter(live).toArray(),
+        db.refunds.filter(live).toArray(),
+      ])
+      return [...sales, ...refunds].map((row) => row.incrementStart)
+    }
+    case 'RETURN':
+      return (
+        await db.deposits
+          .filter(
+            (deposit) =>
+              live(deposit) && deposit.contributionStatus === 'SOLDE',
+          )
+          .toArray()
+      ).map((deposit) => deposit.contributionCollectWorkstationId)
+  }
+}
 
 type DetailRoute =
   | '/deposits/cash-register-controls/$cashRegisterId'
@@ -42,15 +90,16 @@ export function CashRegisterControlsScreen(
   const { type, title, detailRoute } = props
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   // Caisse par caisse, le contrôle que son écran ouvrira.
-  const controls = useLiveQuery(
-    () =>
+  const tills = useLiveQuery(
+    async () =>
       Promise.all(
-        CASH_REGISTER_IDS.map((cashRegisterId) =>
-          cashRegisterControlsDb.findByCashRegisterIdAndType(
+        (await cashRegisterIdsOf(type)).map(async (cashRegisterId) => ({
+          cashRegisterId,
+          control: await cashRegisterControlsDb.findByCashRegisterIdAndType(
             cashRegisterId,
             type,
           ),
-        ),
+        })),
       ),
     [type],
   )
@@ -72,8 +121,7 @@ export function CashRegisterControlsScreen(
           <TableBody>
             {/* Rien avant la lecture de la base : une caisse ne doit pas
                 s'afficher « Manquant » le temps que son contrôle arrive. */}
-            {controls?.map((control, index) => {
-              const cashRegisterId = CASH_REGISTER_IDS[index]
+            {tills?.map(({ cashRegisterId, control }) => {
               return (
                 <TableRow key={cashRegisterId}>
                   <TableCell className="font-medium">

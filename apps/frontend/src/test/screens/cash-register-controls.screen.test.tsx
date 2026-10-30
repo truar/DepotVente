@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   givenCashRegisterControl,
   givenDeposit,
+  givenRefund,
   givenSale,
   givenWorkstation,
   local,
@@ -19,8 +20,9 @@ import {
 } from '@/test/screen.tsx'
 
 // The administrator checks every till's count from their own computer,
-// till 2000: one list per desk, the nine tills 1000 to 9000, and each count
-// opened, read and corrected as the till's cashier would.
+// till 2000: one list per desk, the nine tills 1000 to 9000 plus any till
+// added between them, and each count opened, read and corrected as the
+// till's cashier would.
 
 const missing = (cashRegisterId: number) => [
   `${cashRegisterId}`,
@@ -108,6 +110,104 @@ describe('Screen: the list of cash counts', () => {
     await waitFor(() =>
       expect(page.pathname()).toBe('/deposits/cash-register-controls'),
     )
+  })
+})
+
+describe('Screen: a till added between the thousands', () => {
+  // Till 6000 cannot keep up: a second computer takes the overflow as till
+  // 6500, with a drawer of its own. Its count is checked like the others.
+  const THOUSANDS = [
+    '1000',
+    '2000',
+    '3000',
+    '4000',
+    '5000',
+    '6000',
+    '7000',
+    '8000',
+    '9000',
+  ]
+  const extraTills = (rows: Array<Array<string>>) =>
+    rows.map(([till]) => till).filter((till) => !THOUSANDS.includes(till))
+
+  beforeEach(async () => {
+    signedInAs('ADMIN')
+    await givenWorkstation(2000)
+  })
+
+  it('lists till 6500 once it has sold, missing until it is counted', async () => {
+    await givenSale({ saleIndex: 6501, incrementStart: 6500 })
+
+    const page = await cashRegisterControlsPage('sales')
+
+    expect(page.rows().map(([till]) => till)).toEqual([
+      '1000',
+      '2000',
+      '3000',
+      '4000',
+      '5000',
+      '6000',
+      '6500',
+      '7000',
+      '8000',
+      '9000',
+    ])
+    expect(page.row(6500)).toEqual(missing(6500))
+  })
+
+  it('lists a till that only refunded a sale made elsewhere', async () => {
+    const { sale } = await givenSale({ saleIndex: 6001, incrementStart: 6000 })
+    await givenRefund(sale, { incrementStart: 6500, cashAmount: 20 })
+
+    const page = await cashRegisterControlsPage('sales')
+
+    expect(extraTills(page.rows())).toEqual(['6500'])
+  })
+
+  it('shows its count done, and opens on it', async () => {
+    await givenCashRegisterControl({
+      cashRegisterId: 6500,
+      type: 'SALE',
+      realCashAmount: 150,
+      difference: 0,
+      updatedAt: new Date(2026, 9, 10, 18, 42),
+    })
+
+    const page = await cashRegisterControlsPage('sales')
+    expect(page.row(6500)).toEqual([
+      '6500',
+      'Fait',
+      '150,00 €',
+      '0,00 €',
+      '10/10 18:42',
+    ])
+
+    await page.open(6500)
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Contrôle caisse ventes — Caisse 6500',
+      }),
+    ).toBeVisible()
+  })
+
+  it('adds a till only to the desks it worked at', async () => {
+    await givenSale({ saleIndex: 6501, incrementStart: 6500 })
+    await givenDeposit({ incrementStart: 6700, depositIndex: 6701 })
+    await givenDeposit({
+      contributionStatus: 'SOLDE',
+      contributionCollectWorkstationId: 7500,
+    })
+
+    expect(
+      extraTills((await cashRegisterControlsPage('sales')).rows()),
+    ).toEqual(['6500'])
+    // The pros' fiches, imported on till 1, are no drawer to count.
+    expect(
+      extraTills((await cashRegisterControlsPage('deposits')).rows()),
+    ).toEqual(['6700'])
+    expect(
+      extraTills((await cashRegisterControlsPage('returns')).rows()),
+    ).toEqual(['7500'])
   })
 })
 

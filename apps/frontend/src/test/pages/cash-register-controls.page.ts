@@ -1,6 +1,7 @@
 // Page object for the administrators' list of cash counts, one per desk
 // (/deposits/cash-register-controls, /sales/…, /returns/…): the nine tills,
-// 1000 to 9000, each with the status of its count and a way into it.
+// 1000 to 9000, plus any till added between them, each with the status of
+// its count and a way into it.
 import { expect } from 'vitest'
 import { plain } from '@/test/amounts.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
