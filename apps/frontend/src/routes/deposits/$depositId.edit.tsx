@@ -104,6 +104,7 @@ function EditDepositComponent(props: EditDepositComponentProps) {
         year: article.year,
         type: article.category,
         model: article.model,
+        saleAlert: article.saleAlert ?? '',
         brand: article.brand,
         softDeletionEnabled: true,
         identificationLetter: article.identificationLetter,

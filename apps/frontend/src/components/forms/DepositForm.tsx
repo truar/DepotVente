@@ -14,7 +14,13 @@ import {
   type DepositFormType,
 } from '@/types/CreateDepositForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { type KeyboardEvent, memo, useCallback, useEffect } from 'react'
+import {
+  type KeyboardEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import {
@@ -34,6 +40,7 @@ import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
 import {
   CheckCircle2,
+  Mail,
   Plus,
   Printer,
   RotateCcwIcon,
@@ -41,6 +48,15 @@ import {
   Undo2,
 } from 'lucide-react'
 import { Field } from '@/components/ui/field.tsx'
+import { Input } from '@/components/ui/input.tsx'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog.tsx'
 import {
   Select,
   SelectContent,
@@ -319,7 +335,7 @@ function ArticleForm(props: ArticleFormProps) {
               <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[80px]">
                 Prix
               </th>
-              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[90px]">
+              <th className="text-left py-1 px-1 text-sm font-medium text-gray-600 w-[130px]">
                 Actions
               </th>
             </tr>
@@ -597,6 +613,7 @@ const ArticleLineForm = memo(function ArticleLineForm(
           ) : (
             <>
               <PrintArticleButton index={index} disabled={isLocked} />
+              <TillMessageButton index={index} disabled={isLocked} />
               {lockState === 'deleted' ? (
                 <Button
                   variant="ghost"
@@ -678,6 +695,85 @@ function PrintArticleButton(props: PrintArticleButtonProps) {
         className={`w-4 h-4 ${labelPrinted ? 'text-green-600' : 'text-muted-foreground'}`}
       />
     </CustomButton>
+  )
+}
+
+type TillMessageButtonProps = {
+  index: number
+  disabled?: boolean
+}
+
+// L'enveloppe ouvre le « Message caisse » de l'article (« penser à récupérer
+// les peaux »…), montré au caissier quand il le scanne à la vente. Comme le
+// reste de la ligne, il n'est enregistré qu'avec la fiche.
+function TillMessageButton(props: TillMessageButtonProps) {
+  const { index, disabled } = props
+  const { getValues, setValue, watch } = useFormContext<DepositFormType>()
+  const saleAlert = watch(`deposit.articles.${index}.saleAlert`)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const openBox = useCallback(() => {
+    setDraft(getValues(`deposit.articles.${index}.saleAlert`) ?? '')
+    setOpen(true)
+  }, [getValues, index])
+  const validate = useCallback(() => {
+    setValue(`deposit.articles.${index}.saleAlert`, draft.trim())
+    setOpen(false)
+  }, [setValue, index, draft])
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        type="button"
+        onClick={openBox}
+        disabled={disabled}
+        aria-label="Message caisse"
+        title={saleAlert || 'Aucun message'}
+        className={`p-2 rounded-lg transition-colors ${saleAlert ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'text-muted-foreground'}`}
+      >
+        <Mail className="w-4 h-4" />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>
+              Message caisse —{' '}
+              {getValues(`deposit.articles.${index}.shortArticleCode`)}
+            </DialogTitle>
+            <DialogDescription>
+              Montré au caissier quand il scanne l'article à la vente.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Entrée valide le message, pas la fiche.
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                validate()
+              }
+            }}
+            placeholder="Ex : penser à récupérer les peaux"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="button" onClick={validate}>
+              Valider
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

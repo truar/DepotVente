@@ -65,6 +65,7 @@ export function useEditDepot() {
                   size: articleForm.size,
                   color: articleForm.color,
                   model: articleForm.model,
+                  saleAlert: articleForm.saleAlert || null,
                   updatedAt: currentDate,
                 } as const,
               }
@@ -94,6 +95,7 @@ export function useEditDepot() {
                 color: articleForm.color,
                 model: articleForm.model ?? '',
                 serialNumber: null,
+                saleAlert: articleForm.saleAlert || null,
                 year: articleForm.year,
                 depositIndex: data.depotIndex,
                 articleIndex: articleForm.articleIndex,

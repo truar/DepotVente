@@ -9,6 +9,7 @@ import { expect } from 'vitest'
 import { euros, plain } from '@/test/amounts.ts'
 import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
+import { isTillMessageOpen, tillMessageOf } from '@/test/pages/till-message.ts'
 
 export async function depositEditPage(depositId: string) {
   const { user: u, router } = await openScreen(`/deposits/${depositId}/edit`)
@@ -121,6 +122,10 @@ export async function depositEditPage(depositId: string) {
     },
     // On this screen every article is already saved: the bin strikes it
     // through instead of taking the line away.
+    // The « Message caisse » box of a row (see till-message.ts).
+    tillMessage: (index: number) =>
+      tillMessageOf(u, () => page.articleRow(index)),
+    isTillMessageOpen,
     async removeArticle(index: number) {
       await u.click(
         within(page.articleRow(index)).getByRole('button', {

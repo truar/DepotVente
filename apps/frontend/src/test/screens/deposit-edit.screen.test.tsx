@@ -73,6 +73,7 @@ describe('Screen: correct a registered deposit', () => {
       'discipline',
       'model',
       'price',
+      'saleAlert',
       'size',
       'status',
       'updatedAt',

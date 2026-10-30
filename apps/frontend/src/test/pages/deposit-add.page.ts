@@ -8,6 +8,7 @@ import { expect } from 'vitest'
 import type { User } from '@/test/screen.tsx'
 import { euros, plain } from '@/test/amounts.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
+import { isTillMessageOpen, tillMessageOf } from '@/test/pages/till-message.ts'
 
 const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
 
@@ -192,6 +193,10 @@ export async function depositAddPage(user?: User) {
       ).getAllByRole('textbox')
       await u.type({ size, model, price }[field], '{Enter}')
     },
+    // The « Message caisse » box of a row (see till-message.ts).
+    tillMessage: (index: number) =>
+      tillMessageOf(u, () => page.articleRow(index)),
+    isTillMessageOpen,
     async removeArticle(index: number) {
       const row = page.articleRow(index)
       await u.click(

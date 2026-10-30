@@ -27,6 +27,8 @@ export const ArticleSchema = z.object({
   size: z.string().optional(),
   color: z.string().nonempty({ message: 'La couleur est requise' }),
   model: z.string().optional(),
+  // « Message caisse », tapé dans la fenêtre de l'enveloppe.
+  saleAlert: z.string().optional(),
   articleCode: z.string(),
   year: z.number(),
   depotIndex: z.number(),
