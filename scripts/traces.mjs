@@ -185,7 +185,16 @@ function matchesRoute(rec, route) {
 
 // The two lines a view of "what happened" is made of: one per request, and
 // one per write a PC sent (ReplicationService, see `pushes`).
-const isRequestLine = (rec) => rec.msg === "request completed";
+// pino-http closes a request with one of three messages, all at info level:
+// "completed" up to a 4xx, "errored" for a 5xx, "aborted" when the PC hung up
+// before the answer (network drop, page reloaded mid-push) - no status then.
+const REQUEST_MESSAGES = new Set([
+  "request completed",
+  "request errored",
+  "request aborted",
+]);
+const isRequestLine = (rec) => REQUEST_MESSAGES.has(rec.msg);
+const isAborted = (rec) => rec.msg === "request aborted";
 const isPushLine = (rec) => rec.msg === "Push applied";
 // Warnings and errors are always shown; the rest of the info chatter is not.
 const isNoise = (rec) =>
@@ -227,10 +236,13 @@ function formatLine(rec) {
       rec.outcome && rec.outcome !== "applied" ? yellow(` (${rec.outcome})`) : "";
     return `${head}${dim("push")} ${summary(rec)}${outcome}`;
   }
-  if (rec.msg === "request completed") {
+  if (isRequestLine(rec)) {
     const ms =
       rec.ms === undefined ? "" : `${Math.round(rec.ms)}ms`.padStart(6);
-    return `${head}${rec.method.padEnd(4)} ${rec.url.padEnd(38)} ${colourStatus(rec.status)}${ms}`;
+    const status = isAborted(rec)
+      ? yellow("abandonnée")
+      : colourStatus(rec.status);
+    return `${head}${rec.method.padEnd(4)} ${rec.url.padEnd(38)} ${status}${ms}`;
   }
   const level =
     rec.level >= 50
@@ -304,7 +316,9 @@ async function postes(args) {
     p.last = Math.max(p.last, rec.time);
     if (isRequestLine(rec)) {
       p.requests++;
-      if (rec.status >= 500) p.failed++;
+      // Refusées: final, the PC parks the write. Erreurs: the PC retries -
+      // the server failed, or the PC hung up before the answer.
+      if (rec.status >= 500 || isAborted(rec)) p.failed++;
       else if (rec.status >= 400) p.refused++;
     }
     if (isPushLine(rec)) p.sent++;
@@ -523,7 +537,7 @@ async function stats(args) {
     follow: false,
     keepProbes: true,
   })) {
-    if (rec.msg !== "request completed") continue;
+    if (!isRequestLine(rec)) continue;
     const key = `${rec.method} ${rec.url.split("?")[0]}`;
     const s = byRoute.get(key) ?? {
       route: key,
@@ -532,8 +546,10 @@ async function stats(args) {
       times: [],
     };
     s.count++;
-    s.statuses.set(rec.status, (s.statuses.get(rec.status) ?? 0) + 1);
-    if (rec.ms !== undefined) s.times.push(rec.ms);
+    const status = isAborted(rec) ? "abandon" : rec.status;
+    s.statuses.set(status, (s.statuses.get(status) ?? 0) + 1);
+    // How long until the PC hung up is not a response time.
+    if (rec.ms !== undefined && !isAborted(rec)) s.times.push(rec.ms);
     byRoute.set(key, s);
   }
   const rows = [...byRoute.values()].sort((a, b) => b.count - a.count);
