@@ -694,6 +694,21 @@ milliseconds.
 Worth knowing: a **frozen server with an idle container** is connection-pool
 exhaustion, not load — `status.sh` reports it as database timeouts.
 
+#### Changing a password
+
+```bash
+./scripts/set-password.sh                    # admin@cmr.com
+./scripts/set-password.sh benevole@cmr.com   # any other account
+```
+
+It asks for the new password twice, without showing it, and changes it on the
+running server. Nothing changes if the two entries differ, if they are empty,
+or if the account does not exist (the script then lists the accounts). It is
+safe at any moment of the sale: the login is checked by the server, not by the
+PCs, so there is nothing to sync. Nobody is logged out either — a PC already
+logged in keeps its session, and the new password only applies to the next
+login.
+
 ### 5. If something breaks
 
 **The server is down.** Cashiers keep working — the app is local-first and reads

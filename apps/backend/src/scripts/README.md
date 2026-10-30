@@ -296,7 +296,8 @@ pnpm --filter backend script:import
 `admin@cmr.com` / `admin` (ADMIN) et `benevole@cmr.com` / `benevole`
 (BENEVOLE). `pnpm --filter database db:seed` les remet sur une base déjà en
 place, sans rien effacer. `script:create-user` reste là pour un compte
-supplémentaire.
+supplémentaire. Pour changer le mot de passe d'un compte sur le serveur en
+marche : `./scripts/set-password.sh` (voir le Readme, *During the event*).
 
 **Autres commandes `database` disponibles :**
 - `db:push` - Pousse le schéma vers la base sans migration
