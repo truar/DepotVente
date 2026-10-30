@@ -5,6 +5,7 @@ import {
   aServerDeposit,
   bootComputer,
   givenServer,
+  openAnotherTab,
   settle,
   shutDownComputers,
 } from '@/test/sync/computer.ts'
@@ -86,6 +87,30 @@ describe('Sync: pulling what the other computers wrote', () => {
       seller: 'Bernard Paul',
       articleCount: 1,
     })
+  })
+
+  // SYNC-24 — The application is open in two tabs of the same computer,
+  // each polling the server every 20 s on the one local base. When their
+  // polls fall at the same moment, one asks the server for what changed and
+  // the other skips its turn: what the first brings in shows in both.
+  it('asks the server once when two tabs poll at the same moment', async () => {
+    const backend = givenServer({ dataset: aServerDeposit(20, 'Martin') })
+    const computer = await bootComputer()
+    const tab = await openAnotherTab()
+    const before = backend.requestsTo('/api/sync/delta').length
+
+    vi.setSystemTime(LATER)
+    backend.publishes(aServerDeposit(21, 'Bernard'))
+    await Promise.all([computer.poll(), tab.poll()])
+
+    expect(backend.requestsTo('/api/sync/delta').slice(before)).toHaveLength(1)
+    const listing = await depositsListingPage()
+    await listing.waitForDeposits(2)
+    expect(listing.depositNumbers().sort()).toEqual([20, 21])
+    const settings = await settingsPage()
+    expect(settings.lastSync()).toBe(
+      `Dernière synchronisation = ${LATER.toLocaleString()}`,
+    )
   })
 
   // A poll the server refuses (database down, 500): this computer keeps its

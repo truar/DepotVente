@@ -47,10 +47,32 @@ function nextSequence() {
 // holds a lock, the others asking for it wait their turn. Outside a secure
 // context the API is missing, and each runs unguarded.
 const OUTBOX_LOCK = 'sync-outbox'
+const PULL_LOCK = 'sync-pull'
 
 async function withLock<T>(name: string, task: () => Promise<T>): Promise<T> {
   if (!('locks' in navigator)) return task()
   return await navigator.locks.request(name, task)
+}
+
+// For a task another tab can do for everyone: when the lock is taken it is
+// skipped instead of waited for, and the answer is false.
+async function withLockIfFree(
+  name: string,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  if (!('locks' in navigator)) {
+    await task()
+    return true
+  }
+  return await navigator.locks.request(
+    name,
+    { ifAvailable: true },
+    async (lock) => {
+      if (!lock) return false
+      await task()
+      return true
+    },
+  )
 }
 
 export function compareOutboxOrder(a: OutboxOperation, b: OutboxOperation) {
@@ -303,6 +325,12 @@ class SyncService {
 
   // Initial full sync
   async initialSync() {
+    // Another tab pulling fills the same IndexedDB: nothing left to do.
+    const pulled = await withLockIfFree(PULL_LOCK, () => this.pullFullBase())
+    if (!pulled) console.log('⏳ Sync already in progress in another tab')
+  }
+
+  private async pullFullBase() {
     if (this.syncInProgress) {
       console.log('⏳ Sync already in progress')
       return
@@ -343,8 +371,15 @@ class SyncService {
    * La base du serveur est d'abord téléchargée : tant qu'on ne l'a pas,
    * rien n'est effacé localement. Une fois en main, l'effacement et le
    * remplacement se font dans une seule transaction.
+   *
+   * Attend la fin d'une synchro en cours dans un autre onglet : rien de
+   * l'ancienne base ne vient se poser sur celle qui la remplace.
    */
   async resetLocal(): Promise<ResetResult> {
+    return withLock(PULL_LOCK, () => this.replaceLocalBase())
+  }
+
+  private async replaceLocalBase(): Promise<ResetResult> {
     if (this.syncInProgress) {
       return { ok: false, unreachable: false, message: 'Sync in progress' }
     }
@@ -413,10 +448,18 @@ class SyncService {
       return
     }
 
+    // One tab asks the server at a time. A tab whose poll comes while
+    // another's is under way skips it: what the other brings in lands in
+    // the same IndexedDB.
+    const pulled = await withLockIfFree(PULL_LOCK, () => this.pullChanges())
+    if (!pulled) console.log('Delta sync skipped: another tab is pulling')
+  }
+
+  private async pullChanges() {
     const lastSync = await this.getMetadata('lastSync')
 
     if (!lastSync) {
-      return this.initialSync()
+      return this.pullFullBase()
     }
 
     if (!(await this.ensureEpoch())) {
