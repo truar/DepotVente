@@ -3,23 +3,25 @@
 # Import the pros and the predeposits of a sale, as often as needed:
 #
 #   ./scripts/prepare-sale-db.sh --new depotvente_postgres_2026   # once, the first time
-#   ./scripts/prepare-sale-db.sh                                  # then, after each new answer
+#   ./scripts/prepare-sale-db.sh                                  # then, after each change
 #
 # --new NAME builds the base from nothing: switches Postgres to that Docker
 # volume (PG_VOLUME in the root .env; the volume must not exist yet, and the
 # previous base stays in its own volume, untouched), then creates the tables
 # and the volunteer accounts (migrate + seed).
 #
-# Every run, with or without --new:
-# 1. Downloads the predeposit Google Sheet (PREDEPOSIT_SHEET_ID in the root
-#    .env, kept out of git: the Sheet holds the sellers' details).
-# 2. Simulates the pro import (tmp/pro/articles-pro.csv) and the predeposit
-#    import, then asks before writing anything. When
-#    tmp/predepot/descriptifs-doc.md exists (the table of the doc « Descriptifs
-#    des pré-dépôts », exported as Markdown just before), the predeposit
-#    import takes its category, brand, size and description per article.
-# Both imports skip what an earlier run already wrote (same pro fiche number,
-# same seller phone) and only add the new fiches, so rerunning is safe.
+# Every run, with or without --new, simulates the pro import
+# (tmp/pro/articles-pro.csv) and the predeposit import (the two CSVs in
+# tmp/predepot/final: predeposants.csv and articles.csv), then asks before
+# writing anything. Both imports skip what an earlier run already wrote (same
+# pro fiche number, same predeposit fiche number) and only add the new fiches,
+# so rerunning is safe.
+#
+# The two predeposit CSVs are written once from the closed Google Form, then
+# reviewed and edited by hand (kept out of git: sellers' details):
+#   pnpm --silent --filter backend exec tsx src/scripts/import/import-predeposits-form.ts \
+#     ../../tmp/predepot/<export>.csv --corrections=../../tmp/predepot/descriptifs-doc.md \
+#     --export=../../tmp/predepot/final
 #
 # After --new each PC asks to rebuild its local base (new dataset epoch); the
 # later runs reach the PCs on their next poll.
@@ -43,8 +45,10 @@ elif [ -n "${1:-}" ]; then
 fi
 PROS_CSV="$PWD/tmp/pro/articles-pro.csv"
 IMPORT_DIR="$PWD/apps/backend/src/scripts/import"
-SHEET_ID="$(sed -nE 's/^PREDEPOSIT_SHEET_ID=(.*)$/\1/p' .env 2>/dev/null || true)"
-[ -n "$SHEET_ID" ] || { bad "PREDEPOSIT_SHEET_ID is missing from the root .env"; exit 1; }
+PREDEPOSIT_DIR="$PWD/tmp/predepot/final"
+for f in predeposants.csv articles.csv; do
+  [ -f "$PREDEPOSIT_DIR/$f" ] || { bad "Predeposit file not found: $PREDEPOSIT_DIR/$f"; exit 1; }
+done
 [ -f "$PROS_CSV" ] || { bad "Pro file not found: $PROS_CSV"; exit 1; }
 
 say "Checking Docker"
@@ -95,23 +99,8 @@ if [ "$NEW" = yes ]; then
   ok "Migrated and seeded"
 fi
 
-say "Downloading the predeposit Sheet"
-SHEET_CSV="$PWD/tmp/predepot/reponses-$(date +%Y%m%d-%H%M).csv"
-mkdir -p "$(dirname "$SHEET_CSV")"
-curl -fsSL -o "$SHEET_CSV" "https://docs.google.com/spreadsheets/d/$SHEET_ID/export?format=csv"
-echo "$SHEET_CSV" > tmp/predepot/.last
-ok "$SHEET_CSV"
-
 pros()        { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-pros.ts" "$PROS_CSV" "$@"; }
-CORRECTIONS="$PWD/tmp/predepot/descriptifs-doc.md"
-CORRECTIONS_ARG=()
-if [ -f "$CORRECTIONS" ]; then
-  CORRECTIONS_ARG=("--corrections=$CORRECTIONS")
-  ok "Corrections per article: $CORRECTIONS ($(date -r "$CORRECTIONS" '+%d/%m %H:%M'))"
-else
-  warn "No $CORRECTIONS: the predeposits are imported as typed in the form"
-fi
-predeposits() { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-predeposits-form.ts" "$SHEET_CSV" ${CORRECTIONS_ARG[@]+"${CORRECTIONS_ARG[@]}"} "$@"; }
+predeposits() { pnpm --silent --filter backend exec tsx "$IMPORT_DIR/import-predeposits-csv.ts" "$PREDEPOSIT_DIR" "$@"; }
 
 say "Simulating the pro import"
 pros
@@ -135,4 +124,3 @@ if [ "$NEW" = yes ]; then
 else
   ok "New fiches added to $VOLUME; the PCs get them on their next poll."
 fi
-info "Journal of what had no mapping: ${SHEET_CSV%.csv}-journal.csv"

@@ -9,6 +9,8 @@
 //   pnpm --filter backend script:import-predeposits <export.csv>              # simulation
 //   pnpm --filter backend script:import-predeposits <export.csv> --apply      # écriture
 //   … --corrections=<doc.md>   corrections article par article (voir plus bas)
+//   … --export=<dossier>       écrit les fiches au propre en deux CSV au lieu
+//                              d'importer (voir predeposit-csv.ts)
 //
 // Les chemins sont relatifs au dossier depuis lequel on lance pnpm.
 //
@@ -75,6 +77,7 @@ import {
 } from './predeposit-duplicates'
 import { type Correction, correctionKey, readCorrections, REFUSED_MODEL } from './predeposit-corrections'
 import { DECISIONS, formatTimestamp, parseTimestamp, resolveDecisions } from './predeposit-decisions'
+import { ARTICLES_FILE, SELLERS_FILE, writePredepositCsv } from './predeposit-csv'
 import { normalizeSize } from './predeposit-size'
 
 const SELLER_HEADERS = ['Timestamp', 'Prénom', 'Nom', 'Portable', 'Email Address', 'Ville']
@@ -142,6 +145,10 @@ const correctionsArg = process.argv
   .slice(2)
   .find((value) => value.startsWith('--corrections='))
   ?.slice('--corrections='.length)
+const exportArg = process.argv
+  .slice(2)
+  .find((value) => value.startsWith('--export='))
+  ?.slice('--export='.length)
 
 // ── Normalisation ───────────────────────────────────────────────────────────
 
@@ -646,7 +653,9 @@ async function main() {
   // Pré-dépôts déjà en base, par téléphone, supprimés compris : un pré-dépôt
   // supprimé au comptoir ne doit pas revenir au passage suivant.
   let existingPhones = new Map<string, { label: string; articles: number }>()
-  try {
+  // L'export ne regarde pas la base : toutes les fiches, numérotées à partir
+  // de 1.
+  if (exportArg === undefined) try {
     const [predepositMax, articleMax, existing] = await Promise.all([
       prisma.predeposit.aggregate({ _max: { predepositIndex: true } }),
       prisma.predepositArticle.aggregate({ _max: { articleIndex: true } }),
@@ -810,6 +819,43 @@ async function main() {
     }
   }
   writeJournal(csvPath, report.journal)
+
+  if (exportArg !== undefined) {
+    const dir = path.resolve(process.env.INIT_CWD ?? process.cwd(), exportArg)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const date = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+      `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    writePredepositCsv(
+      dir,
+      plan.map(({ fiche, predepositIndex }) => ({
+        Fiche: predepositIndex,
+        Nom: fiche.lastName,
+        Prénom: fiche.firstName,
+        Téléphone: fiche.phoneNumber,
+        Ville: fiche.city,
+        Date: date(fiche.createdAt),
+        Origine: origins.get(fiche.number) ?? `réponse ${fiche.number}`,
+      })),
+      plan.flatMap(({ predepositIndex, articles }) =>
+        articles.map((article) => ({
+          Fiche: predepositIndex,
+          Lettre: article.identificationLetter,
+          Catégorie: article.category,
+          Discipline: article.discipline,
+          Marque: article.brand,
+          Descriptif: article.model,
+          Taille: article.size,
+          Couleur: article.color,
+          Prix: article.price,
+        })),
+      ),
+    )
+    console.log(`📤 ${plan.length} fiche(s) dans ${path.join(dir, SELLERS_FILE)}`)
+    console.log(`📤 ${plan.reduce((sum, p) => sum + p.articles.length, 0)} article(s) dans ${path.join(dir, ARTICLES_FILE)}`)
+    console.log('\nRien n’a été écrit en base : relire les deux fichiers, puis script:import-predeposits-csv.')
+    return
+  }
 
   if (!apply) {
     console.log('Simulation : rien n’a été écrit. Relancer avec --apply pour importer.')

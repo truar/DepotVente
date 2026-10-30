@@ -154,8 +154,7 @@ vendeur l'apprend au dépôt. Les numéros bougent si une ligne du Sheet est
 supprimée : une ligne du doc dont le Vendeur ou le DESC originale ne
 correspond plus à l'export est écartée, et un article sans ligne garde sa
 saisie ; les deux sont notés au journal. Le fichier contient les noms des
-vendeurs : il reste dans `tmp/`. `./scripts/prepare-sale-db.sh` le passe à
-l'import quand il existe.
+vendeurs : il reste dans `tmp/`.
 
 Les vendeurs à prévenir, ceux dont au moins un article est `A supprimer`,
 sortent en tableau Markdown, à coller dans le doc :
@@ -225,8 +224,31 @@ téléphone est déjà en base (même supprimée) est sautée, seules les nouvel
 sont créées ; si une fiche sautée n'a plus le même nombre d'articles (réponse
 renvoyée depuis), c'est signalé et noté au journal, à reporter à la main.
 `import-pros.ts` fait de même par numéro de fiche pro.
-`./scripts/prepare-sale-db.sh` enchaîne les deux (`--new <volume>` la première
-fois).
+
+**Les deux CSV au propre.** Une fois le formulaire clos, `--export=<dossier>`
+écrit le résultat de tout ce qui précède (corrections du doc, arbitrages,
+fusions, mapping, numérotation à partir de 1) au lieu d'importer :
+`predeposants.csv` (Fiche, Nom, Prénom, Téléphone, Ville, Date, Origine) et
+`articles.csv` (Fiche, Lettre, Catégorie, Discipline, Marque, Descriptif,
+Taille, Couleur, Prix). On les relit et corrige à la main, puis
+`import/import-predeposits-csv.ts <dossier>` les importe tels quels :
+
+```bash
+pnpm --silent --filter backend exec tsx src/scripts/import/import-predeposits-form.ts \
+  ../../tmp/predepot/<export>.csv --corrections=../../tmp/predepot/descriptifs-doc.md \
+  --export=../../tmp/predepot/final
+pnpm --filter backend script:import-predeposits-csv ../../tmp/predepot/final            # simulation
+pnpm --filter backend script:import-predeposits-csv ../../tmp/predepot/final --apply    # écriture
+```
+
+L'import des CSV signale une catégorie, une discipline ou une marque hors liste
+sans la changer, et s'arrête sans rien écrire sur ce qui rend une fiche
+inutilisable : numéro manquant ou en double, nom vide, article d'une fiche
+absente, lettre en double, prix illisible (`15`, `15,50` et `15 €` se lisent).
+Il est itératif par numéro de fiche (supprimées comprises) : ajouter une fiche
+au fichier et relancer n'importe qu'elle. Un tableur doit enregistrer en « CSV
+UTF-8 » avec des virgules. `./scripts/prepare-sale-db.sh` importe les pros et
+ces deux fichiers (`--new <volume>` la première fois).
 
 Chaque champ ramené à une liste est comparé à cette liste **après** le mapping,
 alias compris. Type de matériel, discipline et marque sont des listes fermées
