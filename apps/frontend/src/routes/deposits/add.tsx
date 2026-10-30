@@ -33,16 +33,27 @@ export function RouteComponent() {
   const [workstation] = useWorkstation()
   const navigate = useNavigate()
   const [backOpen, setBackOpen] = useState(false)
-  const currentDepotCount = useLiveQuery(
-    () => depotDb.count(workstation),
-    [workstation],
+  // Le compte avec la caisse qu'il concerne : celui d'avant la lecture de la
+  // caisse reste affiché tant que le nouveau n'est pas fait.
+  const counted = useLiveQuery(
+    async () => ({
+      incrementStart: workstation.incrementStart,
+      count: await depotDb.count(workstation),
+    }),
+    [workstation.incrementStart],
   )
   // La caisse vaut 0 tant qu'elle n'est pas lue (la route en exige une) :
   // le formulaire attend de savoir si c'est celle des pros, car il fixe à
   // son montage ses champs obligatoires et la cotisation choisie d'office.
-  if (currentDepotCount === undefined || !workstation.incrementStart)
+  // Il attend aussi le compte de cette caisse : ouvert un instant sous le
+  // numéro tiré du compte d'avant, il prenait la fiche gardée au
+  // rechargement pour celle d'un autre numéro et la jetait.
+  if (
+    !workstation.incrementStart ||
+    counted?.incrementStart !== workstation.incrementStart
+  )
     return null
-  const depositCurrentIndex = workstation.incrementStart + currentDepotCount + 1
+  const depositCurrentIndex = workstation.incrementStart + counted.count + 1
 
   return (
     <>

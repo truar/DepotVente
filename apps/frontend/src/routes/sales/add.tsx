@@ -95,13 +95,26 @@ function RouteComponent() {
   const [workstation] = useWorkstation()
   const navigate = useNavigate()
   const [backOpen, setBackOpen] = useState(false)
-  const currentSaleCount = useLiveQuery(
-    () => salesDb.count(workstation),
-    [workstation],
+  // Le compte avec la caisse qu'il concerne : celui d'avant la lecture de la
+  // caisse reste affiché tant que le nouveau n'est pas fait.
+  const counted = useLiveQuery(
+    async () => ({
+      incrementStart: workstation.incrementStart,
+      count: await salesDb.count(workstation),
+    }),
+    [workstation.incrementStart],
   )
 
-  if (currentSaleCount == null) return null
-  const saleCurrentIndex = workstation.incrementStart + currentSaleCount + 1
+  // La caisse vaut 0 tant qu'elle n'est pas lue (la route en exige une). Le
+  // formulaire attend le compte de cette caisse : ouvert un instant sous le
+  // numéro tiré du compte d'avant, il prenait la vente gardée au
+  // rechargement pour celle d'un autre numéro et la jetait.
+  if (
+    !workstation.incrementStart ||
+    counted?.incrementStart !== workstation.incrementStart
+  )
+    return null
+  const saleCurrentIndex = workstation.incrementStart + counted.count + 1
   return (
     <>
       <Page

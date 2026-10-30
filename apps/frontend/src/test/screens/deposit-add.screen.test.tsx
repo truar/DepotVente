@@ -548,6 +548,22 @@ describe('Screen: the deposit being typed survives a reload', () => {
     expect(reloaded.articleCodes()).toEqual(['1001 A', '1001 B'])
   })
 
+  // The cash register is read from the local base a moment after the page:
+  // until then the screen counted the deposits of no cash register, and the
+  // form opened under a number that was not the one of the draft, which
+  // threw it away. Hence a cash register that already has deposits.
+  it('keeps the deposit being typed across a reload, on a cash register that already has deposits', async () => {
+    await givenDeposit({ incrementStart: 1000, depositIndex: 1001 })
+    const page = await aDepositTyped()
+    expect(page.articleCodes()).toEqual(['1002 A'])
+
+    const reloaded = await depositAddPage()
+
+    await waitFor(() => expect(reloaded.hasText(DRAFT_RESTORED)).toBe(true))
+    expect(reloaded.seller().lastName).toBe('Bernard')
+    expect(reloaded.articleCodes()).toEqual(['1002 A'])
+  })
+
   // The article codes carry the deposit number: a deposit typed for
   // another cash register is not brought back on this one.
   it('drops the deposit typed for another cash register', async () => {

@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Section } from '@/test/pages/sales-control.page.ts'
-import { YEAR, givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
+import {
+  YEAR,
+  givenDeposit,
+  givenSale,
+  givenWorkstation,
+  local,
+} from '@/test/harness.ts'
 import { salesAddPage } from '@/test/pages/sales-add.page.ts'
 import { salesControlPage } from '@/test/pages/sales-control.page.ts'
 import { salesListingPage } from '@/test/pages/sales-listing.page.ts'
@@ -173,6 +179,22 @@ describe('Screen: the sale being rung up survives a reload', () => {
     await reloaded.save()
     await reloaded.savedToast(2001)
     expect(await local.sales()).toHaveLength(1)
+  })
+
+  // The cash register is read from the local base a moment after the page:
+  // until then the screen counted the sales of no cash register, and the
+  // form opened under a number that was not the one of the draft, which
+  // threw it away. Hence a cash register that already has a sale.
+  it('keeps the sale being rung up across a reload, on a cash register that already has sales', async () => {
+    await givenSale({ incrementStart: 2000, saleIndex: 2001 })
+    const page = await aSaleRungUp()
+    expect(page.saleIndex()).toBe(2002)
+
+    const reloaded = await salesAddPage()
+
+    await waitFor(() => expect(reloaded.hasText(DRAFT_RESTORED)).toBe(true))
+    expect(reloaded.scannedCodes()).toEqual([`${YEAR} 12A`, `${YEAR} 12B`])
+    expect(reloaded.saleIndex()).toBe(2002)
   })
 })
 
