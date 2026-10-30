@@ -137,6 +137,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       color: article.color,
       model: article.model,
       serialNumber: normalizeSerialNumber(article.serialNumber),
+      saleAlert: article.saleAlert ?? '',
       status: article.status,
       discipline: article.discipline,
       articleCode: article.code,
@@ -159,6 +160,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
       color: article.color,
       model: article.model,
       serialNumber: normalizeSerialNumber(article.serialNumber),
+      saleAlert: article.saleAlert ?? '',
       discipline: article.discipline,
       articleCode: article.code,
       shortArticleCode: shortArticleCode(
@@ -414,6 +416,28 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                       <SelectItem value="ABSENT">Absent</SelectItem>
                     </SelectContent>
                   </Select>
+                </FieldContent>
+              </Field>
+            )}
+          />
+        </div>
+        {/* Montré au caissier quand il scanne l'article à la vente. */}
+        <div className="col-span-2">
+          <Controller
+            control={control}
+            name="saleAlert"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldContent>
+                  <Label htmlFor="saleAlert">Message caisse</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                      id="saleAlert"
+                    />
+                  </InputGroup>
                 </FieldContent>
               </Field>
             )}

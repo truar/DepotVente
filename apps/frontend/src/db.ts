@@ -102,6 +102,9 @@ export type Article = {
   brand: string
   model: string
   serialNumber: string | null
+  // Message montré au caissier quand l'article est scanné à la vente. Absent
+  // des articles enregistrés avant que le champ existe.
+  saleAlert?: string | null
   size: string
   color: string
   code: string

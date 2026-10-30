@@ -197,6 +197,8 @@ model Article {
   brand                String
   model                String?
   serialNumber         String?  @map("serial_number")
+  // Message montré au caissier quand l'article est scanné à la vente
+  saleAlert            String?  @map("sale_alert")
   size                 String?
   color                String
   code                 String   @unique // Code-barres

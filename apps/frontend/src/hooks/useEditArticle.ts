@@ -16,6 +16,11 @@ export function useEditArticle() {
         color: data.color,
         model: data.model,
         serialNumber: data.serialNumber?.trim() || null,
+        // Un formulaire sans le champ laisse le message tel quel ; vidé, le
+        // champ l'efface.
+        ...(data.saleAlert !== undefined && {
+          saleAlert: data.saleAlert.trim() || null,
+        }),
         status: data.status,
         updatedAt: new Date(),
       })

@@ -204,6 +204,58 @@ describe('POST /api/push', () => {
       expect(Number(stored?.contributionAmount)).toBe(12)
     })
 
+    // « Message caisse »: written on the edit screen, read by the tills when
+    // the article is scanned.
+    it('stores the message left on an article for the tills', async () => {
+      const seller = contact()
+      await push(pushBody({ recordId: seller.id, data: seller }))
+      const deposit = {
+        id: randomUUID(),
+        sellerId: seller.id,
+        contributionStatus: 'PAYE',
+        contributionAmount: 2,
+        depositIndex: 100,
+        incrementStart: 0,
+        dropWorkstationId: 1,
+        type: 'PARTICULIER',
+      }
+      await push(
+        pushBody({ collection: 'deposits', recordId: deposit.id, data: deposit }),
+      )
+      const article = {
+        id: randomUUID(),
+        depositId: deposit.id,
+        price: 120,
+        category: 'Skis',
+        discipline: 'Alpin',
+        brand: 'Rossignol',
+        color: 'rouge',
+        code: '2026 100A',
+        year: 2023,
+        depositIndex: 100,
+        identificationLetter: 'A',
+        articleIndex: 0,
+        status: 'RECEPTION_OK',
+      }
+      await push(
+        pushBody({ collection: 'articles', recordId: article.id, data: article }),
+      )
+
+      const res = await push(
+        pushBody({
+          collection: 'articles',
+          operation: 'update',
+          recordId: article.id,
+          data: { saleAlert: 'Vendu sans les bâtons' },
+        }),
+      )
+
+      expect(res.statusCode).toBe(200)
+      await expect(
+        prisma.article.findUnique({ where: { id: article.id } }),
+      ).resolves.toMatchObject({ saleAlert: 'Vendu sans les bâtons' })
+    })
+
     it('soft-deletes the record, and accepts the same delete twice', async () => {
       const record = contact()
       await push(pushBody({ recordId: record.id, data: record }))

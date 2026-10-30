@@ -17,6 +17,8 @@ export const EditArticleSchema = z
     color: z.string(),
     model: z.string().optional(),
     serialNumber: z.string().optional(),
+    // « Message caisse ».
+    saleAlert: z.string().optional(),
     articleCode: z.string(),
     shortArticleCode: z.string(),
     isDeleted: z.boolean().optional(),

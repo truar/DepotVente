@@ -499,6 +499,13 @@ function SaleArticlesForm() {
         price: article.price,
       })
     }
+    // Le message laissé sur l'article (« vendu sans les bâtons »…) : l'article
+    // est dans la vente, le caissier le lit avant d'encaisser.
+    if (article.saleAlert) {
+      showErrorAlert(article.saleAlert, {
+        title: `Message pour l'article ${articleCode}`,
+      })
+    }
     setArticleCode('')
   }, [articleCode, articlesDb, getValues])
 
