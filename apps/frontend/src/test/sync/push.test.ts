@@ -8,6 +8,7 @@ import {
   fakeClock,
   givenServer,
   nextSyncTimer,
+  openAnotherTab,
   realClock,
   settle,
   shutDownComputers,
@@ -351,6 +352,52 @@ describe('Sync: pushing local writes to the server', () => {
     await waitFor(() => expect(page.datasetEpoch()).toBe('epoch-2026'))
     expect(page.lastSync()).not.toBe('Non synchonisé')
     await waitFor(() => expect(page.waitingCount()).toBe(0))
+  })
+
+  // SYNC-23 — The application is open in two tabs of the same computer,
+  // each with its own sync worker on the one local base. A deposit
+  // registered in one of them reaches the server once, seller first, even
+  // when the server takes its time over the seller.
+  it('pushes each write once and in write order with the application open in two tabs', async () => {
+    const backend = givenServer()
+    let releaseSeller = () => {}
+    const sellerHeld = new Promise<void>((resolve) => {
+      releaseSeller = resolve
+    })
+    let firstSeller = true
+    backend.answerPushes(async (push) => {
+      if (push.collection === 'contacts' && firstSeller) {
+        firstSeller = false
+        await sellerHeld
+      }
+      return 'accepted' as const
+    })
+    await bootComputer()
+    await openAnotherTab()
+
+    await registerADeposit()
+    await waitFor(() => expect(backend.pushes()).not.toHaveLength(0))
+    await settle()
+    // The other tab waits for its turn: nothing else leaves meanwhile.
+    expect(backend.pushedRecords().map(([collection]) => collection)).toEqual([
+      'contacts',
+    ])
+
+    releaseSeller()
+    await waitFor(() => expect(backend.pushes()).toHaveLength(3))
+    const page = await settingsPage()
+    await waitFor(() => expect(page.waitingCount()).toBe(0))
+    // Its turn comes once the queue is empty: it has nothing left to send.
+    await settle()
+    expect(
+      backend
+        .pushedRecords()
+        .map(([collection, operation]) => [collection, operation]),
+    ).toEqual([
+      ['contacts', 'create'],
+      ['deposits', 'create'],
+      ['articles', 'create'],
+    ])
   })
 
   // SYNC-22 — The server is unreachable when the volunteer closes the

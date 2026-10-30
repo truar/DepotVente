@@ -42,6 +42,17 @@ function nextSequence() {
   return ++lastSequence
 }
 
+// Every tab of the browser runs its own sync worker on the same IndexedDB.
+// Web Locks are shared by all the tabs and workers of the origin: while one
+// holds a lock, the others asking for it wait their turn. Outside a secure
+// context the API is missing, and each runs unguarded.
+const OUTBOX_LOCK = 'sync-outbox'
+
+async function withLock<T>(name: string, task: () => Promise<T>): Promise<T> {
+  if (!('locks' in navigator)) return task()
+  return await navigator.locks.request(name, task)
+}
+
 export function compareOutboxOrder(a: OutboxOperation, b: OutboxOperation) {
   return a.timestamp - b.timestamp || (a.seq ?? 0) - (b.seq ?? 0)
 }
@@ -481,42 +492,49 @@ class SyncService {
     this.isSyncing = true
 
     try {
-      if (await this.hasEpochMismatch()) {
-        console.warn('Outbox paused: local base must be reset first')
-        return
-      }
-      if (!this.getToken()) {
-        console.warn('Outbox paused: not authenticated')
-        return
-      }
-      if (!(await this.ensureEpoch())) {
-        console.warn('Outbox paused: dataset epoch unavailable')
-        return
-      }
-
-      const pendingOps = (
-        await db.outbox.where('status').anyOf('pending', 'failed').toArray()
-      ).sort(compareOutboxOrder)
-
-      for (const op of pendingOps) {
-        const result = await this.syncOperation(op)
-
-        if (result.outcome === 'retry') {
-          // Strict FIFO: wait for this one before sending the next ones
-          setTimeout(() => {
-            this.processOutbox()
-          }, result.retryDelay)
-          break
-        }
-        if (result.outcome === 'blocked') {
-          break
-        }
-        // 'applied' and 'rejected' both move on to the next operation
-      }
+      // Every tab of the browser runs this queue on the same outbox: they
+      // take turns, and each reads the queue once its turn has come. Nothing
+      // is sent twice, nor ahead of what another tab is still sending.
+      await withLock(OUTBOX_LOCK, () => this.pushOutbox())
     } catch (error) {
       console.error('Error processing outbox:', error)
     } finally {
       this.isSyncing = false
+    }
+  }
+
+  private async pushOutbox() {
+    if (await this.hasEpochMismatch()) {
+      console.warn('Outbox paused: local base must be reset first')
+      return
+    }
+    if (!this.getToken()) {
+      console.warn('Outbox paused: not authenticated')
+      return
+    }
+    if (!(await this.ensureEpoch())) {
+      console.warn('Outbox paused: dataset epoch unavailable')
+      return
+    }
+
+    const pendingOps = (
+      await db.outbox.where('status').anyOf('pending', 'failed').toArray()
+    ).sort(compareOutboxOrder)
+
+    for (const op of pendingOps) {
+      const result = await this.syncOperation(op)
+
+      if (result.outcome === 'retry') {
+        // Strict FIFO: wait for this one before sending the next ones
+        setTimeout(() => {
+          this.processOutbox()
+        }, result.retryDelay)
+        break
+      }
+      if (result.outcome === 'blocked') {
+        break
+      }
+      // 'applied' and 'rejected' both move on to the next operation
     }
   }
 

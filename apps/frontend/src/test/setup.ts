@@ -9,6 +9,7 @@ import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
 import type * as ReactPdf from '@react-pdf/renderer'
 import { db } from '@/db.ts'
+import { aLockManager } from '@/test/locks.ts'
 import { server } from '@/test/server.ts'
 
 // What a screen shows comes from the local base through live queries, a few
@@ -23,6 +24,15 @@ afterAll(() => server.close())
 beforeEach(async () => {
   await db.transaction('rw', db.tables, async () => {
     for (const table of db.tables) await table.clear()
+  })
+})
+
+// The browser's Web Locks, shared by the tabs of this computer (see
+// locks.ts). jsdom has none; a fresh set for every story.
+beforeEach(() => {
+  Object.defineProperty(navigator, 'locks', {
+    value: aLockManager(),
+    configurable: true,
   })
 })
 

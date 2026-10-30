@@ -530,14 +530,7 @@ export async function bootComputer({
     await db.workstation.put({ key: 'deviceId', value: await getDeviceId() })
   }
   shutDownComputers()
-  boots += 1
-  // A separate module instance per boot: a fresh worker, nothing carried
-  // over in memory from the previous one (token, queue state, timers).
-  const instancePath = `@/services/sync-service.ts?computer=${boots}`
-  const { syncService: service } = (await import(
-    /* @vite-ignore */ instancePath
-  )) as SyncServiceModule
-  running.push(service)
+  const service = await aNewSyncService()
 
   let worker: InProcessSyncWorker | null = null
   vi.stubGlobal(
@@ -564,6 +557,37 @@ export async function bootComputer({
     // What the worker posted back to the page (SYNC_COMPLETE, SYNC_ERROR,
     // RESET_LOCAL_DONE).
     replies: () => started?.replies ?? [],
+  }
+}
+
+// A separate module instance per worker: nothing shared in memory with the
+// others (token, queue state, timers), as two workers share nothing but the
+// IndexedDB and the browser's locks.
+async function aNewSyncService() {
+  boots += 1
+  const instancePath = `@/services/sync-service.ts?computer=${boots}`
+  const { syncService: service } = (await import(
+    /* @vite-ignore */ instancePath
+  )) as SyncServiceModule
+  running.push(service)
+  return service
+}
+
+// The application opened in one more tab of the same browser, beside the
+// computer booted earlier: the new page starts its own sync worker, with
+// the session token kept by the login, on the same IndexedDB. Closed with
+// the others by shutDownComputers.
+export async function openAnotherTab() {
+  const service = await aNewSyncService()
+  const worker = new InProcessSyncWorker(service)
+  const authStorage = localStorage.getItem('auth-storage')
+  const token = authStorage ? JSON.parse(authStorage).state?.token : null
+  worker.postMessage({ type: 'SET_TOKEN', payload: token })
+  worker.postMessage({ type: 'START_SYNC' })
+  await worker.started
+  return {
+    // One tick of this tab's 20 s polling interval.
+    poll: () => service.deltaSync(),
   }
 }
 
