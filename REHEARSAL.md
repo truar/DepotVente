@@ -57,6 +57,11 @@ every `db:*` command and every script fails on a missing `DATABASE_URL`.
 
 **Erase the database and load the rehearsal data**, from the repository root:
 
+> Never on the server once the sale base exists (`depotvente_postgres_2026`,
+> see « Loading the pros and the predeposits » in the [Readme](Readme.md)):
+> `docker compose down -v` deletes the base named in the root `.env`, that is
+> the sale base itself, and `db:reset` empties it.
+
 ```bash
 docker compose down -v                  # erase: drops the Postgres volume
 docker compose up -d --build            # rebuild and start; the backend migrates

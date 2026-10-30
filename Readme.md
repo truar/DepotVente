@@ -479,37 +479,145 @@ Open.
       can do for performance, and it costs nothing.
 - [ ] Lid open, plugged in, automatic updates off.
 
-### Loading the predeposits and the pros
+### Loading the pros and the predeposits
 
-Once, on the server Mac, into the day's empty database, before the client PCs
-log in. Both imports simulate by default: read the report, then run again with
-`--apply`. Both refuse to write twice. The data files are personal or
-commercial data and stay out of git (`tmp/`).
+Two machines, one sale base. The **Mac with internet** makes the import files,
+as many times as needed: the last pro's export, descriptions reviewed during
+the day. The **server Mac** only imports them. The files hold the sellers'
+details and the pros' stock: they stay out of git (`tmp/`) and travel in a
+private Google Drive folder (not « anyone with the link ») or on the USB key.
 
-**On the machine that prepares the data** (Python 3 with `openpyxl`), decode
-and check the pros' export: the five `.xlsx` files they send (`Article <date>`,
-`Fiche <date>`, `Marque`, `Materiel`, `Type`), in one folder.
-
-```bash
-python3 apps/backend/src/scripts/import/pros/decode_pro.py tmp/pro
+```
+┌─ MAC WITH INTERNET: makes the files, as often as needed ───────────────┐
+│                                                                        │
+│ pros' .xlsx, by email ──► decode_pro.py ─────────► articles-pro.csv    │
+│                                                                        │
+│ form answers (Sheet → CSV)  ─┐                                         │
+│ doc « Descriptifs » (→ .md) ─┴► import-predeposits ─► predeposants.csv │
+│                                    --export           articles.csv     │
+│                                                                        │
+└────────────────────────────────────┬───────────────────────────────────┘
+                                     │  the 3 CSVs: private Google Drive folder
+                                     ▼  (or the USB key)
+┌─ SERVER MAC: only adds, never erases ──────────────────────────────────┐
+│                                                                        │
+│ tmp/pro/articles-pro.csv           ─┐                                  │
+│ tmp/predepot/final/predeposants.csv ├─► ./scripts/prepare-sale-db.sh   │
+│ tmp/predepot/final/articles.csv    ─┘           │                      │
+│                                                 ▼                      │
+│                                Postgres, base depotvente_postgres_2026 │
+│                                                                        │
+└────────────────────────────────────┬───────────────────────────────────┘
+                                     │  the PCs poll it every few seconds
+                                     ▼
+   ┌────────────┐   ┌────────────┐            ┌────────────┐
+   │ Client PC 1│   │ Client PC 2│    ...     │ Client PC N│   IndexedDB
+   └────────────┘   └────────────┘            └────────────┘
 ```
 
-It must end with « Aucun point bloquant ». It writes `tmp/pro/articles-pro.csv`,
-one decoded article per line, readable in a spreadsheet, and the full report in
-`tmp/pro/verification.txt`. Put the CSV on Google Drive (private, not « anyone
-with the link ») or on the USB key.
+**The sale base is `depotvente_postgres_2026`, and nothing erases it.**
 
-**On the server Mac, with internet** (the venue may have none): download
-`articles-pro.csv` and the predeposit responses (Google Sheets → File →
-Download → CSV) into `tmp/`. The scripts need `pnpm install` and the `.env`
-of [REHEARSAL.md](REHEARSAL.md), section 2.
+- It is created once, with `--new` (step B.1). From then on the server always
+  runs on it: the root `.env` says `PG_VOLUME=depotvente_postgres_2026`, and
+  `prepare-sale-db.sh` first prints the base it is on and what it holds. Read
+  that line before answering anything.
+- Never on the server once it exists: `--new` again (switches to another,
+  empty base), `docker compose down -v` (deletes it), `db:reset` (empties it),
+  or [REHEARSAL.md](REHEARSAL.md) section 2 (does both). `docker compose down`
+  without `-v`, and the start and stop scripts, are safe.
+- Every import only adds. A pro fiche or a predeposit fiche whose number is
+  already in the base, deleted ones included, is skipped and never changed,
+  and nothing else in the base is touched. A change to a fiche already
+  imported is made at the counter; the import flags a skipped fiche whose
+  number of articles changed.
 
-```bash
-pnpm --filter backend script:import-predeposits tmp/<responses>.csv            # simulation
-pnpm --filter backend script:import-predeposits tmp/<responses>.csv --apply
-pnpm --filter backend script:import-pros tmp/articles-pro.csv                   # simulation
-pnpm --filter backend script:import-pros tmp/articles-pro.csv --apply
-```
+#### A. On the Mac with internet: make the files
+
+**The pros**, now, then again when the last pro sends the file:
+
+1. Put the export in `tmp/pro/`: the five `.xlsx` (`Article <date>`,
+   `Fiche <date>`, `Marque`, `Materiel`, `Type`). Only one `Article` and one
+   `Fiche` per folder: move the previous ones to `tmp/pro/old/`.
+2. Decode and check them (Python 3 with `openpyxl`):
+
+   ```bash
+   python3 apps/backend/src/scripts/import/pros/decode_pro.py tmp/pro
+   ```
+
+   It must end with « Aucun point bloquant ». The full report is in
+   `tmp/pro/verification.txt`.
+3. Put `tmp/pro/articles-pro.csv` in the Drive folder, in place of the
+   previous one.
+
+**The predeposits**, once, when the descriptions are final:
+
+1. In `tmp/predepot/`: the form answers (Google Sheets → Fichier →
+   Télécharger → CSV), and the table of the doc « Descriptifs des
+   pré-dépôts » exported in Markdown as `descriptifs-doc.md`.
+2. Write the two clean CSVs:
+
+   ```bash
+   pnpm --filter backend script:import-predeposits tmp/predepot/<answers>.csv \
+     --corrections=tmp/predepot/descriptifs-doc.md --export=tmp/predepot/final
+   ```
+
+   The report, and `tmp/predepot/<answers>-journal.csv`, say what was mapped,
+   corrected or merged; section 4 of the
+   [scripts README](apps/backend/src/scripts/README.md) has the details.
+3. Read `tmp/predepot/final/predeposants.csv` and `articles.csv`. Correct in
+   the doc and run step 2 again rather than editing the CSVs: step 2 rewrites
+   them, so a hand edit would be lost. Edit by hand only after the last run.
+4. Put both files in the Drive folder.
+
+Once the predeposits are imported, do not run step 2 again: the fiches are
+numbered in alphabetical order, so one more fiche would shift the number of
+every fiche after it. A fiche missing from the base is added by hand at the
+end of both files, with the next free number, then imported with B.2.
+
+#### B. On the server Mac: import
+
+Before: the final code pulled, `pnpm install`, the one-line
+`packages/database/.env` given in [REHEARSAL.md](REHEARSAL.md) section 2 (and
+nothing else from that section), and the server started with
+`./scripts/start-server.sh`.
+
+1. **Once: create the sale base and import the pros.** Download
+   `articles-pro.csv` from the Drive folder into `tmp/pro/`, then:
+
+   ```bash
+   ./scripts/prepare-sale-db.sh --new depotvente_postgres_2026
+   ```
+
+   It switches the server to this new, empty base (the previous one stays in
+   its own Docker volume, untouched), creates the tables and the volunteer
+   accounts, and prints « Base depotvente_postgres_2026 holds »: 0 fiches.
+   It then simulates the pro import and asks « Import the pros into
+   depotvente_postgres_2026? »: answer `o`. The predeposits are not there
+   yet; it says so and moves on. If it answers that the volume already
+   exists, the base was already created: go to step 2.
+2. **Each time a file changes on the Drive** (the last pro, the predeposits, a
+   fiche added by hand): download it to the same place
+   (`tmp/pro/articles-pro.csv`, `tmp/predepot/final/predeposants.csv` and
+   `articles.csv`), then:
+
+   ```bash
+   ./scripts/prepare-sale-db.sh
+   ```
+
+   Check the name in « Base depotvente_postgres_2026 holds ». For the pros,
+   then for the predeposits, it simulates, then asks: `o` imports, anything
+   else skips that part. The fiches already in the base are listed « déjà en
+   base, sautée »; only the others are written. It ends with what the base
+   now holds.
+
+This year, in order:
+
+| When | Mac with internet | Server Mac | The base then holds |
+|---|---|---|---|
+| Now | A, the five pros' export → Drive | B.1, `o` to the pros | the pros' fiches 1 to 5, no predeposit |
+| The last pro's file arrives | A, the pros again → Drive | B.2, `o` to the pros | fiche 6 added; fiches 1 to 5 « sautée », unchanged |
+| The descriptions are final | A, the predeposits → Drive | B.2, `o` to the predeposits | every predeposit, all created at once |
+| A predeposit is missing | added by hand at the end of both files → Drive | B.2, `o` to the predeposits | that fiche only, the others unchanged |
 
 The pros' articles arrive « à réceptionner », to scan in the pros' reception
 screen; `script:pro-barcodes` prints them on a sheet for a rehearsal.
