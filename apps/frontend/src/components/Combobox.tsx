@@ -1,4 +1,5 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import {
   Command,
   CommandEmpty,
@@ -78,6 +79,64 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
     emptyLabel = 'Vide',
   } = props
   const [open, setOpen] = useState(false)
+  // What is searched, and the highlighted entry: the one Enter or Tab picks.
+  const [search, setSearch] = useState('')
+  const [highlighted, setHighlighted] = useState('')
+  // The list opens with its first entry highlighted: Tab only puts it in the
+  // field once the volunteer has searched or moved with the arrows.
+  const navigated = useRef(false)
+  const searchInput = useRef<HTMLInputElement>(null)
+
+  const changeOpen = useCallback((next: boolean) => {
+    setOpen(next)
+    if (next) return
+    setSearch('')
+    setHighlighted('')
+    navigated.current = false
+  }, [])
+
+  // Volunteers who never take the mouse Tab onto the field and type. As the
+  // W3C recommends for this kind of field (WAI-ARIA APG, select-only
+  // combobox), a letter typed on it opens the list and searches it - the
+  // rest of the typing goes to the search field - and Enter or the down
+  // arrow open it too, as Space does.
+  const onTriggerKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const key = e.key
+      if (key === 'Enter' || key === 'ArrowDown') {
+        e.preventDefault()
+        changeOpen(true)
+      } else if (key.length === 1 && key !== ' ') {
+        e.preventDefault()
+        setSearch((typed) => typed + key)
+        changeOpen(true)
+      }
+    },
+    [changeOpen],
+  )
+
+  // Tab keeps the highlighted entry and moves on to the next field: the list
+  // sits right after its field in the page, and closes by itself once the
+  // focus leaves it. Shift+Tab keeps the entry too and comes back to the
+  // field.
+  const onListKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+        navigated.current = true
+      }
+      if (e.key !== 'Tab') return
+      // The popover would loop Tab back into its search field.
+      e.stopPropagation()
+      if ((search || navigated.current) && highlighted && highlighted !== value)
+        onSelect(highlighted)
+      if (e.shiftKey) {
+        e.preventDefault()
+        changeOpen(false)
+      }
+    },
+    [search, highlighted, value, onSelect, changeOpen],
+  )
 
   const commandItems = useMemo(() => {
     return items.map((item) => {
@@ -88,7 +147,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
           value={item.value}
           onSelect={(currentValue) => {
             onSelect(currentValue === value ? '' : currentValue)
-            setOpen(false)
+            changeOpen(false)
           }}
         >
           {item.label}
@@ -101,10 +160,10 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
         </CommandItem>
       )
     })
-  }, [items, value, onSelect])
+  }, [items, value, onSelect, changeOpen])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger asChild>
         <Button
           aria-invalid={invalid}
@@ -113,6 +172,7 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
           aria-expanded={open}
           className="w-full justify-between"
           disabled={readOnly}
+          onKeyDown={onTriggerKeyDown}
         >
           {value
             ? items.find((item) => item.value === value)?.label
@@ -120,9 +180,35 @@ export const Combobox = memo(function Combobox(props: ComboboxProps) {
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0">
-        <Command filter={filterItem}>
-          <CommandInput placeholder={placeholder} />
+      <PopoverContent
+        // The list leaves the page as soon as it closes, without fading out:
+        // while fading it still sits between its field and the next one, and
+        // a quick Shift+Tab would land in it and lose the focus.
+        className="p-0 data-[state=closed]:hidden"
+        inline
+        // Radix selects the text of the field it focuses: the letter that
+        // opened the list would be replaced by the next one typed. The caret
+        // goes after it instead.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          const input = searchInput.current
+          if (!input) return
+          input.focus()
+          input.setSelectionRange(input.value.length, input.value.length)
+        }}
+      >
+        <Command
+          filter={filterItem}
+          value={highlighted}
+          onValueChange={setHighlighted}
+          onKeyDown={onListKeyDown}
+        >
+          <CommandInput
+            ref={searchInput}
+            placeholder={placeholder}
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandList>
             <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>{commandItems}</CommandGroup>

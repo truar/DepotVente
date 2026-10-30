@@ -1120,6 +1120,127 @@ describe('Screen: Enter in a field does not save', () => {
   })
 })
 
+// Some volunteers never take the mouse: Tab from field to field, typing in
+// each. The category, brand and discipline are lists to search, which
+// behave as the W3C recommends for this kind of field (WAI-ARIA APG,
+// select-only combobox).
+describe('Screen: an article typed with the keyboard alone', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+  })
+
+  it('opens a list with Space, picks the entry searched with Enter and stays on the field', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    page.focusArticle(0, 'category')
+    await page.press(' ')
+    await page.press('ski')
+    expect(page.openList()).toEqual({ search: 'ski', highlighted: 'Skis' })
+
+    await page.press('{Enter}')
+    expect(page.openList()).toBeNull()
+    expect(page.article(0).category).toBe('Skis')
+    expect(page.focused()).toBe('category 0')
+
+    await page.press('{Tab}')
+    expect(page.focused()).toBe('brand 0')
+  })
+
+  // The volunteer reported typing on the field and nothing happening.
+  it('opens the list on the first letter typed on the field, and searches it', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    page.focusArticle(0, 'category')
+    await page.press('ski')
+    expect(page.openList()).toEqual({ search: 'ski', highlighted: 'Skis' })
+
+    await page.press('{Enter}')
+    expect(page.article(0).category).toBe('Skis')
+    expect(page.focused()).toBe('category 0')
+  })
+
+  it('opens the list with Enter or the down arrow too', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    page.focusArticle(0, 'brand')
+    await page.press('{Enter}')
+    expect(page.openList()?.search).toBe('')
+    await page.press('{Escape}')
+    expect(page.openList()).toBeNull()
+    expect(page.focused()).toBe('brand 0')
+
+    await page.press('{ArrowDown}')
+    expect(page.openList()?.search).toBe('')
+  })
+
+  it('fills a whole row with letters and Tab: Tab keeps the entry found and moves on', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+
+    page.focusArticle(0, 'category')
+    await page.press('ski{Tab}')
+    expect(page.openList()).toBeNull()
+    expect(page.focused()).toBe('brand 0')
+    await page.press('rossi{Tab}alp{Tab}Rouge{Tab}180{Tab}S/Max{Tab}120')
+
+    expect(page.article(0)).toEqual({
+      category: 'Skis',
+      brand: 'Rossignol',
+      discipline: 'Alpin',
+      color: 'Rouge',
+      size: '180',
+      model: 'S/Max',
+      price: '120',
+    })
+  })
+
+  // A list opened without searching shows its first entry: Tab right away
+  // must not put it in the field.
+  it('leaves the field as it was when Tab is pressed before anything is typed', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+    page.focusArticle(0, 'category')
+    await page.press('ski{Enter}')
+
+    await page.press('{Enter}')
+    expect(page.openList()?.highlighted).toBe('Chaussures')
+    await page.press('{Tab}')
+
+    expect(page.openList()).toBeNull()
+    expect(page.article(0).category).toBe('Skis')
+    expect(page.focused()).toBe('brand 0')
+  })
+
+  it('keeps an entry chosen with the arrows when Tab is pressed', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+    page.focusArticle(0, 'category')
+
+    await page.press('{Enter}{ArrowDown}')
+    expect(page.openList()?.highlighted).toBe('Snowboard')
+    await page.press('{Tab}')
+
+    expect(page.article(0).category).toBe('Snowboard')
+    expect(page.focused()).toBe('brand 0')
+  })
+
+  it('keeps the entry found and goes back to the field with Shift+Tab', async () => {
+    const page = await depositAddPage()
+    await page.addArticle()
+    page.focusArticle(0, 'brand')
+
+    await page.press('rossi{Shift>}{Tab}{/Shift}')
+
+    expect(page.openList()).toBeNull()
+    expect(page.article(0).brand).toBe('Rossignol')
+    expect(page.focused()).toBe('brand 0')
+  })
+})
+
 // A predeposit lettered A then C (no B row in the local base): the rows
 // keep the predeposit letters, on the label as on the barcode, and an
 // article added by hand takes the letter after the last one, D, so no two

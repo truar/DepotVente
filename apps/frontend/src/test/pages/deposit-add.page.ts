@@ -12,6 +12,33 @@ import { isTillMessageOpen, tillMessageOf } from '@/test/pages/till-message.ts'
 
 const PREDEPOSIT_PLACEHOLDER = /Rechercher une fiche/
 
+// The fields of an article row, in the order Tab goes through them.
+const ARTICLE_FIELDS = [
+  'category',
+  'brand',
+  'discipline',
+  'color',
+  'size',
+  'model',
+  'price',
+] as const
+type ArticleField = (typeof ARTICLE_FIELDS)[number]
+
+function articleFields(row: HTMLElement): Record<ArticleField, HTMLElement> {
+  const comboboxes = within(row).getAllByRole('combobox')
+  const [category, brand, discipline] = comboboxes.filter(
+    (el) => el.tagName === 'BUTTON',
+  )
+  // The colour is the input bound to a datalist, not the search field of a
+  // list open in the row.
+  const color = comboboxes.find((el) => el.hasAttribute('list'))
+  if (!color) throw new Error('No colour input in the article row')
+  // Text inputs, in column order after the read-only code: size, model,
+  // price.
+  const [, size, model, price] = within(row).getAllByRole('textbox')
+  return { category, brand, discipline, color, size, model, price }
+}
+
 export async function depositAddPage(user?: User) {
   const opened = user
     ? { user, router: undefined }
@@ -116,18 +143,19 @@ export async function depositAddPage(user?: User) {
       )
     },
     // Rows of the articles table: the ones holding the category, brand and
-    // discipline comboboxes (the colour datalist input counts as one too).
+    // discipline comboboxes. Only those three buttons are counted: the
+    // colour datalist input is a combobox too, and so is the search field
+    // of a list while it is open in the row.
     // The count is structural, so it skips the visibility check
     // (`hidden: true`): jsdom computes styles up every ancestor of every
     // candidate, which cost ~350 ms on a 27-article form.
     articleRows() {
-      return screen
-        .getAllByRole('row')
-        .filter(
-          (row) =>
-            within(row).queryAllByRole('combobox', { hidden: true }).length ===
-            4,
-        )
+      return screen.getAllByRole('row').filter(
+        (row) =>
+          within(row)
+            .queryAllByRole('combobox', { hidden: true })
+            .filter((el) => el.tagName === 'BUTTON').length === 3,
+      )
     },
     articleRow(index: number) {
       const row = page.articleRows().at(index)
@@ -146,13 +174,8 @@ export async function depositAddPage(user?: User) {
         price: string
       }>,
     ) {
-      const row = page.articleRow(index)
-      const comboboxes = within(row).getAllByRole('combobox')
-      const [category, brand, discipline] = comboboxes.filter(
-        (el) => el.tagName === 'BUTTON',
-      )
-      const color = comboboxes.find((el) => el.tagName === 'INPUT')
-      if (!color) throw new Error('No colour input in the article row')
+      const { category, brand, discipline, color, size, model, price } =
+        articleFields(page.articleRow(index))
       // As a volunteer does: open, type to narrow the list, pick the match.
       // The match is looked for in the open list only: every article row
       // carries a colour datalist, hundreds of native <option> in all, and
@@ -168,9 +191,6 @@ export async function depositAddPage(user?: User) {
       if (article.category) await pick(category, article.category)
       if (article.brand) await pick(brand, article.brand)
       if (article.discipline) await pick(discipline, article.discipline)
-      // Text inputs, in column order after the read-only code: size, model,
-      // price.
-      const [, size, model, price] = within(row).getAllByRole('textbox')
       if (article.color) await u.type(color, article.color)
       if (article.size) await u.type(size, article.size)
       if (article.model) await u.type(model, article.model)
@@ -188,10 +208,62 @@ export async function depositAddPage(user?: User) {
       index: number,
       field: 'size' | 'model' | 'price',
     ) {
-      const [, size, model, price] = within(
-        page.articleRow(index),
-      ).getAllByRole('textbox')
-      await u.type({ size, model, price }[field], '{Enter}')
+      await u.type(articleFields(page.articleRow(index))[field], '{Enter}')
+    },
+
+    // ---- the keyboard alone ------------------------------------------
+    // Some volunteers never take the mouse: Tab from field to field, and
+    // typing. Keys in user-event's syntax: 'ski{Tab}', '{Enter}'...
+    async press(keys: string) {
+      await u.keyboard(keys)
+    },
+    focusArticle(index: number, field: ArticleField) {
+      articleFields(page.articleRow(index))[field].focus()
+    },
+    // Where the keys go: 'brand 0' for a field of an article row, else the
+    // label or the name of what has the focus. null when nothing has it.
+    focused(): string | null {
+      const el = document.activeElement
+      if (!(el instanceof HTMLElement) || el === document.body) return null
+      for (const [index, row] of page.articleRows().entries()) {
+        const fields = articleFields(row)
+        const field = ARTICLE_FIELDS.find((name) => fields[name] === el)
+        if (field) return `${field} ${index}`
+      }
+      const label = el instanceof HTMLInputElement ? el.labels?.[0] : null
+      return (
+        label?.textContent ??
+        el.getAttribute('aria-label') ??
+        el.textContent
+      ).trim()
+    },
+    // The list of a category, brand or discipline field while it is open:
+    // what is searched, and the entry that Enter or Tab would pick.
+    openList(): { search: string; highlighted: string | null } | null {
+      const popover = screen.queryByRole('dialog')
+      if (!popover) return null
+      const search = within(popover).getByRole<HTMLInputElement>('combobox')
+      const highlighted = within(popover).queryAllByRole('option', {
+        selected: true,
+      })
+      return {
+        search: search.value,
+        highlighted: highlighted.at(0)?.textContent.trim() ?? null,
+      }
+    },
+    // What an article row shows, field by field.
+    article(index: number): Record<ArticleField, string> {
+      const fields = articleFields(page.articleRow(index))
+      return Object.fromEntries(
+        ARTICLE_FIELDS.map((name) => {
+          const field = fields[name]
+          const value =
+            field instanceof HTMLInputElement
+              ? field.value
+              : field.textContent.trim()
+          return [name, value]
+        }),
+      ) as Record<ArticleField, string>
     },
     // The « Message caisse » box of a row (see till-message.ts).
     tillMessage: (index: number) =>
