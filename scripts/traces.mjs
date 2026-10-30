@@ -26,7 +26,7 @@ const HELP = `Usage: pnpm traces <command> [options]
 Commands
   postes    every client PC seen: cash register, build, first/last seen, what it sent
   pushes    what each PC sent: collection, operation, how many, when
-  tail      one line per request, live; narrow with --poste or --route
+  tail      one line per request, live; narrow with --poste, --route or --errors
   errors    everything the server refused (4xx) or failed on (5xx), with the code
   epochs    the server's dataset epoch(s) and clients refused for holding another one
   stats     request counts and response times per route
@@ -34,7 +34,10 @@ Commands
 Options
   --poste <id>     device id (or a unique prefix of it) or a cash register number
   --route <part>   only requests whose path contains this, e.g. --route push
-  --since <dur>    only the last 30m / 2h / 1d ... (tail: 10m, others: all)
+  --errors         tail: only the requests that went wrong (4xx, 5xx, abandoned)
+                   and the warnings, one line per request with its code
+  --since <dur>    only the last 30m / 2h / 1d ... (tail: 10m, others and
+                   tail --errors: all)
   --file <path>    read this log file instead of docker compose; "-" reads stdin
   -n <N>           tail: how many past lines to show before following (50)
   --no-follow      tail: print the past lines and exit
@@ -47,6 +50,7 @@ Examples
   pnpm traces tail --route push        # only what the PCs send, no polling
   pnpm traces tail --poste 4
   pnpm traces errors --since 1h
+  pnpm traces tail --errors            # the errors screen: what went wrong, live
   tail -f dev-backend.log | pnpm traces tail --file -
 `;
 
@@ -65,6 +69,7 @@ function parseArgs(argv) {
     else if (a === "--file") args.file = next();
     else if (a === "-n") args.n = Number(next());
     else if (a === "--no-follow") args.follow = false;
+    else if (a === "--errors") args.errors = true;
     else if (a === "--json") args.json = true;
     else if (a === "-h" || a === "--help") args.command = "help";
     else {
@@ -366,26 +371,90 @@ async function postes(args) {
   ]);
 }
 
-// The last N matching lines, oldest first.
-async function tail(args) {
+// What `tail` prints for one log line: nothing, one line or several. A view
+// may hold lines back, so the backlog and the live part share the same one.
+function makeView(args) {
+  if (args.errors) return errorView(args);
+  return (rec) => (isNoise(rec) ? [] : [args.json ? rec.raw : formatLine(rec)]);
+}
+
+const isFailed = (rec) => isAborted(rec) || rec.status >= 400;
+
+// --errors: what went wrong, one line per request. The guard's warning and
+// the exception filter's line are written before pino-http closes the
+// request; they are held by request id and folded into its line.
+function errorView(args) {
+  const held = new Map();
+  const show = (rec) => (args.json ? rec.raw : formatLine(rec));
+  return (rec) => {
+    if (isRequestLine(rec)) {
+      const before = held.get(rec.reqId) ?? [];
+      held.delete(rec.reqId);
+      // A warning on a request that went through still deserves a look.
+      if (!isFailed(rec)) return before.map(show);
+      if (args.json) return [...before, rec].map((r) => r.raw);
+      return [formatFailure(rec, before)];
+    }
+    if (rec.level >= 40) {
+      if (rec.reqId === undefined) return [show(rec)];
+      held.set(rec.reqId, [...(held.get(rec.reqId) ?? []), rec]);
+      return [];
+    }
+    // A write that changed nothing - the server already had it, or it was
+    // already deleted: most often a PC sending it again because the answer to
+    // the first one never reached it. That lost answer may have left no other
+    // trace.
+    if (isPushLine(rec) && rec.outcome && rec.outcome !== "applied")
+      return [show(rec)];
+    return [];
+  };
+}
+
+// The request's line, then what the exception filter said about it: the
+// code, the outbox operation, and why.
+function formatFailure(rec, before) {
+  const line = formatLine(rec);
+  const refusal = before.find((b) => b.context === "AllExceptionsFilter");
+  if (!refusal) return line;
+  // A 5xx only tells the PC « Erreur interne du serveur. »; what broke is in
+  // the exception itself.
+  const reason =
+    refusal.status >= 500 && refusal.errMessage
+      ? lastLine(refusal.errMessage)
+      : refusal.msg;
+  const what = [refusal.code, summary(refusal.body)].filter(Boolean).join(" ");
+  return `${line}  ${what}  ${dim(reason)}`;
+}
+
+// Prisma's messages are multi-line with a query dump; the last line says
+// what is wrong.
+const lastLine = (text) => text.trim().split("\n").at(-1).trim();
+
+// The last N lines of the view, oldest first.
+async function tail(args, view = makeView(args)) {
   const buffer = [];
   for await (const rec of records({ ...args, follow: false })) {
-    if (isNoise(rec)) continue;
-    buffer.push(rec);
-    if (buffer.length > args.n) buffer.shift();
+    for (const line of view(rec)) {
+      buffer.push(line);
+      if (buffer.length > args.n) buffer.shift();
+    }
   }
-  for (const rec of buffer) console.log(args.json ? rec.raw : formatLine(rec));
+  if (args.errors && !args.json && buffer.length === 0)
+    console.log(dim("Aucune requête en erreur dans ce journal."));
+  for (const line of buffer) console.log(line);
 }
 
 // Docker gives no marker for the end of the backlog, so following is done in
 // two reads: the last N lines first, then everything from now on.
 async function tailFollow(args) {
-  await tail({ ...args, since: args.since ?? "10m" });
+  const view = makeView(args);
+  // Errors are few and worth seeing from the start of the log; the whole
+  // stream only from the last minutes.
+  const since = args.since ?? (args.errors ? undefined : "10m");
+  await tail({ ...args, since }, view);
   console.log(dim("--- live ---"));
-  for await (const rec of records({ ...args, since: "1s", follow: true })) {
-    if (isNoise(rec)) continue;
-    console.log(args.json ? rec.raw : formatLine(rec));
-  }
+  for await (const rec of records({ ...args, since: "1s", follow: true }))
+    for (const line of view(rec)) console.log(line);
 }
 
 // What each PC has sent, as opposed to what it polled: one row per cash

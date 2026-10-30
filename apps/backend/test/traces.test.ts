@@ -117,6 +117,93 @@ describe('pnpm traces', () => {
 
       expect(out).toMatch(/POST \/api\/push\s+abandonnée/)
     })
+
+    it('shows the accepted requests too', async () => {
+      const accepted = await push(pushBody())
+      expect(accepted.status).toBe(200)
+
+      const out = traces(['tail', '--no-follow'], accepted.lines)
+
+      expect(out).toMatch(/POST \/api\/push\s+200/)
+    })
+  })
+
+  // The errors screen: what went wrong, and nothing else.
+  describe('tail --errors', () => {
+    const errorsOf = (lines: LogLine[]) =>
+      traces(['tail', '--errors', '--no-follow'], lines)
+        .split('\n')
+        .filter(Boolean)
+
+    it('leaves out the requests that went through', async () => {
+      const accepted = await push(pushBody())
+      const refused = await refusedPush()
+
+      const out = errorsOf([...accepted.lines, ...refused.lines])
+
+      expect(out.join('\n')).not.toMatch(/ 200 /)
+      expect(out.join('\n')).toMatch(/POST \/api\/push\s+409/)
+    })
+
+    // The guard, the exception filter and pino-http each write a line for a
+    // refused push; the screen folds them into the request's line.
+    it('shows a refused push on one line, with its code, operation and reason', async () => {
+      const body = pushBody()
+      const refused = await push(body, { 'x-dataset-epoch': randomUUID() })
+      expect(refused.lines.length).toBeGreaterThan(1)
+
+      const out = errorsOf(refused.lines)
+
+      expect(out).toHaveLength(1)
+      expect(out[0]).toMatch(/P4\s+device-under-test\s+POST \/api\/push\s+409/)
+      expect(out[0]).toContain(`EPOCH_MISMATCH contacts create ${body.recordId}`)
+      expect(out[0]).toContain('La base de données du serveur a été réinitialisée')
+    })
+
+    // « Erreur interne du serveur. » is all the PC is told; the screen shows
+    // what actually broke.
+    it('shows the cause of a push the server failed on', async () => {
+      const failed = await failedPush()
+
+      const out = errorsOf(failed.lines)
+
+      expect(out).toHaveLength(1)
+      expect(out[0]).toMatch(/POST \/api\/push\s+500/)
+      expect(out[0]).toContain('INTERNAL_ERROR contacts update not-a-uuid')
+      expect(out[0]).not.toContain('Erreur interne du serveur')
+      expect(out[0]).toMatch(/uuid/i)
+    })
+
+    it('shows a push the PC hung up on', async () => {
+      const accepted = await push(pushBody())
+
+      const out = errorsOf([abortedPush(accepted.lines.at(-1)!)])
+
+      expect(out).toHaveLength(1)
+      expect(out[0]).toMatch(/POST \/api\/push\s+abandonnée/)
+    })
+
+    // A create sent again because the PC never saw the first 200: the request
+    // that lost its answer may have left no trace, this is the one it leaves.
+    it('shows a push the server already had', async () => {
+      const body = pushBody()
+      await push(body)
+      const again = await push(body)
+      expect(again.status).toBe(200)
+
+      const out = errorsOf(again.lines)
+
+      expect(out).toHaveLength(1)
+      expect(out[0]).toContain(`push contacts create ${body.recordId} (duplicate)`)
+    })
+
+    it('says so when nothing went wrong', async () => {
+      const accepted = await push(pushBody())
+
+      expect(errorsOf(accepted.lines)).toEqual([
+        'Aucune requête en erreur dans ce journal.',
+      ])
+    })
   })
 
   describe('postes', () => {

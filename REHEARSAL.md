@@ -185,6 +185,8 @@ pnpm traces pushes             # what each register sent: collection, operation,
 pnpm traces tail --route push  # live, only the writes the registers send
 pnpm traces tail --poste 2000  # live, one line per request for that register
 pnpm traces errors --since 1h  # everything the server refused, with the reason
+pnpm traces tail --errors      # live, only the requests that went wrong
+./scripts/supervision.sh --erreurs  # that view full screen, next to the grid
 pnpm traces epochs             # PCs holding an old database epoch
 pnpm traces stats              # volume and response times per route
 ./scripts/status.sh --watch    # services, certificate, memory, backups
@@ -193,9 +195,10 @@ pnpm traces stats              # volume and response times per route
 
 What normal looks like: every PC appears in `postes` with 0 refused, a delta
 poll every 20 seconds each, response times in single-digit milliseconds, and
-`errors` empty. A desk that is registering or selling also shows up in
-`pushes`, one row per collection it writes; a PC whose *Envois* column stays
-at 0 while the volunteers are typing is not reaching the server.
+`errors` and the errors screen empty. A desk that is registering or selling
+also shows up in `pushes`, one row per collection it writes; a PC whose
+*Envois* column stays at 0 while the volunteers are typing is not reaching the
+server.
 
 What to react to:
 

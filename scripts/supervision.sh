@@ -3,9 +3,10 @@
 # Ouvre l'écran de supervision du jour : une grille tmux qui montre l'état du
 # serveur, les postes clients et les journaux en même temps.
 #
-#   ./scripts/supervision.sh          # ouvre (ou rouvre) la grille
-#   ./scripts/supervision.sh --2x4    # 8 volets, 2 colonnes de 4
-#   ./scripts/supervision.sh --stop   # ferme tout
+#   ./scripts/supervision.sh            # ouvre (ou rouvre) la grille
+#   ./scripts/supervision.sh --2x4      # 8 volets, 2 colonnes de 4
+#   ./scripts/supervision.sh --erreurs  # l'écran des requêtes en erreur
+#   ./scripts/supervision.sh --stop     # ferme tout, les deux écrans
 #
 # Disposition, sur deux colonnes :
 #
@@ -23,6 +24,13 @@
 # huitième d'écran il serait tronqué aux deux tiers. Les trois autres vues
 # ponctuelles tiennent en 5 à 11 lignes.
 #
+# L'écran des erreurs (--erreurs) ne montre que les requêtes qui ont mal
+# tourné : refusées (4xx), en échec (5xx), abandonnées par le poste, une ligne
+# chacune avec son code et l'opération concernée, depuis le début du journal.
+# Vide, c'est que tout passe. C'est une session tmux à part, à ouvrir dans une
+# deuxième fenêtre Terminal à côté de la grille : deux fenêtres rattachées à
+# la même session montreraient la même chose.
+#
 # Ctrl-b puis :  flèches = changer de volet · z = zoomer · d = détacher
 # Détacher laisse tout tourner ; ./scripts/supervision.sh rattache.
 #
@@ -30,6 +38,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 REPO="$(pwd)"
 SESSION=bourse
+ERRORS_SESSION=bourse-erreurs
 
 command -v tmux >/dev/null || {
   echo "tmux n'est pas installé.  brew install tmux" >&2; exit 1
@@ -41,14 +50,18 @@ LAYOUT=colonne
 if [ "${1:-}" = "--stop" ]; then
   tmux kill-session -t "$SESSION" 2>/dev/null && echo "Grille fermée." \
     || echo "Aucune grille ouverte."
+  tmux kill-session -t "$ERRORS_SESSION" 2>/dev/null \
+    && echo "Écran des erreurs fermé."
   exit 0
 fi
+
+[ "${1:-}" = "--erreurs" ] && SESSION=$ERRORS_SESSION
 
 # `exec tmux attach` n'a de sens que depuis un terminal. Appelé autrement (test,
 # script, hook), on laisse la grille prête et on dit comment la rejoindre.
 attach() {
   [ -t 1 ] && exec tmux attach -t "$SESSION"
-  echo "Grille prête. Rejoignez-la avec :  tmux attach -t $SESSION"
+  echo "Prêt. Rejoignez l'écran avec :  tmux attach -t $SESSION"
 }
 
 # Déjà ouverte : on rattache au lieu d'empiler une deuxième grille.
@@ -57,11 +70,18 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
   exit 0
 fi
 
-W="$REPO/scripts/watch.sh"
-
 # -x/-y : une session détachée naîtrait en 80x24 et les volets seraient calculés
 # sur cette taille. tmux réajuste à l'attachement, mais partir large évite des
 # volets nés trop courts pour leur contenu.
+if [ "$SESSION" = "$ERRORS_SESSION" ]; then
+  tmux new-session -d -s "$SESSION" -x 240 -y 60 \
+    "pnpm --silent traces tail --errors"
+  attach
+  exit 0
+fi
+
+W="$REPO/scripts/watch.sh"
+
 tmux new-session -d -s "$SESSION" -x 240 -y 60 \
   "$W -n 30 $REPO/scripts/status.sh"
 

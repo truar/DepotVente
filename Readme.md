@@ -811,10 +811,17 @@ pnpm traces pushes --since 1h  # what each PC sent: collection, operation, how m
 pnpm traces tail --route push  # live, only what the PCs send (no polling noise)
 pnpm traces tail --poste 4     # live log of cash register 4 (or of a device id prefix)
 pnpm traces errors --since 1h  # everything refused in the last hour, with the code
+pnpm traces tail --errors      # live, only the requests that went wrong (4xx, 5xx, abandoned)
 pnpm traces epochs             # the server's epoch, and PCs still holding an old one
 pnpm traces stats              # request volume and response times per route
 pnpm traces --help
 ```
+
+`./scripts/supervision.sh --erreurs` opens `pnpm traces tail --errors` full
+screen, in a tmux session of its own: run it in a second Terminal window next
+to the grid (`./scripts/supervision.sh`). One line per request that went
+wrong, with its code and the outbox operation, from the start of the log;
+empty means everything goes through.
 
 It reads `docker compose logs backend`. In dev, point it at a file instead:
 `pnpm traces postes --file path/to/backend.log`, or pipe:
