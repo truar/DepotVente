@@ -2,19 +2,21 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { articleEditPage } from '@/test/pages/article-edit.page.ts'
 import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
+import { givenLabelPrinter, printedLabels } from '@/test/labels.ts'
 import { signedInAs, waitFor } from '@/test/screen.tsx'
 
 // A label went out with the wrong price, or the seller remembers the serial
 // number engraved under the binding: a volunteer of the deposit desk opens
-// the article by its code and corrects it. The correction is saved on this
-// computer first, then queued for the server so the tills see it.
+// the article from the articles list, by its code, and corrects it. The
+// correction is saved on this computer first, then queued for the server so
+// the tills see it.
 describe('Screen: correcting an article', () => {
   beforeEach(async () => {
     signedInAs()
     await givenWorkstation(1000)
   })
 
-  it('saves the corrections, tells the volunteer and waits for the next code', async () => {
+  it('saves the corrections, tells the volunteer and goes back to the list', async () => {
     const { articles } = await givenDeposit({}, [
       { price: 120, model: 'Hero', serialNumber: null },
     ])
@@ -29,7 +31,7 @@ describe('Screen: correcting an article', () => {
     await page.validate()
 
     await page.lastToast(`Article ${skis.code} mis à jour`)
-    await waitFor(() => expect(page.isFormClosed()).toBe(true))
+    await page.isOnList()
     expect(page.pathname()).toBe('/deposits/articles')
     expect(page.searchField()).toHaveFocus()
 
@@ -64,9 +66,9 @@ describe('Screen: correcting an article', () => {
     })
   })
 
-  // Cancelling drops what was typed and waits for the next code, as a save
+  // Cancelling drops what was typed and goes back to the list, as a save
   // does.
-  it('cancels the corrections and waits for the next code', async () => {
+  it('cancels the corrections and goes back to the list', async () => {
     const { articles } = await givenDeposit({}, [{ price: 120 }])
     const [skis] = articles
     const page = await articleEditPage()
@@ -75,7 +77,7 @@ describe('Screen: correcting an article', () => {
     await page.setPrice('95')
     await page.cancel()
 
-    await waitFor(() => expect(page.isFormClosed()).toBe(true))
+    await page.isOnList()
     expect(page.pathname()).toBe('/deposits/articles')
     expect(page.searchField()).toHaveFocus()
     expect(await local.outbox()).toHaveLength(0)
@@ -84,8 +86,6 @@ describe('Screen: correcting an article', () => {
     expect(page.price()).toBe('120')
   })
 
-  // Another code searched while an article is open: the volunteer is asked
-  // first; saying no keeps the article, and what was typed on it.
   // The cents come after a comma, the French way, or after a point: both
   // read the same price.
   it.each(['95.50', '95,50'])(
@@ -105,41 +105,57 @@ describe('Screen: correcting an article', () => {
     },
   )
 
-  it('asks before opening another article searched while one is open', async () => {
-    const { articles } = await givenDeposit({}, [{ price: 120 }, { price: 80 }])
-    const [skis, boots] = articles
+  // Back to the list while an article is open: the volunteer is asked
+  // first; saying no keeps the article, and what was typed on it.
+  it('asks before leaving the article for the list', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const [skis] = articles
     const page = await articleEditPage()
     await page.search(skis.code, '12 A')
     await page.setPrice('110')
 
-    await page.searchAnother(boots.code)
-    let question = await page.question()
+    let question = await page.backToList()
     expect(question.title).toBe(
-      'Etes vous sur de vouloir changer d’article\u00a0?',
+      'Etes vous sur de vouloir quitter cette page\u00a0?',
     )
     await question.decline()
     expect(page.price()).toBe('110')
 
-    await page.searchAnother(boots.code)
-    question = await page.question()
+    question = await page.backToList()
     await question.confirm()
-    await waitFor(() => expect(page.price()).toBe('80'))
+    await page.isOnList()
+    expect(await local.outbox()).toHaveLength(0)
   })
 
-  // Searching the open article again, or after a code that matched
-  // nothing, opens it without a question.
-  it('does not ask when no other article is open', async () => {
-    const { articles } = await givenDeposit({}, [{ price: 120 }])
+  // The label of the article opened, as the form shows it: reprinted after
+  // a price correction.
+  it('prints the label of the article as corrected', async () => {
+    givenLabelPrinter()
+    const { articles } = await givenDeposit({}, [
+      { price: 120, serialNumber: 'SN-42' },
+    ])
     const [skis] = articles
     const page = await articleEditPage()
-    await page.searchAnother('2026 999Z')
     await page.search(skis.code, '12 A')
-    expect(page.isQuestionOpen()).toBe(false)
 
-    await page.searchAnother(skis.code)
+    await page.setPrice('95')
+    await page.printLabel()
 
-    expect(page.isQuestionOpen()).toBe(false)
-    expect(page.price()).toBe('120')
+    await waitFor(() =>
+      expect(printedLabels()).toEqual([
+        {
+          shortCode: '12 A',
+          code: skis.code,
+          category: 'Skis',
+          description: 'Hero',
+          brand: 'Rossignol',
+          color: 'rouge',
+          size: '170',
+          price: '95 €',
+          serialNumber: 'SN-42',
+        },
+      ]),
+    )
   })
 
   // A serial number typed on the wrong article is wiped out: searched again,

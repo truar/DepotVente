@@ -9,7 +9,9 @@ export const articleColumns: ColumnDef<Article>[] = [
     accessorKey: 'code',
     header: 'Code',
     size: 100,
+    // Fiche par fiche, puis lettre par lettre (B avant AA).
     sortingFn: (a, b) =>
+      a.original.depositIndex - b.original.depositIndex ||
       compareIdentificationLetters(
         a.original.identificationLetter,
         b.original.identificationLetter,

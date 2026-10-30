@@ -64,6 +64,8 @@ interface DataTableProps<TData, TValue> {
   // La ligne mise en avant (l'article qui vient d'être scanné), surlignée
   // et marquée comme ligne courante.
   highlightedRowId?: string | null
+  // Les lignes qu'on peut cocher ; toutes par défaut.
+  canSelectRow?: (row: TData) => boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -79,6 +81,7 @@ export function DataTable<TData, TValue>({
   initialPageSize,
   getRowId,
   highlightedRowId,
+  canSelectRow,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState<any>([])
   const [sorting, setSorting] = useState<SortingState>(initialSorting ?? [])
@@ -88,6 +91,9 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getRowId,
+    enableRowSelection: canSelectRow
+      ? (row) => canSelectRow(row.original)
+      : true,
     autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -106,7 +112,15 @@ export function DataTable<TData, TValue>({
     getFacetedUniqueValues: enableColumnFilters
       ? getFacetedUniqueValues()
       : undefined,
-    onColumnFiltersChange: enableColumnFilters ? setColumnFilters : undefined,
+    // Un filtre qui réduit la liste ramène à sa première page : restée sur
+    // la page 5 d'une liste qui n'en a plus qu'une, la table semblerait vide
+    // (le retour automatique, autoResetPageIndex, est coupé plus haut).
+    onColumnFiltersChange: enableColumnFilters
+      ? (updater) => {
+          setColumnFilters(updater)
+          table.setPageIndex(0)
+        }
+      : undefined,
     defaultColumn: {
       size: 200, //starting column size
       minSize: 200, //enforced during column resizing

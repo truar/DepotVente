@@ -50,7 +50,7 @@ describe('Screen: a scanner that terminates its reads with CR+LF', () => {
     { path: '/sales/add', heading: 'Faire une vente' },
     { path: '/deposits/pros', heading: 'Réceptionner les articles des pros' },
     { path: '/returns/pros', heading: 'Retourner les articles des pros' },
-    { path: '/deposits/articles', heading: 'Modifier un article' },
+    { path: '/deposits/articles', heading: 'Liste des articles' },
   ]
 
   it.each(scanningScreens)(

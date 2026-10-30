@@ -9,6 +9,7 @@ import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
 import type * as ReactPdf from '@react-pdf/renderer'
 import { db } from '@/db.ts'
+import { resetLabelPrinter } from '@/test/labels.ts'
 import { aLockManager } from '@/test/locks.ts'
 import { server } from '@/test/server.ts'
 
@@ -44,6 +45,7 @@ afterEach(() => {
   document.querySelectorAll('iframe').forEach((iframe) => iframe.remove())
   printedBlobs.length = 0
   previewedBlobs.length = 0
+  resetLabelPrinter()
 })
 
 // ---------------------------------------------------------------------------

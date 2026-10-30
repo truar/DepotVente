@@ -8,6 +8,7 @@ const deskScreens = [
   '/deposits',
   '/deposits/add',
   '/deposits/articles',
+  '/deposits/articles/3f1c0d0e-0000-4000-8000-000000000000/edit',
   '/deposits/cash-register-control',
   '/deposits/cash-register-controls',
   '/deposits/cash-register-controls/1000',

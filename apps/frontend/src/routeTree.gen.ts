@@ -44,16 +44,17 @@ import { Route as DepositsProsRouteImport } from './routes/deposits/pros'
 import { Route as DepositsPredepositsRouteImport } from './routes/deposits/predeposits'
 import { Route as DepositsListingRouteImport } from './routes/deposits/listing'
 import { Route as DepositsCashRegisterControlRouteImport } from './routes/deposits/cash-register-control'
-import { Route as DepositsArticlesRouteImport } from './routes/deposits/articles'
 import { Route as DepositsAddRouteImport } from './routes/deposits/add'
 import { Route as SalesCashRegisterControlsIndexRouteImport } from './routes/sales/cash-register-controls/index'
 import { Route as ReturnsCashRegisterControlsIndexRouteImport } from './routes/returns/cash-register-controls/index'
 import { Route as DepositsCashRegisterControlsIndexRouteImport } from './routes/deposits/cash-register-controls/index'
+import { Route as DepositsArticlesIndexRouteImport } from './routes/deposits/articles/index'
 import { Route as SalesCashRegisterControlsCashRegisterIdRouteImport } from './routes/sales/cash-register-controls/$cashRegisterId'
 import { Route as SalesSaleIdEditRouteImport } from './routes/sales/$saleId.edit'
 import { Route as ReturnsCashRegisterControlsCashRegisterIdRouteImport } from './routes/returns/cash-register-controls/$cashRegisterId'
 import { Route as DepositsCashRegisterControlsCashRegisterIdRouteImport } from './routes/deposits/cash-register-controls/$cashRegisterId'
 import { Route as DepositsDepositIdEditRouteImport } from './routes/deposits/$depositId.edit'
+import { Route as DepositsArticlesArticleIdEditRouteImport } from './routes/deposits/articles/$articleId.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -237,11 +238,6 @@ const DepositsCashRegisterControlRoute =
     path: '/deposits/cash-register-control',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DepositsArticlesRoute = DepositsArticlesRouteImport.update({
-  id: '/deposits/articles',
-  path: '/deposits/articles',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DepositsAddRoute = DepositsAddRouteImport.update({
   id: '/deposits/add',
   path: '/deposits/add',
@@ -265,6 +261,11 @@ const DepositsCashRegisterControlsIndexRoute =
     path: '/deposits/cash-register-controls/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DepositsArticlesIndexRoute = DepositsArticlesIndexRouteImport.update({
+  id: '/deposits/articles/',
+  path: '/deposits/articles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SalesCashRegisterControlsCashRegisterIdRoute =
   SalesCashRegisterControlsCashRegisterIdRouteImport.update({
     id: '/sales/cash-register-controls/$cashRegisterId',
@@ -293,13 +294,18 @@ const DepositsDepositIdEditRoute = DepositsDepositIdEditRouteImport.update({
   path: '/deposits/$depositId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DepositsArticlesArticleIdEditRoute =
+  DepositsArticlesArticleIdEditRouteImport.update({
+    id: '/deposits/articles/$articleId/edit',
+    path: '/deposits/articles/$articleId/edit',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
   '/deposits/add': typeof DepositsAddRoute
-  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -337,16 +343,17 @@ export interface FileRoutesByFullPath {
   '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
   '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/articles': typeof DepositsArticlesIndexRoute
   '/deposits/cash-register-controls': typeof DepositsCashRegisterControlsIndexRoute
   '/returns/cash-register-controls': typeof ReturnsCashRegisterControlsIndexRoute
   '/sales/cash-register-controls': typeof SalesCashRegisterControlsIndexRoute
+  '/deposits/articles/$articleId/edit': typeof DepositsArticlesArticleIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
   '/deposits/add': typeof DepositsAddRoute
-  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -384,9 +391,11 @@ export interface FileRoutesByTo {
   '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
   '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/articles': typeof DepositsArticlesIndexRoute
   '/deposits/cash-register-controls': typeof DepositsCashRegisterControlsIndexRoute
   '/returns/cash-register-controls': typeof ReturnsCashRegisterControlsIndexRoute
   '/sales/cash-register-controls': typeof SalesCashRegisterControlsIndexRoute
+  '/deposits/articles/$articleId/edit': typeof DepositsArticlesArticleIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -394,7 +403,6 @@ export interface FileRoutesById {
   '/dymo': typeof DymoRoute
   '/login': typeof LoginRoute
   '/deposits/add': typeof DepositsAddRoute
-  '/deposits/articles': typeof DepositsArticlesRoute
   '/deposits/cash-register-control': typeof DepositsCashRegisterControlRoute
   '/deposits/listing': typeof DepositsListingRoute
   '/deposits/predeposits': typeof DepositsPredepositsRoute
@@ -432,9 +440,11 @@ export interface FileRoutesById {
   '/returns/cash-register-controls/$cashRegisterId': typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   '/sales/$saleId/edit': typeof SalesSaleIdEditRoute
   '/sales/cash-register-controls/$cashRegisterId': typeof SalesCashRegisterControlsCashRegisterIdRoute
+  '/deposits/articles/': typeof DepositsArticlesIndexRoute
   '/deposits/cash-register-controls/': typeof DepositsCashRegisterControlsIndexRoute
   '/returns/cash-register-controls/': typeof ReturnsCashRegisterControlsIndexRoute
   '/sales/cash-register-controls/': typeof SalesCashRegisterControlsIndexRoute
+  '/deposits/articles/$articleId/edit': typeof DepositsArticlesArticleIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -443,7 +453,6 @@ export interface FileRouteTypes {
     | '/dymo'
     | '/login'
     | '/deposits/add'
-    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -481,16 +490,17 @@ export interface FileRouteTypes {
     | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
     | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/articles'
     | '/deposits/cash-register-controls'
     | '/returns/cash-register-controls'
     | '/sales/cash-register-controls'
+    | '/deposits/articles/$articleId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dymo'
     | '/login'
     | '/deposits/add'
-    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -528,16 +538,17 @@ export interface FileRouteTypes {
     | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
     | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/articles'
     | '/deposits/cash-register-controls'
     | '/returns/cash-register-controls'
     | '/sales/cash-register-controls'
+    | '/deposits/articles/$articleId/edit'
   id:
     | '__root__'
     | '/'
     | '/dymo'
     | '/login'
     | '/deposits/add'
-    | '/deposits/articles'
     | '/deposits/cash-register-control'
     | '/deposits/listing'
     | '/deposits/predeposits'
@@ -575,9 +586,11 @@ export interface FileRouteTypes {
     | '/returns/cash-register-controls/$cashRegisterId'
     | '/sales/$saleId/edit'
     | '/sales/cash-register-controls/$cashRegisterId'
+    | '/deposits/articles/'
     | '/deposits/cash-register-controls/'
     | '/returns/cash-register-controls/'
     | '/sales/cash-register-controls/'
+    | '/deposits/articles/$articleId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -585,7 +598,6 @@ export interface RootRouteChildren {
   DymoRoute: typeof DymoRoute
   LoginRoute: typeof LoginRoute
   DepositsAddRoute: typeof DepositsAddRoute
-  DepositsArticlesRoute: typeof DepositsArticlesRoute
   DepositsCashRegisterControlRoute: typeof DepositsCashRegisterControlRoute
   DepositsListingRoute: typeof DepositsListingRoute
   DepositsPredepositsRoute: typeof DepositsPredepositsRoute
@@ -623,9 +635,11 @@ export interface RootRouteChildren {
   ReturnsCashRegisterControlsCashRegisterIdRoute: typeof ReturnsCashRegisterControlsCashRegisterIdRoute
   SalesSaleIdEditRoute: typeof SalesSaleIdEditRoute
   SalesCashRegisterControlsCashRegisterIdRoute: typeof SalesCashRegisterControlsCashRegisterIdRoute
+  DepositsArticlesIndexRoute: typeof DepositsArticlesIndexRoute
   DepositsCashRegisterControlsIndexRoute: typeof DepositsCashRegisterControlsIndexRoute
   ReturnsCashRegisterControlsIndexRoute: typeof ReturnsCashRegisterControlsIndexRoute
   SalesCashRegisterControlsIndexRoute: typeof SalesCashRegisterControlsIndexRoute
+  DepositsArticlesArticleIdEditRoute: typeof DepositsArticlesArticleIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -875,13 +889,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsCashRegisterControlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/deposits/articles': {
-      id: '/deposits/articles'
-      path: '/deposits/articles'
-      fullPath: '/deposits/articles'
-      preLoaderRoute: typeof DepositsArticlesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/deposits/add': {
       id: '/deposits/add'
       path: '/deposits/add'
@@ -908,6 +915,13 @@ declare module '@tanstack/react-router' {
       path: '/deposits/cash-register-controls'
       fullPath: '/deposits/cash-register-controls'
       preLoaderRoute: typeof DepositsCashRegisterControlsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deposits/articles/': {
+      id: '/deposits/articles/'
+      path: '/deposits/articles'
+      fullPath: '/deposits/articles'
+      preLoaderRoute: typeof DepositsArticlesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/cash-register-controls/$cashRegisterId': {
@@ -945,6 +959,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepositsDepositIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deposits/articles/$articleId/edit': {
+      id: '/deposits/articles/$articleId/edit'
+      path: '/deposits/articles/$articleId/edit'
+      fullPath: '/deposits/articles/$articleId/edit'
+      preLoaderRoute: typeof DepositsArticlesArticleIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -953,7 +974,6 @@ const rootRouteChildren: RootRouteChildren = {
   DymoRoute: DymoRoute,
   LoginRoute: LoginRoute,
   DepositsAddRoute: DepositsAddRoute,
-  DepositsArticlesRoute: DepositsArticlesRoute,
   DepositsCashRegisterControlRoute: DepositsCashRegisterControlRoute,
   DepositsListingRoute: DepositsListingRoute,
   DepositsPredepositsRoute: DepositsPredepositsRoute,
@@ -997,10 +1017,12 @@ const rootRouteChildren: RootRouteChildren = {
   SalesSaleIdEditRoute: SalesSaleIdEditRoute,
   SalesCashRegisterControlsCashRegisterIdRoute:
     SalesCashRegisterControlsCashRegisterIdRoute,
+  DepositsArticlesIndexRoute: DepositsArticlesIndexRoute,
   DepositsCashRegisterControlsIndexRoute:
     DepositsCashRegisterControlsIndexRoute,
   ReturnsCashRegisterControlsIndexRoute: ReturnsCashRegisterControlsIndexRoute,
   SalesCashRegisterControlsIndexRoute: SalesCashRegisterControlsIndexRoute,
+  DepositsArticlesArticleIdEditRoute: DepositsArticlesArticleIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -54,6 +54,13 @@ export function shortArticleCode(
   return `${depositIndex} ${identificationLetter}`
 }
 
+// Un numéro de série « 0 » vaut « pas de numéro » : ni le formulaire ni
+// l'étiquette ne l'affichent.
+export function normalizeSerialNumber(serialNumber: string | null): string {
+  const value = String(serialNumber ?? '').trim()
+  return value === '0' ? '' : value
+}
+
 // Order: A..Z, then AA..ZZ, then AAA..ZZZ. A plain lexicographic sort
 // would interleave (AA before B), which is wrong for our labels.
 export function compareIdentificationLetters(a: string, b: string): number {

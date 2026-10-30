@@ -68,7 +68,7 @@ describe('Screen: an article code entered in lower case', () => {
   it('opens the article for edition all the same', async () => {
     const { articles } = await givenDeposit({}, [{ price: 120 }])
     const { user } = await openScreen('/deposits/articles')
-    await screen.findByRole('heading', { name: 'Modifier un article' })
+    await screen.findByRole('heading', { name: 'Liste des articles' })
 
     const search = screen.getByPlaceholderText('Ex: 2026 1001A')
     await user.type(search, `${articles[0].code.toLowerCase()}{Enter}`)

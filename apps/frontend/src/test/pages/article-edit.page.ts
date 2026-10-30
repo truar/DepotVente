@@ -1,44 +1,48 @@
-// Page object for "Modifier un article" (/deposits/articles): the desk
-// where a volunteer looks an article up by its code and corrects it — a
-// wrong price on the label, a missing serial number, a description.
+// Page object for "Modifier un article" (/deposits/articles/:id/edit): the
+// desk where a volunteer corrects an article — a wrong price on the label, a
+// missing serial number, a description. The article is reached from the
+// articles list, by scanning or typing its code there.
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 export async function articleEditPage() {
   const { user: u, router } = await openScreen('/deposits/articles')
-  await screen.findByRole('heading', { name: 'Modifier un article' })
+  await screen.findByRole('heading', { name: 'Liste des articles' })
 
   const page = {
     user: u,
     pathname: () => router.state.location.pathname,
 
     // ---- looking the article up ------------------------------------------
-    // The volunteer types (or scans) the code and presses Enter; the form
-    // opens on the article, labelled by its short code ("12 A").
+    // On the list, the volunteer types (or scans) the code and presses
+    // Enter; the form opens on the article, labelled by its short code
+    // ("12 A").
     async search(code: string, shortCode: string) {
       await u.type(
         screen.getByPlaceholderText('Ex: 2026 1001A'),
         `${code}{Enter}`,
       )
+      await screen.findByRole('heading', { name: 'Modifier un article' })
       await screen.findByDisplayValue(shortCode)
     },
-    // Searching while an article is open: the form stays on that article
-    // until the volunteer answers the question.
-    async searchAnother(code: string) {
-      await u.type(
-        screen.getByPlaceholderText('Ex: 2026 1001A'),
-        `${code}{Enter}`,
+    // « Retour à la liste des articles » always asks first.
+    async backToList() {
+      await u.click(
+        screen.getByRole('link', { name: 'Retour à la liste des articles' }),
       )
+      return page.question()
     },
-    // Opens another article while one is open, answering yes to the
-    // question.
+    // Opens another article: back to the list, answering yes, then its
+    // code.
     async openAnother(code: string, shortCode: string) {
-      await page.searchAnother(code)
-      await (await page.question()).confirm()
-      await screen.findByDisplayValue(shortCode)
+      await (await page.backToList()).confirm()
+      await page.isOnList()
+      await page.search(code, shortCode)
     },
-    // After a save or a cancel the form is closed and the cursor waits in
-    // the search field for the next code.
-    isFormClosed: () => screen.queryByText('Aucun article') !== null,
+    // After a save or a cancel the volunteer is back on the list, the
+    // cursor in the code field for the next one.
+    async isOnList() {
+      await screen.findByRole('heading', { name: 'Liste des articles' })
+    },
     searchField: () => screen.getByPlaceholderText('Ex: 2026 1001A'),
     async question() {
       const box = await screen.findByRole('alertdialog')
@@ -97,6 +101,12 @@ export async function articleEditPage() {
     color: () => screen.getByLabelText<HTMLInputElement>('Couleur').value,
     status: () =>
       screen.getByRole('combobox', { name: 'Statut' }).textContent.trim(),
+
+    async printLabel() {
+      await u.click(
+        screen.getByRole('button', { name: "Imprimer l'étiquette" }),
+      )
+    },
 
     async validate() {
       await u.click(screen.getByRole('button', { name: 'Valider' }))

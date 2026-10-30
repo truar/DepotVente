@@ -1,4 +1,6 @@
 import { useCallback, useEffect } from 'react'
+import type { Article } from '@/db.ts'
+import { normalizeSerialNumber, shortArticleCode } from '@/utils'
 
 export type ArticlePrintParam = {
   code: string
@@ -10,6 +12,25 @@ export type ArticlePrintParam = {
   category: string
   size: string
   serialNumber?: string
+}
+
+// L'étiquette d'un article tel qu'il est enregistré, comme l'écran « Modifier
+// un article » l'imprime.
+export function articleLabel(article: Article): ArticlePrintParam {
+  return {
+    color: article.color,
+    brand: article.brand,
+    size: article.size,
+    category: article.category,
+    code: article.code,
+    price: `${article.price}`,
+    shortCode: shortArticleCode(
+      article.depositIndex,
+      article.identificationLetter,
+    ),
+    model: article.model ?? '',
+    serialNumber: normalizeSerialNumber(article.serialNumber),
+  }
 }
 
 export function replacePlaceholders(

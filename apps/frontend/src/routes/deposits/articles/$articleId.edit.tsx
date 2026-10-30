@@ -1,30 +1,15 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
-import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 import { toast } from 'sonner'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { Page } from '@/components/Page.tsx'
-import {
-  type KeyboardEvent,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import { Input } from '@/components/ui/input.tsx'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { type Article, db } from '@/db.ts'
 import {
   Empty,
-  EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -34,7 +19,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import type { EditArticleFormType } from '@/types/EditArticleForm.ts'
 import { EditArticleSchema } from '@/types/EditArticleForm.ts'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { normalizeArticleCode, shortArticleCode } from '@/utils'
+import { normalizeSerialNumber, shortArticleCode } from '@/utils'
 import { Field, FieldContent } from '@/components/ui/field.tsx'
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -53,7 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx'
 
-export const Route = createFileRoute('/deposits/articles')({
+export const Route = createFileRoute('/deposits/articles/$articleId/edit')({
   beforeLoad: requireAuthAndWorkstation,
   component: () => (
     <PublicLayout>
@@ -63,128 +48,60 @@ export const Route = createFileRoute('/deposits/articles')({
 })
 
 function RouteComponent() {
+  const { articleId } = Route.useParams()
   const navigate = useNavigate()
   const [backOpen, setBackOpen] = useState(false)
+  // Enregistré ou annulé, l'article se referme sur la liste, où le curseur
+  // attend le code suivant.
+  const backToList = useCallback(
+    () => navigate({ to: '/deposits/articles' }),
+    [navigate],
+  )
   return (
     <>
       <Page
         title="Modifier un article"
         navigation={
           <Link
-            to={'..'}
+            to="/deposits/articles"
             onClick={(e) => {
               e.preventDefault()
               setBackOpen(true)
             }}
           >
-            Retour au menu
+            Retour à la liste des articles
           </Link>
         }
       >
-        <ArticleEditPage />
+        <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+          <ArticleEditComponent articleId={articleId} onClose={backToList} />
+        </div>
       </Page>
       <ConfirmationDialog
         open={backOpen}
         onOpenChange={setBackOpen}
         title={'Etes vous sur de vouloir quitter cette page\u00a0?'}
         description="Les modifications non enregistrées seront perdues."
-        onConfirm={() => navigate({ to: '..' })}
+        onConfirm={backToList}
       />
     </>
   )
 }
 
-function ArticleEditPage() {
-  const [code, setCode] = useState<string>('')
-  // Un code qui ne correspond à aucun article n'ouvre rien : chercher un
-  // autre code ensuite ne demande pas de confirmation.
-  const openArticle = useLiveQuery(
-    () => (code ? db.articles.where({ code }).first() : undefined),
-    [code],
-  )
-  const { request, confirmation } = useAskBeforeSwitching(
-    openArticle ? code : null,
-    setCode,
-  )
-  const inputRef = useRef<HTMLInputElement>(null)
-  // Enregistré ou annulé, l'article se referme et le curseur revient dans la
-  // recherche pour le code suivant. Le focus se pose une fois le formulaire
-  // démonté : avant, la confirmation de « Annuler » le reprendrait.
-  const closeArticle = useCallback(() => setCode(''), [])
-  useEffect(() => {
-    if (!code) inputRef.current?.focus()
-  }, [code])
-  return (
-    <div className="flex flex-col gap-5">
-      <ArticleSearchInput onClick={request} inputRef={inputRef} />
-      <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
-        <ArticleEditComponent articleCode={code} onClose={closeArticle} />
-      </div>
-      <ConfirmationDialog
-        {...confirmation}
-        title={'Etes vous sur de vouloir changer d’article\u00a0?'}
-        description="Les modifications non enregistrées seront perdues."
-      />
-    </div>
-  )
-}
-
-type ArticleSearchInputProps = {
-  onClick: (code: string) => void
-  inputRef: RefObject<HTMLInputElement | null>
-}
-
-function ArticleSearchInput(props: ArticleSearchInputProps) {
-  const { onClick, inputRef } = props
-  const [code, setCode] = useState<string>('')
-  const checkKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        // Sans cela, la même frappe valide aussi le bouton qui prend le focus
-        // dans la confirmation qui vient de s'ouvrir (« Non »).
-        e.preventDefault()
-        submit()
-      }
-    },
-    [code],
-  )
-  const submit = useCallback(() => {
-    onClick(code)
-    setCode('')
-  }, [code])
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex gap-3">
-        <div>
-          <Input
-            ref={inputRef}
-            value={code}
-            onChange={(e) => setCode(normalizeArticleCode(e.target.value))}
-            placeholder="Ex: 2026 1001A"
-            onKeyDown={checkKeyDown}
-            autoFocus
-          />
-        </div>
-        <div>
-          <CustomButton onClick={submit}>Rechercher</CustomButton>
-        </div>
-      </div>
-    </div>
-  )
-}
 type ArticleEditComponentProps = {
-  articleCode: string
+  articleId: string
   onClose: () => void
 }
 function ArticleEditComponent(props: ArticleEditComponentProps) {
-  const { articleCode, onClose } = props
+  const { articleId, onClose } = props
+  // null : l'article n'existe pas ; undefined : la base n'a pas encore
+  // répondu.
   const article = useLiveQuery(
-    () => db.articles.where({ code: articleCode }).first(),
-    [articleCode],
+    async () => (await db.articles.get(articleId)) ?? null,
+    [articleId],
   )
-  // Le code vidé ferme le formulaire tout de suite, sans attendre que la
-  // requête ait oublié l'article précédent.
-  if (!articleCode || !article) {
+  if (article === undefined) return null
+  if (article === null) {
     return (
       <Empty>
         <EmptyHeader>
@@ -192,11 +109,6 @@ function ArticleEditComponent(props: ArticleEditComponentProps) {
             <FolderXIcon />
           </EmptyMedia>
           <EmptyTitle>Aucun article</EmptyTitle>
-          {articleCode && (
-            <EmptyDescription>
-              La référence {articleCode} n'existe pas
-            </EmptyDescription>
-          )}
         </EmptyHeader>
       </Empty>
     )
@@ -207,11 +119,6 @@ function ArticleEditComponent(props: ArticleEditComponentProps) {
 type ArticleEditFormProps = {
   article: Article
   onClose: () => void
-}
-
-function normalizeSerialNumber(serialNumber: string | null): string {
-  const value = String(serialNumber ?? '').trim()
-  return value === '0' ? '' : value
 }
 
 function ArticleEditForm(props: ArticleEditFormProps) {
