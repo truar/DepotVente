@@ -116,7 +116,7 @@ describe('Screen: return the unsold articles to a professional', () => {
 
   // The scanned list is sorted by category, not by scan: the article just
   // scanned stands out for a few seconds, so the volunteer sees at a
-  // glance which line it landed on.
+  // glance which one went through.
   it('makes the article just scanned stand out for a few seconds', async () => {
     const page = await returnsProsPage()
     await page.pickPro('Bravo')
@@ -131,6 +131,84 @@ describe('Screen: return the unsold articles to a professional', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000))
     expect(page.highlightedCodes()).toEqual([bravoCodes[1]])
     await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+  })
+
+  // CHARLIE (fiche 6) takes back a pair of boots and a pair of skis: the
+  // list sorts the boots first.
+  const givenCharlie = async () => {
+    const charlie = await givenDeposit(
+      {
+        depositIndex: 6,
+        type: 'PRO',
+        contributionStatus: 'PRO',
+        seller: { lastName: 'Charlie', firstName: 'Luc' },
+      },
+      [{ category: 'Chaussures' }, { category: 'Skis' }],
+    )
+    return charlie.articles.map((a) => a.code)
+  }
+
+  // Once the few seconds are over, the pair of skis just scanned goes
+  // back to its place, under its category, after the boots.
+  it('puts the article just scanned back under its category after a few seconds', async () => {
+    const [boots, skis] = await givenCharlie()
+    const page = await returnsProsPage()
+    await page.pickPro('Charlie')
+
+    await page.scan(boots)
+    await page.toast(`Retour de l'article ${boots} effectué`)
+    await page.scan(skis)
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([skis]))
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+
+    expect(page.listedCodes()).toEqual([boots, skis])
+  })
+
+  // The pair of skis sorts after the boots, yet for a few seconds it is
+  // the first line: the volunteer sees it without looking for it.
+  it('shows the article just scanned on the first line for a few seconds, whatever its category', async () => {
+    const [boots, skis] = await givenCharlie()
+    const page = await returnsProsPage()
+    await page.pickPro('Charlie')
+
+    await page.scan(boots)
+    await page.toast(`Retour de l'article ${boots} effectué`)
+    await page.scan(skis)
+
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([skis]))
+    expect(page.listedCodes()).toEqual([skis, boots])
+  })
+
+  // DELTA (fiche 7) brought fifty pairs of boots, already scanned out, and
+  // a pair of skis. The list shows fifty lines a page, boots first: sorted,
+  // the pair of skis would fall on the second page.
+  it('shows the article just scanned on the first line even when it sorts beyond the first page', async () => {
+    const delta = await givenDeposit(
+      {
+        depositIndex: 7,
+        type: 'PRO',
+        contributionStatus: 'PRO',
+        seller: { lastName: 'Delta', firstName: 'Marc' },
+      },
+      [
+        ...Array.from(
+          { length: 50 },
+          (): Partial<Article> => ({
+            category: 'Chaussures',
+            status: 'RETURNED',
+          }),
+        ),
+        { category: 'Skis' },
+      ],
+    )
+    const skis = delta.articles[50].code
+    const page = await returnsProsPage()
+    await page.pickPro('Delta')
+
+    await page.scan(skis)
+
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([skis]))
+    expect(page.listedCodes()[0]).toBe(skis)
   })
 
   // A code that is not an article, or an article of

@@ -61,8 +61,10 @@ interface DataTableProps<TData, TValue> {
   initialPageSize?: number
   // L'identifiant d'une ligne, à donner pour pouvoir en mettre une en avant.
   getRowId?: (row: TData) => string
-  // La ligne mise en avant (l'article qui vient d'être scanné), surlignée
-  // et marquée comme ligne courante.
+  // La ligne mise en avant (l'article qui vient d'être scanné), surlignée,
+  // marquée comme ligne courante et affichée en tête, hors tri, filtres et
+  // pagination : triée, elle pourrait tomber loin dans la liste, voire sur
+  // une autre page.
   highlightedRowId?: string | null
   // Les lignes qu'on peut cocher ; toutes par défaut.
   canSelectRow?: (row: TData) => boolean
@@ -132,6 +134,17 @@ export function DataTable<TData, TValue>({
       columnFilters: enableColumnFilters ? columnFilters : undefined,
     },
   })
+
+  const pageRows = table.getRowModel().rows
+  const highlightedRow = highlightedRowId
+    ? table.getCoreRowModel().rowsById[highlightedRowId]
+    : undefined
+  const rows = highlightedRow
+    ? [
+        highlightedRow,
+        ...pageRows.filter((row) => row.id !== highlightedRow.id),
+      ]
+    : pageRows
 
   return (
     <div className="flex flex-col gap-2">
@@ -203,8 +216,8 @@ export function DataTable<TData, TValue>({
               ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => {
+            {rows.length ? (
+              rows.map((row) => {
                 const highlighted = row.id === highlightedRowId
                 return (
                   <TableRow

@@ -166,7 +166,7 @@ describe('Screen: receiving a professional’s articles', () => {
 
   // The received list is sorted by category, not by scan: the article
   // just scanned stands out for a few seconds, so the volunteer sees at a
-  // glance which line it landed on.
+  // glance which one went through.
   it('makes the article just scanned stand out for a few seconds', async () => {
     const page = await proReceptionPage()
     await page.pickPro('Alpha')
@@ -181,6 +181,35 @@ describe('Screen: receiving a professional’s articles', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000))
     expect(page.highlightedCodes()).toEqual([code(3, 'C')])
     await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+  })
+
+  // Once the few seconds are over, the pair of skis just scanned goes
+  // back to its place, under its category, after the boots.
+  it('puts the article just scanned back under its category after a few seconds', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Alpha')
+
+    await page.scan(code(3, 'C'))
+    await page.lastToast(`Dépôt de l'article ${code(3, 'C')} effectué`)
+    await page.scan(code(3, 'A'))
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([code(3, 'A')]))
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([]))
+
+    expect(page.listedCodes()).toEqual([code(3, 'C'), code(3, 'A')])
+  })
+
+  // The pair of skis sorts after the boots, yet for a few seconds it is
+  // the first line: the volunteer sees it without looking for it.
+  it('shows the article just scanned on the first line for a few seconds, whatever its category', async () => {
+    const page = await proReceptionPage()
+    await page.pickPro('Alpha')
+
+    await page.scan(code(3, 'C'))
+    await page.lastToast(`Dépôt de l'article ${code(3, 'C')} effectué`)
+    await page.scan(code(3, 'A'))
+
+    await waitFor(() => expect(page.highlightedCodes()).toEqual([code(3, 'A')]))
+    expect(page.listedCodes()).toEqual([code(3, 'A'), code(3, 'C')])
   })
 
   // The desk works category by category: the skis, then the boots. Each
