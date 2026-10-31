@@ -360,7 +360,7 @@ describe('Screen: write the cheque of a fiche', () => {
     const checks = await returnsChecksPage()
     await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
     // [Identifiant, Déposant, Poste retour, Numéro du chèque, Signature,
-    //  Heure retour, Montant du chèque]
+    //  Heure retour, Montant du chèque, the button that corrects the number]
     // « Heure retour » is the time on the wall in Rumilly (16:58), not UTC.
     expect(checks.rowText(12)).toEqual([
       '12',
@@ -370,6 +370,7 @@ describe('Screen: write the cheque of a fiche', () => {
       'Paul',
       '02/10/2026 16:58:00',
       '178,00 €',
+      '',
     ])
   })
 

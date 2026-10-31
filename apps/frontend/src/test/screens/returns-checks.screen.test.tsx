@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
 import { returnsChecksPage } from '@/test/pages/returns-checks.page.ts'
 import { signedInAs } from '@/test/screen.tsx'
 
@@ -67,5 +67,146 @@ describe('Screen: the cheque listing', () => {
 
     const page = await returnsChecksPage()
     expect(page.collectedAt(14)).toBe('')
+  })
+})
+
+// A cheque comes out of the printer on the wrong form, or the number typed
+// on « Retour > Particulier » was not the one of the cheque in the tray: the
+// return is validated, the fiche has left the return screen, and the number
+// kept for the accountant is wrong. It is corrected here, one cheque at a
+// time.
+describe('Screen: correcting the number of a cheque already written', () => {
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(1000)
+    await givenDeposit({
+      depositIndex: 12,
+      signatory: 'Camille Durand',
+      checkId: '1042',
+      collectWorkstationId: 1000,
+      sellerAmount: 178,
+      collectedAt: '2026-09-12T14:58:00.000Z',
+      seller: { lastName: 'Durand', firstName: 'Camille' },
+    })
+    await givenDeposit({
+      depositIndex: 13,
+      signatory: 'Jean Bon',
+      checkId: '1043',
+      collectWorkstationId: 1000,
+      sellerAmount: 22,
+      collectedAt: '2026-09-12T15:04:00.000Z',
+      seller: { lastName: 'Bon', firstName: 'Jean' },
+    })
+  })
+
+  const checkIdOf = async (depositIndex: number) =>
+    (await local.deposits()).find((d) => d.depositIndex === depositIndex)
+      ?.checkId
+
+  it('corrects the number on the fiche, and sends it to the other PCs', async () => {
+    const page = await returnsChecksPage()
+    expect(page.checkId(12)).toBe('1042')
+
+    const box = await page.edit(12)
+    expect(box.title).toBe('Modifier le n° de chèque — fiche 12')
+    expect(box.checkId()).toBe('1042')
+    await box.type('1044')
+    await box.save()
+
+    expect(page.isEditOpen()).toBe(false)
+    expect(page.checkId(12)).toBe('1044')
+    expect(await checkIdOf(12)).toBe('1044')
+    // Only the number moves: the signatory and the return stay as they were.
+    expect(page.rowText(12)).toEqual([
+      '12',
+      'Durand Camille',
+      '1000',
+      '1044',
+      'Camille Durand',
+      '12/09/2026 16:58:00',
+      '178,00 €',
+      '',
+    ])
+    expect(
+      (await local.outbox()).map((op) => [
+        op.collection,
+        op.operation,
+        op.data,
+      ]),
+    ).toEqual([['deposits', 'update', { checkId: '1044' }]])
+  })
+
+  it('refuses a number that is not one, as the return screen does', async () => {
+    const page = await returnsChecksPage()
+    const box = await page.edit(12)
+
+    await box.type('')
+    await box.save()
+    expect(box.messages()).toEqual(['Le n° de chèque est obligatoire'])
+
+    await box.type('10a')
+    await box.save()
+    expect(box.messages()).toEqual(['Le n° de chèque est obligatoire'])
+
+    await box.cancel()
+    expect(page.checkId(12)).toBe('1042')
+    expect(await checkIdOf(12)).toBe('1042')
+    expect(await local.outbox()).toEqual([])
+  })
+
+  it('warns when another cheque already has the number, and saves it once confirmed', async () => {
+    const page = await returnsChecksPage()
+    const box = await page.edit(12)
+    await box.type('1043')
+    await box.save()
+
+    expect(box.messages()).toEqual([
+      'Le chèque 1043 est déjà celui de la fiche 13 (Bon Jean).',
+    ])
+    expect(await checkIdOf(12)).toBe('1042')
+
+    await box.saveAnyway()
+
+    expect(page.isEditOpen()).toBe(false)
+    expect(page.checkId(12)).toBe('1043')
+    expect(page.checkId(13)).toBe('1043')
+    expect(await checkIdOf(12)).toBe('1043')
+  })
+
+  it('asks again when the number is changed after the warning', async () => {
+    const page = await returnsChecksPage()
+    const box = await page.edit(12)
+    await box.type('1043')
+    await box.save()
+    expect(box.hasButton('Enregistrer quand même')).toBe(true)
+
+    await box.type('1045')
+    expect(box.messages()).toEqual([])
+    expect(box.hasButton('Enregistrer quand même')).toBe(false)
+    await box.save()
+
+    expect(page.checkId(12)).toBe('1045')
+  })
+
+  it('leaves the number as it was when the box is cancelled', async () => {
+    const page = await returnsChecksPage()
+    const box = await page.edit(12)
+    await box.type('1044')
+    await box.cancel()
+
+    expect(page.isEditOpen()).toBe(false)
+    expect(page.checkId(12)).toBe('1042')
+    expect(await checkIdOf(12)).toBe('1042')
+    expect(await local.outbox()).toEqual([])
+  })
+
+  it('opens on the number of the fiche, not the one typed last time', async () => {
+    const page = await returnsChecksPage()
+    const first = await page.edit(12)
+    await first.type('1099')
+    await first.cancel()
+
+    const again = await page.edit(12)
+    expect(again.checkId()).toBe('1042')
   })
 })

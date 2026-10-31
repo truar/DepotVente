@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
@@ -7,7 +9,21 @@ import { type Contact, db, toIsoString } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
-import { useMemo } from 'react'
+import { Button } from '@/components/ui/button.tsx'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog.tsx'
+import { Field, FieldContent, FieldError } from '@/components/ui/field.tsx'
+import { Input } from '@/components/ui/input.tsx'
+import { Label } from '@/components/ui/label.tsx'
+import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
+import { CheckIdSchema } from '@/types/ReturnDepositForm.ts'
+import { useMemo, useState } from 'react'
 import { FormattedDate, FormattedNumber, useIntl } from 'react-intl'
 import { printPdf } from '@/pdf/print.tsx'
 import {
@@ -59,6 +75,7 @@ function ChecksDataTable() {
           const seller = contactMap.get(deposit.sellerId)
           if (!seller) return
           return {
+            depositId: deposit.id,
             index: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
             sellerAmount: deposit.sellerAmount,
@@ -110,6 +127,7 @@ function ChecksSummary({ checks }: { checks: CheckTableType[] }) {
 }
 
 export type CheckTableType = {
+  depositId: string
   index: number
   seller: string
   sellerAmount?: number
@@ -175,7 +193,145 @@ export const columns: ColumnDef<CheckTableType>[] = [
       )
     },
   },
+  {
+    id: 'actions',
+    cell: ({ row }) => <EditCheckIdButton check={row.original} />,
+  },
 ]
+
+// Un chèque sorti sur la mauvaise formule, ou un n° tapé au retour qui
+// n'était pas celui du chèque dans l'imprimante : le retour est validé, la
+// fiche a quitté l'écran de retour, et le n° gardé pour la comptabilité est
+// faux. On le corrige ici, un chèque à la fois.
+function EditCheckIdButton({ check }: { check: CheckTableType }) {
+  const depositsDb = useDepositsDb()
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  // Un n° déjà porté par une autre fiche : on prévient, et on l'enregistre
+  // quand même si on le confirme.
+  const [duplicate, setDuplicate] = useState<string | null>(null)
+
+  const openBox = () => {
+    setDraft(check.checkId ?? '')
+    setError(null)
+    setDuplicate(null)
+    setOpen(true)
+  }
+
+  // Le n° change : l'erreur et l'avertissement visaient l'ancien.
+  const changeDraft = (value: string) => {
+    setDraft(value)
+    setError(null)
+    setDuplicate(null)
+  }
+
+  const save = async (confirmed: boolean) => {
+    const parsed = CheckIdSchema.safeParse(draft)
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message)
+      return
+    }
+    const checkId = `${parsed.data}`
+    if (checkId === check.checkId) {
+      setOpen(false)
+      return
+    }
+    if (!confirmed) {
+      const other = await db.deposits
+        .filter(
+          (deposit) =>
+            deposit.checkId === checkId &&
+            deposit.id !== check.depositId &&
+            !deposit.deletedAt,
+        )
+        .first()
+      if (other) {
+        const seller = await db.contacts.get(other.sellerId)
+        setDuplicate(
+          `Le chèque ${checkId} est déjà celui de la fiche ${other.depositIndex}` +
+            (seller ? ` (${seller.lastName} ${seller.firstName}).` : '.'),
+        )
+        return
+      }
+    }
+    await depositsDb.update(check.depositId, { checkId })
+    setOpen(false)
+    toast.success(`Fiche ${check.index} : chèque n° ${checkId}`)
+  }
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        type="button"
+        onClick={openBox}
+        aria-label="Modifier le n° de chèque"
+        title="Modifier le n° de chèque"
+      >
+        <Pencil className="w-4 h-4" />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>
+              Modifier le n° de chèque — fiche {check.index}
+            </DialogTitle>
+            <DialogDescription>
+              Le n° imprimé sur le chèque remis à {check.seller}.
+            </DialogDescription>
+          </DialogHeader>
+          <Field data-invalid={!!error}>
+            <FieldContent>
+              <Label htmlFor="edit-check-id">N° de chèque</Label>
+              <Input
+                id="edit-check-id"
+                value={draft}
+                onChange={(e) => changeDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void save(false)
+                  }
+                }}
+                aria-invalid={!!error}
+                autoComplete="off"
+                autoFocus
+              />
+              {error && <FieldError>{error}</FieldError>}
+            </FieldContent>
+          </Field>
+          {duplicate && (
+            <p
+              role="alert"
+              className="text-sm text-amber-800 bg-amber-50 p-3 rounded"
+            >
+              {duplicate}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Annuler
+            </Button>
+            {duplicate ? (
+              <Button type="button" onClick={() => void save(true)}>
+                Enregistrer quand même
+              </Button>
+            ) : (
+              <Button type="button" onClick={() => void save(false)}>
+                Enregistrer
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 type ChecksDataTableHeaderActionProps = {
   table: Table<CheckTableType>
