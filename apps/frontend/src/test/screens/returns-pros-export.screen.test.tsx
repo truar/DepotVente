@@ -24,27 +24,9 @@ describe('Screen: export the articles of a professional to Excel', () => {
     )
   })
 
-  // Excel has no time zone: a date reads as the wall-clock time of the PC
-  // that exported it. read-excel-file hands that wall clock back as UTC.
-  const asExcelShowsIt = (date: Date) =>
-    new Date(
-      Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        date.getHours(),
-        date.getMinutes(),
-        date.getSeconds(),
-      ),
-    )
-
-  it('downloads every article of the fiche, one line each, with VENDU OUI or NON', async () => {
-    const depositedAt = new Date(YEAR, 9, 30, 6, 46, 35)
-    const soldAt = new Date(YEAR, 9, 31, 15, 2, 9)
+  it('downloads every article of the fiche, one line each, and nothing internal to our system', async () => {
     // The second article came from another PC: the server sends its price
-    // as a decimal string and its dates as ISO strings, stored as is.
-    const pulledDepositedAt = `${YEAR}-10-30T05:47:12.000Z`
-    const pulledReturnedAt = `${YEAR}-10-31T17:32:37.000Z`
+    // as a decimal string, stored as is.
     const bravo = await givenDeposit(
       {
         depositIndex: 4,
@@ -67,8 +49,6 @@ describe('Screen: export the articles of a professional to Excel', () => {
           year: YEAR,
           // Shown to the cashier only: not part of the export.
           saleAlert: 'Vérifier la taille',
-          createdAt: depositedAt,
-          updatedAt: soldAt,
         },
         {
           status: 'RETURNED',
@@ -80,8 +60,6 @@ describe('Screen: export the articles of a professional to Excel', () => {
           size: 'M',
           color: 'Noir',
           year: YEAR,
-          createdAt: pulledDepositedAt as unknown as Date,
-          updatedAt: pulledReturnedAt as unknown as Date,
         },
         {
           status: 'ABSENT',
@@ -93,8 +71,6 @@ describe('Screen: export the articles of a professional to Excel', () => {
           size: '8',
           color: 'Bleu',
           year: YEAR - 1,
-          createdAt: depositedAt,
-          updatedAt: depositedAt,
         },
       ] satisfies Array<Partial<Article>>,
     )
@@ -117,18 +93,7 @@ describe('Screen: export the articles of a professional to Excel', () => {
         'N° de série',
         'Taille',
         'Couleur',
-        'Année',
-        'N° fiche',
-        'Lettre',
-        'N° article',
-        'Statut',
         'VENDU',
-        'Créé le',
-        'Modifié le',
-        'Supprimé le',
-        'id',
-        'depositId',
-        'saleId',
       ],
       [
         sold.code,
@@ -140,18 +105,7 @@ describe('Screen: export the articles of a professional to Excel', () => {
         'DWP619',
         '36',
         'Noir',
-        YEAR,
-        4,
-        'A',
-        0,
-        'Vendu',
         'OUI',
-        asExcelShowsIt(depositedAt),
-        asExcelShowsIt(soldAt),
-        null,
-        sold.id,
-        bravo.deposit.id,
-        saleId,
       ],
       [
         returned.code,
@@ -163,18 +117,7 @@ describe('Screen: export the articles of a professional to Excel', () => {
         null,
         'M',
         'Noir',
-        YEAR,
-        4,
-        'B',
-        1,
-        'Restitué',
         'NON',
-        asExcelShowsIt(new Date(pulledDepositedAt)),
-        asExcelShowsIt(new Date(pulledReturnedAt)),
-        null,
-        returned.id,
-        bravo.deposit.id,
-        null,
       ],
       [
         absent.code,
@@ -186,18 +129,7 @@ describe('Screen: export the articles of a professional to Excel', () => {
         null,
         '8',
         'Bleu',
-        YEAR - 1,
-        4,
-        'C',
-        2,
-        'Absent',
         'NON',
-        asExcelShowsIt(depositedAt),
-        asExcelShowsIt(depositedAt),
-        null,
-        absent.id,
-        bravo.deposit.id,
-        null,
       ],
     ])
   })
