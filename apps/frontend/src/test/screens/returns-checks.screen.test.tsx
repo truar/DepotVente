@@ -14,7 +14,7 @@ import { signedInAs } from '@/test/screen.tsx'
 // that return, which is what made it look like a single broken machine.
 describe('Screen: the cheque listing', () => {
   it('lists cheques whether collectedAt was synced or written on this PC', async () => {
-    signedInAs()
+    signedInAs('ADMIN')
     await givenWorkstation(1000)
 
     // Came back from the server: ISO string.
@@ -54,7 +54,7 @@ describe('Screen: the cheque listing', () => {
   })
 
   it('leaves the date empty rather than showing a bogus one when never collected', async () => {
-    signedInAs()
+    signedInAs('ADMIN')
     await givenWorkstation(1000)
     await givenDeposit({
       depositIndex: 14,
@@ -77,7 +77,7 @@ describe('Screen: the cheque listing', () => {
 // time.
 describe('Screen: correcting the number of a cheque already written', () => {
   beforeEach(async () => {
-    signedInAs()
+    signedInAs('ADMIN')
     await givenWorkstation(1000)
     await givenDeposit({
       depositIndex: 12,

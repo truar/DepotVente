@@ -79,6 +79,30 @@ describe('Screen: who may open what', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
+  // The cheque listing is where a cheque number is corrected after the
+  // return: the menu only shows it to an administrator, and its address
+  // only opens for one.
+  it('sends a volunteer back to the menu from the cheque listing', async () => {
+    await givenWorkstation(1000)
+    signedInAs('BENEVOLE')
+
+    const { router } = await openScreen('/returns/checks')
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+  })
+
+  it('opens the cheque listing to an administrator', async () => {
+    await givenWorkstation(1000)
+    signedInAs('ADMIN')
+
+    const { router } = await openScreen('/returns/checks')
+
+    expect(router.state.location.pathname).toBe('/returns/checks')
+    expect(
+      await screen.findByRole('heading', { name: 'Visualiser les chèques' }),
+    ).toBeVisible()
+  })
+
   // Code review: the role is enforced by the app alone, from what it stored
   // in the browser. Someone who edits « auth-storage » by hand to say ADMIN,
   // with any token, opens the administrators' screens: nothing asks the

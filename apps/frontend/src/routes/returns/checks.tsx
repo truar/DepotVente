@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Pencil } from 'lucide-react'
 import { toast } from 'sonner'
-import { requireAuthAndWorkstation } from '@/lib/route-guards'
+import { requireAdminAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
@@ -33,7 +33,7 @@ import {
 import { getYear } from '@/utils'
 
 export const Route = createFileRoute('/returns/checks')({
-  beforeLoad: requireAuthAndWorkstation,
+  beforeLoad: requireAdminAndWorkstation,
   component: () => (
     <PublicLayout>
       <RouteComponent />

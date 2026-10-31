@@ -98,8 +98,9 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
       expect(await page.offeredDeposits()).toEqual(['13 - Jean Bon']),
     )
 
-    // The cheque is listed for the evening review: Durand's fiche, cheque
-    // n°1042 signed by Paul, for what was owed.
+    // The cheque is listed for the evening review, an administrator's:
+    // Durand's fiche, cheque n°1042 signed by Paul, for what was owed.
+    signedInAs('ADMIN')
     const checks = await returnsChecksPage()
     await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
     // [Numéro du chèque, Signature]
@@ -357,6 +358,8 @@ describe('Screen: write the cheque of a fiche', () => {
     await waitFor(() => expect(page.depositRow()).toBeNull())
     expect(page.checkIdText()).toBe('1043')
 
+    // The evening review is an administrator's.
+    signedInAs('ADMIN')
     const checks = await returnsChecksPage()
     await waitFor(() => expect(checks.seller(12)).toBe('Durand Camille'))
     // [Identifiant, Déposant, Poste retour, Numéro du chèque, Signature,
