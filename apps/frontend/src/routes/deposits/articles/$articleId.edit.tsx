@@ -422,6 +422,7 @@ function ArticleEditForm(props: ArticleEditFormProps) {
                       <SelectItem value="SOLD">Vendu</SelectItem>
                       <SelectItem value="DELETED">Supprimé</SelectItem>
                       <SelectItem value="ABSENT">Absent</SelectItem>
+                      <SelectItem value="RETURNED">Restitué</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>

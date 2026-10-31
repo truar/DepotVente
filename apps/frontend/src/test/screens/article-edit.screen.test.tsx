@@ -248,4 +248,49 @@ describe('Screen: correcting an article', () => {
       }),
     )
   })
+
+  // An article handed back to its seller (a pro's article at the end of the
+  // bourse) can still be corrected: it stays returned.
+  it('keeps a returned article returned when it is corrected', async () => {
+    const { articles } = await givenDeposit({}, [
+      { price: 120, status: 'RETURNED' },
+    ])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    await page.setPrice('95')
+    await page.validate()
+
+    await page.lastToast(`Article ${skis.code} mis à jour`)
+    const [update] = await local.outbox()
+    expect(update.data).toMatchObject({ price: 95, status: 'RETURNED' })
+  })
+
+  it('shows a returned article as returned', async () => {
+    const { articles } = await givenDeposit({}, [{ status: 'RETURNED' }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    expect(page.status()).toBe('Restitué')
+  })
+
+  // The same as the return desk of the pros does: only the status changes.
+  it('marks an article returned', async () => {
+    const { articles } = await givenDeposit({}, [{ price: 120 }])
+    const [skis] = articles
+    const page = await articleEditPage()
+    await page.search(skis.code, '12 A')
+
+    await page.setStatus('Restitué')
+    await page.validate()
+
+    await page.lastToast(`Article ${skis.code} mis à jour`)
+    const again = await articleEditPage()
+    await again.search(skis.code, '12 A')
+    expect(again.status()).toBe('Restitué')
+    const [update] = await local.outbox()
+    expect(update.data).toMatchObject({ status: 'RETURNED' })
+  })
 })
