@@ -174,6 +174,9 @@ function SalesForm(props: SalesFormProps) {
   const { setValue, handleSubmit, reset, setError, trigger, getValues } =
     methods
   const articleCodeRef = useRef<HTMLInputElement>(null)
+  // « Espèces reçues » n'est pas un champ de la vente : reset() ne le touche
+  // pas, il est vidé à côté de chaque reset() pour le client suivant.
+  const [cashReceived, setCashReceived] = useState<string>('')
 
   useEffect(() => {
     setValue('saleIndex', saleIndex)
@@ -222,6 +225,7 @@ function SalesForm(props: SalesFormProps) {
 
     await createSaleMutation.mutate(data)
     reset()
+    setCashReceived('')
     toast.success(`Vente ${saleIndex} enregistrée`)
   }
 
@@ -280,7 +284,10 @@ function SalesForm(props: SalesFormProps) {
           <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
             <BuyerInformationForm />
             <SaleArticlesForm />
-            <PaymentForm />
+            <PaymentForm
+              cashReceived={cashReceived}
+              onCashReceivedChange={setCashReceived}
+            />
             <div className="flex justify-end gap-4">
               <ConfirmationDialog
                 trigger={
@@ -292,6 +299,7 @@ function SalesForm(props: SalesFormProps) {
                 description="Cette action va réinitialiser le formulaire. Les données non enregistrées seront perdues."
                 onConfirm={() => {
                   reset()
+                  setCashReceived('')
                   setValue('saleIndex', saleIndex)
                 }}
               />
@@ -660,17 +668,19 @@ function ScannedArticles() {
   )
 }
 
-function PaymentForm() {
+type PaymentFormProps = {
+  cashReceived: string
+  onCashReceivedChange: (cashReceived: string) => void
+}
+
+function PaymentForm(props: PaymentFormProps) {
+  const { cashReceived, onCashReceivedChange } = props
   const {
     watch,
-    formState: { errors, isSubmitSuccessful },
+    formState: { errors },
   } = useFormContext<SaleFormType>()
   const totalPriceError = errors.root?.totalPrice?.message
   const formatAmount = useFormatAmount()
-  const [cashReceived, setCashReceived] = useState<string>('')
-  useEffect(() => {
-    if (isSubmitSuccessful) setCashReceived('')
-  }, [isSubmitSuccessful])
   const cashAmount = watch('cashAmount')
   const cardAmount = watch('cardAmount')
   const checkAmount = watch('checkAmount')
@@ -803,7 +813,7 @@ function PaymentForm() {
                 aria-invalid={cashReceivedInvalid}
                 type="text"
                 value={cashReceived}
-                onChange={(e) => setCashReceived(e.target.value)}
+                onChange={(e) => onCashReceivedChange(e.target.value)}
                 autoComplete="off"
               />
               <InputGroupAddon align="inline-end">

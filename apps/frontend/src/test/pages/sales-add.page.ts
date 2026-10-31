@@ -198,6 +198,10 @@ export async function salesAddPage() {
       await u.clear(input)
       await u.type(input, String(amount))
     },
+    // « Espèces reçues », as typed: "" when empty.
+    receivedCash(): string {
+      return screen.getByLabelText<HTMLInputElement>('Espèces reçues').value
+    },
     // « Monnaie rendue », as shown: "4,70".
     changeText(): string {
       return plain(

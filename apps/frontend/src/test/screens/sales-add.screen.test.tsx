@@ -802,3 +802,67 @@ describe('Screen: prices with cents', () => {
     },
   )
 })
+
+// « Espèces reçues » and « Monnaie rendue » only help the volunteer count the
+// change of the buyer at the till: the next buyer starts from empty fields.
+// They used to be emptied after the first sale only, and never by
+// « Annuler »: the next buyer was shown the whole amount received as change.
+describe('Screen: the change is worked out again for each buyer', () => {
+  let codes: Array<string>
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [{ price: 10 }, { price: 20 }])
+    codes = articles.map((a) => a.code)
+  })
+
+  async function sellWithChange(
+    page: Awaited<ReturnType<typeof salesAddPage>>,
+    code: string,
+    amounts: { cash: number; received: number },
+  ) {
+    await page.scan(code)
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: amounts.cash })
+    await page.receiveCash(amounts.received)
+  }
+
+  it('empties the change once the first sale is saved', async () => {
+    const page = await salesAddPage()
+    await sellWithChange(page, codes[0], { cash: 10, received: 20 })
+    expect(page.changeText()).toBe('10,00')
+
+    await page.save()
+    await page.savedToast(2001)
+
+    expect(page.receivedCash()).toBe('')
+    expect(page.changeText()).toBe('0,00')
+  })
+
+  it('empties the change once the next sale is saved too', async () => {
+    const page = await salesAddPage()
+    await sellWithChange(page, codes[0], { cash: 10, received: 20 })
+    await page.save()
+    await page.savedToast(2001)
+
+    await sellWithChange(page, codes[1], { cash: 20, received: 50 })
+    expect(page.changeText()).toBe('30,00')
+    await page.save()
+    await page.savedToast(2002)
+
+    expect(page.receivedCash()).toBe('')
+    expect(page.changeText()).toBe('0,00')
+  })
+
+  it('empties the change once « Annuler » is confirmed', async () => {
+    const page = await salesAddPage()
+    await sellWithChange(page, codes[0], { cash: 10, received: 20 })
+
+    await page.cancel()
+    await (await page.question()).confirm()
+
+    expect(page.receivedCash()).toBe('')
+    expect(page.changeText()).toBe('0,00')
+  })
+})
