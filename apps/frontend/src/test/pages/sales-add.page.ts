@@ -202,6 +202,17 @@ export async function salesAddPage() {
     receivedCash(): string {
       return screen.getByLabelText<HTMLInputElement>('Espèces reçues').value
     },
+    // A payment field as the volunteer sees it: what is typed in it, and the
+    // grey hint it shows while empty.
+    paymentField(label: string) {
+      const input = screen.getByLabelText<HTMLInputElement>(label)
+      return { value: input.value, hint: input.placeholder }
+    },
+    // The volunteer clicks in a payment field and types, without emptying
+    // it first.
+    async typeIn(label: string, text: string) {
+      await u.type(screen.getByLabelText(label), text)
+    },
     // « Monnaie rendue », as shown: "4,70".
     changeText(): string {
       return plain(

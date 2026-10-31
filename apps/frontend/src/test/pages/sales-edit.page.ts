@@ -91,6 +91,17 @@ export async function salesEditPage(saleId: string) {
         }
       })
     },
+    // The grey hint of the refund amounts of a line, shown while empty.
+    refundHints(index: number) {
+      const row = rowsOf('Remboursements').at(index)
+      if (!row) throw new Error(`No refund line ${index} on the screen`)
+      const hint = (label: string) =>
+        within(row).getByLabelText<HTMLInputElement>(label).placeholder
+      return {
+        card: hint('Remboursement CB'),
+        cash: hint('Remboursement espèce'),
+      }
+    },
     async fillRefund(index: number, entry: RefundEntry) {
       const row = rowsOf('Remboursements').at(index)
       if (!row) throw new Error(`No refund line ${index} on the screen`)

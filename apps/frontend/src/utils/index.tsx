@@ -241,6 +241,12 @@ export function parseAmount(value: unknown): number {
   return Number(normalizeDecimal(value))
 }
 
+// Un règlement pas encore tapé : le champ part vide, son 0 n'est qu'un
+// placeholder. Vide, il compte pour 0 (Number('') vaut 0) et s'enregistre 0
+// (z.coerce.number() en fait autant). Les formulaires sont typés sur la
+// sortie du schéma, d'où le cast : le champ, lui, porte du texte.
+export const EMPTY_AMOUNT = '' as unknown as number
+
 export function toCents(amount: number): number {
   return Math.round(amount * 100)
 }

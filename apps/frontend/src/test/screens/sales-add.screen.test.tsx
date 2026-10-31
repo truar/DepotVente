@@ -866,3 +866,90 @@ describe('Screen: the change is worked out again for each buyer', () => {
     expect(page.changeText()).toBe('0,00')
   })
 })
+
+// The payment fields used to start at 0: a volunteer who clicked in one and
+// typed 50 got « 050 », or « 500 » with the cursor in front of the 0. They
+// now start empty and show 0 as a grey hint; an empty one still counts, and
+// is saved, as 0.
+describe('Screen: the payment fields start empty, 0 is only a hint', () => {
+  const labels = [
+    'Montant CB',
+    'Montant chèque',
+    'Montant différé',
+    'Montant espèces',
+    'Espèces reçues',
+  ]
+  let codes: Array<string>
+
+  beforeEach(async () => {
+    signedInAs()
+    await givenWorkstation(2000)
+    const { articles } = await givenDeposit({}, [{ price: 50 }, { price: 30 }])
+    codes = articles.map((a) => a.code)
+  })
+
+  it('shows the payment fields empty, with 0 as a hint', async () => {
+    const page = await salesAddPage()
+    expect(labels.map((label) => page.paymentField(label))).toEqual([
+      { value: '', hint: '0' },
+      { value: '', hint: '0' },
+      { value: '', hint: '0' },
+      { value: '', hint: '0' },
+      { value: '', hint: '0' },
+    ])
+  })
+
+  it('takes the amount as typed, and saves the empty ones as 0', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.fillBuyer(buyer)
+    await page.typeIn('Montant espèces', '50')
+    expect(page.paymentField('Montant espèces').value).toBe('50')
+    expect(page.totalPayment()).toBe(50)
+
+    await page.save()
+    await page.savedToast(2001)
+
+    const [sale] = await local.sales()
+    expect(sale).toMatchObject({
+      cashAmount: 50,
+      cardAmount: 0,
+      checkAmount: 0,
+      deferredAmount: 0,
+    })
+  })
+
+  it('empties the payment fields again for the next buyer', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[0])
+    await page.fillBuyer(buyer)
+    await page.pay({ cash: 20, card: 30 })
+    await page.save()
+    await page.savedToast(2001)
+
+    expect(labels.map((label) => page.paymentField(label).value)).toEqual([
+      '',
+      '',
+      '',
+      '',
+      '',
+    ])
+  })
+
+  it('empties the payment fields again once « Annuler » is confirmed', async () => {
+    const page = await salesAddPage()
+    await page.scan(codes[1])
+    await page.pay({ cash: 10, card: 20 })
+
+    await page.cancel()
+    await (await page.question()).confirm()
+
+    expect(labels.map((label) => page.paymentField(label).value)).toEqual([
+      '',
+      '',
+      '',
+      '',
+      '',
+    ])
+  })
+})

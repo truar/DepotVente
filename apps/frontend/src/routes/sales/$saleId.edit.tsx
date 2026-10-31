@@ -19,6 +19,7 @@ import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { cities } from '@/types/cities.ts'
 import {
+  EMPTY_AMOUNT,
   fromCents,
   getYear,
   parseAmount,
@@ -185,8 +186,8 @@ function SaleForm(props: SaleFormProps) {
         {
           id: null,
           incrementStart: null,
-          cardAmount: 0,
-          cashAmount: 0,
+          cardAmount: EMPTY_AMOUNT,
+          cashAmount: EMPTY_AMOUNT,
           comment: '',
         },
       ],
@@ -746,6 +747,7 @@ function RefundForm({
                           aria-label="Remboursement CB"
                           aria-invalid={fieldState.invalid}
                           type="text"
+                          placeholder="0"
                           autoComplete="off"
                         />
                         <InputGroupAddon align="inline-end">
@@ -766,6 +768,7 @@ function RefundForm({
                           aria-label="Remboursement espèce"
                           aria-invalid={fieldState.invalid}
                           type="text"
+                          placeholder="0"
                           autoComplete="off"
                         />
                         <InputGroupAddon align="inline-end">

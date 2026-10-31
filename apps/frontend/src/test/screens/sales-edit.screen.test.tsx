@@ -44,8 +44,9 @@ describe('Screen: an article brought back and the money handed over', () => {
     expect(page.articles()).toEqual([skis, boots])
     // One line, empty, on the till in front of the volunteer.
     expect(page.refunds()).toEqual([
-      { caisse: '2000', card: '0', cash: '0', comment: '' },
+      { caisse: '2000', card: '', cash: '', comment: '' },
     ])
+    expect(page.refundHints(0)).toEqual({ card: '0', cash: '0' })
 
     await page.returnArticle(skis)
     expect(page.articlesTotal()).toBe(80)
@@ -98,7 +99,7 @@ describe('Screen: an article brought back and the money handed over', () => {
     expect(second.refunds()).toEqual([
       { caisse: '2000', card: '0', cash: '120', comment: 'Skis trop grands' },
       // The line this visit would fill, on the same till today.
-      { caisse: '2000', card: '0', cash: '0', comment: '' },
+      { caisse: '2000', card: '', cash: '', comment: '' },
     ])
     // Nothing new is given back on this visit, so the sale still adds up.
     expect(second.amountToRefund()).toBe(120)
@@ -122,7 +123,7 @@ describe('Screen: an article brought back and the money handed over', () => {
     // of its own.
     expect(second.refunds()).toEqual([
       { caisse: '2000', card: '0', cash: '120', comment: 'Skis trop grands' },
-      { caisse: '3000', card: '0', cash: '0', comment: '' },
+      { caisse: '3000', card: '', cash: '', comment: '' },
     ])
 
     await second.returnArticle(boots)

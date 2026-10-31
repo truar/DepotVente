@@ -54,6 +54,7 @@ import { toast } from 'sonner'
 import { showErrorAlert } from '@/stores/errorAlertStore'
 import { useCreateSale } from '@/hooks/useCreateSale.ts'
 import {
+  EMPTY_AMOUNT,
   fromCents,
   getYear,
   normalizeArticleCode,
@@ -165,10 +166,10 @@ function SalesForm(props: SalesFormProps) {
         city: '',
       },
       articles: [],
-      cashAmount: 0,
-      cardAmount: 0,
-      checkAmount: 0,
-      deferredAmount: 0,
+      cashAmount: EMPTY_AMOUNT,
+      cardAmount: EMPTY_AMOUNT,
+      checkAmount: EMPTY_AMOUNT,
+      deferredAmount: EMPTY_AMOUNT,
     },
   })
   const { setValue, handleSubmit, reset, setError, trigger, getValues } =
@@ -721,6 +722,7 @@ function PaymentForm(props: PaymentFormProps) {
                     id="cardAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    placeholder="0"
                     autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
@@ -743,6 +745,7 @@ function PaymentForm(props: PaymentFormProps) {
                     id="checkAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    placeholder="0"
                     autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
@@ -765,6 +768,7 @@ function PaymentForm(props: PaymentFormProps) {
                     id="deferredAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    placeholder="0"
                     autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
@@ -787,6 +791,7 @@ function PaymentForm(props: PaymentFormProps) {
                     id="cashAmount"
                     aria-invalid={fieldState.invalid}
                     type="text"
+                    placeholder="0"
                     autoComplete="off"
                   />
                   <InputGroupAddon align="inline-end">
@@ -814,6 +819,7 @@ function PaymentForm(props: PaymentFormProps) {
                 type="text"
                 value={cashReceived}
                 onChange={(e) => onCashReceivedChange(e.target.value)}
+                placeholder="0"
                 autoComplete="off"
               />
               <InputGroupAddon align="inline-end">
