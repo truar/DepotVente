@@ -126,6 +126,17 @@ export type Article = {
   deletedAt: Date | null
 }
 
+// Libellé d'un statut tel que l'affichent la liste des articles et l'export
+// Excel d'une fiche.
+export const articleStatusLabels: Record<Article['status'], string> = {
+  RECEPTION_PENDING: 'Réception en attente',
+  RECEPTION_OK: 'Réception OK',
+  SOLD: 'Vendu',
+  DELETED: 'Supprimé',
+  ABSENT: 'Absent',
+  RETURNED: 'Restitué',
+}
+
 // Un article supprimé ou absent (introuvable) a quitté le dépôt : il ne
 // compte plus dans les totaux ni dans les compteurs.
 export function isOutOfDeposit(article: Pick<Article, 'status'>): boolean {

@@ -49,6 +49,7 @@ afterEach(() => {
   document.querySelectorAll('iframe').forEach((iframe) => iframe.remove())
   printedBlobs.length = 0
   previewedBlobs.length = 0
+  downloads.length = 0
   resetLabelPrinter()
 })
 
@@ -74,11 +75,29 @@ Element.prototype.releasePointerCapture = () => {}
 // kept so a story can read back what would have come out of the printer
 // (see printed.ts).
 export const printedBlobs: Array<Blob> = []
+const blobsByUrl = new Map<string, Blob>()
 URL.createObjectURL = (blob: Blob | MediaSource) => {
-  if (blob instanceof Blob) printedBlobs.push(blob)
-  return `blob:jsdom/${printedBlobs.length}`
+  const url = `blob:jsdom/${blobsByUrl.size + 1}`
+  if (blob instanceof Blob) {
+    printedBlobs.push(blob)
+    blobsByUrl.set(url, blob)
+  }
+  return url
 }
 URL.revokeObjectURL = () => {}
+
+// A file the app hands to the browser to save (an Excel export) goes out
+// through a click on a link carrying its name; jsdom would try to navigate
+// to it. The file and its name are kept so a story can read it back (see
+// downloaded.ts); it was saved, not printed.
+export const downloads: Array<{ fileName: string; blob: Blob }> = []
+const clickLink = HTMLAnchorElement.prototype.click
+HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
+  const blob = this.download ? blobsByUrl.get(this.href) : undefined
+  if (!blob) return clickLink.call(this)
+  downloads.push({ fileName: this.download, blob })
+  printedBlobs.splice(printedBlobs.indexOf(blob), 1)
+}
 
 // The report screens show their PDF in react-pdf's PDFViewer, which only
 // exists in a browser. Stand in for it: render the same document to a PDF

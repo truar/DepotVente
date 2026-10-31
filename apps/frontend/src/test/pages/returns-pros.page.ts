@@ -78,6 +78,11 @@ export async function returnsProsPage() {
     returnedCount: () => countBeside("Nombre d'articles scannés"),
     toReturnCount: () => countBeside("Nombre d'articles à retourner"),
 
+    // ---- the Excel export ----------------------------------------------
+    // Every article of the professional's fiche, saved as an Excel file.
+    exportExcel: () =>
+      u.click(screen.getByRole('button', { name: 'Exporter en Excel' })),
+
     // ---- the article list --------------------------------------------
     // "Liste articles": what was already scanned out (shown first), or what
     // is still waiting for its scan.

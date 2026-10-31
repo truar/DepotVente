@@ -12,7 +12,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { SquarePenIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { type Article, db } from '@/db.ts'
+import { type Article, articleStatusLabels, db } from '@/db.ts'
 import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { Checkbox } from '@/components/ui/checkbox.tsx'
@@ -97,15 +97,6 @@ function ArticleSearchInput() {
   )
 }
 
-const statusLabels: Record<Article['status'], string> = {
-  RECEPTION_PENDING: 'Réception en attente',
-  RECEPTION_OK: 'Réception OK',
-  SOLD: 'Vendu',
-  DELETED: 'Supprimé',
-  ABSENT: 'Absent',
-  RETURNED: 'Restitué',
-}
-
 const columns: ColumnDef<Article>[] = [
   {
     id: 'select',
@@ -130,11 +121,11 @@ const columns: ColumnDef<Article>[] = [
   ...articleColumns,
   {
     id: 'status',
-    accessorFn: (article) => statusLabels[article.status],
+    accessorFn: (article) => articleStatusLabels[article.status],
     header: 'Statut',
     meta: {
       filterVariant: 'select',
-      filterOptions: Object.values(statusLabels),
+      filterOptions: Object.values(articleStatusLabels),
     },
   },
   {

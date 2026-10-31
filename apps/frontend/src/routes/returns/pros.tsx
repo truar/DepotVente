@@ -27,6 +27,7 @@ import { printPdf } from '@/pdf/print.tsx'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { loadUnreturnedArticlesPdfData } from '@/pdf/load-unreturned-articles-pdf-data.ts'
 import { normalizeArticleCode } from '@/utils'
+import { exportDepositArticlesXlsx } from '@/xlsx/deposit-articles-xlsx.ts'
 
 export const Route = createFileRoute('/returns/pros')({
   beforeLoad: requireAuthAndWorkstation,
@@ -130,6 +131,12 @@ function ProArticlesForm(props: ProArticlesFormProps) {
       <DepositPdf data={data} showCategorySubtotals showSerialNumber />,
     )
   }, [depositId])
+  // Tous les articles de la fiche, vendus ou non, quelle que soit la liste
+  // affichée.
+  const exportExcel = useCallback(
+    () => exportDepositArticlesXlsx(depositId),
+    [depositId],
+  )
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <ReturnArticleInput
@@ -165,13 +172,16 @@ function ProArticlesForm(props: ProArticlesFormProps) {
         </div>
       </div>
 
-      {listMode === 'RECEPTION_OK' && (
-        <div>
+      <div className="flex gap-3">
+        {listMode === 'RECEPTION_OK' && (
           <Button type="button" variant="secondary" onClick={printUnreturned}>
             Imprimer
           </Button>
-        </div>
-      )}
+        )}
+        <Button type="button" variant="secondary" onClick={exportExcel}>
+          Exporter en Excel
+        </Button>
+      </div>
 
       <ArticleList
         depositId={depositId}
