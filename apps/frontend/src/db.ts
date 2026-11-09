@@ -58,6 +58,10 @@ export type Deposit = {
   // Caisse qui a encaissé la cotisation soldée le soir (statut SOLDE).
   contributionCollectWorkstationId?: number | null
   checkId?: string
+  // Montant écrit sur le chèque du vendeur, posé quand le chèque est fait.
+  // Absent des chèques faits avant que le champ existe : voir
+  // writtenCheckAmount.
+  checkAmount?: number | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null

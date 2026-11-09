@@ -12,7 +12,7 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
 import { CheckIcon, EyeIcon, RefreshCwIcon } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ReturnDepositPdf,
   type ReturnDepositPdfProps,
@@ -21,8 +21,9 @@ import {
 } from '@/pdf/return-deposit-pdf.tsx'
 import { toast } from 'sonner'
 import { useComputeReturnMutation } from '@/hooks/useComputeReturnMutation.ts'
+import { writtenCheckAmount } from '@/services/return-computation.ts'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
-import { FormattedNumber } from 'react-intl'
+import { FormattedNumber, useIntl } from 'react-intl'
 import {
   DepositsMissingContributionPdf,
   type DepositsMissingContributionProps,
@@ -64,6 +65,10 @@ async function createReturnDepositPdfData(
       dueContributionAmount: deposit.dueContributionAmount ?? 0,
       dueAmount: Math.max(0, deposit.sellerAmount ?? 0),
       countSoldArticles: soldArticles.length,
+      writtenCheck:
+        deposit.checkId != null
+          ? { checkId: deposit.checkId, amount: writtenCheckAmount(deposit) }
+          : undefined,
     },
     contact: {
       lastName: contact.lastName,
@@ -130,6 +135,9 @@ function DepositDataTable() {
               ? 'PRÊT'
               : 'RETOUR A CALCULER',
           seller: `${seller?.lastName} ${seller?.firstName}`,
+          checkId: deposit.checkId,
+          checkAmount:
+            deposit.checkId != null ? writtenCheckAmount(deposit) : undefined,
         }
       }) ?? [],
     [contactMap, deposits],
@@ -160,6 +168,9 @@ export type DepositTableType = {
   soldAmount?: number
   contributionStatus?: string
   seller: string
+  checkId?: string
+  // Montant écrit sur le chèque, quand il est fait.
+  checkAmount?: number
 }
 
 export const columns: ColumnDef<DepositTableType>[] = [
@@ -267,33 +278,66 @@ export const columns: ColumnDef<DepositTableType>[] = [
   {
     id: 'actions',
     size: 30,
-    cell: ({ row }) => {
-      const mutation = useComputeReturnMutation()
-      const id = row.original.depositId
-      const printReturn = useCallback(async (depositId: string) => {
-        const data = await createReturnDepositPdfData(depositId)
-        if (!data) return
-        await printPdf(<ReturnDepositPdf data={data} />)
-      }, [])
-      const computeReturn = useCallback(
-        async (depositId: string) => {
-          await mutation.mutate(depositId)
-        },
-        [mutation],
-      )
-      return (
-        <div>
-          <Button variant="ghost" size="icon" onClick={() => computeReturn(id)}>
-            <RefreshCwIcon />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => printReturn(id)}>
-            <EyeIcon />
-          </Button>
-        </div>
-      )
-    },
+    cell: ({ row }) => <ReturnRowActions deposit={row.original} />,
   },
 ]
+
+// Calculer le retour d'une fiche, puis l'imprimer. Une fiche dont le chèque
+// est fait n'est recalculée qu'à titre exceptionnel (une vente annulée après
+// coup), une fois l'administrateur d'accord : le chèque garde son montant, et
+// la fiche retour dit l'écart avec le nouveau calcul.
+function ReturnRowActions({ deposit }: { deposit: DepositTableType }) {
+  const mutation = useComputeReturnMutation()
+  const intl = useIntl()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const { depositId, checkId } = deposit
+  const printReturn = async () => {
+    const data = await createReturnDepositPdfData(depositId)
+    if (!data) return
+    await printPdf(<ReturnDepositPdf data={data} />)
+  }
+  const computeReturn = () => {
+    if (checkId != null) {
+      setConfirmOpen(true)
+      return
+    }
+    void mutation.mutate(depositId)
+  }
+  return (
+    <div>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Calculer le retour"
+        onClick={computeReturn}
+      >
+        <RefreshCwIcon />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => void printReturn()}>
+        <EyeIcon />
+      </Button>
+      {checkId != null && (
+        <ConfirmationDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={`Recalculer la fiche ${deposit.index}\u00a0?`}
+          description={
+            `Le chèque n° ${checkId} de ` +
+            intl.formatNumber(deposit.checkAmount ?? 0, {
+              style: 'currency',
+              currency: 'EUR',
+            }) +
+            ' est déjà fait. Il garde ce montant : la fiche retour indiquera' +
+            ' l’écart avec le nouveau calcul.'
+          }
+          onConfirm={() =>
+            void mutation.mutate(depositId, { despiteCheck: true })
+          }
+        />
+      )}
+    </div>
+  )
+}
 
 type DepositDataTableHeaderActionProps = {
   table: Table<DepositTableType>

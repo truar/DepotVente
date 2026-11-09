@@ -39,6 +39,17 @@ function computeContribution(
   return { dueContributionAmount: 0, contributionStatus }
 }
 
+/**
+ * Le montant écrit sur le chèque d'une fiche dont le chèque est fait. Un
+ * chèque fait avant que ce montant soit enregistré porte celui de la fiche :
+ * le calcul n'y touchait plus une fois le chèque fait.
+ */
+export function writtenCheckAmount(
+  deposit: Pick<Deposit, 'checkAmount' | 'sellerAmount'>,
+): number {
+  return deposit.checkAmount ?? deposit.sellerAmount ?? 0
+}
+
 export type ReturnAmounts = {
   soldAmount: number
   clubAmount: number

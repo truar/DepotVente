@@ -11,7 +11,7 @@ import {
 } from '@/test/scenarios/bourse-state.ts'
 import { referenceBalance } from '@/test/scenarios/reference-balance.ts'
 import { db } from '@/db.ts'
-import { givenSale } from '@/test/harness.ts'
+import { app, givenRefund, givenSale } from '@/test/harness.ts'
 
 // The reference bourse, changed by `change`, built into the base.
 async function givenTheReferenceBourseWhere(
@@ -311,6 +311,87 @@ describe('Report: the balance, variant by variant', () => {
       'Règlements particuliers': '0,00 €',
       // Durand 126, Martin 162 − 2: still in the tills, owed to them.
       'Chèques particuliers non faits': '286,00 €',
+    })
+  })
+
+  // By exception, a fiche is computed again after its cheque is written. What
+  // left the till is the cheque as written: what the seller got beyond the
+  // fiche is missing from the takings, and the cheques' own line explains it.
+  it('V16: an article brought back after the cheque leaves the seller overpaid, which the cheque gap explains', async () => {
+    await givenTheReferenceBourseWhere()
+    // Bruno brings Martin's 150 € article back once Martin has his cheque,
+    // and is refunded on his card.
+    const martin = await db.deposits.where({ depositIndex: 1002 }).first()
+    const article = (
+      await db.articles.where({ depositId: martin!.id }).toArray()
+    ).find((a) => a.price === 150)!
+    const sale = (await db.sales.get(article.saleId!))!
+    await givenRefund(sale, { incrementStart: 5000, cardAmount: 150 })
+    await db.sales.update(sale.id, { totalRefundAmount: 150 })
+    await db.articles.update(article.id, {
+      saleId: null,
+      status: 'RECEPTION_OK',
+    })
+
+    await app.computeReturn(martin!.id, { despiteCheck: true })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      // Bruno, refunded in full, is no longer a buyer.
+      "Nombre d'acheteurs": '2',
+      'Panier moyen (€)': '185,00 €',
+      'Panier moyen (articles)': '2',
+      "Nombre d'articles vendus": '4',
+      '% des articles en dépôt': '44,44 %',
+      'Montant total des ventes': '370,00 €',
+      '% de la valeur du dépôt': '43,02 %',
+      // Durand 14, Martin 3, Sport Pro 30.
+      'Droits CMR': '47,00 €',
+      'Recette bourse théorique': '51,00 €',
+      'Total paiements': '370,00 €',
+      'Total cartes': '0,00 €',
+      // Martin's cheque went out for 160 € all the same.
+      'Recette bourse': '-84,00 €',
+      'Différence recette théorique et réelle': '-135,00 €',
+      // His fiche now says 30 − 3 − 2 = 25 €.
+      'Écart chèques vendeurs': '-135,00 €',
+    })
+  })
+
+  // 6003L: the club's purchase of an article is cancelled once the seller has
+  // the cheque, which paid that article in full.
+  it('V17: a club purchase cancelled after the cheque leaves the seller overpaid by the full price', async () => {
+    await givenTheReferenceBourseWhere((bourse) => {
+      bourse.sales.push({
+        saleIndex: 6002,
+        till: 6000,
+        buyer: 'CMR Club',
+        articles: [['durand', 'C']],
+        pay: { check: 10 },
+      })
+    })
+    // The sale is corrected: the article comes off it, and so does its
+    // payment.
+    const durand = await db.deposits.where({ depositIndex: 1001 }).first()
+    const sale = (await db.sales.where({ saleIndex: 6002 }).first())!
+    await db.sales.update(sale.id, { checkAmount: 0 })
+    const article = (await db.articles.where({ saleId: sale.id }).first())!
+    await db.articles.update(article.id, {
+      saleId: null,
+      status: 'RECEPTION_OK',
+    })
+
+    await app.computeReturn(durand!.id, { despiteCheck: true })
+
+    expect(await balanceLines()).toEqual({
+      ...referenceBalance,
+      // Durand's cheque: 126 + the 10 € article, on which the club took no
+      // rights.
+      'Montant total décaissé': '466,00 €',
+      'Règlements particuliers': '296,00 €',
+      'Recette bourse': '56,00 €',
+      'Différence recette théorique et réelle': '-10,00 €',
+      'Écart chèques vendeurs': '-10,00 €',
     })
   })
 

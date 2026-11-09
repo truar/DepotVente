@@ -91,6 +91,26 @@ export async function returnsListingPage() {
       })
       return lastPrintedText()
     },
+    // The arrows at the end of the row compute that fiche alone.
+    async computeOne(depositIndex: number) {
+      await u.click(
+        within(page.row(depositIndex)).getByRole('button', {
+          name: 'Calculer le retour',
+        }),
+      )
+    },
+    // The question asked before going on, when there is one.
+    async question() {
+      const box = await screen.findByRole('alertdialog')
+      return {
+        title: within(box).getByRole('heading').textContent.trim(),
+        text: box.textContent.replace(/\s+/g, ' ').trim(),
+        confirm: () =>
+          u.click(within(box).getByRole('button', { name: 'Oui' })),
+        decline: () =>
+          u.click(within(box).getByRole('button', { name: 'Non' })),
+      }
+    },
     async selectAll() {
       await u.click(screen.getByRole('checkbox', { name: 'Tous sélectionner' }))
     },

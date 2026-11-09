@@ -5,10 +5,15 @@ export function useReturnDepositMutation() {
   const depositsDb = useDepositsDb()
   async function mutate(data: IndividualReturnFormType) {
     if (!data.depositId) return
+    const deposit = await depositsDb.get(data.depositId)
+    if (!deposit) return
     const date = new Date()
     await depositsDb.update(data.depositId, {
       signatory: data.signatory,
       checkId: `${data.checkId}`,
+      // Ce que le chèque imprimé porte (voir /returns/individuals) : il garde
+      // ce montant si la fiche est recalculée après coup.
+      checkAmount: deposit.sellerAmount ?? 0,
       collectedAt: date,
       collectWorkstationId: data.workstation,
       // Une cotisation réglée au moment du retour est soldée, et rattachée au

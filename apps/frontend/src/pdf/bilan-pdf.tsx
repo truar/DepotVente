@@ -191,6 +191,11 @@ export type BilanPdfData = {
     deferredGap: number
     /** Cotisations non payées, en négatif : ce qui manque à la recette bourse */
     unpaidGap: number
+    /**
+     * Écart chèques vendeurs : fiche moins chèque écrit, pour les fiches
+     * recalculées après leur chèque. Négatif pour un trop-perçu.
+     */
+    checkGap: number
     /** Solde différence : l'écart que les lignes ci-dessus n'expliquent pas */
     diffBalance: number
   }
@@ -368,6 +373,9 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
             </Line>
             <Line label="Cotisations non payées" indent compact>
               <Amount value={collection.unpaidGap} />
+            </Line>
+            <Line label="Écart chèques vendeurs" indent compact>
+              <Amount value={collection.checkGap} />
             </Line>
             <Line label="Solde différence" indent compact>
               <Amount value={collection.diffBalance} />

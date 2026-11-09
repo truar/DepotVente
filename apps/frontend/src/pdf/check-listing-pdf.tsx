@@ -139,7 +139,7 @@ export type CheckListingProps = {
     checks: Array<{
       index: number
       seller: string
-      sellerAmount?: number
+      checkAmount?: number
       checkId?: string
       collectedAt?: string
       collectWorkstationId?: number
@@ -153,7 +153,7 @@ export const CheckListingPdf = (props: CheckListingProps) => {
   const { data, copy = 1 } = props
   const { checks } = data
   const subtotal = checks.reduce(
-    (acc, check) => acc + (check.sellerAmount ?? 0),
+    (acc, check) => acc + (check.checkAmount ?? 0),
     0,
   )
   return (
@@ -230,7 +230,7 @@ export const CheckListingPdf = (props: CheckListingProps) => {
                     <View style={styles.tableColPrice}>
                       <Text>
                         <FormattedNumber
-                          value={check.sellerAmount ?? 0}
+                          value={check.checkAmount ?? 0}
                           style="currency"
                           currency="EUR"
                           useGrouping={false}

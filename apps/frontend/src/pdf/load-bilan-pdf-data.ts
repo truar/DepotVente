@@ -3,7 +3,10 @@ import type {Article, Deposit, Sale} from '@/db';
 import {   db, isOutOfDeposit } from '@/db'
 import { fromCents, getYear, isClubBuyer, toCents } from '@/utils'
 import { cashVerdict } from '@/pdf/format.ts'
-import { computeReturn } from '@/services/return-computation.ts'
+import {
+  computeReturn,
+  writtenCheckAmount,
+} from '@/services/return-computation.ts'
 
 // Les montants s'additionnent en centimes entiers : 10,10 € + 20,20 € font
 // 30,30 €, pas 30.299999999999997, et un bilan juste affiche 0,00 €, jamais
@@ -304,11 +307,14 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     Math.max(0, d.sellerAmount ?? 0),
   )
   // Les particuliers, eux, ne sont décaissés qu'une fois venus chercher leur
-  // chèque (collectedAt posé par /returns/individuals).
+  // chèque (collectedAt posé par /returns/individuals), du montant écrit
+  // dessus : une fiche recalculée après coup ne change pas ce qui est sorti.
   const isCollected = (d: Deposit) => d.collectedAt != null
-  const individualPayments = sumOf(
-    deposits.filter((d) => d.type === 'PARTICULIER' && isCollected(d)),
-    (d) => Math.max(0, d.sellerAmount ?? 0),
+  const paidIndividuals = deposits.filter(
+    (d) => d.type === 'PARTICULIER' && isCollected(d),
+  )
+  const individualPayments = sumOf(paidIndividuals, (d) =>
+    Math.max(0, writtenCheckAmount(d)),
   )
   const totalDisbursed = add(proPayments, individualPayments)
   const unmadeIndividualChecks = sumOf(
@@ -346,12 +352,23 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const cashRegisterDiff = controlsDiff
   const deferredGap = add(-totalDeferred)
   const unpaidGap = add(-unpaidContributions)
+  // Une fiche recalculée après son chèque (par exception : une vente annulée
+  // après coup) ne change pas ce qui est sorti, le chèque tel qu'écrit. Ce que
+  // le vendeur a reçu au-delà de sa fiche manque à la recette bourse : négatif
+  // pour un trop-perçu, positif pour un chèque en dessous de la fiche.
+  const checkGapOf = (d: Deposit) =>
+    add(Math.max(0, d.sellerAmount ?? 0), -Math.max(0, writtenCheckAmount(d)))
+  const checkGap = sumOf(paidIndividuals, checkGapOf)
+  const checkGapFichesCount = paidIndividuals.filter(
+    (d) => checkGapOf(d) !== 0,
+  ).length
   const theoreticalVsActualDiff = add(actualRevenue, -theoreticalRevenue)
   const diffBalance = add(
     theoreticalVsActualDiff,
     -cashRegisterDiff,
     -deferredGap,
     -unpaidGap,
+    -checkGap,
   )
 
   const data: BilanPdfData = {
@@ -395,6 +412,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
       cashRegisterDiff,
       deferredGap,
       unpaidGap,
+      checkGap,
       diffBalance,
     },
   }
@@ -571,8 +589,9 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
         {
           label: 'Règlements particuliers',
           value: eur(individualPayments),
-          source: 'Σ sellerAmount (PARTICULIER, collecté)',
-          formula: `Σ sellerAmount des dépôts particuliers collectés`,
+          source:
+            'Σ checkAmount (PARTICULIER, collecté) — montant écrit sur le chèque',
+          formula: `Σ checkAmount des dépôts particuliers collectés`,
         },
         {
           label: 'Cotisations encaissées',
@@ -624,11 +643,18 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           formula: `− Σ contributionAmount des dépôts A_PAYER`,
         },
         {
+          label: 'Écart chèques vendeurs',
+          value: eur(checkGap),
+          source:
+            'Σ (sellerAmount − checkAmount) des particuliers réglés : une fiche recalculée après son chèque, négatif pour un trop-perçu',
+          formula: `Σ fiche − chèque écrit sur ${num(checkGapFichesCount)} fiche(s) qui diffèrent de leur chèque`,
+        },
+        {
           label: 'Solde différence',
           value: eur(diffBalance),
           source:
-            'diff recette − (différence de caisses + paiements différés + cotisations non payées)',
-          formula: `${eur(theoreticalVsActualDiff)} − (${eur(cashRegisterDiff)} + ${eur(deferredGap)} + ${eur(unpaidGap)})`,
+            'diff recette − (différence de caisses + paiements différés + cotisations non payées + écart chèques vendeurs)',
+          formula: `${eur(theoreticalVsActualDiff)} − (${eur(cashRegisterDiff)} + ${eur(deferredGap)} + ${eur(unpaidGap)} + ${eur(checkGap)})`,
         },
       ],
     },

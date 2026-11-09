@@ -31,6 +31,7 @@ import {
   type CheckListingProps,
 } from '@/pdf/check-listing-pdf.tsx'
 import { getYear } from '@/utils'
+import { writtenCheckAmount } from '@/services/return-computation.ts'
 
 export const Route = createFileRoute('/returns/checks')({
   beforeLoad: requireAdminAndWorkstation,
@@ -78,7 +79,9 @@ function ChecksDataTable() {
             depositId: deposit.id,
             index: deposit.depositIndex,
             seller: `${seller.lastName} ${seller.firstName}`,
-            sellerAmount: deposit.sellerAmount,
+            // Ce qui est écrit sur le chèque, même si la fiche a été recalculée
+            // depuis.
+            checkAmount: writtenCheckAmount(deposit),
             collectWorkstationId: deposit.collectWorkstationId,
             checkId: deposit.checkId,
             signatory: deposit.signatory,
@@ -110,10 +113,7 @@ function ChecksDataTable() {
 }
 
 function ChecksSummary({ checks }: { checks: CheckTableType[] }) {
-  const total = checks.reduce(
-    (acc, check) => acc + (check.sellerAmount ?? 0),
-    0,
-  )
+  const total = checks.reduce((acc, check) => acc + (check.checkAmount ?? 0), 0)
 
   return (
     <div className="flex flex-row gap-5 font-bold">
@@ -130,7 +130,7 @@ export type CheckTableType = {
   depositId: string
   index: number
   seller: string
-  sellerAmount?: number
+  checkAmount?: number
   checkId?: string
   collectedAt?: string
   collectWorkstationId?: number
@@ -179,12 +179,12 @@ export const columns: ColumnDef<CheckTableType>[] = [
     id: 'amount',
     header: () => <div className="text-right pr-3">Montant du chèque</div>,
     cell: ({ row }) => {
-      const sellerAmount = row.original.sellerAmount
+      const checkAmount = row.original.checkAmount
       return (
         <p className="text-right pr-3">
-          {sellerAmount ? (
+          {checkAmount ? (
             <FormattedNumber
-              value={sellerAmount}
+              value={checkAmount}
               style="currency"
               currency="EUR"
             />
@@ -367,7 +367,7 @@ function ChecksDataTableHeaderAction({
         const collectedAt = new Date(
           row.collectedAt?.split(' ')?.at(0) || 0,
         ).toLocaleDateString()
-        const amount = intl.formatNumber(row.sellerAmount ?? 0)
+        const amount = intl.formatNumber(row.checkAmount ?? 0)
         const label = `${row.checkId} ${row.seller}`
         lines.push([
           '512100',

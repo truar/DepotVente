@@ -37,7 +37,7 @@ describe('Report: the balance of the reference bourse', () => {
       // What explains the gap between the two takings is listed under it,
       // the deferred payments no longer among the collected ones.
       expect(pdf).toMatch(
-        /Différence de caisses.*Paiements différés.*Cotisations non payées.*Solde différence/s,
+        /Différence de caisses.*Paiements différés.*Cotisations non payées.*Écart chèques vendeurs.*Solde différence/s,
       )
       expect(pdf).not.toContain('Total différé')
       // The tills' difference says which way it reads, as the count does.

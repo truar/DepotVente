@@ -29,12 +29,16 @@ async function salesToTheClub(
 export function useComputeReturnMutation() {
   const depositsDb = useDepositsDb()
   const articlesDb = useArticlesDb()
-  async function mutate(depositId: string) {
+  // `despiteCheck` : l'administrateur a confirmé qu'il recalcule une fiche
+  // dont le chèque est déjà fait (une vente annulée après coup). Sans lui, ce
+  // que la fiche porte une fois le chèque fait est définitif.
+  async function mutate(
+    depositId: string,
+    options?: { despiteCheck?: boolean },
+  ) {
     const deposit = await depositsDb.get(depositId)
     if (!deposit) return
-    // Une fois le chèque du vendeur fait, ce qu'il porte est définitif : le
-    // calcul ne touche plus à la fiche.
-    if (deposit.checkId != null) return
+    if (deposit.checkId != null && !options?.despiteCheck) return
     const articles = await articlesDb.findByDepositId(depositId)
     const clubSaleIds = await salesToTheClub(
       articles.filter((article) => !!article.saleId),
@@ -43,6 +47,11 @@ export function useComputeReturnMutation() {
     await depositsDb.update(depositId, {
       returnedCalculationDate: date,
       ...computeReturn(deposit, articles, clubSaleIds),
+      // Le chèque garde le montant écrit dessus. Un chèque fait avant que ce
+      // montant soit enregistré le prend sur la fiche, avant qu'elle change.
+      ...(deposit.checkId != null && deposit.checkAmount == null
+        ? { checkAmount: deposit.sellerAmount ?? 0 }
+        : {}),
     })
   }
 

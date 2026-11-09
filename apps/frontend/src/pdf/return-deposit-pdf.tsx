@@ -129,6 +129,45 @@ export type Article = {
   isAbsent?: boolean
 }
 
+// L'écart entre le chèque déjà fait et ce que la fiche doit maintenant,
+// compté au centime : ce que le vendeur doit rendre, ou ce qui lui reste dû.
+function CheckGap(props: {
+  writtenCheck?: { checkId: string; amount: number }
+  dueAmount: number
+}) {
+  const { writtenCheck, dueAmount } = props
+  if (!writtenCheck) return null
+  const gap =
+    Math.round(writtenCheck.amount * 100) - Math.round(dueAmount * 100)
+  if (gap === 0) return null
+  return (
+    <View style={styles.salesSummary}>
+      <View>
+        <Text>
+          Chèque n° {writtenCheck.checkId} déjà fait:{' '}
+          <FormattedNumber
+            value={writtenCheck.amount}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />
+        </Text>
+      </View>
+      <View>
+        <Text>
+          {gap > 0 ? 'Trop-perçu à rembourser' : 'Reste à régler'}:{' '}
+          <FormattedNumber
+            value={Math.abs(gap) / 100}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />
+        </Text>
+      </View>
+    </View>
+  )
+}
+
 export type ReturnDepositPdfProps = {
   copy?: number
   data: ReturnDepositsPdfData
@@ -150,6 +189,9 @@ type ReturnDepositsPdfData = {
     dueAmount: number
     dueContributionAmount: number
     countSoldArticles: number
+    // Le chèque déjà fait, quand il y en a un : s'il ne porte plus ce que la
+    // fiche doit (fiche recalculée après coup), la fiche dit l'écart.
+    writtenCheck?: { checkId: string; amount: number }
   }
   articles?: Array<Article>
   contact: {
@@ -339,6 +381,10 @@ export const ReturnDepositsPdf = (props: ReturnDepositsPdfProps) => {
             </Text>
           </View>
         </View>
+        <CheckGap
+          writtenCheck={data.deposit.writtenCheck}
+          dueAmount={data.deposit.dueAmount}
+        />
         <View style={styles.articles}>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>

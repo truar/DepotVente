@@ -285,10 +285,12 @@ export const app = {
 
   // What the return listing's "Calculer tous les retours" does for one
   // deposit: read its sold articles, work out the club's share, the
-  // contribution still due and what is left for the seller.
-  async computeReturn(depositId: string) {
+  // contribution still due and what is left for the seller. `despiteCheck`:
+  // what the row's button does once the administrator has confirmed, on a
+  // fiche whose cheque is already written.
+  async computeReturn(depositId: string, options?: { despiteCheck?: boolean }) {
     const { mutate } = await runHook(useComputeReturnMutation)
-    await mutate(depositId)
+    await mutate(depositId, options)
   },
 
   // The predeposit screen: "Valider" fills the form from the predeposit, the

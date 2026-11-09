@@ -107,6 +107,25 @@ describe('Screen: pick the fiche whose cheque is to be written', () => {
     expect(checks.rowText(12).slice(3, 5)).toEqual(['1042', 'Paul'])
     expect(checks.amount(12)).toBe('178,00 €')
   })
+
+  // The amount printed on the cheque is kept with it: recalculating the
+  // fiche afterwards, by exception, does not change what was paid.
+  it('keeps the amount written on the cheque', async () => {
+    const page = await returnsIndividualsPage()
+    await page.pickDeposit('Durand')
+    await page.fillCheque({ signatory: 'Paul', checkId: '1042' })
+    await page.printCheque()
+
+    await page.nextCheque()
+
+    await waitFor(async () =>
+      expect(
+        (await local.deposits()).find((d) => d.depositIndex === 12),
+      ).toMatchObject({ checkId: '1042', checkAmount: 178 }),
+    )
+    const [operation] = await local.outbox()
+    expect(operation.data).toMatchObject({ checkId: '1042', checkAmount: 178 })
+  })
 })
 
 // The evening of the sale: the return listing has computed every fiche, and
@@ -400,6 +419,7 @@ describe('Screen: write the cheque of a fiche', () => {
     expect(outbox[0].data).toEqual({
       signatory: 'Paul',
       checkId: '1042',
+      checkAmount: 178,
       collectedAt: new Date('2026-10-02T14:58:00Z'),
       collectWorkstationId: 1000,
     })

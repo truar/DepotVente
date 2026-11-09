@@ -204,6 +204,43 @@ describe('POST /api/push', () => {
       expect(Number(stored?.contributionAmount)).toBe(12)
     })
 
+    // The return desk writes the seller's cheque: its number and the amount
+    // written on it, which stays when the fiche is recalculated afterwards.
+    it('stores the amount written on the seller cheque', async () => {
+      const seller = contact()
+      await push(pushBody({ recordId: seller.id, data: seller }))
+      const deposit = {
+        id: randomUUID(),
+        sellerId: seller.id,
+        contributionStatus: 'DEDUITE',
+        contributionAmount: 2,
+        depositIndex: 100,
+        incrementStart: 0,
+        dropWorkstationId: 1,
+        type: 'PARTICULIER',
+        sellerAmount: 178,
+      }
+      await push(
+        pushBody({ collection: 'deposits', recordId: deposit.id, data: deposit }),
+      )
+
+      const res = await push(
+        pushBody({
+          collection: 'deposits',
+          operation: 'update',
+          recordId: deposit.id,
+          data: { checkId: '1042', checkAmount: 178 },
+        }),
+      )
+
+      expect(res.statusCode).toBe(200)
+      const stored = await prisma.deposit.findUnique({
+        where: { id: deposit.id },
+      })
+      expect(stored?.checkId).toBe('1042')
+      expect(Number(stored?.checkAmount)).toBe(178)
+    })
+
     // « Message caisse »: written on the edit screen, read by the tills when
     // the article is scanned.
     it('stores the message left on an article for the tills', async () => {

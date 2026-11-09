@@ -119,6 +119,9 @@ model Deposit {
   contributionCollectWorkstationId Int? @map("contribution_collect_workstation_id")
   collectedAt          DateTime? @map("collected_at")
   checkId              String?   @map("cheque_number")
+  // Montant écrit sur le chèque du vendeur. Il ne bouge plus quand la fiche
+  // est recalculée après coup : l'écart est le trop-perçu du vendeur.
+  checkAmount          Decimal?  @map("cheque_amount") @db.Decimal(10, 2)
   signatory            String?
 
   // Relations

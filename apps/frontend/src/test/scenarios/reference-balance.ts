@@ -43,5 +43,7 @@ export const referenceBalance: Record<string, string> = {
   'Différence de caisses': '0,00 € (juste)',
   'Paiements différés': '0,00 €',
   'Cotisations non payées (différence)': '0,00 €',
+  // Every cheque written for what its fiche says.
+  'Écart chèques vendeurs': '0,00 €',
   'Solde différence': '0,00 €',
 }
