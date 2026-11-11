@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { FormattedNumber } from 'react-intl'
+import type { ReactNode } from 'react'
 import type { CashRegisterControl, StoredDate } from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -77,6 +78,8 @@ export type CashRegisterControlsScreenProps = {
   type: CashRegisterControl['type']
   title: string
   detailRoute: DetailRoute
+  /** Boutons propres à cette liste (exports), au-dessus du tableau */
+  actions?: ReactNode
 }
 
 /**
@@ -87,7 +90,7 @@ export type CashRegisterControlsScreenProps = {
 export function CashRegisterControlsScreen(
   props: CashRegisterControlsScreenProps,
 ) {
-  const { type, title, detailRoute } = props
+  const { type, title, detailRoute, actions } = props
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   // Caisse par caisse, le contrôle que son écran ouvrira.
   const tills = useLiveQuery(
@@ -107,6 +110,7 @@ export function CashRegisterControlsScreen(
   return (
     <Page navigation={<Link to="..">Retour au menu</Link>} title={title}>
       <div className="flex flex-col gap-6 bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
+        {actions && <div className="flex justify-end gap-3">{actions}</div>}
         <Table>
           <TableHeader>
             <TableRow>

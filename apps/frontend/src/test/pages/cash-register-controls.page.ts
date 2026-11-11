@@ -59,6 +59,18 @@ export async function cashRegisterControlsPage(desk: ControlDesk) {
         expect(page.pathname()).toBe(`${route}/${cashRegisterId}`),
       )
     },
+
+    // The buyers' cheques, for the bank: on the sales list only (read it
+    // back with lastDownloadedText).
+    buyerChecksButton: () =>
+      screen.queryByRole('button', {
+        name: 'Exporter les chèques clients (CSV)',
+      }),
+    async exportBuyerChecks() {
+      const button = page.buyerChecksButton()
+      if (!button) throw new Error('No buyer cheques export on this list')
+      await u.click(button)
+    },
   }
   return page
 }

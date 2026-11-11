@@ -1,14 +1,16 @@
 // The cheques the buyers paid with, every till together: one line per sale,
-// then how many and how much, for the bank deposit.
+// then how many and how much, for the bank deposit. Exported from the list
+// of the sale tills' counts.
 import { beforeEach, describe, expect, it } from 'vitest'
-import { givenSale } from '@/test/harness.ts'
+import { givenSale, givenWorkstation } from '@/test/harness.ts'
 import { lastDownloadedText } from '@/test/downloaded.ts'
-import { summarySalesPage } from '@/test/pages/summary-sales.page.ts'
+import { cashRegisterControlsPage } from '@/test/pages/cash-register-controls.page.ts'
 import { signedInAs } from '@/test/screen.tsx'
 
-describe('Report: the buyers’ cheques, from the sales recap', () => {
+describe('Screen: the buyers’ cheques, from the sale tills’ counts', () => {
   beforeEach(async () => {
     signedInAs('ADMIN')
+    await givenWorkstation(1000)
     // Part by cheque, part deferred: only the cheque is listed.
     await givenSale({
       saleIndex: 2001,
@@ -32,7 +34,7 @@ describe('Report: the buyers’ cheques, from the sales recap', () => {
       buyer: { lastName: 'Roche', firstName: 'Marc' },
     })
     // A deleted sale, and one keyed on the test till 1: left out, as in the
-    // recap's « Chèques » column.
+    // sales recap's « Chèques » column.
     await givenSale({
       saleIndex: 2003,
       cashAmount: 0,
@@ -48,7 +50,7 @@ describe('Report: the buyers’ cheques, from the sales recap', () => {
   })
 
   it('lists every sale paid by cheque, with the count and the total, as Excel reads it', async () => {
-    const page = await summarySalesPage()
+    const page = await cashRegisterControlsPage('sales')
 
     await page.exportBuyerChecks()
 
@@ -61,5 +63,14 @@ describe('Report: the buyers’ cheques, from the sales recap', () => {
         '2001;Blanc Eva;60,00\r\n' +
         'Total;2 chèques;1310,50\r\n',
     )
+  })
+
+  it('is offered on the sales list only', async () => {
+    expect(
+      (await cashRegisterControlsPage('deposits')).buyerChecksButton(),
+    ).toBeNull()
+    expect(
+      (await cashRegisterControlsPage('returns')).buyerChecksButton(),
+    ).toBeNull()
   })
 })

@@ -6,8 +6,6 @@ import type { BilanAuditGroup } from '@/pdf/load-bilan-pdf-data.ts'
 type ReportAuditLayoutProps = {
   title: string
   audit: Array<BilanAuditGroup>
-  /** Boutons du rapport (exports), en tête à côté du titre */
-  actions?: ReactNode
   children: ReactNode
 }
 
@@ -19,7 +17,6 @@ type ReportAuditLayoutProps = {
 export function ReportAuditLayout({
   title,
   audit,
-  actions,
   children,
 }: ReportAuditLayoutProps) {
   return (
@@ -32,10 +29,7 @@ export function ReportAuditLayout({
           <ChevronLeft className="h-4 w-4" />
           Retour aux rapports
         </Link>
-        <div className="flex items-center gap-3">
-          {actions}
-          <h1 className="text-sm font-semibold text-gray-700">{title}</h1>
-        </div>
+        <h1 className="text-sm font-semibold text-gray-700">{title}</h1>
       </div>
 
       <div className="flex min-h-0 flex-1">
