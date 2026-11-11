@@ -2,13 +2,19 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import { Page } from '@/components/Page.tsx'
 import PublicLayout from '@/components/PublicLayout.tsx'
-import { type ColumnDef } from '@tanstack/react-table'
+import { type ColumnDef, type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { type Contact, db } from '@/db.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
+import { CustomButton } from '@/components/custom/Button.tsx'
+import { ErrorDialog } from '@/components/custom/ErrorDialog.tsx'
+import { InvoicesPdf, type InvoicesPdfProps } from '@/pdf/invoice-pdf.tsx'
+import { loadInvoicePdfData } from '@/pdf/load-invoice-pdf-data.ts'
+import { printPdf } from '@/pdf/print.tsx'
 import { SquarePenIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { FormattedNumber } from 'react-intl'
 
 export const Route = createFileRoute('/sales/listing')({
@@ -67,7 +73,7 @@ function SalesDataTable() {
         }}
         columns={columns}
         data={data}
-        hideSelectionCount
+        headerActions={(table) => <SalesDataTableHeaderAction table={table} />}
       />
       <SalesSummary />
     </>
@@ -117,6 +123,27 @@ export const columns: ColumnDef<DataTableType>[] = [
     accessorKey: 'saleId',
   },
   {
+    id: 'select',
+    size: 40,
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Tous sélectionner"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Sélectionner une ligne"
+      />
+    ),
+  },
+  {
     accessorKey: 'index',
     header: 'Identifiant',
   },
@@ -162,3 +189,60 @@ export const columns: ColumnDef<DataTableType>[] = [
     },
   },
 ]
+
+type SalesDataTableHeaderActionProps = {
+  table: Table<DataTableType>
+}
+
+// Les factures de plusieurs ventes, dans un seul document : celles qui sont
+// cochées, ou toutes celles que la liste garde (recherche comprise, toutes
+// pages confondues). Chacune est la facture imprimée à la caisse.
+function SalesDataTableHeaderAction({
+  table,
+}: SalesDataTableHeaderActionProps) {
+  const [errorOpen, setErrorOpen] = useState(false)
+
+  const printInvoices = async (saleIds: Array<string>) => {
+    const invoices: InvoicesPdfProps['data'] = []
+    for (const id of saleIds) {
+      const invoice = await loadInvoicePdfData(id)
+      if (invoice) invoices.push(invoice)
+    }
+    await printPdf(<InvoicesPdf data={invoices} />)
+  }
+
+  const printSelected = async () => {
+    const saleIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.saleId)
+    if (saleIds.length === 0) {
+      setErrorOpen(true)
+      return
+    }
+    await printInvoices(saleIds)
+  }
+
+  const printAll = async () => {
+    const saleIds = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original.saleId)
+    if (saleIds.length === 0) return
+    await printInvoices(saleIds)
+  }
+
+  return (
+    <div className="flex flex-row gap-3">
+      <CustomButton onClick={printSelected}>
+        Imprimer les factures sélectionnées
+      </CustomButton>
+      <CustomButton onClick={printAll}>
+        Imprimer toutes les factures
+      </CustomButton>
+      <ErrorDialog
+        open={errorOpen}
+        onOpenChange={setErrorOpen}
+        description="Veuillez sélectionner au moins une vente."
+      />
+    </div>
+  )
+}
