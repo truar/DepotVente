@@ -57,6 +57,34 @@ async function pdfText(blob: Blob): Promise<string> {
   return text
 }
 
+// The pictures of the last printed document, page by page, with the size in
+// pixels of the image each one carries (not the size it is drawn at).
+export async function lastPrintedImages(): Promise<
+  Array<Array<{ width: number; height: number }>>
+> {
+  const blob = printedBlobs.at(-1)
+  if (!blob) throw new Error('Nothing has been printed')
+  const task = pdfjs.getDocument({
+    data: new Uint8Array(await readBlob(blob)),
+    verbosity: pdfjs.VerbosityLevel.ERRORS,
+  })
+  const doc = await task.promise
+  const pages: Array<Array<{ width: number; height: number }>> = []
+  for (let n = 1; n <= doc.numPages; n++) {
+    const page = await doc.getPage(n)
+    const { fnArray, argsArray } = await page.getOperatorList()
+    pages.push(
+      fnArray.flatMap((fn, index) => {
+        if (fn !== pdfjs.OPS.paintImageXObject) return []
+        const [, width, height] = argsArray[index] as [string, number, number]
+        return [{ width, height }]
+      }),
+    )
+  }
+  await task.destroy()
+  return pages
+}
+
 // jsdom's Blob has no arrayBuffer(); FileReader it is.
 function readBlob(blob: Blob): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
