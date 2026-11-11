@@ -27,6 +27,7 @@ import { useMemo, useState } from 'react'
 import { FormattedDate, FormattedNumber } from 'react-intl'
 import { csvAmount, downloadCsv } from '@/lib/csv.ts'
 import { printPdf } from '@/pdf/print.tsx'
+import { previewPdf } from '@/stores/pdfPreviewStore'
 import {
   CheckListingPdf,
   type CheckListingProps,
@@ -340,7 +341,7 @@ type ChecksDataTableHeaderActionProps = {
 function ChecksDataTableHeaderAction({
   table,
 }: ChecksDataTableHeaderActionProps) {
-  const print = async () => {
+  const buildPdf = () => {
     const rows = table
       .getGlobalFacetedRowModel()
       .rows.map((row) => row.original)
@@ -350,9 +351,13 @@ function ChecksDataTableHeaderAction({
       pdfData.push(row)
     }
 
-    await printPdf(
-      <CheckListingPdf data={{ checks: pdfData, year: getYear() }} />,
-    )
+    return <CheckListingPdf data={{ checks: pdfData, year: getYear() }} />
+  }
+  const print = async () => {
+    await printPdf(buildPdf())
+  }
+  const preview = () => {
+    previewPdf({ title: 'Listing des chèques', document: buildPdf() })
   }
 
   // Le comptable l'ouvre d'un double-clic dans Excel (voir lib/csv.ts).
@@ -395,6 +400,9 @@ function ChecksDataTableHeaderAction({
     <div className="flex flex-row gap-3">
       <CustomButton onClick={() => exportCsv()}>
         Générer l'export comptable
+      </CustomButton>
+      <CustomButton variant="secondary" onClick={() => preview()}>
+        Aperçu
       </CustomButton>
       <CustomButton onClick={() => print()}>Imprimer en PDF</CustomButton>
     </div>

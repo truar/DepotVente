@@ -13,6 +13,7 @@ import { ErrorDialog } from '@/components/custom/ErrorDialog.tsx'
 import { InvoicesPdf, type InvoicesPdfProps } from '@/pdf/invoice-pdf.tsx'
 import { loadInvoicePdfData } from '@/pdf/load-invoice-pdf-data.ts'
 import { printPdf } from '@/pdf/print.tsx'
+import { previewPdf } from '@/stores/pdfPreviewStore'
 import { SquarePenIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { FormattedNumber } from 'react-intl'
@@ -202,23 +203,35 @@ function SalesDataTableHeaderAction({
 }: SalesDataTableHeaderActionProps) {
   const [errorOpen, setErrorOpen] = useState(false)
 
-  const printInvoices = async (saleIds: Array<string>) => {
+  const buildInvoices = async (saleIds: Array<string>) => {
     const invoices: InvoicesPdfProps['data'] = []
     for (const id of saleIds) {
       const invoice = await loadInvoicePdfData(id)
       if (invoice) invoices.push(invoice)
     }
-    await printPdf(<InvoicesPdf data={invoices} />)
+    return <InvoicesPdf data={invoices} />
+  }
+  const printInvoices = async (saleIds: Array<string>) => {
+    await printPdf(await buildInvoices(saleIds))
   }
 
-  const printSelected = async () => {
+  const selectedSaleIds = () => {
     const saleIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.saleId)
-    if (saleIds.length === 0) {
-      setErrorOpen(true)
-      return
-    }
+    if (saleIds.length === 0) setErrorOpen(true)
+    return saleIds
+  }
+
+  const previewSelected = async () => {
+    const saleIds = selectedSaleIds()
+    if (saleIds.length === 0) return
+    previewPdf({ title: 'Factures', document: await buildInvoices(saleIds) })
+  }
+
+  const printSelected = async () => {
+    const saleIds = selectedSaleIds()
+    if (saleIds.length === 0) return
     await printInvoices(saleIds)
   }
 
@@ -232,6 +245,9 @@ function SalesDataTableHeaderAction({
 
   return (
     <div className="flex flex-row gap-3">
+      <CustomButton variant="secondary" onClick={previewSelected}>
+        Aperçu des factures sélectionnées
+      </CustomButton>
       <CustomButton onClick={printSelected}>
         Imprimer les factures sélectionnées
       </CustomButton>

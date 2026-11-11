@@ -80,12 +80,15 @@ export async function returnsListingPage() {
         processed: read('Fiches traitées'),
       }
     },
-    // The eye at the end of the row prints the deposit's return sheet; its
-    // text, once printed.
+    // The printer at the end of the row prints the deposit's return sheet;
+    // its text, once printed. (The eye beside it only shows it.)
     async printReturnSheet(depositIndex: number): Promise<string> {
       const before = printedDocuments()
-      const buttons = within(page.row(depositIndex)).getAllByRole('button')
-      await u.click(buttons[buttons.length - 1])
+      await u.click(
+        within(page.row(depositIndex)).getByRole('button', {
+          name: 'Imprimer la fiche retour',
+        }),
+      )
       await waitFor(() => expect(printedDocuments()).toBe(before + 1), {
         timeout: 15_000,
       })

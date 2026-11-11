@@ -17,7 +17,8 @@ import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { ErrorDialog } from '@/components/custom/ErrorDialog.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { EyeIcon, SquarePenIcon } from 'lucide-react'
+import { previewPdf } from '@/stores/pdfPreviewStore'
+import { EyeIcon, PrinterIcon, SquarePenIcon } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { FormattedNumber } from 'react-intl'
 
@@ -172,7 +173,11 @@ export const columns: ColumnDef<DepositTableType>[] = [
     header: () => <div className="text-right pr-3">Montant cotisation</div>,
     cell: ({ row }) => (
       <p className="text-right pr-3">
-        <FormattedNumber value={row.original.contributionAmount} style="currency" currency="EUR" />
+        <FormattedNumber
+          value={row.original.contributionAmount}
+          style="currency"
+          currency="EUR"
+        />
       </p>
     ),
   },
@@ -201,11 +206,29 @@ export const columns: ColumnDef<DepositTableType>[] = [
     size: 30,
     cell: ({ row }) => {
       const id = row.original.depositId
-      const print = useCallback(async (depositId: string) => {
+      const buildPdf = useCallback(async (depositId: string) => {
         const data = await loadDepositPdfData(depositId)
         if (!data) return
-        await printPdf(<DepositPdf data={data} />)
+        return <DepositPdf data={data} />
       }, [])
+      const preview = useCallback(
+        async (depositId: string) => {
+          const document = await buildPdf(depositId)
+          if (!document) return
+          previewPdf({
+            title: `Fiche de dépôt ${row.original.index}`,
+            document,
+          })
+        },
+        [buildPdf, row.original.index],
+      )
+      const print = useCallback(
+        async (depositId: string) => {
+          const document = await buildPdf(depositId)
+          if (document) await printPdf(document)
+        },
+        [buildPdf],
+      )
       return (
         <div>
           <Link to="/deposits/$depositId/edit" params={{ depositId: id }}>
@@ -213,8 +236,23 @@ export const columns: ColumnDef<DepositTableType>[] = [
               <SquarePenIcon />
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" onClick={() => print(id)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Aperçu de la fiche"
+            title="Aperçu"
+            onClick={() => void preview(id)}
+          >
             <EyeIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Imprimer la fiche"
+            title="Imprimer"
+            onClick={() => void print(id)}
+          >
+            <PrinterIcon />
           </Button>
         </div>
       )
@@ -230,7 +268,7 @@ function DepositDataTableHeaderAction({
 }: DepositDataTableHeaderActionProps) {
   const [errorOpen, setErrorOpen] = useState(false)
 
-  const print = async () => {
+  const buildPdf = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.depositId)
@@ -248,11 +286,22 @@ function DepositDataTableHeaderAction({
       }
     }
 
-    await printPdf(<DepositsPdf data={depositsPdfData} />)
+    return <DepositsPdf data={depositsPdfData} />
+  }
+  const print = async () => {
+    const document = await buildPdf()
+    if (document) await printPdf(document)
+  }
+  const preview = async () => {
+    const document = await buildPdf()
+    if (document) previewPdf({ title: 'Fiches de dépôt', document })
   }
 
   return (
     <div className="flex flex-row gap-3">
+      <CustomButton variant="secondary" onClick={preview}>
+        Aperçu des fiches
+      </CustomButton>
       <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
       <ErrorDialog
         open={errorOpen}
@@ -271,8 +320,7 @@ function DepositsSummary() {
       .toArray(),
   )
   const deposits = useLiveQuery(() => db.deposits.toArray())
-  const total =
-    articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
+  const total = articles?.reduce((acc, article) => acc + article.price, 0) ?? 0
   const count = articles?.length ?? 0
   const paidContributions =
     deposits

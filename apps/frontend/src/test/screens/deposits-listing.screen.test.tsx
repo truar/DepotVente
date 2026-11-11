@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation } from '@/test/harness.ts'
 import { depositsListingPage } from '@/test/pages/deposits-listing.page.ts'
+import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import { signedInAs } from '@/test/screen.tsx'
 
 // Played on the real screen: "Gérer les fiches des dépôts", where a
@@ -29,5 +30,22 @@ describe('Screen: the deposits list', () => {
     expect(sheet).toContain('Nb articles : 1')
     expect(sheet).toMatch(/30,00 € Absent/)
     expect(sheet.match(/Absent/g)).toHaveLength(1)
+  })
+
+  // The eye only shows the sheet, in a window large enough to read and
+  // zoom; « Imprimer » there prints that same sheet.
+  it('shows the deposit sheet without printing it, then prints it from the preview', async () => {
+    await givenDeposit({ depositIndex: 12 }, [{ price: 120 }])
+    const page = await depositsListingPage()
+    await page.waitForDeposits(1)
+
+    const preview = await page.previewDepositSheet(12)
+
+    expect(preview.title).toBe('Fiche de dépôt 12')
+    expect(await preview.text()).toContain('Nb articles : 1')
+    expect(printedDocuments()).toBe(0)
+
+    await preview.print()
+    expect(await lastPrintedText()).toContain('Nb articles : 1')
   })
 })

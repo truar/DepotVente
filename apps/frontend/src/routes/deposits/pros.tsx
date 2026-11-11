@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import { showErrorAlert } from '@/stores/errorAlertStore'
 import { db } from '@/db.ts'
 import { printPdf } from '@/pdf/print.tsx'
+import { previewPdf } from '@/stores/pdfPreviewStore'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { loadPendingArticlesPdfData } from '@/pdf/load-pending-articles-pdf-data.ts'
 import { DataTable } from '@/components/custom/DataTable.tsx'
@@ -120,22 +121,30 @@ type ProArticlesFormProps = {
 
 function ProArticlesForm(props: ProArticlesFormProps) {
   const { depositId } = props
-  const [listMode, setListMode] = useState<'RECEPTION_OK' | 'RECEPTION_PENDING'>(
-    'RECEPTION_OK',
-  )
+  const [listMode, setListMode] = useState<
+    'RECEPTION_OK' | 'RECEPTION_PENDING'
+  >('RECEPTION_OK')
   const { highlighted, highlight } = useHighlight()
-  const printPending = useCallback(async () => {
+  const buildPendingPdf = useCallback(async () => {
     const data = await loadPendingArticlesPdfData(depositId)
     if (!data) return
-    await printPdf(
+    return (
       <DepositPdf
         data={data}
         showCategorySubtotals
         showSerialNumber
         showMemberInformation={false}
-      />,
+      />
     )
   }, [depositId])
+  const printPending = useCallback(async () => {
+    const document = await buildPendingPdf()
+    if (document) await printPdf(document)
+  }, [buildPendingPdf])
+  const previewPending = useCallback(async () => {
+    const document = await buildPendingPdf()
+    if (document) previewPdf({ title: 'Articles non réceptionnés', document })
+  }, [buildPendingPdf])
   return (
     <div className="flex flex-2 gap-6 flex-col bg-white rounded-2xl px-6 py-6 shadow-lg border border-gray-100">
       <ReceiveArticleInput
@@ -172,7 +181,10 @@ function ProArticlesForm(props: ProArticlesFormProps) {
       </div>
 
       {listMode === 'RECEPTION_PENDING' && (
-        <div>
+        <div className="flex gap-3">
+          <Button type="button" variant="secondary" onClick={previewPending}>
+            Aperçu
+          </Button>
           <Button type="button" variant="secondary" onClick={printPending}>
             Imprimer
           </Button>
@@ -206,7 +218,9 @@ function ReceiveArticleInput(props: {
         return
       }
       if (article.depositId !== depositId) {
-        showErrorAlert(`L'article ${articleCode} n'appartient pas à ce professionnel`)
+        showErrorAlert(
+          `L'article ${articleCode} n'appartient pas à ce professionnel`,
+        )
         setArticleCode('')
         return
       }
@@ -328,9 +342,7 @@ function ArticleList(props: ArticleListProps) {
   const { depositId, mode, highlightedId } = props
 
   const articles = useLiveQuery(async () => {
-    const rows = await db.articles
-      .where({ depositId, status: mode })
-      .toArray()
+    const rows = await db.articles.where({ depositId, status: mode }).toArray()
     rows.sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),

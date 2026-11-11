@@ -11,7 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { CheckIcon, EyeIcon, RefreshCwIcon } from 'lucide-react'
+import { previewPdf } from '@/stores/pdfPreviewStore'
+import { CheckIcon, EyeIcon, PrinterIcon, RefreshCwIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   ReturnDepositPdf,
@@ -291,10 +292,20 @@ function ReturnRowActions({ deposit }: { deposit: DepositTableType }) {
   const intl = useIntl()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { depositId, checkId } = deposit
-  const printReturn = async () => {
+  const buildReturnPdf = async () => {
     const data = await createReturnDepositPdfData(depositId)
     if (!data) return
-    await printPdf(<ReturnDepositPdf data={data} />)
+    return <ReturnDepositPdf data={data} />
+  }
+  const printReturn = async () => {
+    const document = await buildReturnPdf()
+    if (document) await printPdf(document)
+  }
+  const previewReturn = async () => {
+    const document = await buildReturnPdf()
+    if (document) {
+      previewPdf({ title: `Fiche retour ${deposit.index}`, document })
+    }
   }
   const computeReturn = () => {
     if (checkId != null) {
@@ -313,8 +324,23 @@ function ReturnRowActions({ deposit }: { deposit: DepositTableType }) {
       >
         <RefreshCwIcon />
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => void printReturn()}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Aperçu de la fiche retour"
+        title="Aperçu"
+        onClick={() => void previewReturn()}
+      >
         <EyeIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Imprimer la fiche retour"
+        title="Imprimer"
+        onClick={() => void printReturn()}
+      >
+        <PrinterIcon />
       </Button>
       {checkId != null && (
         <ConfirmationDialog
@@ -346,7 +372,7 @@ function DepositDataTableHeaderAction({
   table,
 }: DepositDataTableHeaderActionProps) {
   const mutation = useComputeReturnMutation()
-  const printReturn = async () => {
+  const buildReturnsPdf = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.depositId)
@@ -359,7 +385,13 @@ function DepositDataTableHeaderAction({
       }
     }
 
-    await printPdf(<ReturnDepositsPdf data={pdfsData} />)
+    return <ReturnDepositsPdf data={pdfsData} />
+  }
+  const printReturn = async () => {
+    await printPdf(await buildReturnsPdf())
+  }
+  const previewReturn = async () => {
+    previewPdf({ title: 'Fiches retour', document: await buildReturnsPdf() })
   }
 
   const computeReturns = async () => {
@@ -377,6 +409,9 @@ function DepositDataTableHeaderAction({
       <ComputeAllReturnsButton />
       <CustomButton onClick={computeReturns}>
         Calculer la sélection
+      </CustomButton>
+      <CustomButton variant="secondary" onClick={previewReturn}>
+        Aperçu des fiches retour
       </CustomButton>
       <CustomButton onClick={printReturn}>
         Imprimer les fiches retour
@@ -452,7 +487,7 @@ function DepositsSummary() {
     return { toCompute, ready, processed }
   }, [allDeposits])
 
-  const printMissingContribution = async () => {
+  const buildMissingContributionPdf = async () => {
     const deposits = await db.deposits
       .offset(0)
       .and((deposit) => deposit.contributionStatus === 'A_PAYER')
@@ -473,14 +508,23 @@ function DepositsSummary() {
       )
     ).filter((d) => !!d)
 
-    await printPdf(
+    return (
       <DepositsMissingContributionPdf
         data={{
           deposits: data,
           year,
         }}
-      />,
+      />
     )
+  }
+  const printMissingContribution = async () => {
+    await printPdf(await buildMissingContributionPdf())
+  }
+  const previewMissingContribution = async () => {
+    previewPdf({
+      title: 'Cotisations à encaisser',
+      document: await buildMissingContributionPdf(),
+    })
   }
 
   return (
@@ -490,7 +534,13 @@ function DepositsSummary() {
         <p>Fiches prêtes: {ready}</p>
         <p>Fiches traitées: {processed}</p>
       </div>
-      <div>
+      <div className="flex flex-row gap-3">
+        <CustomButton
+          variant="secondary"
+          onClick={() => previewMissingContribution()}
+        >
+          Aperçu
+        </CustomButton>
         <CustomButton onClick={() => printMissingContribution()}>
           Récapitulatif des cotisations à encaisser
         </CustomButton>

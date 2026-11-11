@@ -11,7 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { EyeIcon } from 'lucide-react'
+import { previewPdf } from '@/stores/pdfPreviewStore'
+import { EyeIcon, PrinterIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import {
   type PdfProps,
@@ -206,15 +207,48 @@ export const columns: ColumnDef<TableType>[] = [
     size: 30,
     cell: ({ row }) => {
       const id = row.original.predepositId
-      const print = useCallback(async (predepositId: string) => {
+      const buildPdf = useCallback(async (predepositId: string) => {
         const data = await createPdfData(predepositId)
         if (!data) return
-        await printPdf(<PredepositPdf data={data} />)
+        return <PredepositPdf data={data} />
       }, [])
+      const preview = useCallback(
+        async (predepositId: string) => {
+          const document = await buildPdf(predepositId)
+          if (!document) return
+          previewPdf({
+            title: `Pré-dépôt ${row.original.index}`,
+            document,
+          })
+        },
+        [buildPdf, row.original.index],
+      )
+      const print = useCallback(
+        async (predepositId: string) => {
+          const document = await buildPdf(predepositId)
+          if (document) await printPdf(document)
+        },
+        [buildPdf],
+      )
       return (
         <div>
-          <Button variant="ghost" size="icon" onClick={() => print(id)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Aperçu du pré-dépôt"
+            title="Aperçu"
+            onClick={() => void preview(id)}
+          >
             <EyeIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Imprimer le pré-dépôt"
+            title="Imprimer"
+            onClick={() => void print(id)}
+          >
+            <PrinterIcon />
           </Button>
         </div>
       )
@@ -226,7 +260,7 @@ type DataTableHeaderActionProps = {
   table: Table<TableType>
 }
 function DataTableHeaderAction({ table }: DataTableHeaderActionProps) {
-  const print = async () => {
+  const buildPdf = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.predepositId)
@@ -239,11 +273,20 @@ function DataTableHeaderAction({ table }: DataTableHeaderActionProps) {
       }
     }
 
-    await printPdf(<PredepositsPdf data={pdfData} />)
+    return <PredepositsPdf data={pdfData} />
+  }
+  const print = async () => {
+    await printPdf(await buildPdf())
+  }
+  const preview = async () => {
+    previewPdf({ title: 'Pré-dépôts', document: await buildPdf() })
   }
 
   return (
-    <div>
+    <div className="flex flex-row gap-3">
+      <CustomButton variant="secondary" onClick={preview}>
+        Aperçu des pré-dépôts
+      </CustomButton>
       <CustomButton onClick={print}>Imprimer les pré-dépôts</CustomButton>
     </div>
   )

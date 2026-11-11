@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ErrorAlertHost } from '@/components/custom/ErrorAlertHost'
 import { DatasetResetDialog } from '@/components/custom/DatasetResetDialog'
 import { AppUpdateBanner } from '@/components/custom/AppUpdateBanner'
+import { PdfPreviewHost } from '@/components/custom/PdfPreviewHost'
 import { useIgnoreScannerShortcut } from '@/hooks/useIgnoreScannerShortcut'
 import { useAlertOnFailedLocalWrite } from '@/hooks/useAlertOnFailedLocalWrite'
 
@@ -18,6 +19,7 @@ function RootDocument() {
       <Outlet />
       <Toaster position="bottom-left" />
       <ErrorAlertHost />
+      <PdfPreviewHost />
       <DatasetResetDialog />
       <AppUpdateBanner />
       {import.meta.env.DEV && !import.meta.env.TEST && (
