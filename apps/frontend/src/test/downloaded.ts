@@ -16,6 +16,15 @@ export async function lastDownloadedSheet() {
   return { fileName, sheet: sheets[0].sheet, rows: sheets[0].data }
 }
 
+// The last text file saved (a CSV): its name, its first bytes as saved, and
+// its text once decoded as UTF-8.
+export async function lastDownloadedText() {
+  await waitFor(() => expect(downloads.length).toBeGreaterThan(0))
+  const { fileName, blob } = downloads.at(-1)!
+  const bytes = new Uint8Array(await readBlob(blob))
+  return { fileName, bytes, text: new TextDecoder('utf-8').decode(bytes) }
+}
+
 // Read through jsdom's FileReader, as printed.ts does for the PDFs.
 function readBlob(blob: Blob): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {

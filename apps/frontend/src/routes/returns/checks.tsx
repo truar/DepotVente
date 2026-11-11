@@ -333,6 +333,12 @@ function EditCheckIdButton({ check }: { check: CheckTableType }) {
   )
 }
 
+// Un champ qui contient le séparateur, un guillemet ou un retour à la ligne
+// est mis entre guillemets (guillemets doublés), pour ne pas décaler les
+// colonnes dans Excel.
+const csvField = (value: string) =>
+  /[";\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
+
 type ChecksDataTableHeaderActionProps = {
   table: Table<CheckTableType>
 }
@@ -366,9 +372,14 @@ function ChecksDataTableHeaderAction({
         const lines = []
         const collectedAt = new Date(
           row.collectedAt?.split(' ')?.at(0) || 0,
-        ).toLocaleDateString()
-        const amount = intl.formatNumber(row.checkAmount ?? 0)
-        const label = `${row.checkId} ${row.seller}`
+        ).toLocaleDateString('fr-FR')
+        // Sans espace des milliers : « 1 234,5 » serait du texte pour Excel.
+        const amount = intl.formatNumber(row.checkAmount ?? 0, {
+          useGrouping: false,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+        const label = csvField(`${row.checkId} ${row.seller}`)
         lines.push([
           '512100',
           'CAS',
@@ -390,11 +401,15 @@ function ChecksDataTableHeaderAction({
         return lines
       }),
     ]
-      .map((row) => row.join(';'))
-      .join('\n')
+      .map((row) => `${row.join(';')}\r\n`)
+      .join('')
 
-    // Create a Blob from the CSV string
-    const blob = new Blob([csvString], { type: 'text/csv' })
+    // Le comptable l'ouvre d'un double-clic dans Excel : la marque UTF-8 (BOM)
+    // en tête lui fait lire les accents, et les fins de ligne sont celles de
+    // Windows.
+    const blob = new Blob(['﻿', csvString], {
+      type: 'text/csv;charset=utf-8',
+    })
 
     // Generate a download link and initiate the download
     const url = URL.createObjectURL(blob)

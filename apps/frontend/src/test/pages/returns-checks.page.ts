@@ -41,6 +41,13 @@ export async function returnsChecksPage() {
       return page.rowText(depositIndex)[6]
     },
 
+    // The file for the accountant (read it back with lastDownloadedText).
+    async exportForAccounting() {
+      await u.click(
+        screen.getByRole('button', { name: "Générer l'export comptable" }),
+      )
+    },
+
     // ---- correcting a cheque number --------------------------------------
     hasEditButton(depositIndex: number) {
       return (

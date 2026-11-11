@@ -1,7 +1,64 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { givenDeposit, givenWorkstation, local } from '@/test/harness.ts'
+import { lastDownloadedText } from '@/test/downloaded.ts'
 import { returnsChecksPage } from '@/test/pages/returns-checks.page.ts'
 import { signedInAs } from '@/test/screen.tsx'
+
+// The accountant opens the export with a double click in a French Excel.
+describe('Screen: the accounting export of the cheques', () => {
+  beforeEach(async () => {
+    signedInAs('ADMIN')
+    await givenWorkstation(1000)
+    await givenDeposit({
+      depositIndex: 12,
+      signatory: 'Zoé Lefèvre',
+      checkId: '1042',
+      collectWorkstationId: 1000,
+      sellerAmount: 1234.5,
+      checkAmount: 1234.5,
+      collectedAt: '2026-09-12T14:58:00.000Z',
+      seller: { lastName: 'Lefèvre', firstName: 'Zoé' },
+    })
+  })
+
+  it('reads as Excel expects it: accents, Windows lines, amounts as numbers', async () => {
+    const page = await returnsChecksPage()
+
+    await page.exportForAccounting()
+
+    const file = await lastDownloadedText()
+    expect(file.fileName).toBe('export-comptable.csv')
+    // The mark that makes Excel read the file as UTF-8.
+    expect([...file.bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    // No thousands space: « 1 234,50 » would be text to Excel.
+    expect(file.text).toBe(
+      'Cpte;Jal;Date;Libelle;Debit;Credit;N°CH\r\n' +
+        '512100;CAS;12/09/2026;1042 Lefèvre Zoé;;1234,50;1042\r\n' +
+        '580000;CAS;12/09/2026;1042 Lefèvre Zoé;1234,50;;1042\r\n',
+    )
+  })
+
+  it('keeps a name holding a semicolon in its own column', async () => {
+    await givenDeposit({
+      depositIndex: 13,
+      signatory: 'Jean Bon',
+      checkId: '1043',
+      collectWorkstationId: 1000,
+      sellerAmount: 22,
+      checkAmount: 22,
+      collectedAt: '2026-09-12T15:04:00.000Z',
+      seller: { lastName: 'Bon; Martin', firstName: 'Jean' },
+    })
+    const page = await returnsChecksPage()
+
+    await page.exportForAccounting()
+
+    const lines = (await lastDownloadedText()).text.split('\r\n')
+    expect(lines).toContain(
+      '512100;CAS;12/09/2026;"1043 Bon; Martin Jean";;22,00;1043',
+    )
+  })
+})
 
 // The cheque listing reads `collectedAt` back out of the local base, where the
 // same field has two shapes: an ISO string when the record arrived through the
