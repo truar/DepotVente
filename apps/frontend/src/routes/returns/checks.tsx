@@ -24,7 +24,8 @@ import { Label } from '@/components/ui/label.tsx'
 import { useDepositsDb } from '@/hooks/useDepositsDb.ts'
 import { CheckIdSchema } from '@/types/ReturnDepositForm.ts'
 import { useMemo, useState } from 'react'
-import { FormattedDate, FormattedNumber, useIntl } from 'react-intl'
+import { FormattedDate, FormattedNumber } from 'react-intl'
+import { csvAmount, downloadCsv } from '@/lib/csv.ts'
 import { printPdf } from '@/pdf/print.tsx'
 import {
   CheckListingPdf,
@@ -333,19 +334,12 @@ function EditCheckIdButton({ check }: { check: CheckTableType }) {
   )
 }
 
-// Un champ qui contient le séparateur, un guillemet ou un retour à la ligne
-// est mis entre guillemets (guillemets doublés), pour ne pas décaler les
-// colonnes dans Excel.
-const csvField = (value: string) =>
-  /[";\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
-
 type ChecksDataTableHeaderActionProps = {
   table: Table<CheckTableType>
 }
 function ChecksDataTableHeaderAction({
   table,
 }: ChecksDataTableHeaderActionProps) {
-  const intl = useIntl()
   const print = async () => {
     const rows = table
       .getGlobalFacetedRowModel()
@@ -361,25 +355,20 @@ function ChecksDataTableHeaderAction({
     )
   }
 
-  const exportCsv = async () => {
-    // Convert the data array into a CSV string
+  // Le comptable l'ouvre d'un double-clic dans Excel (voir lib/csv.ts).
+  const exportCsv = () => {
     const rows = table
       .getGlobalFacetedRowModel()
       .rows.map((row) => row.original)
-    const csvString = [
-      ['Cpte', 'Jal', 'Date', 'Libelle', 'Debit', 'Credit', 'N°CH'], // Specify your headers here
+    downloadCsv('export-comptable.csv', [
+      ['Cpte', 'Jal', 'Date', 'Libelle', 'Debit', 'Credit', 'N°CH'],
       ...rows.flatMap((row) => {
-        const lines = []
+        const lines: Array<Array<string>> = []
         const collectedAt = new Date(
           row.collectedAt?.split(' ')?.at(0) || 0,
         ).toLocaleDateString('fr-FR')
-        // Sans espace des milliers : « 1 234,5 » serait du texte pour Excel.
-        const amount = intl.formatNumber(row.checkAmount ?? 0, {
-          useGrouping: false,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-        const label = csvField(`${row.checkId} ${row.seller}`)
+        const amount = csvAmount(row.checkAmount ?? 0)
+        const label = `${row.checkId} ${row.seller}`
         lines.push([
           '512100',
           'CAS',
@@ -387,7 +376,7 @@ function ChecksDataTableHeaderAction({
           label,
           '',
           amount,
-          row.checkId,
+          row.checkId ?? '',
         ])
         lines.push([
           '580000',
@@ -396,30 +385,11 @@ function ChecksDataTableHeaderAction({
           label,
           amount,
           '',
-          row.checkId,
+          row.checkId ?? '',
         ])
         return lines
       }),
-    ]
-      .map((row) => `${row.join(';')}\r\n`)
-      .join('')
-
-    // Le comptable l'ouvre d'un double-clic dans Excel : la marque UTF-8 (BOM)
-    // en tête lui fait lire les accents, et les fins de ligne sont celles de
-    // Windows.
-    const blob = new Blob(['﻿', csvString], {
-      type: 'text/csv;charset=utf-8',
-    })
-
-    // Generate a download link and initiate the download
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'export-comptable.csv'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    ])
   }
   return (
     <div className="flex flex-row gap-3">
