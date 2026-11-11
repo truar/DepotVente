@@ -10,11 +10,15 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { ErrorDialog } from '@/components/custom/ErrorDialog.tsx'
-import { InvoicesPdf, type InvoicesPdfProps } from '@/pdf/invoice-pdf.tsx'
+import {
+  InvoicePdf,
+  InvoicesPdf,
+  type InvoicesPdfProps,
+} from '@/pdf/invoice-pdf.tsx'
 import { loadInvoicePdfData } from '@/pdf/load-invoice-pdf-data.ts'
 import { printPdf } from '@/pdf/print.tsx'
 import { previewPdf } from '@/stores/pdfPreviewStore'
-import { SquarePenIcon } from 'lucide-react'
+import { EyeIcon, PrinterIcon, SquarePenIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { FormattedNumber } from 'react-intl'
 
@@ -176,20 +180,55 @@ export const columns: ColumnDef<DataTableType>[] = [
   {
     id: 'actions',
     size: 30,
-    cell: ({ row }) => {
-      const id = row.original.saleId
-      return (
-        <div>
-          <Link to="/sales/$saleId/edit" params={{ saleId: id }}>
-            <Button variant="ghost" size="icon">
-              <SquarePenIcon />
-            </Button>
-          </Link>
-        </div>
-      )
-    },
+    cell: ({ row }) => <SaleRowActions sale={row.original} />,
   },
 ]
+
+// Modifier la vente, voir sa facture (assez grande pour la lire, et zoomer),
+// ou l'imprimer directement.
+function SaleRowActions({ sale }: { sale: DataTableType }) {
+  const { saleId, index } = sale
+  const buildInvoice = async () => {
+    const data = await loadInvoicePdfData(saleId)
+    if (!data) return
+    return <InvoicePdf data={data} copy={1} />
+  }
+  const preview = async () => {
+    const document = await buildInvoice()
+    if (document) previewPdf({ title: `Facture vente ${index}`, document })
+  }
+  const print = async () => {
+    const document = await buildInvoice()
+    if (document) await printPdf(document)
+  }
+  return (
+    <div>
+      <Link to="/sales/$saleId/edit" params={{ saleId }}>
+        <Button variant="ghost" size="icon">
+          <SquarePenIcon />
+        </Button>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Aperçu de la facture"
+        title="Aperçu"
+        onClick={() => void preview()}
+      >
+        <EyeIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Imprimer la facture"
+        title="Imprimer"
+        onClick={() => void print()}
+      >
+        <PrinterIcon />
+      </Button>
+    </div>
+  )
+}
 
 type SalesDataTableHeaderActionProps = {
   table: Table<DataTableType>
@@ -203,35 +242,23 @@ function SalesDataTableHeaderAction({
 }: SalesDataTableHeaderActionProps) {
   const [errorOpen, setErrorOpen] = useState(false)
 
-  const buildInvoices = async (saleIds: Array<string>) => {
+  const printInvoices = async (saleIds: Array<string>) => {
     const invoices: InvoicesPdfProps['data'] = []
     for (const id of saleIds) {
       const invoice = await loadInvoicePdfData(id)
       if (invoice) invoices.push(invoice)
     }
-    return <InvoicesPdf data={invoices} />
-  }
-  const printInvoices = async (saleIds: Array<string>) => {
-    await printPdf(await buildInvoices(saleIds))
-  }
-
-  const selectedSaleIds = () => {
-    const saleIds = table
-      .getFilteredSelectedRowModel()
-      .rows.map((row) => row.original.saleId)
-    if (saleIds.length === 0) setErrorOpen(true)
-    return saleIds
-  }
-
-  const previewSelected = async () => {
-    const saleIds = selectedSaleIds()
-    if (saleIds.length === 0) return
-    previewPdf({ title: 'Factures', document: await buildInvoices(saleIds) })
+    await printPdf(<InvoicesPdf data={invoices} />)
   }
 
   const printSelected = async () => {
-    const saleIds = selectedSaleIds()
-    if (saleIds.length === 0) return
+    const saleIds = table
+      .getFilteredSelectedRowModel()
+      .rows.map((row) => row.original.saleId)
+    if (saleIds.length === 0) {
+      setErrorOpen(true)
+      return
+    }
     await printInvoices(saleIds)
   }
 
@@ -245,9 +272,6 @@ function SalesDataTableHeaderAction({
 
   return (
     <div className="flex flex-row gap-3">
-      <CustomButton variant="secondary" onClick={previewSelected}>
-        Aperçu des factures sélectionnées
-      </CustomButton>
       <CustomButton onClick={printSelected}>
         Imprimer les factures sélectionnées
       </CustomButton>

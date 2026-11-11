@@ -268,7 +268,7 @@ function DepositDataTableHeaderAction({
 }: DepositDataTableHeaderActionProps) {
   const [errorOpen, setErrorOpen] = useState(false)
 
-  const buildPdf = async () => {
+  const print = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.depositId)
@@ -286,22 +286,11 @@ function DepositDataTableHeaderAction({
       }
     }
 
-    return <DepositsPdf data={depositsPdfData} />
-  }
-  const print = async () => {
-    const document = await buildPdf()
-    if (document) await printPdf(document)
-  }
-  const preview = async () => {
-    const document = await buildPdf()
-    if (document) previewPdf({ title: 'Fiches de dépôt', document })
+    await printPdf(<DepositsPdf data={depositsPdfData} />)
   }
 
   return (
     <div className="flex flex-row gap-3">
-      <CustomButton variant="secondary" onClick={preview}>
-        Aperçu des fiches
-      </CustomButton>
       <CustomButton onClick={print}>Imprimer les fiches</CustomButton>
       <ErrorDialog
         open={errorOpen}

@@ -18,7 +18,6 @@ import {
   type DepositCashRegisterControlProps,
 } from '@/pdf/deposit-cash-register-control-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 import { Textarea } from '@/components/ui/textarea.tsx'
 import { Label } from '@/components/ui/label.tsx'
 import {
@@ -183,7 +182,7 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
     }
   }, [cashRegisterControl, reset])
 
-  const buildPdf = async () => {
+  const print = async () => {
     const isValid = await trigger()
     if (!isValid) return
     const formData = getValues()
@@ -193,22 +192,9 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
       title: pdfTitle,
       ...formData,
     }
-    return <DepositCashRegisterControlPdf data={data} />
-  }
-  const markPrinted = () => {
+    await printPdf(<DepositCashRegisterControlPdf data={data} />)
     setHasPrinted(true)
     setPrintError(false)
-  }
-  const print = async () => {
-    const document = await buildPdf()
-    if (!document) return
-    await printPdf(document)
-    markPrinted()
-  }
-  const preview = async () => {
-    const document = await buildPdf()
-    if (!document) return
-    previewPdf({ title: pdfTitle, document, onPrint: markPrinted })
   }
 
   const onSubmit = async (data: CashRegisterControlFormType) => {
@@ -256,9 +242,6 @@ function CashRegisterControlForm(props: CashRegisterControlFormProps) {
             </p>
           )}
           <div className="flex justify-end gap-3">
-            <CustomButton type="button" onClick={preview} variant="secondary">
-              Aperçu
-            </CustomButton>
             <CustomButton type="button" onClick={print} variant="secondary">
               Imprimer
             </CustomButton>

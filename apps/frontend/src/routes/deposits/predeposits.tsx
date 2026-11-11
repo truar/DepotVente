@@ -260,7 +260,7 @@ type DataTableHeaderActionProps = {
   table: Table<TableType>
 }
 function DataTableHeaderAction({ table }: DataTableHeaderActionProps) {
-  const buildPdf = async () => {
+  const print = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.predepositId)
@@ -273,20 +273,11 @@ function DataTableHeaderAction({ table }: DataTableHeaderActionProps) {
       }
     }
 
-    return <PredepositsPdf data={pdfData} />
-  }
-  const print = async () => {
-    await printPdf(await buildPdf())
-  }
-  const preview = async () => {
-    previewPdf({ title: 'Pré-dépôts', document: await buildPdf() })
+    await printPdf(<PredepositsPdf data={pdfData} />)
   }
 
   return (
-    <div className="flex flex-row gap-3">
-      <CustomButton variant="secondary" onClick={preview}>
-        Aperçu des pré-dépôts
-      </CustomButton>
+    <div>
       <CustomButton onClick={print}>Imprimer les pré-dépôts</CustomButton>
     </div>
   )

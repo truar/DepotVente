@@ -5,7 +5,6 @@
 import { expect } from 'vitest'
 import type { Denomination } from '@/test/pages/cash-count.ts'
 import { cashCount } from '@/test/pages/cash-count.ts'
-import { pdfPreview } from '@/test/pages/pdf-preview.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
 export type { Denomination }
@@ -40,11 +39,6 @@ export async function cashRegisterControlPage(
           expect(document.querySelectorAll('iframe').length).toBe(before + 1),
         { timeout: 15_000 },
       )
-    },
-    // « Aperçu » shows the report in a window that can print it too.
-    async preview() {
-      await u.click(screen.getByRole('button', { name: 'Aperçu' }))
-      return pdfPreview(u)
     },
     // Imprimer refused: the form shows why, nothing goes to the printer.
     async printRefused() {

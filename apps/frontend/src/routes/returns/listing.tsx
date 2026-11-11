@@ -372,7 +372,7 @@ function DepositDataTableHeaderAction({
   table,
 }: DepositDataTableHeaderActionProps) {
   const mutation = useComputeReturnMutation()
-  const buildReturnsPdf = async () => {
+  const printReturn = async () => {
     const selectedDepositIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.depositId)
@@ -385,13 +385,7 @@ function DepositDataTableHeaderAction({
       }
     }
 
-    return <ReturnDepositsPdf data={pdfsData} />
-  }
-  const printReturn = async () => {
-    await printPdf(await buildReturnsPdf())
-  }
-  const previewReturn = async () => {
-    previewPdf({ title: 'Fiches retour', document: await buildReturnsPdf() })
+    await printPdf(<ReturnDepositsPdf data={pdfsData} />)
   }
 
   const computeReturns = async () => {
@@ -409,9 +403,6 @@ function DepositDataTableHeaderAction({
       <ComputeAllReturnsButton />
       <CustomButton onClick={computeReturns}>
         Calculer la sélection
-      </CustomButton>
-      <CustomButton variant="secondary" onClick={previewReturn}>
-        Aperçu des fiches retour
       </CustomButton>
       <CustomButton onClick={printReturn}>
         Imprimer les fiches retour
@@ -487,7 +478,7 @@ function DepositsSummary() {
     return { toCompute, ready, processed }
   }, [allDeposits])
 
-  const buildMissingContributionPdf = async () => {
+  const printMissingContribution = async () => {
     const deposits = await db.deposits
       .offset(0)
       .and((deposit) => deposit.contributionStatus === 'A_PAYER')
@@ -508,23 +499,14 @@ function DepositsSummary() {
       )
     ).filter((d) => !!d)
 
-    return (
+    await printPdf(
       <DepositsMissingContributionPdf
         data={{
           deposits: data,
           year,
         }}
-      />
+      />,
     )
-  }
-  const printMissingContribution = async () => {
-    await printPdf(await buildMissingContributionPdf())
-  }
-  const previewMissingContribution = async () => {
-    previewPdf({
-      title: 'Cotisations à encaisser',
-      document: await buildMissingContributionPdf(),
-    })
   }
 
   return (
@@ -534,13 +516,7 @@ function DepositsSummary() {
         <p>Fiches prêtes: {ready}</p>
         <p>Fiches traitées: {processed}</p>
       </div>
-      <div className="flex flex-row gap-3">
-        <CustomButton
-          variant="secondary"
-          onClick={() => previewMissingContribution()}
-        >
-          Aperçu
-        </CustomButton>
+      <div>
         <CustomButton onClick={() => printMissingContribution()}>
           Récapitulatif des cotisations à encaisser
         </CustomButton>

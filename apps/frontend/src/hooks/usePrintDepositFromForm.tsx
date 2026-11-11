@@ -5,14 +5,13 @@ import { getYear } from '@/utils'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { toDepositPdfData } from '@/pdf/deposit-pdf-data.ts'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 
 export function usePrintDepositFromForm(
   depositType: 'PARTICULIER' | 'PRO' = 'PARTICULIER',
 ) {
   const { getValues, trigger, setValue, clearErrors } =
     useFormContext<DepositFormType>()
-  const buildPdf = useCallback(async () => {
+  return useCallback(async () => {
     const valid = await trigger('deposit')
     if (!valid) return
     const formData = getValues('deposit')
@@ -48,27 +47,9 @@ export function usePrintDepositFromForm(
         isAbsent: a.status === 'ABSENT',
       })),
     })
-    return {
-      title: `Fiche de dépôt ${formData.depotIndex}`,
-      document: <DepositPdf data={data} copy={2} />,
-    }
-  }, [getValues, trigger, depositType])
-  const markPrinted = useCallback(() => {
+    await printPdf(<DepositPdf data={data} copy={2} />)
     setValue('isSummaryPrinted', true)
     // « Merci d'imprimer… » ne s'efface sinon qu'au prochain « Valider ».
     clearErrors('root.summary')
-  }, [setValue, clearErrors])
-  const print = useCallback(async () => {
-    const pdf = await buildPdf()
-    if (!pdf) return
-    await printPdf(pdf.document)
-    markPrinted()
-  }, [buildPdf, markPrinted])
-  // Printing from the « Aperçu » window marks the summary as printed too.
-  const preview = useCallback(async () => {
-    const pdf = await buildPdf()
-    if (!pdf) return
-    previewPdf({ ...pdf, onPrint: markPrinted })
-  }, [buildPdf, markPrinted])
-  return { print, preview }
+  }, [getValues, trigger, setValue, clearErrors, depositType])
 }

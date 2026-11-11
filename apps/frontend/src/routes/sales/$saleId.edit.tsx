@@ -1,4 +1,8 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+} from '@tanstack/react-router'
 import { FormattedNumber } from 'react-intl'
 import { requireAuthAndWorkstation } from '@/lib/route-guards'
 import PublicLayout from '@/components/PublicLayout.tsx'
@@ -32,7 +36,13 @@ import {
 } from '@/components/ui/input-group.tsx'
 import { Euro, RotateCcwIcon, Trash2 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { type Article, type Contact, db, type Refund, type Sale } from '@/db.ts'
+import {
+  type Article,
+  type Contact,
+  db,
+  type Refund,
+  type Sale,
+} from '@/db.ts'
 import { Page } from '@/components/Page.tsx'
 import { type EditSaleFormType, EditSaleSchema } from '@/types/EditSaleForm.ts'
 import {
@@ -47,7 +57,6 @@ import { useEditSale } from '@/hooks/useEditSale.ts'
 import { useFormatAmount } from '@/hooks/useFormatAmount.ts'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 import { Button } from '@/components/ui/button.tsx'
 
 export const Route = createFileRoute('/sales/$saleId/edit')({
@@ -83,7 +92,9 @@ function RouteComponent() {
         .sortBy('createdAt'),
     [saleId],
   )
-  const workstation = useLiveQuery(() => db.workstation.get('incrementStart'))
+  const workstation = useLiveQuery(() =>
+    db.workstation.get('incrementStart'),
+  )
   // Le formulaire prend ses valeurs par défaut au montage : tant que les
   // remboursements et le numéro de caisse ne sont pas chargés, il manquerait
   // leurs lignes.
@@ -258,7 +269,7 @@ function SaleForm(props: SaleFormProps) {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
-  const buildInvoice = useCallback(async () => {
+  const print = useCallback(async () => {
     const valid = await trigger()
     if (!valid) {
       return
@@ -293,19 +304,8 @@ function SaleForm(props: SaleFormProps) {
         check: toNumber(formData.checkAmount),
       },
     }
-    return {
-      title: `Facture vente ${formData.saleIndex}`,
-      document: <InvoicePdf data={data} copy={1} />,
-    }
+    await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
-  const print = useCallback(async () => {
-    const invoice = await buildInvoice()
-    if (invoice) await printPdf(invoice.document)
-  }, [buildInvoice])
-  const preview = useCallback(async () => {
-    const invoice = await buildInvoice()
-    if (invoice) previewPdf(invoice)
-  }, [buildInvoice])
 
   return (
     <FormProvider {...methods}>
@@ -333,14 +333,6 @@ function SaleForm(props: SaleFormProps) {
               description="Les modifications non enregistrées seront perdues."
               onConfirm={onCancel}
             />
-            <Button
-              type="button"
-              onClick={preview}
-              variant="secondary"
-              disabled={!hasArticles}
-            >
-              Aperçu
-            </Button>
             <Button
               type="button"
               onClick={print}
@@ -502,7 +494,9 @@ function ArticleForm() {
           {articles.map((article, index) => (
             <TableRow
               key={article.id}
-              className={article.isDeleted ? 'bg-gray-100 opacity-60' : ''}
+              className={
+                article.isDeleted ? 'bg-gray-100 opacity-60' : ''
+              }
             >
               <TableCell className="font-medium">
                 {article.articleCode}
@@ -548,7 +542,8 @@ function ArticleForm() {
       <div className="flex flex-row justify-end">
         <div className="flex flex-row gap-5 items-baseline font-bold">
           <div>
-            Nombre d'articles : {articles.filter((a) => !a.isDeleted).length}
+            Nombre d'articles :{' '}
+            {articles.filter((a) => !a.isDeleted).length}
           </div>
           <div>
             Montant total :{' '}

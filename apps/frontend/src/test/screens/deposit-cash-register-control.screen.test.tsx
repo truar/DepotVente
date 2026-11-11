@@ -180,31 +180,6 @@ describe('Screen: deposit cash register control', () => {
     expect(await local.cashRegisterControls()).toHaveLength(1)
   })
 
-  // On the older Windows PCs the print dialog is too small to read: the
-  // report is looked at in the « Aperçu » window first. Looking is not
-  // printing; printing from that window is.
-  it('counts a report printed from its preview as printed, not one only looked at', async () => {
-    const page = await cashRegisterControlPage()
-    await page.setFloat(80)
-    await page.count(50, 1)
-    await page.comment('RAS')
-
-    let preview = await page.preview()
-    expect(preview.title).toBe('Contrôle caisse dépôts')
-    expect(await preview.text()).toContain('RAS')
-    await preview.close()
-    await page.save()
-    expect(page.errors()).toEqual([
-      "Merci d'imprimer le rapport avant de valider le contrôle",
-    ])
-
-    preview = await page.preview()
-    await preview.print()
-    expect(page.errors()).toEqual([])
-    await page.save()
-    await page.savedToast(1000)
-  })
-
   // Sums of coins are done in floating point; the volunteer must still read
   // a clean amount.
   it('adds coins up to a clean amount', async () => {

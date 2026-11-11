@@ -1,6 +1,7 @@
 // Page object for the "Gérer les ventes" screen (/sales/listing): every sale
 // of the local base, and a summary line under the table.
 import { expect } from 'vitest'
+import { pdfPreview } from '@/test/pages/pdf-preview.ts'
 import { lastPrintedText, printedDocuments } from '@/test/printed.ts'
 import { openScreen, screen, waitFor, within } from '@/test/screen.tsx'
 
@@ -92,6 +93,26 @@ export async function salesListingPage() {
         timeout: 15_000,
       })
       return lastPrintedText()
+    },
+    // The eye beside the pencil shows the sale's invoice in the « Aperçu »
+    // window; nothing is printed.
+    async previewInvoice(saleIndex: number) {
+      await u.click(
+        within(page.row(saleIndex)).getByRole('button', {
+          name: 'Aperçu de la facture',
+        }),
+      )
+      return pdfPreview(u)
+    },
+    // The printer beside it prints that invoice directly; its text.
+    async printInvoice(saleIndex: number): Promise<string> {
+      const before = printedDocuments()
+      await u.click(
+        within(page.row(saleIndex)).getByRole('button', {
+          name: 'Imprimer la facture',
+        }),
+      )
+      return page.printed(before)
     },
     errorDialog(): string | null {
       return screen.queryByRole('alertdialog')?.textContent ?? null

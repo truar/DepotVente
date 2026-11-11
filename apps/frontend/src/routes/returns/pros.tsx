@@ -8,7 +8,12 @@ import { Combobox } from '@/components/Combobox.tsx'
 import { ConfirmationDialog } from '@/components/custom/ConfirmationDialog.tsx'
 import { useAskBeforeSwitching } from '@/hooks/useAskBeforeSwitching.ts'
 import { useContactsDb } from '@/hooks/useContactsDb.ts'
-import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
+import {
+  type KeyboardEvent,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
 import { useArticlesDb } from '@/hooks/useArticlesDb.ts'
 import { useHighlight } from '@/hooks/useHighlight.ts'
 import { Input } from '@/components/ui/input.tsx'
@@ -19,7 +24,6 @@ import { db } from '@/db.ts'
 import { DataTable } from '@/components/custom/DataTable.tsx'
 import { articleColumns } from '@/components/custom/articleColumns.tsx'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 import { DepositPdf } from '@/pdf/deposit-pdf.tsx'
 import { loadUnreturnedArticlesPdfData } from '@/pdf/load-unreturned-articles-pdf-data.ts'
 import { normalizeArticleCode } from '@/utils'
@@ -120,19 +124,13 @@ function ProArticlesForm(props: ProArticlesFormProps) {
     'RETURNED',
   )
   const { highlighted, highlight } = useHighlight()
-  const buildUnreturnedPdf = useCallback(async () => {
+  const printUnreturned = useCallback(async () => {
     const data = await loadUnreturnedArticlesPdfData(depositId)
     if (!data) return
-    return <DepositPdf data={data} showCategorySubtotals showSerialNumber />
+    await printPdf(
+      <DepositPdf data={data} showCategorySubtotals showSerialNumber />,
+    )
   }, [depositId])
-  const printUnreturned = useCallback(async () => {
-    const document = await buildUnreturnedPdf()
-    if (document) await printPdf(document)
-  }, [buildUnreturnedPdf])
-  const previewUnreturned = useCallback(async () => {
-    const document = await buildUnreturnedPdf()
-    if (document) previewPdf({ title: 'Articles en attente de scan', document })
-  }, [buildUnreturnedPdf])
   // Tous les articles de la fiche, vendus ou non, quelle que soit la liste
   // affichée.
   const exportExcel = useCallback(
@@ -176,18 +174,9 @@ function ProArticlesForm(props: ProArticlesFormProps) {
 
       <div className="flex gap-3">
         {listMode === 'RECEPTION_OK' && (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={previewUnreturned}
-            >
-              Aperçu
-            </Button>
-            <Button type="button" variant="secondary" onClick={printUnreturned}>
-              Imprimer
-            </Button>
-          </>
+          <Button type="button" variant="secondary" onClick={printUnreturned}>
+            Imprimer
+          </Button>
         )}
         <Button type="button" variant="secondary" onClick={exportExcel}>
           Exporter en Excel

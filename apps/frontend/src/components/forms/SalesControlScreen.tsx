@@ -12,11 +12,15 @@ import {
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
 import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { type CashRegisterControl, type Contact, db, type Sale } from '@/db.ts'
+import {
+  type CashRegisterControl,
+  type Contact,
+  db,
+  type Sale,
+} from '@/db.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { fromCents, getYear, toCents } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 import {
   Accordion,
   AccordionContent,
@@ -472,10 +476,7 @@ export function SalesControlScreen(props: SalesControlScreenProps) {
   const cashRegisterControlsDb = useCashRegisterControlsDb()
   const cashRegisterControl = useLiveQuery(
     () =>
-      cashRegisterControlsDb.findByCashRegisterIdAndType(
-        cashRegisterId,
-        'SALE',
-      ),
+      cashRegisterControlsDb.findByCashRegisterIdAndType(cashRegisterId, 'SALE'),
     [cashRegisterId],
   )
   if (!cashRegisterId) return null
@@ -575,7 +576,7 @@ function SalesControlPage(props: SalesControlPageProps) {
     }
   }
 
-  const buildPdf = async () => {
+  const print = async () => {
     const isValid = await trigger()
     if (!isValid) {
       showMissingFloat()
@@ -593,26 +594,9 @@ function SalesControlPage(props: SalesControlPageProps) {
       cashSales: formData.cashSales,
       refundPayments: formData.refundPayments,
     }
-    return <SaleCashRegisterControlPdf data={data} />
-  }
-  const markPrinted = () => {
+    await printPdf(<SaleCashRegisterControlPdf data={data} />)
     setHasPrinted(true)
     setPrintError(false)
-  }
-  const print = async () => {
-    const document = await buildPdf()
-    if (!document) return
-    await printPdf(document)
-    markPrinted()
-  }
-  const preview = async () => {
-    const document = await buildPdf()
-    if (!document) return
-    previewPdf({
-      title: `Contrôle de la caisse ${cashRegisterId}`,
-      document,
-      onPrint: markPrinted,
-    })
   }
 
   const onSubmit = async (data: CashRegisterControlFormType) => {
@@ -693,9 +677,6 @@ function SalesControlPage(props: SalesControlPageProps) {
             </p>
           )}
           <div className="flex justify-end gap-3">
-            <CustomButton type="button" onClick={preview} variant="secondary">
-              Aperçu
-            </CustomButton>
             <CustomButton type="button" onClick={print} variant="secondary">
               Imprimer
             </CustomButton>
@@ -740,9 +721,7 @@ function CardPaymentDetails() {
             return (
               <TableRow
                 key={`card-${index}`}
-                className={
-                  mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined
-                }
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
               >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
@@ -801,9 +780,7 @@ function CheckPaymentDetails() {
             return (
               <TableRow
                 key={`check-${index}`}
-                className={
-                  mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined
-                }
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
               >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
@@ -862,9 +839,7 @@ function DeferredPaymentDetails() {
             return (
               <TableRow
                 key={`deferred-${index}`}
-                className={
-                  mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined
-                }
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
               >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
@@ -923,9 +898,7 @@ function CashSalesDetails() {
             return (
               <TableRow
                 key={`cash-${index}`}
-                className={
-                  mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined
-                }
+                className={mismatch ? 'bg-amber-100 hover:bg-amber-200' : undefined}
               >
                 <TableCell className="font-medium">{sale.saleIndex}</TableCell>
                 <TableCell>{sale.buyerName}</TableCell>
@@ -1043,7 +1016,9 @@ function CommentField() {
               value={field.value ?? ''}
             />
             {fieldState.invalid && fieldState.error?.message && (
-              <p className="text-red-600 text-sm">{fieldState.error.message}</p>
+              <p className="text-red-600 text-sm">
+                {fieldState.error.message}
+              </p>
             )}
           </>
         )}

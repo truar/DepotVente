@@ -63,7 +63,6 @@ import {
   toCents,
 } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
-import { previewPdf } from '@/stores/pdfPreviewStore'
 import { InvoicePdf, type InvoicePdfProps } from '@/pdf/invoice-pdf.tsx'
 import { TextField } from '@/components/custom/input/TextField.tsx'
 import { DataListField } from '@/components/custom/input/DataListField.tsx'
@@ -235,7 +234,7 @@ function SalesForm(props: SalesFormProps) {
     if (e.key === 'Enter') e.preventDefault()
   }, [])
 
-  const buildInvoice = useCallback(async () => {
+  const print = useCallback(async () => {
     const valid = await trigger()
     if (!valid) {
       return
@@ -268,19 +267,8 @@ function SalesForm(props: SalesFormProps) {
         check: toNumber(formData.checkAmount),
       },
     }
-    return {
-      title: `Facture vente ${formData.saleIndex}`,
-      document: <InvoicePdf data={data} copy={1} />,
-    }
+    await printPdf(<InvoicePdf data={data} copy={1} />)
   }, [])
-  const print = useCallback(async () => {
-    const invoice = await buildInvoice()
-    if (invoice) await printPdf(invoice.document)
-  }, [buildInvoice])
-  const preview = useCallback(async () => {
-    const invoice = await buildInvoice()
-    if (invoice) previewPdf(invoice)
-  }, [buildInvoice])
 
   return (
     <FormProvider {...methods}>
@@ -316,9 +304,6 @@ function SalesForm(props: SalesFormProps) {
                   setValue('saleIndex', saleIndex)
                 }}
               />
-              <Button type="button" onClick={preview} variant="secondary">
-                Aperçu
-              </Button>
               <Button type="button" onClick={print} variant="secondary">
                 Facture
               </Button>

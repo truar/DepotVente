@@ -813,17 +813,12 @@ function TillMessageButton(props: TillMessageButtonProps) {
 }
 
 function SummaryPrintButton(props: { depositType: 'PARTICULIER' | 'PRO' }) {
-  const { print, preview } = usePrintDepositFromForm(props.depositType)
+  const print = usePrintDepositFromForm(props.depositType)
 
   return (
-    <>
-      <CustomButton type="button" onClick={preview} variant="secondary">
-        Aperçu
-      </CustomButton>
-      <CustomButton type="button" onClick={print} variant="secondary">
-        Imprimer
-      </CustomButton>
-    </>
+    <CustomButton type="button" onClick={print} variant="secondary">
+      Imprimer
+    </CustomButton>
   )
 }
 
