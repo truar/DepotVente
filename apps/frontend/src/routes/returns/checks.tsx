@@ -368,7 +368,9 @@ function ChecksDataTableHeaderAction({
           row.collectedAt?.split(' ')?.at(0) || 0,
         ).toLocaleDateString('fr-FR')
         const amount = csvAmount(row.checkAmount ?? 0)
-        const label = `${row.checkId} ${row.seller}`
+        // « LEFÈVRE ZOÉ - FICHE 12 » : le vendeur et la fiche que le chèque
+        // paie ; le n° de chèque a sa propre colonne (N°CH).
+        const label = `${row.seller.toLocaleUpperCase('fr-FR')} - FICHE ${row.index}`
         lines.push([
           '512100',
           'CAS',

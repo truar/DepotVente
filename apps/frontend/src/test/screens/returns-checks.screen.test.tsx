@@ -21,6 +21,8 @@ describe('Screen: the accounting export of the cheques', () => {
     })
   })
 
+  // The label names the seller in capitals and the deposit the cheque
+  // pays; the cheque number has its own column (N°CH).
   it('reads as Excel expects it: accents, Windows lines, amounts as numbers', async () => {
     const page = await returnsChecksPage()
 
@@ -33,8 +35,8 @@ describe('Screen: the accounting export of the cheques', () => {
     // No thousands space: « 1 234,50 » would be text to Excel.
     expect(file.text).toBe(
       'Cpte;Jal;Date;Libelle;Debit;Credit;N°CH\r\n' +
-        '512100;CAS;12/09/2026;1042 Lefèvre Zoé;;1234,50;1042\r\n' +
-        '580000;CAS;12/09/2026;1042 Lefèvre Zoé;1234,50;;1042\r\n',
+        '512100;CAS;12/09/2026;LEFÈVRE ZOÉ - FICHE 12;;1234,50;1042\r\n' +
+        '580000;CAS;12/09/2026;LEFÈVRE ZOÉ - FICHE 12;1234,50;;1042\r\n',
     )
   })
 
@@ -55,7 +57,7 @@ describe('Screen: the accounting export of the cheques', () => {
 
     const lines = (await lastDownloadedText()).text.split('\r\n')
     expect(lines).toContain(
-      '512100;CAS;12/09/2026;"1043 Bon; Martin Jean";;22,00;1043',
+      '512100;CAS;12/09/2026;"BON; MARTIN JEAN - FICHE 13";;22,00;1043',
     )
   })
 })
