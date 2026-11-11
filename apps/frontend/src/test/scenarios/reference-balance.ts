@@ -21,6 +21,8 @@ export const referenceBalance: Record<string, string> = {
   // Durand paid at the deposit, Martin's deducted from his cheque.
   'Cotisations payées': '4,00 €',
   'Dont cotisations soldées au retour': '0,00 €',
+  // Martin's, taken from his cheque.
+  'Dont cotisations déduites': '2,00 €',
   'Cotisations non payées': '0,00 €',
   // 10 % of 140 and 180, 15 % of 200.
   'Droits CMR': '62,00 €',

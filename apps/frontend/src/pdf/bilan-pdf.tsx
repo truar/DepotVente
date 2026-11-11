@@ -154,6 +154,8 @@ export type BilanPdfData = {
   rights: {
     /** Montant des cotisations payées */
     paidContributions: number
+    /** Dont celles retenues sur le chèque du vendeur (DEDUITE) */
+    deductedContributions: number
     /** Montant des cotisations non payées */
     unpaidContributions: number
     /** Montant des droits CMR */
@@ -291,6 +293,9 @@ export const BilanPdf = ({ data }: BilanPdfProps) => {
             <View style={styles.column}>
               <Line label="Montant cotisations payées">
                 <Amount value={rights.paidContributions} />
+              </Line>
+              <Line label="Dont cotisations déduites" indent>
+                <Amount value={rights.deductedContributions} />
               </Line>
               <Line label="Montant cotisations non payées">
                 <Amount value={rights.unpaidContributions} />

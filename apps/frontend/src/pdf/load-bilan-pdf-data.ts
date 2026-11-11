@@ -228,8 +228,11 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     unattributedSettled,
     (d) => d.contributionAmount,
   )
+  const deductedDeposits = deposits.filter(
+    (d) => d.contributionStatus === 'DEDUITE',
+  )
   const deductedContributions = sumOf(
-    deposits.filter((d) => d.contributionStatus === 'DEDUITE'),
+    deductedDeposits,
     (d) => d.dueContributionAmount ?? 0,
   )
   const paidContributions = add(
@@ -392,6 +395,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
     },
     rights: {
       paidContributions,
+      deductedContributions,
       unpaidContributions,
       cmrRights,
       cmrPurchases,
@@ -517,6 +521,13 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           value: eur(paidContributionsSolde),
           source: 'contributionAmount (SOLDE), encaissées le soir aux retours',
           formula: `${num(settledDeposits.length)} fiche(s) ; ${eur(unattributedSettledAmount)} sans caisse d'encaissement (${num(unattributedSettled.length)} fiche(s)), comptée(s) dans aucun théorique de caisse`,
+        },
+        {
+          label: 'Dont cotisations déduites',
+          value: eur(deductedContributions),
+          source:
+            'dueContributionAmount (DEDUITE) : retenues sur le chèque du vendeur',
+          formula: `${num(deductedDeposits.length)} fiche(s) ; déjà retirées du montant décaissé, donc absentes des cotisations encaissées`,
         },
         {
           label: 'Cotisations non payées',
