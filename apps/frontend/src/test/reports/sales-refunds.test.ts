@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   givenCashRegisterControl,
+  givenDeposit,
   givenRefund,
   givenSale,
 } from '@/test/harness.ts'
@@ -11,9 +12,9 @@ import { loadRecapVentesPdfData } from '@/pdf/load-recap-ventes-pdf-data.ts'
 import { loadBilanPdfData } from '@/pdf/load-bilan-pdf-data.ts'
 
 // Till 2000 sold 200 € in cash (sale 2001) and 100 € on the card (2002).
-// Both buyers came back to till 3000, which handed back 120 € in cash and
-// 40 € on the card. Till 3000 also sold 150 € in cash of its own, so it
-// counted 30 € in its drawer at the end.
+// Both buyers came back to till 3000 with an article each, and were handed
+// back 120 € in cash and 40 € on the card. Till 3000 also sold 150 € in cash
+// of its own, so it counted 30 € in its drawer at the end.
 async function givenADayWithRefundsMadeOnAnotherTill() {
   const cashSale = await givenSale({
     saleIndex: 2001,
@@ -28,12 +29,20 @@ async function givenADayWithRefundsMadeOnAnotherTill() {
     totalRefundAmount: 40,
     buyer: { lastName: 'Roche', firstName: 'Marc', city: 'Rumilly' },
   })
-  await givenSale({
+  const ownSale = await givenSale({
     saleIndex: 3001,
     incrementStart: 3000,
     cashAmount: 150,
     buyer: { lastName: 'Blanc', firstName: 'Eva', city: 'Alby' },
   })
+  // The articles brought back are on the shelf again, off their sale.
+  await givenDeposit({ depositIndex: 20 }, [
+    { price: 80, saleId: cashSale.sale.id, status: 'SOLD' },
+    { price: 120, saleId: null, status: 'RECEPTION_OK' },
+    { price: 60, saleId: cardSale.sale.id, status: 'SOLD' },
+    { price: 40, saleId: null, status: 'RECEPTION_OK' },
+    { price: 150, saleId: ownSale.sale.id, status: 'SOLD' },
+  ])
   await givenRefund(cashSale.sale, { incrementStart: 3000, cashAmount: 120 })
   await givenRefund(cardSale.sale, { incrementStart: 3000, cardAmount: 40 })
   await givenCashRegisterControl({
@@ -51,10 +60,14 @@ async function givenADayWithRefundsMadeOnAnotherTill() {
 describe('Report: the sales recap', () => {
   beforeEach(givenADayWithRefundsMadeOnAnotherTill)
 
-  it('takes each refund off the till that handed the money over', async () => {
+  // The money handed back leaves the till that paid it; the article leaves
+  // the till that sold it. « Vendu » is the sales table's « Mt vente », so a
+  // refund made on another till shows in « Diff », one way on each till.
+  it('takes the money off the till that handed it back, and the article off the till that sold it', async () => {
     const { data } = await loadRecapVentesPdfData()
 
     expect(data.sales).toEqual([
+      // Sold 80 + 60 still gone with their buyers; 160 handed back at 3000.
       {
         cashRegisterId: 2000,
         checks: 0,
@@ -62,8 +75,8 @@ describe('Report: the sales recap', () => {
         cash: 200,
         deferred: 0,
         collected: 300,
-        sold: 300,
-        diff: 0,
+        sold: 140,
+        diff: 160,
       },
       // Till 3000 handed back more on the card than it took: its card
       // column goes negative, which is how the refund leaves the books.
@@ -74,11 +87,21 @@ describe('Report: the sales recap', () => {
         cash: 30,
         deferred: 0,
         collected: -10,
-        sold: -10,
-        diff: 0,
+        sold: 150,
+        diff: -160,
       },
     ])
-    expect(data.salesTotal).toMatchObject({ cards: 60, cash: 230, diff: 0 })
+    expect(data.sales.map((row) => row.sold)).toEqual(
+      data.transactions.map((row) => row.soldAmount),
+    )
+    // Over the day, both ways of counting meet.
+    expect(data.salesTotal).toMatchObject({
+      cards: 60,
+      cash: 230,
+      collected: 290,
+      sold: 290,
+      diff: 0,
+    })
   })
 
   it('lists one line per refund, under the till that paid it', async () => {

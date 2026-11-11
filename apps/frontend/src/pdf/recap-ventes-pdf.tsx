@@ -58,9 +58,15 @@ export type RecapVentesRow = {
   deferred: number
   /** encaissé = cartes + espèces comptées + différé + chèques */
   collected: number
-  /** vendu = même somme, mais avec les espèces théoriques (ventes − remb.) */
+  /**
+   * vendu = Σ prix des articles vendus, à la caisse de leur vente : le « Mt
+   * vente » du tableau des ventes
+   */
   sold: number
-  /** écart de caisse = encaissé − vendu */
+  /**
+   * encaissé − vendu : l'écart de caisse, plus un remboursement fait sur une
+   * autre caisse que la vente (en plus sur l'une, en moins sur l'autre)
+   */
   diff: number
 }
 
@@ -114,6 +120,12 @@ export const RecapVentesPdf = ({ data }: RecapVentesProps) => (
       {/* Récapitulatif des encaissements */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Récapitulatif des encaissements</Text>
+        <Text style={styles.emptyText}>
+          Vendu est le montant des articles vendus par la caisse (Mt vente
+          ci-dessous). Un remboursement fait sur une autre caisse que la vente
+          apparaît dans Diff : en plus sur la caisse de la vente, en moins sur
+          celle qui a remboursé.
+        </Text>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.cellLabel}>Caisse</Text>

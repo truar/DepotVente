@@ -1,3 +1,4 @@
+import { add, sumOf } from './load-bilan-pdf-data'
 import type {
   RecapRefundRow,
   RecapTransactionsRow,
@@ -111,11 +112,15 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       registerSales.reduce((a, s) => a + (s.cardAmount ?? 0), 0) -
       registerRefunds.card
     const cash = realCashByRegister.get(id) ?? 0
-    const soldCash =
-      registerSales.reduce((a, s) => a + cashOf(s), 0) - registerRefunds.cash
     const deferred = registerSales.reduce((a, s) => a + deferredOf(s), 0)
     const collected = checks + cards + cash + deferred
-    const sold = checks + cards + soldCash + deferred
+    // Vendu = le « Mt vente » du tableau des ventes : les articles partis
+    // avec leurs acheteurs, à la caisse de leur vente. L'argent rendu, lui,
+    // sort de la caisse qui l'a rendu : un remboursement fait sur une autre
+    // caisse que la vente apparaît dans Diff, dans un sens sur chacune des
+    // deux caisses.
+    const sold_ = soldByRegister.get(id) ?? { amount: 0, count: 0 }
+    const sold = sold_.amount
     sales_.push({
       cashRegisterId: id,
       checks,
@@ -124,9 +129,8 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
       deferred,
       collected,
       sold,
-      diff: collected - sold,
+      diff: add(collected, -sold),
     })
-    const sold_ = soldByRegister.get(id) ?? { amount: 0, count: 0 }
     transactions.push({
       cashRegisterId: id,
       soldAmount: sold_.amount,
@@ -146,15 +150,13 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
     deferred: sales_.reduce((a, r) => a + r.deferred, 0),
     collected: sales_.reduce((a, r) => a + r.collected, 0),
     sold: sales_.reduce((a, r) => a + r.sold, 0),
-    diff: sales_.reduce((a, r) => a + r.diff, 0),
+    diff: sumOf(sales_, (r) => r.diff),
   }
   // Détail des soustractions, pour l'audit uniquement. Toute caisse portant un
   // remboursement a sa ligne, donc rien n'échappe aux totaux ci-dessous.
   const grossCards = sales.reduce((a, s) => a + (s.cardAmount ?? 0), 0)
-  const grossCash = sales.reduce((a, s) => a + cashOf(s), 0)
   const refundCardTotal = refunds.reduce((a, r) => a + r.cardAmount, 0)
   const refundCashTotal = refunds.reduce((a, r) => a + r.cashAmount, 0)
-  const soldCashTotal = grossCash - refundCashTotal
 
   const transactionsTotal = {
     soldAmount: transactions.reduce((a, r) => a + r.soldAmount, 0),
@@ -243,20 +245,15 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
         {
           label: 'Vendu',
           value: eur(salesTotal.sold),
-          source: 'idem Encaissé, mais avec les espèces théoriques',
-          formula: `${eur(salesTotal.cards)} + ${eur(soldCashTotal)} + ${eur(salesTotal.deferred)} + ${eur(salesTotal.checks)}`,
-        },
-        {
-          label: 'Espèces théoriques (dans Vendu)',
-          value: eur(soldCashTotal),
-          source: 'Σ sale.cashAmount − Σ refund.cashAmount',
-          formula: `${eur(grossCash)} − ${eur(refundCashTotal)}`,
+          source:
+            'Σ article.price (status = SOLD) à la caisse de la vente, le « Mt vente » du tableau des ventes',
+          formula: `les remboursements en sont déjà déduits, à la caisse de la vente`,
         },
         {
           label: 'Diff',
           value: eur(salesTotal.diff),
           source: 'encaissé − vendu',
-          formula: `${eur(salesTotal.collected)} − ${eur(salesTotal.sold)} — écart de caisse, doit correspondre à la "Différence" du contrôle`,
+          formula: `${eur(salesTotal.collected)} − ${eur(salesTotal.sold)} — écart de caisse, plus un remboursement fait sur une autre caisse que la vente (en plus à la caisse de la vente, en moins à celle qui a remboursé)`,
         },
       ],
     },
@@ -318,11 +315,11 @@ export async function loadRecapVentesPdfData(): Promise<RecapVentesResult> {
             'une ligne par remboursement (caisse, n° vente, espèces, CB)',
         },
         {
-          label: 'Déduits des colonnes Cartes / Vendu',
+          label: 'Remboursés CB / espèces',
           value: `${eur(refundCardTotal)} / ${eur(refundCashTotal)}`,
           source: 'Σ refund.cardAmount / Σ refund.cashAmount',
           formula:
-            'rattachés à refund.incrementStart (la caisse qui a remboursé)',
+            'à la caisse qui a remboursé : la CB est déduite de Cartes, les espèces sont sorties du tiroir compté',
         },
       ],
     },
