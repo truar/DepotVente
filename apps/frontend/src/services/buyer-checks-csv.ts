@@ -1,5 +1,5 @@
 import { db } from '@/db.ts'
-import { csvAmount } from '@/lib/csv.ts'
+import { csvEuros } from '@/lib/csv.ts'
 import { isReportedSaleRegister, sumOf } from '@/pdf/load-bilan-pdf-data.ts'
 
 /**
@@ -30,12 +30,12 @@ export async function buyerChecksCsvRows(): Promise<Array<Array<string>>> {
     ...paidByCheck.map((s) => [
       String(s.saleIndex),
       nameOf.get(s.buyerId) ?? '',
-      csvAmount(s.checkAmount ?? 0),
+      csvEuros(s.checkAmount ?? 0),
     ]),
     [
       'Total',
       `${count} chèque${count > 1 ? 's' : ''}`,
-      csvAmount(sumOf(paidByCheck, (s) => s.checkAmount ?? 0)),
+      csvEuros(sumOf(paidByCheck, (s) => s.checkAmount ?? 0)),
     ],
   ]
 }

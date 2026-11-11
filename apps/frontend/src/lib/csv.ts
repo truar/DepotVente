@@ -16,6 +16,12 @@ const amountFormat = new Intl.NumberFormat('fr-FR', {
 /** « 1234,50 » : un nombre pour Excel, là où « 1 234,5 » serait du texte. */
 export const csvAmount = (amount: number) => amountFormat.format(amount)
 
+/**
+ * « 1250,50 € », pour un fichier lu par une personne. Espace ordinaire avant
+ * le symbole : un Excel français y lit encore un montant en euros.
+ */
+export const csvEuros = (amount: number) => `${csvAmount(amount)} €`
+
 /** Fait télécharger ces lignes au navigateur, sous ce nom de fichier. */
 export function downloadCsv(fileName: string, rows: Array<Array<string>>) {
   const text = rows.map((row) => `${row.map(csvField).join(';')}\r\n`).join('')

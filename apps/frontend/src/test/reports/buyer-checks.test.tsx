@@ -59,9 +59,9 @@ describe('Screen: the buyers’ cheques, from the sale tills’ counts', () => {
     expect([...file.bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
     expect(file.text).toBe(
       'N° vente;Nom;Montant\r\n' +
-        '1001;Lefèvre Zoé;1250,50\r\n' +
-        '2001;Blanc Eva;60,00\r\n' +
-        'Total;2 chèques;1310,50\r\n',
+        '1001;Lefèvre Zoé;1250,50 €\r\n' +
+        '2001;Blanc Eva;60,00 €\r\n' +
+        'Total;2 chèques;1310,50 €\r\n',
     )
   })
 
