@@ -1,6 +1,7 @@
 import type { DocumentProps } from '@react-pdf/renderer'
 import type { FunctionComponent, ReactElement } from 'react'
 import { BilanPdf } from '@/pdf/bilan-pdf.tsx'
+import { CashTotalsPdf } from '@/pdf/cash-totals-pdf.tsx'
 import { CheckListingPdf } from '@/pdf/check-listing-pdf.tsx'
 import { DepositCashRegisterControlPdf } from '@/pdf/deposit-cash-register-control-pdf.tsx'
 import { DepositPdf, DepositsPdf } from '@/pdf/deposit-pdf.tsx'
@@ -22,6 +23,7 @@ import { SellerCheckPdf } from '@/pdf/seller-check.tsx'
 // A document missing here still prints, rendered in the page.
 export const documents: Partial<Record<string, FunctionComponent<any>>> = {
   BilanPdf,
+  CashTotalsPdf,
   CheckListingPdf,
   DepositCashRegisterControlPdf,
   DepositPdf,
