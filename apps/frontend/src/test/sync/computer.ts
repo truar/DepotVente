@@ -537,7 +537,12 @@ export async function bootComputer({
   vi.stubGlobal(
     'Worker',
     class {
-      constructor() {
+      constructor(url: string | URL) {
+        // Only the sync worker is stood in for here. Any other (the PDF
+        // worker) cannot start, and the page does without it (print.tsx).
+        if (!String(url).includes('sync.worker')) {
+          throw new Error(`No such worker in this story: ${String(url)}`)
+        }
         worker = new InProcessSyncWorker(service)
         return worker
       }

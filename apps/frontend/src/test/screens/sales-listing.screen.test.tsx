@@ -9,6 +9,7 @@ import {
   givenWorkstation,
 } from '@/test/harness.ts'
 import { salesListingPage } from '@/test/pages/sales-listing.page.ts'
+import { givenABrokenPdfWorker, givenPdfWorker } from '@/test/pdf-worker.ts'
 import { printedDocuments } from '@/test/printed.ts'
 import { signedInAs } from '@/test/screen.tsx'
 
@@ -170,5 +171,35 @@ describe('Screen: the invoices printed from the sales list', () => {
     const text = await page.printAll()
 
     expect(invoiceNumbers(text)).toEqual([2002])
+  })
+
+  // A day's invoices are hundreds of pages: rendered in the page, they froze
+  // it (the spinner stopped) until the print dialog opened. The page hands
+  // the invoices to the PDF worker and prints what it renders.
+  it('renders the invoices away from the page', async () => {
+    const worker = givenPdfWorker()
+    await givenASaleOf(2001, 'Alpha', 12, [120])
+    await givenASaleOf(2002, 'Bravo', 13, [50])
+    const page = await salesListingPage()
+    await page.waitForSales(2)
+
+    const text = await page.printAll()
+
+    expect(worker.rendered()).toEqual(['InvoicesPdf'])
+    expect(invoiceNumbers(text)).toEqual([2001, 2002])
+  })
+
+  // Printing never depends on the worker: one that does not start leaves
+  // the page to render the invoices, as it did before.
+  it('prints the invoices all the same when the worker cannot start', async () => {
+    givenABrokenPdfWorker()
+    await givenASaleOf(2001, 'Alpha', 12, [120])
+    await givenASaleOf(2002, 'Bravo', 13, [50])
+    const page = await salesListingPage()
+    await page.waitForSales(2)
+
+    const text = await page.printAll()
+
+    expect(invoiceNumbers(text)).toEqual([2001, 2002])
   })
 })

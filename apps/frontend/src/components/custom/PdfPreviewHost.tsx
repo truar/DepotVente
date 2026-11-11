@@ -1,4 +1,4 @@
-import { PDFViewer, pdf } from '@react-pdf/renderer'
+import { PDFViewer } from '@react-pdf/renderer'
 import { Download, Printer, X } from 'lucide-react'
 import { useState } from 'react'
 import {
@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { printPdf } from '@/pdf/print.tsx'
+import { printPdf, renderPdf } from '@/pdf/print.tsx'
 import { usePdfPreviewStore } from '@/stores/pdfPreviewStore'
 
 // « Bilan caisse 3 » → « Bilan caisse 3.pdf », without the characters a
@@ -42,7 +42,7 @@ export function PdfPreviewHost() {
     if (!preview) return
     setBusy(true)
     try {
-      const blob = await pdf(preview.document).toBlob()
+      const blob = await renderPdf(preview.document)
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
