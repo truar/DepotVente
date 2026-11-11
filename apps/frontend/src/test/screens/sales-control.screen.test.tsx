@@ -250,6 +250,33 @@ describe('Screen: the till count at the end of the sale', () => {
     expect(report).toContain('Montant théorique 170,00 €')
     expect(report).toContain('Commentaire: RAS')
   })
+
+  // Under the count, every way the till was paid, the cash as counted: the
+  // total is what the sales recap shows as « Encaissé » for this till.
+  it('sums up every payment method of the till under the cash count', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+    await waitFor(() => expect(page.theoretical()).toBe(170))
+    await page.setFloat(80)
+    await page.count(50, 5)
+    await page.comment('RAS')
+
+    await page.print()
+
+    const report = await lastPrintedText()
+    // The 30 € handed back in cash are already out of the drawer.
+    expect(report).toContain(
+      [
+        'Modes de paiement',
+        'Cartes 150,00 €',
+        'Espèces comptées 170,00 €',
+        'Chèques 60,00 €',
+        'Différé 40,00 €',
+        'Remboursements CB 0,00 €',
+        'Total 420,00 €',
+      ].join(' '),
+    )
+  })
 })
 
 describe('Screen: reopening the till count', () => {
@@ -386,6 +413,28 @@ describe('Screen: a card refund handed over by this till', () => {
       ['2002', '-50,00 €'],
     ])
     expect(page.total()).toBe('100,00 €')
+  })
+
+  it('takes it off the total of the payment methods printed under the count', async () => {
+    const page = await salesControlPage()
+    await page.open('drawer')
+    await page.setFloat(80)
+    await page.count(20, 4)
+    await page.comment('RAS')
+
+    await page.print()
+
+    expect(await lastPrintedText()).toContain(
+      [
+        'Modes de paiement',
+        'Cartes 150,00 €',
+        'Espèces comptées 0,00 €',
+        'Chèques 0,00 €',
+        'Différé 0,00 €',
+        'Remboursements CB -50,00 €',
+        'Total 100,00 €',
+      ].join(' '),
+    )
   })
 })
 

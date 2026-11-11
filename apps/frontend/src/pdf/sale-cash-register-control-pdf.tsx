@@ -3,6 +3,7 @@ import { FormattedNumber, IntlProvider } from 'react-intl'
 import { CMRLogo } from '@/pdf/cmr-logo.tsx'
 import { PdfTimestampFooter } from '@/pdf/timestamp-footer.tsx'
 import { PdfCommentSection } from '@/pdf/comment-section.tsx'
+import { fromCents, toCents } from '@/utils'
 
 const styles = StyleSheet.create({
   page: {
@@ -547,6 +548,7 @@ function CashPaymentPage({
                 </View>
               </View>
             </View>
+            <PaymentMethodsSummary data={data} />
           </View>
           <View style={styles.cashSummaryBox}>
             <Text style={styles.cashSummaryTitle}>Récapitulatif</Text>
@@ -600,6 +602,68 @@ function CashPaymentPage({
       </View>
       <PageFooter />
     </Page>
+  )
+}
+
+// Tous les moyens de paiement de la caisse, les espèces telles que comptées
+// (hors fonds de caisse) : le total est l'« Encaissé » de cette caisse dans le
+// récap. ventes. Les espèces rendues sont déjà sorties du tiroir compté ;
+// seuls les remboursements CB sont à retirer.
+function PaymentMethodsSummary({
+  data,
+}: {
+  data: SaleCashRegisterControlProps['data']
+}) {
+  const sumOf = (amounts: Array<number>) =>
+    fromCents(amounts.reduce((acc, amount) => acc + toCents(amount), 0))
+  const cards = sumOf(
+    data.cardPayments.map((p) => p.amount).filter((amount) => amount > 0),
+  )
+  const cash = data.cashPayment.realAmount
+  const checks = sumOf(data.checkPayments.map((p) => p.amount))
+  const deferred = sumOf(data.deferredPayments.map((p) => p.amount))
+  // Signe posé montant par montant : sans remboursement, 0,00 € et non
+  // « -0,00 € ».
+  const cardRefunds = sumOf(
+    data.refundPayments.filter((p) => p.type === 'CB').map((p) => -p.amount),
+  )
+  const lines: Array<[string, number]> = [
+    ['Cartes', cards],
+    ['Espèces comptées', cash],
+    ['Chèques', checks],
+    ['Différé', deferred],
+    ['Remboursements CB', cardRefunds],
+  ]
+  const total = sumOf(lines.map(([, amount]) => amount))
+  return (
+    <View style={[styles.cashSummaryBox, { width: 240, marginTop: 10 }]}>
+      <Text style={styles.cashSummaryTitle}>Modes de paiement</Text>
+      {lines.map(([label, amount]) => (
+        <View style={styles.cashSummaryRow} key={label}>
+          <Text>{label}</Text>
+          <Text style={styles.cashSummaryValue}>
+            <FormattedNumber
+              value={amount}
+              style="currency"
+              currency="EUR"
+              useGrouping={false}
+            />
+          </Text>
+        </View>
+      ))}
+      <View style={styles.cashSummaryDivider} />
+      <View style={styles.cashSummaryRow}>
+        <Text>Total</Text>
+        <Text style={styles.cashSummaryValue}>
+          <FormattedNumber
+            value={total}
+            style="currency"
+            currency="EUR"
+            useGrouping={false}
+          />
+        </Text>
+      </View>
+    </View>
   )
 }
 
