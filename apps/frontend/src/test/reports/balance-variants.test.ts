@@ -183,10 +183,17 @@ describe('Report: the balance, variant by variant', () => {
   })
 
   // The club buys Chloé's basket to make up for a theft: the sellers get
-  // their full price, the bourse takes no rights on it and bears the cost.
-  it('V5: what the club buys back costs the bourse, without rights', async () => {
+  // their full price and the bourse takes no rights on it. As at the 2026
+  // bourse (sale 9501), the club pays nothing: the sale is settled in
+  // « différé ». The sellers' full price is already in what was
+  // paid out with no money in front of it, so the takings bear the cost
+  // once, without deducting the purchase; and that différé is not money
+  // still to come in, so it explains no gap.
+  it('V5: what the club buys back costs the bourse once, without rights, and opens no gap', async () => {
     await givenTheReferenceBourseWhere((bourse) => {
       bourse.sales[2].buyer = 'CMR Club'
+      bourse.sales[2].pay = { deferred: 230 }
+      bourse.counts.find((count) => count.till === 6000)!.real = 0
     })
 
     expect(await balanceLines()).toEqual({
@@ -200,11 +207,15 @@ describe('Report: the balance, variant by variant', () => {
       'Achats CMR': '230,00 €',
       // 29 + 4 − 230.
       'Recette bourse théorique': '-197,00 €',
+      // Chloé's 230 € never came in.
+      'Total paiements': '290,00 €',
+      'Total espèces': '140,00 €',
+      'Total chèques': '0,00 €',
       // Sport Pro 200, Martin 180 − 15 − 2.
       'Montant total décaissé': '489,00 €',
       'Règlements pros': '200,00 €',
       'Règlements particuliers': '289,00 €',
-      // 520 + 2 − 489 − 230.
+      // 290 + 2 − 489.
       'Recette bourse': '-197,00 €',
     })
   })

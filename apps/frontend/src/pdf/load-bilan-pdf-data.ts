@@ -249,7 +249,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // La recette théorique : ce qui est dû à la bourse, soit les droits et
   // toutes les cotisations, payées ou non. Une cotisation restée impayée n'est
   // pas en caisse : elle reste dans l'écart avec la recette bourse. Les achats
-  // CMR sont une perte pour la bourse : ils sortent des deux recettes.
+  // CMR sont une perte pour la bourse : la théorique les retire, la recette
+  // bourse en porte déjà le coût (vendeurs payés, rien encaissé).
   const theoreticalRevenue = add(
     cmrRights,
     paidContributions,
@@ -271,6 +272,12 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   const totalCash = sumOf(saleRegisters, (c) => c.realCashAmount)
   const totalChecks = sumOf(sales, (s) => s.checkAmount ?? 0)
   const totalDeferred = sumOf(sales, (s) => s.deferredAmount ?? 0)
+  // Un achat CMR se règle en différé, mais le club ne paiera jamais : ce
+  // n'est pas de l'argent à venir, il est déjà retiré de la recette théorique.
+  const deferredSales = sales.filter(
+    (s) => (s.deferredAmount ?? 0) !== 0 && !cmrPurchaseSaleIds.has(s.id),
+  )
+  const awaitedDeferred = sumOf(deferredSales, (s) => s.deferredAmount ?? 0)
   // Ce qui est réellement entré : cartes, espèces comptées, chèques. Le
   // différé n'est encore ni en caisse ni sur un relevé : il n'entre pas dans
   // la recette bourse, il explique une part de l'écart (voir le solde).
@@ -334,12 +341,14 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // encore en caisse mais il n'appartient pas à la bourse, donc il sort de la
   // recette réelle au même titre que ce qui a déjà été décaissé. Sans cela la
   // recette gonfle de tout ce qui reste à régler aux particuliers.
+  // Les achats CMR n'en sont pas retirés : jamais encaissés, ils ne sont pas
+  // dans les paiements, alors que leurs vendeurs sont payés plein tarif dans le
+  // décaissé. La recette bourse en porte déjà le coût, une fois.
   const actualRevenue = add(
     totalPayments,
     collectedContributions,
     -totalDisbursed,
     -unmadeIndividualChecks,
-    -cmrPurchases,
   )
 
   // Chaque ligne de différence dit ce qui manque à la recette bourse par
@@ -353,7 +362,7 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
   // ce que ces lignes n'expliquent pas : 0 quand tout est expliqué.
   const controlsDiff = sumOf(cashRegisterControls, (c) => c.difference)
   const cashRegisterDiff = controlsDiff
-  const deferredGap = add(-totalDeferred)
+  const deferredGap = add(-awaitedDeferred)
   const unpaidGap = add(-unpaidContributions)
   // Une fiche recalculée après son chèque (par exception : une vente annulée
   // après coup) ne change pas ce qui est sorti, le chèque tel qu'écrit. Ce que
@@ -621,8 +630,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Recette bourse',
           value: eur(actualRevenue),
           source:
-            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits − achats CMR',
-          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)} − ${eur(cmrPurchases)}`,
+            'total paiements + cotisations encaissées − décaissé − chèques particuliers non faits (achats CMR non encaissés : déjà absents des paiements)',
+          formula: `${eur(totalPayments)} + ${eur(collectedContributions)} − ${eur(totalDisbursed)} − ${eur(unmadeIndividualChecks)}`,
         },
         {
           label: 'Différence recette théorique et réelle',
@@ -641,8 +650,8 @@ export async function loadBilanPdfData(): Promise<BilanResult> {
           label: 'Paiements différés',
           value: eur(deferredGap),
           source:
-            '− Σ sale.deferredAmount : dus, pas encore encaissés, ils manquent à la recette bourse',
-          formula: `− Σ deferredAmount sur ${num(sales.length)} ventes`,
+            '− Σ sale.deferredAmount hors achats CMR : dus, pas encore encaissés, ils manquent à la recette bourse',
+          formula: `− Σ deferredAmount sur ${num(deferredSales.length)} vente(s) différée(s) (${eur(add(totalDeferred, -awaitedDeferred))} d’achats CMR exclus)`,
         },
         {
           // « Cotisations non payées » above, as what the takings lack; named
