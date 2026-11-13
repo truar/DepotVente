@@ -231,7 +231,9 @@ describe('Screen: the till count at the end of the sale', () => {
     expect(again.differenceText()).toBe('6,53')
   })
 
-  it('prints every payment method on one report', async () => {
+  // One sheet per till: the count and the total of each payment method. The
+  // sale-by-sale detail is the administrators' own report.
+  it('prints the count and the payment methods on a single page', async () => {
     const page = await salesControlPage()
     await page.open('drawer')
     await waitFor(() => expect(page.theoretical()).toBe(170))
@@ -243,12 +245,13 @@ describe('Screen: the till count at the end of the sale', () => {
 
     const report = await lastPrintedText()
     expect(report).toContain('Contrôle caisse ventes N° 2000')
-    // Each buyer appears under their payment method
-    expect(report).toContain('Roche Marc')
-    expect(report).toContain('Blanc Eva')
-    expect(report).toContain('Petit Anna')
     expect(report).toContain('Montant théorique 170,00 €')
+    expect(report).toContain('Modes de paiement')
     expect(report).toContain('Commentaire: RAS')
+    expect(report).toContain('Page 1 sur 1')
+    expect(report).not.toContain('Roche Marc')
+    expect(report).not.toContain('Blanc Eva')
+    expect(report).not.toContain('Petit Anna')
   })
 
   // Under the count, every way the till was paid, the cash as counted: the

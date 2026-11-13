@@ -10,14 +10,9 @@ import {
   useWatch,
 } from 'react-hook-form'
 import { typedZodResolver } from '@/lib/typed-zod-resolver.ts'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import {
-  type CashRegisterControl,
-  type Contact,
-  db,
-  type Sale,
-} from '@/db.ts'
+import { type CashRegisterControl, db } from '@/db.ts'
 import { CustomButton } from '@/components/custom/Button.tsx'
 import { fromCents, getYear, toCents } from '@/utils'
 import { printPdf } from '@/pdf/print.tsx'
@@ -48,6 +43,7 @@ import { CashRegisterControlFormSchema } from '@/types/SaveDepositCashRegisterCo
 import { toast } from 'sonner'
 import { useSaveCashRegisterControlMutation } from '@/hooks/useSaveCashRegisterControlMutation.ts'
 import { CashCount } from '@/components/forms/CashCount.tsx'
+import { loadSaleControlRows } from '@/pdf/load-sale-control-detail-pdf-data.ts'
 
 const SalesCashRegisterControlFormSchema = z.object({
   cardPayments: z.array(
@@ -105,316 +101,33 @@ const SalesCashRegisterControlFormSchema = z.object({
   cashPayment: CashRegisterControlFormSchema,
 })
 
-function computeSaleTotal(sale: Sale): number {
-  return (
-    (sale.cardAmount ?? 0) +
-    (sale.cashAmount ?? 0) +
-    (sale.checkAmount ?? 0) +
-    (sale.deferredAmount ?? 0) -
-    (sale.totalRefundAmount ?? 0)
-  )
-}
-
 type CashRegisterControlFormType = z.infer<
   typeof SalesCashRegisterControlFormSchema
 >
 
-function useCardPaymentData({
+// Les lignes de chaque mode de paiement, celles du rapport détaillé des
+// administrateurs (loadSaleControlRows), suivies en direct.
+function useSaleControlRows({
   setValue,
   cashRegisterId,
 }: {
   setValue: UseFormSetValue<CashRegisterControlFormType>
   cashRegisterId: number
 }) {
-  const sales = useLiveQuery(
-    () =>
-      db.sales
-        .where({
-          incrementStart: cashRegisterId,
-        })
-        .and((sale) => sale.cardAmount != null && sale.cardAmount > 0)
-        .sortBy('saleIndex'),
+  const rows = useLiveQuery(
+    () => loadSaleControlRows(cashRegisterId),
     [cashRegisterId],
-  )
-  const refunds = useLiveQuery(
-    () =>
-      db.refunds
-        .where({ incrementStart: cashRegisterId })
-        .and((refund) => refund.deletedAt == null && refund.cardAmount > 0)
-        .toArray(),
-    [cashRegisterId],
-  )
-  const allSales = useLiveQuery(() => db.sales.toArray())
-  const saleMap = useMemo(
-    () => new Map<string, Sale>(allSales?.map((sale) => [sale.id, sale])),
-    [allSales],
-  )
-  const contacts = useLiveQuery(() => db.contacts.toArray())
-  const contactMap = useMemo(
-    () =>
-      new Map<string, Contact>(
-        contacts?.map((contact) => [contact.id, contact]),
-      ),
-    [contacts],
   )
   useEffect(() => {
-    const saleRows = (sales ?? [])
-      .map((payment) => {
-        const buyer = contactMap.get(payment.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: payment.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: payment.cardAmount ?? 0,
-          saleTotal: computeSaleTotal(payment),
-        }
-      })
-      .filter((row) => !!row)
-    const refundRows = (refunds ?? [])
-      .map((refund) => {
-        const sale = saleMap.get(refund.saleId)
-        if (!sale) return
-        const buyer = contactMap.get(sale.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: sale.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: -refund.cardAmount,
-          saleTotal: computeSaleTotal(sale),
-        }
-      })
-      .filter((row) => !!row)
-    const merged = [...saleRows, ...refundRows].sort(
-      (a, b) => a!.saleIndex - b!.saleIndex,
-    ) as CashRegisterControlFormType['cardPayments']
-    setValue('cardPayments', merged)
-  }, [sales, refunds, contactMap, saleMap])
+    if (!rows) return
+    setValue('cardPayments', rows.cardPayments)
+    setValue('checkPayments', rows.checkPayments)
+    setValue('deferredPayments', rows.deferredPayments)
+    setValue('cashSales', rows.cashSales)
+    setValue('refundPayments', rows.refundPayments)
+  }, [rows, setValue])
 }
 
-function useCheckPaymentData({
-  setValue,
-  cashRegisterId,
-}: {
-  setValue: UseFormSetValue<CashRegisterControlFormType>
-  cashRegisterId: number
-}) {
-  const sales = useLiveQuery(
-    () =>
-      db.sales
-        .where({
-          incrementStart: cashRegisterId,
-        })
-        .and((sale) => sale.checkAmount != null && sale.checkAmount > 0)
-        .sortBy('saleIndex'),
-    [cashRegisterId],
-  )
-  const contacts = useLiveQuery(() => db.contacts.toArray())
-  const contactMap = useMemo(
-    () =>
-      new Map<string, Contact>(
-        contacts?.map((contact) => [contact.id, contact]),
-      ),
-    [contacts],
-  )
-  useEffect(() => {
-    const data = (sales ?? [])
-      .map((payment) => {
-        const buyer = contactMap.get(payment.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: payment.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: payment.checkAmount ?? 0,
-          saleTotal: computeSaleTotal(payment),
-        }
-      })
-      .filter((sale) => !!sale)
-    setValue('checkPayments', data)
-  }, [sales, contactMap])
-}
-
-function useDeferredPaymentData({
-  setValue,
-  cashRegisterId,
-}: {
-  setValue: UseFormSetValue<CashRegisterControlFormType>
-  cashRegisterId: number
-}) {
-  const sales = useLiveQuery(
-    () =>
-      db.sales
-        .where({
-          incrementStart: cashRegisterId,
-        })
-        .and((sale) => sale.deferredAmount != null && sale.deferredAmount > 0)
-        .sortBy('saleIndex'),
-    [cashRegisterId],
-  )
-  const contacts = useLiveQuery(() => db.contacts.toArray())
-  const contactMap = useMemo(
-    () =>
-      new Map<string, Contact>(
-        contacts?.map((contact) => [contact.id, contact]),
-      ),
-    [contacts],
-  )
-  useEffect(() => {
-    const data = (sales ?? [])
-      .map((payment) => {
-        const buyer = contactMap.get(payment.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: payment.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: payment.deferredAmount ?? 0,
-          saleTotal: computeSaleTotal(payment),
-        }
-      })
-      .filter((sale) => !!sale)
-    setValue('deferredPayments', data)
-  }, [sales, contactMap])
-}
-
-function useCashSalesData({
-  setValue,
-  cashRegisterId,
-}: {
-  setValue: UseFormSetValue<CashRegisterControlFormType>
-  cashRegisterId: number
-}) {
-  const sales = useLiveQuery(
-    () =>
-      db.sales
-        .where({
-          incrementStart: cashRegisterId,
-        })
-        .and((sale) => sale.cashAmount != null && sale.cashAmount > 0)
-        .sortBy('saleIndex'),
-    [cashRegisterId],
-  )
-  const refunds = useLiveQuery(
-    () =>
-      db.refunds
-        .where({ incrementStart: cashRegisterId })
-        .and((refund) => refund.deletedAt == null && refund.cashAmount > 0)
-        .toArray(),
-    [cashRegisterId],
-  )
-  const allSales = useLiveQuery(() => db.sales.toArray())
-  const saleMap = useMemo(
-    () => new Map<string, Sale>(allSales?.map((sale) => [sale.id, sale])),
-    [allSales],
-  )
-  const contacts = useLiveQuery(() => db.contacts.toArray())
-  const contactMap = useMemo(
-    () =>
-      new Map<string, Contact>(
-        contacts?.map((contact) => [contact.id, contact]),
-      ),
-    [contacts],
-  )
-  useEffect(() => {
-    const saleRows = (sales ?? [])
-      .map((payment) => {
-        const buyer = contactMap.get(payment.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: payment.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: payment.cashAmount ?? 0,
-          saleTotal: computeSaleTotal(payment),
-        }
-      })
-      .filter((row) => !!row)
-    const refundRows = (refunds ?? [])
-      .map((refund) => {
-        const sale = saleMap.get(refund.saleId)
-        if (!sale) return
-        const buyer = contactMap.get(sale.buyerId)
-        if (!buyer) return
-        return {
-          saleIndex: sale.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          amount: -refund.cashAmount,
-          saleTotal: computeSaleTotal(sale),
-        }
-      })
-      .filter((row) => !!row)
-    const merged = [...saleRows, ...refundRows].sort(
-      (a, b) => a!.saleIndex - b!.saleIndex,
-    ) as CashRegisterControlFormType['cashSales']
-    setValue('cashSales', merged)
-  }, [sales, refunds, contactMap, saleMap])
-}
-
-function useRefundPaymentData({
-  setValue,
-  cashRegisterId,
-}: {
-  setValue: UseFormSetValue<CashRegisterControlFormType>
-  cashRegisterId: number
-}) {
-  const refunds = useLiveQuery(
-    () =>
-      db.refunds
-        .where({ incrementStart: cashRegisterId })
-        .and((refund) => refund.deletedAt == null)
-        .toArray(),
-    [cashRegisterId],
-  )
-  const sales = useLiveQuery(() => db.sales.toArray())
-  const contacts = useLiveQuery(() => db.contacts.toArray())
-  const saleMap = useMemo(
-    () => new Map<string, Sale>(sales?.map((sale) => [sale.id, sale])),
-    [sales],
-  )
-  const contactMap = useMemo(
-    () =>
-      new Map<string, Contact>(
-        contacts?.map((contact) => [contact.id, contact]),
-      ),
-    [contacts],
-  )
-  useEffect(() => {
-    const data = (refunds ?? [])
-      .flatMap((refund) => {
-        const sale = saleMap.get(refund.saleId)
-        if (!sale) return []
-        const buyer = contactMap.get(sale.buyerId)
-        if (!buyer) return []
-        const base = {
-          saleIndex: sale.saleIndex,
-          buyerName: `${buyer.lastName} ${buyer.firstName}`,
-          buyerPhoneNumber: buyer.phoneNumber,
-          buyerCity: buyer.city || '',
-          comment: refund.comment || '',
-          saleTotal: computeSaleTotal(sale),
-        }
-        const rows: CashRegisterControlFormType['refundPayments'] = []
-        if (refund.cardAmount > 0) {
-          rows.push({ ...base, type: 'CB', amount: refund.cardAmount })
-        }
-        if (refund.cashAmount > 0) {
-          rows.push({ ...base, type: 'CASH', amount: refund.cashAmount })
-        }
-        return rows
-      })
-      .sort((a, b) => a.saleIndex - b.saleIndex)
-    setValue('refundPayments', data)
-  }, [refunds, saleMap, contactMap])
-}
 function buildCashPaymentValues(
   cashRegisterControl: CashRegisterControl,
 ): CashRegisterControlFormType['cashPayment'] {
@@ -561,11 +274,7 @@ function SalesControlPage(props: SalesControlPageProps) {
   const [openSection, setOpenSection] = useState('')
   const navigate = useNavigate()
 
-  useCardPaymentData({ setValue, cashRegisterId })
-  useCheckPaymentData({ setValue, cashRegisterId })
-  useDeferredPaymentData({ setValue, cashRegisterId })
-  useCashSalesData({ setValue, cashRegisterId })
-  useRefundPaymentData({ setValue, cashRegisterId })
+  useSaleControlRows({ setValue, cashRegisterId })
   useCashPaymentData({ setValue, cashRegisterControl })
 
   // Le fonds de caisse se tape dans la section des espèces, fermée par

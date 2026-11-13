@@ -13,7 +13,10 @@ import { PredepositPdf, PredepositsPdf } from '@/pdf/predeposit-pdf.tsx'
 import { RecapDepotsPdf } from '@/pdf/recap-depots-pdf.tsx'
 import { RecapVentesPdf } from '@/pdf/recap-ventes-pdf.tsx'
 import { ReturnDepositPdf, ReturnDepositsPdf } from '@/pdf/return-deposit-pdf.tsx'
-import { SaleCashRegisterControlPdf } from '@/pdf/sale-cash-register-control-pdf.tsx'
+import {
+  SaleCashRegisterControlPdf,
+  SaleCashRegisterDetailPdf,
+} from '@/pdf/sale-cash-register-control-pdf.tsx'
 import { SellerCheckPdf } from '@/pdf/seller-check.tsx'
 
 // Every document the app prints, by a name the page and the PDF worker
@@ -40,6 +43,7 @@ export const documents: Partial<Record<string, FunctionComponent<any>>> = {
   ReturnDepositPdf,
   ReturnDepositsPdf,
   SaleCashRegisterControlPdf,
+  SaleCashRegisterDetailPdf,
   SellerCheckPdf,
 }
 

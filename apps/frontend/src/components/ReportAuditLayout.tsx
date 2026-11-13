@@ -7,6 +7,8 @@ type ReportAuditLayoutProps = {
   title: string
   audit: Array<BilanAuditGroup>
   children: ReactNode
+  /** Choices shown in the top bar, beside the title (e.g. which till). */
+  toolbar?: ReactNode
 }
 
 /**
@@ -18,6 +20,7 @@ export function ReportAuditLayout({
   title,
   audit,
   children,
+  toolbar,
 }: ReportAuditLayoutProps) {
   return (
     <div className="flex h-screen flex-col">
@@ -29,7 +32,10 @@ export function ReportAuditLayout({
           <ChevronLeft className="h-4 w-4" />
           Retour aux rapports
         </Link>
-        <h1 className="text-sm font-semibold text-gray-700">{title}</h1>
+        <div className="flex items-center gap-4">
+          {toolbar}
+          <h1 className="text-sm font-semibold text-gray-700">{title}</h1>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1">

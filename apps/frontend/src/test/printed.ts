@@ -35,6 +35,12 @@ export async function previewedText(): Promise<string> {
   return pdfText(previewedBlobs.at(-1)!)
 }
 
+// Text of every PDF the report screens have shown, latest first: renders
+// finish in no set order when the document changes under the viewer.
+export async function previewedTexts(): Promise<Array<string>> {
+  return Promise.all([...previewedBlobs].reverse().map(pdfText))
+}
+
 async function pdfText(blob: Blob): Promise<string> {
   const data = new Uint8Array(await readBlob(blob))
   // Text only: no glyphs are drawn, so the font files pdfjs would fetch

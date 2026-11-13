@@ -4,6 +4,7 @@ import {
   Banknote,
   ChevronLeft,
   Package,
+  ReceiptText,
   Scale,
   ShoppingCart,
   UserRound,
@@ -110,6 +111,12 @@ export function RouteComponent() {
               onClick={() => navigate({ to: '/reports/cash' })}
               icon={<Banknote className="w-8 h-8 text-blue-600" />}
               title="Espèces des caisses"
+              variant="blue"
+            />
+            <ClickableCard
+              onClick={() => navigate({ to: '/reports/sale-tills' })}
+              icon={<ReceiptText className="w-8 h-8 text-blue-600" />}
+              title="Détail caisse de vente"
               variant="blue"
             />
           </div>

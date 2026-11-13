@@ -270,6 +270,10 @@ export type SaleCashRegisterControlProps = {
   }
 }
 
+// La feuille du contrôle de caisse, imprimée par chaque caisse à la clôture :
+// une seule page, le comptage et le total de chaque mode de paiement. Le
+// détail vente par vente est le rapport des administrateurs
+// (SaleCashRegisterDetailPdf).
 export const SaleCashRegisterControlPdf = (
   props: SaleCashRegisterControlProps,
 ) => {
@@ -278,44 +282,56 @@ export const SaleCashRegisterControlPdf = (
   return (
     <IntlProvider locale={'fr'}>
       <Document>
-        {Array.from({ length: copy }).flatMap((_, index) => [
-          <PaymentsPage
-            key={`cb-${index}`}
-            data={data}
-            title="Paiement CB"
-            payments={data.cardPayments}
-          />,
-          <PaymentsPage
-            key={`cash-${index}`}
-            data={data}
-            title="Paiement Espèces — détail"
-            payments={data.cashSales}
-          />,
+        {Array.from({ length: copy }).map((_, index) => (
           <CashPaymentPage
             key={`cash-control-${index}`}
             data={data}
             cashPayment={cashPayment}
-          />,
-          <PaymentsPage
-            key={`check-${index}`}
-            data={data}
-            title="Paiement Chèques"
-            payments={data.checkPayments}
-          />,
-          <PaymentsPage
-            key={`deferred-${index}`}
-            data={data}
-            title="Paiement différés"
-            payments={data.deferredPayments}
-          />,
-          <RefundPaymentsPage
-            key={`refund-${index}`}
-            data={data}
-            title="Remboursements"
-            payments={data.refundPayments}
             comment={cashPayment.comment}
-          />,
-        ])}
+          />
+        ))}
+      </Document>
+    </IntlProvider>
+  )
+}
+
+// Le détail d'une caisse de vente, pour les administrateurs : chaque vente
+// sous son mode de paiement, le comptage, les remboursements.
+export const SaleCashRegisterDetailPdf = (
+  props: SaleCashRegisterControlProps,
+) => {
+  const { data } = props
+  const { cashPayment } = data
+  return (
+    <IntlProvider locale={'fr'}>
+      <Document>
+        <PaymentsPage
+          data={data}
+          title="Paiement CB"
+          payments={data.cardPayments}
+        />
+        <PaymentsPage
+          data={data}
+          title="Paiement Espèces — détail"
+          payments={data.cashSales}
+        />
+        <CashPaymentPage data={data} cashPayment={cashPayment} />
+        <PaymentsPage
+          data={data}
+          title="Paiement Chèques"
+          payments={data.checkPayments}
+        />
+        <PaymentsPage
+          data={data}
+          title="Paiement différés"
+          payments={data.deferredPayments}
+        />
+        <RefundPaymentsPage
+          data={data}
+          title="Remboursements"
+          payments={data.refundPayments}
+          comment={cashPayment.comment}
+        />
       </Document>
     </IntlProvider>
   )
@@ -477,9 +493,11 @@ function PaymentsPage({
 function CashPaymentPage({
   data,
   cashPayment,
+  comment,
 }: {
   data: SaleCashRegisterControlProps['data']
   cashPayment: SaleCashRegisterControlProps['data']['cashPayment']
+  comment?: string | null
 }) {
   const totalCounted = cashPayment.amounts.reduce(
     (acc, amount) => acc + amount.value * amount.amount,
@@ -600,6 +618,7 @@ function CashPaymentPage({
           </View>
         </View>
       </View>
+      <PdfCommentSection comment={comment} />
       <PageFooter />
     </Page>
   )

@@ -29,6 +29,7 @@ import { Route as ReturnsChecksRouteImport } from './routes/returns/checks'
 import { Route as ReturnsCashRegisterControlRouteImport } from './routes/returns/cash-register-control'
 import { Route as ReportsSummarySalesRouteImport } from './routes/reports/summary-sales'
 import { Route as ReportsSummaryDepositsRouteImport } from './routes/reports/summary-deposits'
+import { Route as ReportsSaleTillsRouteImport } from './routes/reports/sale-tills'
 import { Route as ReportsMaterialProRouteImport } from './routes/reports/material-pro'
 import { Route as ReportsMaterialRouteImport } from './routes/reports/material'
 import { Route as ReportsLiveRouteImport } from './routes/reports/live'
@@ -156,6 +157,11 @@ const ReportsSummarySalesRoute = ReportsSummarySalesRouteImport.update({
 const ReportsSummaryDepositsRoute = ReportsSummaryDepositsRouteImport.update({
   id: '/reports/summary-deposits',
   path: '/reports/summary-deposits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsSaleTillsRoute = ReportsSaleTillsRouteImport.update({
+  id: '/reports/sale-tills',
+  path: '/reports/sale-tills',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsMaterialProRoute = ReportsMaterialProRouteImport.update({
@@ -328,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
+  '/reports/sale-tills': typeof ReportsSaleTillsRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
   '/reports/summary-sales': typeof ReportsSummarySalesRoute
   '/returns/cash-register-control': typeof ReturnsCashRegisterControlRoute
@@ -377,6 +384,7 @@ export interface FileRoutesByTo {
   '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
+  '/reports/sale-tills': typeof ReportsSaleTillsRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
   '/reports/summary-sales': typeof ReportsSummarySalesRoute
   '/returns/cash-register-control': typeof ReturnsCashRegisterControlRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/reports/live': typeof ReportsLiveRoute
   '/reports/material': typeof ReportsMaterialRoute
   '/reports/material-pro': typeof ReportsMaterialProRoute
+  '/reports/sale-tills': typeof ReportsSaleTillsRoute
   '/reports/summary-deposits': typeof ReportsSummaryDepositsRoute
   '/reports/summary-sales': typeof ReportsSummarySalesRoute
   '/returns/cash-register-control': typeof ReturnsCashRegisterControlRoute
@@ -478,6 +487,7 @@ export interface FileRouteTypes {
     | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
+    | '/reports/sale-tills'
     | '/reports/summary-deposits'
     | '/reports/summary-sales'
     | '/returns/cash-register-control'
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
+    | '/reports/sale-tills'
     | '/reports/summary-deposits'
     | '/reports/summary-sales'
     | '/returns/cash-register-control'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/reports/live'
     | '/reports/material'
     | '/reports/material-pro'
+    | '/reports/sale-tills'
     | '/reports/summary-deposits'
     | '/reports/summary-sales'
     | '/returns/cash-register-control'
@@ -626,6 +638,7 @@ export interface RootRouteChildren {
   ReportsLiveRoute: typeof ReportsLiveRoute
   ReportsMaterialRoute: typeof ReportsMaterialRoute
   ReportsMaterialProRoute: typeof ReportsMaterialProRoute
+  ReportsSaleTillsRoute: typeof ReportsSaleTillsRoute
   ReportsSummaryDepositsRoute: typeof ReportsSummaryDepositsRoute
   ReportsSummarySalesRoute: typeof ReportsSummarySalesRoute
   ReturnsCashRegisterControlRoute: typeof ReturnsCashRegisterControlRoute
@@ -795,6 +808,13 @@ declare module '@tanstack/react-router' {
       path: '/reports/summary-deposits'
       fullPath: '/reports/summary-deposits'
       preLoaderRoute: typeof ReportsSummaryDepositsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/sale-tills': {
+      id: '/reports/sale-tills'
+      path: '/reports/sale-tills'
+      fullPath: '/reports/sale-tills'
+      preLoaderRoute: typeof ReportsSaleTillsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports/material-pro': {
@@ -1013,6 +1033,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsLiveRoute: ReportsLiveRoute,
   ReportsMaterialRoute: ReportsMaterialRoute,
   ReportsMaterialProRoute: ReportsMaterialProRoute,
+  ReportsSaleTillsRoute: ReportsSaleTillsRoute,
   ReportsSummaryDepositsRoute: ReportsSummaryDepositsRoute,
   ReportsSummarySalesRoute: ReportsSummarySalesRoute,
   ReturnsCashRegisterControlRoute: ReturnsCashRegisterControlRoute,
